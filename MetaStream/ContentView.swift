@@ -189,7 +189,7 @@ struct ContentView: View {
                                         tap()
                                         focusTap = tapValue.location
                                         let norm = CGPoint(x: tapValue.location.x / max(geo.size.width, 1), y: tapValue.location.y / max(geo.size.height, 1))
-                                        let orientation: AVCaptureVideoOrientation = phoneLandscape ? .landscapeRight : .portrait
+                                        let orientation: AVCaptureVideoOrientation = phoneLandscape ? streamer.landscapeOrientation : .portrait
                                         streamer.tapToFocus(at: CameraSettings.devicePoint(forViewPoint: norm, orientation: orientation, mirrored: camMirrored))
                                         Task { try? await Task.sleep(for: .milliseconds(700)); withAnimation { focusTap = nil } }
                                     }
@@ -622,12 +622,20 @@ struct ContentView: View {
     // changing mid-stream, applied straight to the live device -- see Streamer.applyCameraSettings.
 
     private var cameraControlStrip: some View {
-        VStack(spacing: 14) {
-            ForEach(liveControlOrder, id: \.self) { liveControlRow($0) }
+        // Landscape is too short for every row: scroll only when it doesn't fit.
+        ViewThatFits(in: .vertical) {
+            controlRows
+            ScrollView(showsIndicators: false) { controlRows }
         }
         .padding(12)
         .frame(width: 156)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var controlRows: some View {
+        VStack(spacing: 14) {
+            ForEach(liveControlOrder, id: \.self) { liveControlRow($0) }
+        }
     }
 
     @ViewBuilder
