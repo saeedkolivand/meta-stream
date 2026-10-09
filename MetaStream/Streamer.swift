@@ -271,7 +271,7 @@ final class Streamer: ObservableObject {
         func publish(_ key: String) async throws {
             switch self {
             case .rtmp(_, let st): _ = try await st.publish(key)
-            case .srt(_, let st): try await st.publish()
+            case .srt(_, let st): await st.publish()
             }
         }
 
