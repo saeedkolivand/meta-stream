@@ -27,7 +27,7 @@ targets:
         ARCHS: arm64
         SWIFT_VERSION: "6.0"
         SWIFT_STRICT_CONCURRENCY: minimal
-        TARGETED_DEVICE_FAMILY: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"   # iPad too: USB-C iPads take UVC cameras (DJI webcam mode)
         META_APP_ID: ""
         CLIENT_TOKEN: ""
         TEAM_ID: ""

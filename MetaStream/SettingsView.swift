@@ -174,6 +174,12 @@ struct CameraSettingsView: View {
     @AppStorage("camGridOn") var camGridOn = false
     @AppStorage("camLevelOn") var camLevelOn = false
 
+    @EnvironmentObject var streamer: Streamer
+    @AppStorage("dualCam") var dualCam = false
+    @AppStorage("dualCamCorner") var dualCamCorner = "topRight"
+    @AppStorage("dualCamSize") var dualCamSize = "m"
+    @AppStorage("dualCamShape") var dualCamShape = "rounded"
+
     // Re-probed whenever the fallback position changes -- front/back genuinely differ in what they
     // support, so a stale probe would grey out (or wrongly enable) the wrong controls. Lens no longer
     // changes what's probed (see refresh()'s doc).
@@ -303,6 +309,32 @@ struct CameraSettingsView: View {
             // this Form was already at 9 sections before these two, so a straight 11th/12th addition risks
             // a build error I can't compile-check here. Group doesn't change layout, just child counting.
             Group {
+                Section {
+                    // Glasses + front camera works on any phone (one capture device); phone-camera pairs need multicam hardware.
+                    let supported = AVCaptureMultiCamSession.isMultiCamSupported || Streamer.glassesConfigured
+                    Toggle("Dual camera", isOn: $dualCam)
+                        .disabled(!supported)
+                        .onChange(of: dualCam) { _, on in streamer.setDualCam(on) }
+                    if dualCam {
+                        Picker("Corner", selection: $dualCamCorner) {
+                            Text("Top left").tag("topLeft"); Text("Top right").tag("topRight")
+                            Text("Bottom left").tag("bottomLeft"); Text("Bottom right").tag("bottomRight")
+                        }
+                        .onChange(of: dualCamCorner) { _, _ in streamer.applyDualCamLayout() }
+                        Picker("Size", selection: $dualCamSize) {
+                            Text("Small").tag("s"); Text("Medium").tag("m"); Text("Large").tag("l")
+                        }
+                        .onChange(of: dualCamSize) { _, _ in streamer.applyDualCamLayout() }
+                        Picker("Shape", selection: $dualCamShape) {
+                            Text("Rounded").tag("rounded"); Text("Circle").tag("circle")
+                        }
+                        .onChange(of: dualCamShape) { _, _ in streamer.applyDualCamLayout() }
+                    }
+                } header: { Text("Face cam (dual camera)") } footer: {
+                    Text((AVCaptureMultiCamSession.isMultiCamSupported ? "" : Streamer.glassesConfigured ? "This phone can't run two of its own cameras at once, so only glasses + the front camera works here. " : "This phone can't run two cameras at once. ")
+                         + "Streams one camera full-frame with the other as a small window. Tap the window to swap which is big; the eye button on the main screen hides it. With the phone camera it uses the opposite camera; with glasses it uses the front camera. Dual camera streams at up to 1080p30 and always re-encodes (H.264). Changes made while live apply to the next stream.")
+                }
+
                 Section {
                     Toggle("Rule-of-thirds grid", isOn: $camGridOn)
                     Toggle("Level", isOn: $camLevelOn)
