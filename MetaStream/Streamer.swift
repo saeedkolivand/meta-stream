@@ -88,6 +88,17 @@ private final class LayerSink: MediaMixerOutput, @unchecked Sendable {
     func selectTrack(_ id: UInt8?, mediaType: CMFormatDescription.MediaType) async {}
 }
 
+/// Counts raw track-1 (face cam) frames: tells "the overlay camera delivers nothing" apart from "it delivers
+/// but the composite never shows it" in the log.
+private final class TrackCounter: MediaMixerOutput, @unchecked Sendable {
+    var count = 0
+    var videoTrackId: UInt8? { 1 }
+    var audioTrackId: UInt8? { nil }
+    func mixer(_ mixer: MediaMixer, didOutput sampleBuffer: CMSampleBuffer) { count += 1 }
+    func mixer(_ mixer: MediaMixer, didOutput buffer: AVAudioPCMBuffer, when: AVAudioTime) {}
+    func selectTrack(_ id: UInt8?, mediaType: CMFormatDescription.MediaType) async {}
+}
+
 @MainActor
 final class Streamer: ObservableObject {
     @Published var registration = "unknown"
@@ -200,6 +211,9 @@ final class Streamer: ObservableObject {
 
     private let hot = Hot()
     private lazy var sink = LayerSink(hot: hot)
+    private let faceCamFrames = TrackCounter()
+    /// Which way up a landscape capture goes, from the phone's physical orientation -- see deviceRotated().
+    private(set) var landscapeOrientation: AVCaptureVideoOrientation = .landscapeRight
     var pip: PiPController?                        // owned here so it outlives SwiftUI view rebuilds
     // ponytail: plain optional, not weak — Speaker never references Streamer, so no retain cycle. App.swift sets it once.
     var speaker: Speaker?
@@ -353,6 +367,13 @@ final class Streamer: ObservableObject {
         /// Encoder frame size. Portrait is the glasses-native orientation; landscape is 16:9 for everything
         /// else. long is derived (height * 16/9), not a 720/1080-only lookup, so 4K (2160 -> 3840) falls
         /// out of the same formula rather than needing its own case.
+        /// The same @AppStorage keys ContentView passes to goLive(), for attaching the camera while idle.
+        static func fromDefaults() -> PhoneQuality {
+            let d = UserDefaults.standard
+            return PhoneQuality(height: d.object(forKey: "phoneHeight") as? Int ?? 720, landscape: d.bool(forKey: "phoneLandscape"),
+                                fps: d.object(forKey: "phoneFps") as? Int ?? 30, stabilization: d.string(forKey: "phoneStabilization") ?? "off")
+        }
+
         var size: CGSize {
             let short = CGFloat(height), long = short * 16 / 9
             return landscape ? CGSize(width: long, height: short) : CGSize(width: short, height: long)
@@ -465,6 +486,7 @@ final class Streamer: ObservableObject {
         guard !mixerWired else { return }
         mixerWired = true
         await mixer.addOutput(sink)
+        await mixer.addOutput(faceCamFrames)
         await mixer.startRunning()
     }
 
@@ -492,6 +514,11 @@ final class Streamer: ObservableObject {
             _ = NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
                 Task { @MainActor in self?.refreshExternalCamera() }
             }
+        }
+        // Auto-rotate: only fires with rotation lock off. Same observer shape as above.
+        UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+        _ = NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.deviceRotated() }
         }
         evaluateSource()                                // glasses off at launch → phone camera after 2 s
         Task { [weak self] in                           // 1 s stats tick for the HUD, logged every 5 s while live
@@ -757,6 +784,7 @@ final class Streamer: ObservableObject {
                         await mixer.setVideoOrientation(.portrait)   // glasses canvas is 720x1280 portrait
                         dualCamActive = true
                         await syncBlurEffect()
+                        logFaceCamHealth()
                     }
                 }
             } else {
@@ -769,6 +797,14 @@ final class Streamer: ObservableObject {
                 // External (UVC) main: unplugged between the pick and now -> drop back to auto rather than attach nothing.
                 let isExt = manualSource == "external"
                 if isExt, Self.externalCamera() == nil { refreshExternalCamera(); return }
+                // Idle: attach with the current Settings, not whatever the last goLive() left in phoneQuality
+                // (the default portrait 720p on a fresh launch -- a portrait camera in the landscape face-cam
+                // canvas was the "tiny picture" bug). The canvas can only be resized with the render loop
+                // stopped, so drop offscreen first when the size changes; syncBlurEffect() below re-sizes it.
+                if !sessionGeometryFixed {
+                    phoneQuality = capped(.fromDefaults())
+                    if offscreenOn, dualCamCanvas != phoneQuality.size { await setOffscreenMode(false) }
+                }
                 let cam = isExt ? Self.externalCamera() : CameraSettings.captureDevice(position: fallbackPosition)
                 await wireMixer()
                 let multi = mixerIsMulti
@@ -843,11 +879,13 @@ final class Streamer: ObservableObject {
                 // UVC webcams deliver 1080p30 landscape and generally can't rotate the connection, so external
                 // is always landscape and capped at 30 regardless of the quality setting.
                 try? await mixer.setFrameRate(Float64(isExt || multi ? mcFps : phoneQuality.fps))
-                await mixer.setVideoOrientation(isExt || phoneQuality.landscape ? .landscapeRight : .portrait)
+                await mixer.setVideoOrientation(isExt ? .landscapeRight : phoneQuality.landscape ? landscapeOrientation : .portrait)
+                applog("stream", "camera attached \(phoneQuality.height)p @\(phoneQuality.fps) landscape=\(isExt || phoneQuality.landscape) multi=\(multi) overlay=\(overlayOK)")
                 source = "phone"
                 if overlayOK {
                     dualCamActive = true
                     await syncBlurEffect()
+                    logFaceCamHealth()
                 }
             }
         } catch {
@@ -855,7 +893,31 @@ final class Streamer: ObservableObject {
         }
     }
 
+    /// Rotation lock off: while idle, turning the phone picks the Aspect setting (portrait/landscape) and
+    /// re-attaches the camera. Live, the geometry is fixed for the session, so only a landscape flip to the
+    /// other side is followed (same size, just which way up). Face up/down and upside down keep the current pick.
+    private func deviceRotated() {
+        let o = UIDevice.current.orientation
+        guard o.isLandscape || o == .portrait else { return }
+        if o.isLandscape { landscapeOrientation = o == .landscapeLeft ? .landscapeRight : .landscapeLeft }   // device and video landscape are named opposite
+        let d = UserDefaults.standard
+        let aspectChanged = !sessionGeometryFixed && d.bool(forKey: "phoneLandscape") != o.isLandscape
+        if aspectChanged { d.set(o.isLandscape, forKey: "phoneLandscape") }
+        applog("stream", "device rotated: \(o.isLandscape ? "landscape" : "portrait") aspectChanged=\(aspectChanged)")
+        guard source == "phone", manualSource != "external", !cameraOff else { return }
+        if aspectChanged { Task { await switchTo(glasses: false) } }
+        else if phoneQuality.landscape, o.isLandscape { Task { await mixer.setVideoOrientation(landscapeOrientation) } }
+    }
+
     // MARK: dual camera
+
+    private func logFaceCamHealth() {
+        let before = faceCamFrames.count
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            applog("stream", "dual camera: \(faceCamFrames.count - before) face-cam frames in 2 s, offscreen=\(offscreenOn), canvas=\(Int(dualCamCanvas.width))x\(Int(dualCamCanvas.height)), overlay=\(overlayObject != nil), visible=\(dualCamActive && !dualCamHidden && !blurWanted)")
+        }
+    }
 
     private final class FloatBox: @unchecked Sendable { var value: Float = 0 }
 
@@ -1324,20 +1386,8 @@ final class Streamer: ObservableObject {
         dualLocked = UserDefaults.standard.bool(forKey: "dualCam")
         dualCamHidden = false
         dualCamSwapped = false
-        var quality = quality
-        if dualLocked == true, quality.height > 1080 || quality.fps > 30 {
-            quality.height = min(quality.height, 1080)
-            quality.fps = min(quality.fps, 30)
-            applog("stream", "dual camera: capped to \(quality.height)p @\(quality.fps)")
-        }
-        // UVC webcams deliver landscape 1080p30 and generally can't rotate the connection: a portrait canvas
-        // would squash/letterbox them, and anything past 1080p30 is just upscaling.
-        if manualSource == "external" {
-            quality.landscape = true
-            quality.height = min(quality.height, 1080)
-            quality.fps = min(quality.fps, 30)
-            applog("stream", "external camera: forced landscape, capped to \(quality.height)p @\(quality.fps)")
-        }
+        let quality = capped(quality)
+        applog("stream", "phone quality \(quality.height)p @\(quality.fps) landscape=\(quality.landscape) dual=\(dualLocked == true)")
         // Scheme picks the transport: srt:// goes out over SRT, everything else over RTMP(S).
         // Rebuilt per session so switching ingest between streams doesn't need an app restart.
         phoneQuality = quality
@@ -1435,6 +1485,9 @@ final class Streamer: ObservableObject {
                     profileLevel: (h264 ? kVTProfileLevel_H264_High_AutoLevel : kVTProfileLevel_HEVC_Main_AutoLevel) as String,
                     maxKeyFrameIntervalDuration: 2,
                     expectedFrameRate: Float64(rate)))
+                // Re-attach with the session's quality (preset, fps, orientation): the idle attach may have run with
+                // different Settings, and a portrait capture into a landscape encoder is the "still portrait" bug.
+                if source == "phone" { await switchTo(glasses: false) }
                 if h264 || dualLocked == true {           // decoded frames (or the face-cam composite) need the mixer → encoder → stream path
                     await wireMixer()
                     // Force the render loop off before resizing, regardless of whether stopLive()'s own
@@ -1446,8 +1499,6 @@ final class Streamer: ObservableObject {
                     var vm = await mixer.videoMixerSettings
                     vm.mainTrack = 0                       // track 0 straight through to the encoder
                     await mixer.setVideoMixerSettings(vm)
-                    // Re-attach with the session's (capped) quality: the idle attach ran at the default 720p.
-                    if dualLocked == true, source == "phone" { await switchTo(glasses: false) }
                     await syncBlurEffect()                 // registers blur / overlay + switches to .offscreen if already enabled
                     await pushOverlayLayout()              // the overlay may have been laid out against the idle canvas
                     hot.warm = h264
@@ -1548,15 +1599,16 @@ final class Streamer: ObservableObject {
     /// What the offscreen canvas should be right now: the session's fixed geometry while live, otherwise
     /// whatever the phone camera is configured to produce, since that is the only thing the mixer renders
     /// before GO LIVE.
-    private var blurCanvasSize: CGSize {
-        if sessionGeometryFixed { return sessionVideoSize }
-        // phoneQuality is only set at goLive(), so an idle dual-camera preview builds the same capped
-        // geometry from Settings directly -- otherwise the composite would have the wrong aspect before GO LIVE.
-        if dualWanted {
-            let d = UserDefaults.standard
-            return PhoneQuality(height: min(d.object(forKey: "phoneHeight") as? Int ?? 720, 1080), landscape: d.bool(forKey: "phoneLandscape")).size
-        }
-        return phoneQuality.size
+    private var blurCanvasSize: CGSize { sessionGeometryFixed ? sessionVideoSize : phoneQuality.size }
+
+    /// Dual camera caps at 1080p30: two captures + a composite + an encode is what a phone sustains, not 4K/60.
+    /// UVC webcams deliver landscape 1080p30 and can't rotate the connection: portrait would squash/letterbox
+    /// them, and anything past 1080p30 is just upscaling.
+    private func capped(_ q: PhoneQuality) -> PhoneQuality {
+        var q = q
+        if dualWanted || manualSource == "external" { q.height = min(q.height, 1080); q.fps = min(q.fps, 30) }
+        if manualSource == "external" { q.landscape = true }
+        return q
     }
 
     /// Screen.size reallocates the offscreen pixel-buffer pool (checked Screen.swift 2.1.0/2.2.5 directly --

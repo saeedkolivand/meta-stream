@@ -9,9 +9,23 @@ final class LogStore: ObservableObject {
     @Published private(set) var text = ""
     private var lines: [String] = []
     private static let fmt: DateFormatter = { let f = DateFormatter(); f.dateFormat = "HH:mm:ss.SSS"; return f }()
+    /// Documents/metastream.log -- os_log lines never reach Windows (see device-debugging notes), this file does:
+    /// `pymobiledevice3 apps pull com.saeedkolivand.metastream Documents/metastream.log app.log`
+    /// ponytail: starts over at launch once past 2 MB instead of rotating.
+    private let file: FileHandle? = {
+        let url = URL.documentsDirectory.appending(path: "metastream.log")
+        let fm = FileManager.default
+        if let size = (try? fm.attributesOfItem(atPath: url.path))?[.size] as? Int, size > 2_000_000 { try? fm.removeItem(at: url) }
+        if !fm.fileExists(atPath: url.path) { fm.createFile(atPath: url.path, contents: nil) }
+        let h = try? FileHandle(forWritingTo: url)
+        _ = try? h?.seekToEnd()
+        return h
+    }()
 
     func add(_ line: String) {
-        lines.append(Self.fmt.string(from: Date()) + " " + line)
+        let line = Self.fmt.string(from: Date()) + " " + line
+        try? file?.write(contentsOf: Data((line + "\n").utf8))
+        lines.append(line)
         if lines.count > 2000 { lines.removeFirst(lines.count - 2000) }   // ponytail: ring buffer by trimming
         text = lines.joined(separator: "\n")
     }

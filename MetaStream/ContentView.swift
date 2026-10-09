@@ -189,7 +189,7 @@ struct ContentView: View {
                                         tap()
                                         focusTap = tapValue.location
                                         let norm = CGPoint(x: tapValue.location.x / max(geo.size.width, 1), y: tapValue.location.y / max(geo.size.height, 1))
-                                        let orientation: AVCaptureVideoOrientation = phoneLandscape ? .landscapeRight : .portrait
+                                        let orientation: AVCaptureVideoOrientation = phoneLandscape ? streamer.landscapeOrientation : .portrait
                                         streamer.tapToFocus(at: CameraSettings.devicePoint(forViewPoint: norm, orientation: orientation, mirrored: camMirrored))
                                         Task { try? await Task.sleep(for: .milliseconds(700)); withAnimation { focusTap = nil } }
                                     }
