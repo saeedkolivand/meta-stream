@@ -61,6 +61,10 @@ struct ContentView: View {
     @AppStorage("voiceKick") var voiceKick = true
     @AppStorage("voiceTwitch") var voiceTwitch = true
     @AppStorage("voiceYouTube") var voiceYouTube = true
+    @AppStorage("dualCam") var dualCamOn = false
+    @AppStorage("dualCamCorner") var dualCamCorner = "topRight"
+    @AppStorage("dualCamSize") var dualCamSize = "m"
+    @AppStorage("dualCamShape") var dualCamShape = "rounded"
     @AppStorage("blurOn") var blurOn = false
     @AppStorage("blurFaces") var blurFaces = true
     @AppStorage("blurText") var blurText = true
@@ -75,6 +79,10 @@ struct ContentView: View {
     @AppStorage("srtLatencyMs") var srtLatencyMs = 2000
     @AppStorage("phoneHeight") var phoneHeight = 720
     @AppStorage("phoneLandscape") var phoneLandscape = false
+    /// Index into chatSizes. Defaults one step above system size: chat is read at a glance from a phone
+    /// mounted on a dash, not held at reading distance.
+    @AppStorage("chatTextSize") var chatTextSize = 1
+    private static let chatSizes: [DynamicTypeSize] = [.large, .xxLarge, .accessibility2, .accessibility4]
     @AppStorage("phoneFps") var phoneFps = 30
     @AppStorage("phoneStabilization") var phoneStabilization = "off"
     @AppStorage("codec") var codecPref = "auto"
@@ -97,8 +105,10 @@ struct ContentView: View {
     private var codec: String {
         // adr/0001: blur has to decode every frame to obscure it, so it forces a transcode and
         // outranks even an explicit HEVC choice — you cannot blur a frame you never decode.
-        // Precedence: blur > explicit codec > protocol capability > destination table.
-        if blurOn { return "h264" }
+        // Dual camera is the same story: the face-cam overlay (and glasses video, which only reaches the mixer
+        // as decoded frames) is composited on the phone, so it re-encodes whatever codec was picked.
+        // Precedence: blur / dual camera > explicit codec > protocol capability > destination table.
+        if blurOn || dualCamOn { return "h264" }
         guard codecPref == "auto" else { return codecPref }
         // SRT carries whatever the server decodes, and passthrough is the entire reason to use it:
         // no transcode means no PiP window needed to keep streaming in the background.
@@ -157,13 +167,25 @@ struct ContentView: View {
                         .gesture(
                             LongPressGesture(minimumDuration: 0.5).exclusively(before: SpatialTapGesture())
                                 .onEnded { value in
-                                    guard streamer.source == "phone" else { return }
+                                    guard phoneCamControllable else { return }
                                     switch value {
                                     case .first:
                                         tap(strong: true)
                                         aeafLocked.toggle()
                                         streamer.setAEAFLocked(aeafLocked)
                                     case .second(let tapValue):
+                                        // A tap on the face-cam window swaps which camera is big; anywhere else
+                                        // falls through to tap-to-focus (skipped while swapped: cameraDevice is
+                                        // the back camera, which is now the small window).
+                                        let canvas = streamer.dualCamCanvas
+                                        if streamer.dualCamActive, !streamer.dualCamHidden,
+                                           let cp = Streamer.canvasPoint(forViewPoint: tapValue.location, viewSize: geo.size, canvas: canvas),
+                                           Streamer.pipRect(canvas: canvas, corner: dualCamCorner, size: dualCamSize, shape: dualCamShape).contains(cp) {
+                                            tap()
+                                            streamer.swapDualCam()
+                                            return
+                                        }
+                                        if streamer.dualCamSwapped { return }
                                         tap()
                                         focusTap = tapValue.location
                                         let norm = CGPoint(x: tapValue.location.x / max(geo.size.width, 1), y: tapValue.location.y / max(geo.size.height, 1))
@@ -182,7 +204,7 @@ struct ContentView: View {
                         .simultaneousGesture(
                             MagnifyGesture()
                                 .onChanged { value in
-                                    guard streamer.source == "phone" else { return }
+                                    guard phoneCamControllable, !streamer.dualCamSwapped else { return }   // swapped: cameraDevice is the small window
                                     if pinchStartZoom == nil { pinchStartZoom = camZoom }
                                     let range = streamer.cameraCapabilities?.zoomRange ?? (camZoom...camZoom)
                                     camZoom = CameraSettings.clamped((pinchStartZoom ?? camZoom) * Double(value.magnification), min: range.lowerBound, max: range.upperBound)
@@ -244,7 +266,7 @@ struct ContentView: View {
             // Trailing edge, vertically centered: stays clear of the HUD row (top), GO LIVE and the rest of
             // `controls` (bottom), and the preview centre, while staying thumb-reachable one-handed. Only
             // meaningful with the phone camera live -- the glasses expose none of this.
-            if showCameraControls, streamer.source == "phone" {
+            if showCameraControls, phoneCamControllable {
                 HStack {
                     Spacer()
                     cameraControlStrip.padding(.trailing, 10)
@@ -285,6 +307,7 @@ struct ContentView: View {
         // Glasses (re)connecting can flip the source out from under an open strip -- nothing left to control.
         // aeafLocked resets too: a lock only ever made sense against the phone device it was set on.
         .onChange(of: streamer.source) { _, s in if s != "phone" { showCameraControls = false; aeafLocked = false } }
+        .onChange(of: streamer.manualSource) { _, s in if s == "external" { showCameraControls = false; aeafLocked = false } }
         .onChange(of: camLevelOn) { _, on in on ? levelMonitor.start() : levelMonitor.stop() }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = keepAwake }
         .onChange(of: keepAwake) { _, v in UIApplication.shared.isIdleTimerDisabled = v }
@@ -335,8 +358,9 @@ struct ContentView: View {
                 if streamer.thermal != .nominal {
                     pill("thermometer", thermalLabel, streamer.thermal == .fair ? .white : .orange)
                 }
-                pill(streamer.source == "phone" ? "iphone" : "eyeglasses",
-                     streamer.manualSource == "auto" ? "auto · \(streamer.source)" : streamer.manualSource,
+                pill(streamer.source == "phone" ? (streamer.manualSource == "external" ? "video.fill" : "iphone") : "eyeglasses",
+                     streamer.manualSource == "auto" ? "auto · \(streamer.source)"
+                         : streamer.manualSource == "external" ? (streamer.externalCameraName ?? "external") : streamer.manualSource,
                      streamer.source == "phone" ? .orange : .white)
                 Button { tap(); speaker.muted.toggle() } label: {
                     // Silences chat and alerts only. Stream warnings speak regardless — see Speaker.
@@ -353,7 +377,7 @@ struct ContentView: View {
                     pill("slider.horizontal.3", "manage", .cyan)
                 }
                 .buttonStyle(.plain)
-                if streamer.source == "phone" {
+                if phoneCamControllable {
                     Button { tap(); showCameraControls.toggle() } label: {
                         pill("camera.aperture", "cam", showCameraControls ? .cyan : .white)
                     }
@@ -369,6 +393,7 @@ struct ContentView: View {
     private func applyBlur() {
         privacy.enabled = blurOn
         privacy.options = .init(faces: blurFaces, text: blurText, barcodes: blurBarcodes)
+        streamer.applyDualCamLayout()   // face-cam window hides the moment blur turns on -- see Streamer.blurWanted
     }
 
     /// Starts every enabled origin that has what it needs. Kick needs only a slug; Twitch and YouTube
@@ -383,6 +408,10 @@ struct ContentView: View {
         Task { await emotes.load(twitchID: platforms.twitchConnected ? platforms.twitchUserID : nil) }
     }
 
+    /// Phone-camera controls (tap-to-focus, pinch zoom, lens strip) only drive a built-in camera; a UVC
+    /// external camera exposes none of them, so they're hidden/no-op'd for it.
+    private var phoneCamControllable: Bool { streamer.source == "phone" && streamer.manualSource != "external" }
+
     /// Shows what is actually on air, not what was asked for — on auto those differ whenever the
     /// glasses drop and the phone takes over.
     private var sourceIcon: String {
@@ -390,6 +419,7 @@ struct ContentView: View {
         case "glasses": return "eyeglasses"
         case "back": return "camera.fill"
         case "front": return "camera.rotate.fill"
+        case "external": return "video.fill"
         default: return streamer.source == "phone" ? "iphone" : "eyeglasses"
         }
     }
@@ -441,7 +471,7 @@ struct ContentView: View {
     // MARK: Controls
 
     private var controls: some View {
-        HStack(alignment: .center, spacing: 18) {
+        HStack(alignment: .center, spacing: streamer.dualCamActive ? 8 : 18) {   // one extra button below: tighter so the row still fits
             if Streamer.glassesConfigured {
                 roundButton(streamer.glassesOn ? "eyeglasses" : "eyeglasses.slash", filled: streamer.glassesOn) {
                     tap()
@@ -459,6 +489,9 @@ struct ContentView: View {
                     }
                     Label("Back camera", systemImage: "camera.fill").tag("back")
                     Label("Front camera", systemImage: "camera.rotate.fill").tag("front")
+                    if streamer.externalCameraName != nil {   // iPad USB-C UVC camera, only while plugged in
+                        Label("External camera", systemImage: "video.fill").tag("external")
+                    }
                 }
             } label: {
                 Image(systemName: sourceIcon)
@@ -493,6 +526,13 @@ struct ContentView: View {
             .buttonStyle(.plain)
             .animation(.spring(duration: 0.3), value: streamer.live)
 
+            // Hide/show the face-cam window mid-stream (the second camera keeps running; only the overlay goes).
+            if streamer.dualCamActive {
+                roundButton(streamer.dualCamHidden ? "eye.slash" : "eye", filled: streamer.dualCamHidden) {
+                    tap()
+                    streamer.setDualCamHidden(!streamer.dualCamHidden)
+                }
+            }
             roundButton("bubble.left.and.bubble.right.fill", filled: showChat) { tap(); showChat.toggle() }
             roundButton("gearshape.fill", filled: false) { tap(); showSettings = true }
         }
@@ -827,6 +867,7 @@ struct ContentView: View {
                     }
                     .padding(.horizontal)
                 }
+                .dynamicTypeSize(Self.chatSizes[min(chatTextSize, Self.chatSizes.count - 1)])
                 .onChange(of: chat.recent.count) { _, _ in
                     guard atBottom else { return }
                     withAnimation { proxy.scrollTo("bottom", anchor: .bottom) }
@@ -909,6 +950,11 @@ struct ContentView: View {
                 .pickerStyle(.segmented)
             }
             HStack(spacing: 10) {
+                // One tap cycles the size, so it's usable without looking for a slider.
+                Button { tap(); chatTextSize = (chatTextSize + 1) % Self.chatSizes.count } label: {
+                    Image(systemName: "textformat.size")
+                }
+                .accessibilityLabel("Chat text size")
                 TextField("Message", text: $chatText).textFieldStyle(.roundedBorder).onSubmit(sendChat)
                 Button(action: sendChat) { Image(systemName: "paperplane.fill") }
                     .disabled(chatText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
