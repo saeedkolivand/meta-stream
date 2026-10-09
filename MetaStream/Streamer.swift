@@ -805,9 +805,13 @@ final class Streamer: ObservableObject {
                     phoneQuality = capped(.fromDefaults())
                     if offscreenOn, dualCamCanvas != phoneQuality.size { await setOffscreenMode(false) }
                 }
-                let cam = isExt ? Self.externalCamera() : CameraSettings.captureDevice(position: fallbackPosition)
                 await wireMixer()
                 let multi = mixerIsMulti
+                // Dual camera: plain wide lens, not the virtual triple-lens device. Paired with a second camera
+                // in a multicam session, the virtual device's overlay connection silently never formed (0 face-cam
+                // frames on device). Wide back + wide front is the pair Apple's own multicam sample uses.
+                let wideMain = multi && dualWanted && !isExt
+                let cam = isExt ? Self.externalCamera() : wideMain ? CameraSettings.device(lens: "wide", position: fallbackPosition) : CameraSettings.captureDevice(position: fallbackPosition)
                 // A .single session can't hold two devices, so any leftover overlay (e.g. from the glasses
                 // branch) must go before track 0 is attached; a .multi session re-attaches track 1 below.
                 if dualCamActive, !(multi && dualWanted) { await detachOverlay() }
@@ -839,7 +843,7 @@ final class Streamer: ObservableObject {
                 // Face-cam overlay: the OTHER position on track 1. Main always stays on track 0; swapping is
                 // done on the screen side (mainTrack + overlay track), never by re-attaching.
                 var overlayOK = false
-                var mainIsWide = false
+                var mainIsWide = wideMain
                 if dualWanted, !multi, !warnedNoMultiCam {
                     warnedNoMultiCam = true
                     applog("stream", "dual camera: this phone cannot run two cameras at once -- overlay skipped for the phone camera")
@@ -849,7 +853,7 @@ final class Streamer: ObservableObject {
                     if overlayOK {
                         var cost = await Self.multiCamCost(mixer)
                         applog("stream", "dual camera: hardwareCost=\(String(format: "%.2f", cost))")
-                        if !isExt, cost > 1.0, let wide = CameraSettings.device(lens: "wide", position: fallbackPosition) {
+                        if !isExt, !mainIsWide, cost > 1.0, let wide = CameraSettings.device(lens: "wide", position: fallbackPosition) {
                             // Virtual multi-lens devices cost more than a single physical lens -- retry the main as plain wide.
                             try await mixer.attachVideo(wide, track: 0, configuration: configureMain)
                             mainIsWide = true
@@ -915,11 +919,26 @@ final class Streamer: ObservableObject {
         let before = faceCamFrames.count
         Task {
             try? await Task.sleep(for: .seconds(2))
+            let topology = await Self.sessionTopology(mixer)
+            applog("stream", "dual camera: session \(topology)")
             applog("stream", "dual camera: \(faceCamFrames.count - before) face-cam frames in 2 s, offscreen=\(offscreenOn), canvas=\(Int(dualCamCanvas.width))x\(Int(dualCamCanvas.height)), overlay=\(overlayObject != nil), visible=\(dualCamActive && !dualCamHidden && !blurWanted)")
         }
     }
 
     private final class FloatBox: @unchecked Sendable { var value: Float = 0 }
+    private final class StringBox: @unchecked Sendable { var value = "" }
+
+    /// The capture session's connections as "source->output enabled/active", for the face-cam health log.
+    private static func sessionTopology(_ mixer: MediaMixer) async -> String {
+        let box = StringBox()
+        await mixer.configuration { (session: AVCaptureSession) in
+            box.value = session.connections.map { c in
+                let src = c.inputPorts.map { "\($0.sourceDeviceType?.rawValue.replacingOccurrences(of: "AVCaptureDeviceType", with: "") ?? $0.mediaType.rawValue)/\($0.sourceDevicePosition == .front ? "front" : "back")" }.joined(separator: "+")
+                return "\(src)->\(c.output.map { String(describing: type(of: $0)) } ?? "nil") en=\(c.isEnabled) act=\(c.isActive)"
+            }.joined(separator: ", ")
+        }
+        return box.value
+    }
 
     /// AVCaptureMultiCamSession.hardwareCost of the mixer's current session (> 1.0 = the configuration
     /// can't run); 0 for a non-multicam session. MediaMixer.configuration hands the raw AVCaptureSession to
@@ -964,7 +983,7 @@ final class Streamer: ObservableObject {
     /// not take the main camera down with it. Mirrored when it's the front camera (selfie convention),
     /// stabilisation off (it only costs latency on a thumbnail). Returns whether it attached.
     private func attachOverlayCamera(position: AVCaptureDevice.Position) async -> Bool {
-        guard let cam = CameraSettings.captureDevice(position: position) else {
+        guard let cam = CameraSettings.device(lens: "wide", position: position) else {   // plain wide -- see switchTo's wideMain
             applog("stream", "dual camera: no camera at that position", error: true)
             return false
         }
