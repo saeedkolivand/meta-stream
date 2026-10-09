@@ -701,7 +701,7 @@ final class Streamer: ObservableObject {
 
     /// First UVC camera AVFoundation exposes (iPadOS 17+ over USB-C), or nil. A fresh discovery each call so
     /// callers always get a live handle rather than one already handed to the mixer.
-    private static func externalCamera() -> AVCaptureDevice? {
+    nonisolated private static func externalCamera() -> AVCaptureDevice? {   // nonisolated: a main-actor result can't be sent to the mixer actor (Swift 6 region isolation)
         AVCaptureDevice.DiscoverySession(deviceTypes: [.external], mediaType: .video, position: .unspecified).devices.first
     }
 
