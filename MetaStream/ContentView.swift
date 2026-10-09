@@ -393,6 +393,7 @@ struct ContentView: View {
     private func applyBlur() {
         privacy.enabled = blurOn
         privacy.options = .init(faces: blurFaces, text: blurText, barcodes: blurBarcodes)
+        streamer.applyDualCamLayout()   // face-cam window hides the moment blur turns on -- see Streamer.blurWanted
     }
 
     /// Starts every enabled origin that has what it needs. Kick needs only a slug; Twitch and YouTube

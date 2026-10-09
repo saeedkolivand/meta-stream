@@ -965,7 +965,7 @@ final class Streamer: ObservableObject {
         guard let o = overlayObject, dualCamCanvas.width > 0 else { return }
         let s = Self.pipSettings()
         await Self.layoutOverlay(o, canvas: dualCamCanvas, corner: s.corner, size: s.size, shape: s.shape,
-                                 track: dualCamSwapped ? 0 : 1, visible: dualCamActive && !dualCamHidden)
+                                 track: dualCamSwapped ? 0 : 1, visible: dualCamActive && !dualCamHidden && !blurWanted)
     }
 
     private static func pipSettings() -> (corner: String, size: String, shape: String) {
@@ -973,12 +973,17 @@ final class Streamer: ObservableObject {
         return (d.string(forKey: "dualCamCorner") ?? "topRight", d.string(forKey: "dualCamSize") ?? "m", d.string(forKey: "dualCamShape") ?? "rounded")
     }
 
-    @ScreenActor private static func makeOverlay(_ mixer: MediaMixer, privacy: Privacy?) -> VideoTrackScreenObject {
+    /// Blur hides the face-cam window instead of blurring it. Privacy is ONE stateful effect (frame counter,
+    /// last detected boxes): registered on both the full frame and the window it would detect on one image and
+    /// pixellate the other's coordinates, leaving faces uncovered in both -- fail-open. Blurring your own face
+    /// cam would also defeat its point. Either flag counts, so the window hides the moment the toggle flips.
+    private var blurWanted: Bool { privacy?.enabled == true || blurEffectActive }
+
+    @ScreenActor private static func makeOverlay(_ mixer: MediaMixer) -> VideoTrackScreenObject {
         let o = VideoTrackScreenObject()
         o.isVisible = false
         o.videoGravity = .resizeAspectFill   // fill the rect (needed for the circle) instead of letterboxing inside it
         try? mixer.screen.addChild(o)
-        if let privacy { _ = o.registerVideoEffect(privacy) }   // screen-level effects skip added children
         return o
     }
 
@@ -997,13 +1002,11 @@ final class Streamer: ObservableObject {
         o.invalidateLayout()
     }
 
-    @ScreenActor private static func setPrivacyEffect(_ mixer: MediaMixer, overlay: VideoTrackScreenObject?, privacy: Privacy, on: Bool) {
+    @ScreenActor private static func setPrivacyEffect(_ mixer: MediaMixer, privacy: Privacy, on: Bool) {
         if on {
             _ = mixer.screen.registerVideoEffect(privacy)
-            _ = overlay?.registerVideoEffect(privacy)
         } else {
             _ = mixer.screen.unregisterVideoEffect(privacy)
-            _ = overlay?.unregisterVideoEffect(privacy)
         }
     }
 
@@ -1593,13 +1596,13 @@ final class Streamer: ObservableObject {
         syncHot()   // re-evaluate whether the glasses preview should now route through the (blurred/composited) mixer output
     }
 
-    /// Registers/unregisters the privacy blur on the full-frame object AND the face-cam window (screen-level
-    /// effects skip added children, so without the second registration the overlay would show unblurred faces).
-    /// Independent of the mode flip above; idempotent on blurEffectActive.
+    /// Registers/unregisters the privacy blur on the full-frame object only; the face-cam window is hidden
+    /// instead while blur is on (see blurWanted). Independent of the mode flip above; idempotent on blurEffectActive.
     private func setBlurEffect(_ on: Bool) async {
         guard let privacy, blurEffectActive != on else { return }
         blurEffectActive = on
-        await Self.setPrivacyEffect(mixer, overlay: overlayObject, privacy: privacy, on: on)
+        await Self.setPrivacyEffect(mixer, privacy: privacy, on: on)
+        await pushOverlayLayout()   // the face-cam window hides while blur is on -- see blurWanted
         applog("stream", "privacy blur effect \(on ? "registered" : "unregistered")")
     }
 
@@ -1621,7 +1624,7 @@ final class Streamer: ObservableObject {
         }
         if dualCamActive, overlayObject == nil, !makingOverlay {
             makingOverlay = true
-            overlayObject = await Self.makeOverlay(mixer, privacy: blurEffectActive ? privacy : nil)
+            overlayObject = await Self.makeOverlay(mixer)
             makingOverlay = false
             await pushOverlayLayout()
         }
