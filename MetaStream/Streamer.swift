@@ -898,20 +898,25 @@ final class Streamer: ObservableObject {
     }
 
     /// Rotation lock off: while idle, turning the phone picks the Aspect setting (portrait/landscape) and
-    /// re-attaches the camera. Live, the geometry is fixed for the session, so only a landscape flip to the
-    /// other side is followed (same size, just which way up). Face up/down and upside down keep the current pick.
+    /// re-attaches the camera; the UI rotates with it (Info.plist). Live, the geometry is fixed for the session,
+    /// so only a landscape flip to the other side is followed (same size, just which way up). Face up/down and
+    /// upside down keep the current pick.
     private func deviceRotated() {
         let o = UIDevice.current.orientation
         guard o.isLandscape || o == .portrait else { return }
         if o.isLandscape { landscapeOrientation = o == .landscapeLeft ? .landscapeRight : .landscapeLeft }   // device and video landscape are named opposite
-        let d = UserDefaults.standard
-        let aspectChanged = !sessionGeometryFixed && d.bool(forKey: "phoneLandscape") != o.isLandscape
-        if aspectChanged { d.set(o.isLandscape, forKey: "phoneLandscape") }
-        applog("stream", "device rotated: \(o.isLandscape ? "landscape" : "portrait") aspectChanged=\(aspectChanged)")
-        guard source == "phone", manualSource != "external", !cameraOff else { return }
-        if aspectChanged { Task { await switchTo(glasses: false) } }
-        else if phoneQuality.landscape, o.isLandscape { Task { await mixer.setVideoOrientation(landscapeOrientation) } }
+        if !sessionGeometryFixed { UserDefaults.standard.set(o.isLandscape, forKey: "phoneLandscape") }
+        applog("stream", "device rotated: \(o.isLandscape ? "landscape" : "portrait")")
+        // Settle first: a quick turn back and forth stacked overlapping re-attaches on device.
+        rotateTask?.cancel()
+        rotateTask = Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled, source == "phone", manualSource != "external", !cameraOff else { return }
+            if !sessionGeometryFixed, phoneQuality.landscape != o.isLandscape { await switchTo(glasses: false) }
+            else if phoneQuality.landscape { await mixer.setVideoOrientation(landscapeOrientation) }
+        }
     }
+    private var rotateTask: Task<Void, Never>?
 
     // MARK: dual camera
 
