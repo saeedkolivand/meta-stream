@@ -1,5 +1,4 @@
 import Foundation
-import os
 import SwiftUI
 
 /// One log for everything: mirrored to the device console (os_log, public) and kept in memory for the Logs screen.
@@ -23,17 +22,22 @@ final class LogStore: ObservableObject {
     }()
 
     func add(_ line: String) {
-        let line = Self.fmt.string(from: Date()) + " " + line
-        try? file?.write(contentsOf: Data((line + "\n").utf8))
-        lines.append(line)
-        if lines.count > 2000 { lines.removeFirst(lines.count - 2000) }   // ponytail: ring buffer by trimming
-        text = lines.joined(separator: "\n")
+        let stamped = Self.fmt.string(from: Date()) + " " + line
+        try? file?.write(contentsOf: Data((stamped + "\n").utf8))
+        lines.append(stamped)
+        text += (text.isEmpty ? "" : "\n") + stamped
+        if lines.count > 2200 {
+            let drop = lines.count - 2000
+            lines.removeFirst(drop)
+            var idx = text.startIndex
+            for _ in 0..<drop {
+                guard let nl = text[idx...].firstIndex(of: "\n") else { idx = text.endIndex; break }
+                idx = text.index(after: nl)
+            }
+            text = String(text[idx...])
+        }
     }
     func clear() { lines = []; text = "" }
-}
-
-private let loggers: [String: Logger] = ["api", "stream", "glasses", "auth", "ui"].reduce(into: [:]) {
-    $0[$1] = Logger(subsystem: "com.saeedkolivand.metastream", category: $1)
 }
 
 /// Masks values of JSON/query fields that look like credentials before they reach the log or the console.
@@ -41,16 +45,26 @@ private let loggers: [String: Logger] = ["api", "stream", "glasses", "auth", "ui
 private let secretField = try! NSRegularExpression(
     pattern: #"("(?:[a-zA-Z_]*(?:key|token|secret|password|authorization|streamName)[a-zA-Z_]*)"\s*:\s*")([^"]*)(")"#,
     options: [.caseInsensitive])
+private let streamIDField = try! NSRegularExpression(pattern: #"streamid=[^&\s"]*"#, options: [.caseInsensitive])
+private let keyParamField = try! NSRegularExpression(pattern: #"(?<![A-Za-z0-9_])key=[^&\s"]*"#, options: [.caseInsensitive])
 func redact(_ s: String) -> String {
-    secretField.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "$1***$3")
+    var out = secretField.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "$1***$3")
+    out = streamIDField.stringByReplacingMatches(in: out, range: NSRange(out.startIndex..., in: out), withTemplate: "streamid=***")
+    out = keyParamField.stringByReplacingMatches(in: out, range: NSRange(out.startIndex..., in: out), withTemplate: "key=***")
+    return out
 }
 
-/// `applog("api", "GET …")` from any thread. Bodies must go through `redact` first; never pass raw tokens or keys.
-func applog(_ category: String, _ message: String, error: Bool = false) {
-    let l = loggers[category] ?? loggers["ui"]!
-    if error { l.error("\(message, privacy: .public)") } else { l.info("\(message, privacy: .public)") }
-    Task { @MainActor in LogStore.shared.add("[\(category)] \(message)") }
+/// SRT Ingest URLs carry the secret as `?streamid=...`; strip the value so URLs are safe to log.
+/// Falls back to `redact` when the string is not a parseable URL.
+func redactedURL(_ s: String) -> String {
+    guard var c = URLComponents(string: s), c.queryItems != nil else { return redact(s) }
+    c.queryItems = c.queryItems!.map {
+        $0.name.lowercased() == "streamid" ? URLQueryItem(name: $0.name, value: "***") : $0
+    }
+    return redact(c.string ?? s)
 }
+
+func redactedURL(_ url: URL) -> String { redactedURL(url.absoluteString) }
 
 struct LogView: View {
     @ObservedObject var store = LogStore.shared

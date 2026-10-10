@@ -191,36 +191,3 @@ import Vision
     }
 }
 
-#if DEBUG
-extension Privacy {
-    /// Self-check for the two places a bug here would silently blur the wrong region or the wrong duration:
-    /// the normalized-to-pixel conversion (and why it needs no flip here), and the padding/expiry math.
-    /// No camera, no framework -- pure functions and CGRect/Date arithmetic only.
-    static func demo() {
-        // Vision and CIImage both use bottom-left, y-up coordinates, so scaling a Vision box into CIImage
-        // pixel space (what execute() actually does) is a pure scale, no flip:
-        let box = CGRect(x: 0.25, y: 0.0, width: 0.5, height: 0.5)   // sits in Vision's bottom half
-        let px = CGRect(x: box.minX * 1000, y: box.minY * 800, width: box.width * 1000, height: box.height * 800)
-        assert(px == CGRect(x: 250, y: 0, width: 500, height: 400), "pure scale, matches CIImage's own bottom-left origin")
-        // handing that same rect to something top-left/y-down (UIKit, a CALayer overlay -- this file never
-        // does) would need an explicit flip:
-        assert(800 - px.minY - px.height == 400, "flipped y for a box sitting in Vision's bottom half lands in the top half up there")
-
-        let padded = pad(CGRect(x: 0.4, y: 0.4, width: 0.2, height: 0.2), by: 0.3)
-        assert(abs(padded.width - 0.32) < 0.001, "30% margin on each side grows width by 60% of the original")
-        assert(abs(padded.minX - 0.34) < 0.001, "padding also shifts the origin outward")
-        let clamped = pad(CGRect(x: 0, y: 0, width: 0.1, height: 0.1), by: 0.3)
-        assert(clamped.minX == 0 && clamped.minY == 0, "padding clamps to the frame, never goes negative")
-
-        let t0 = Date()
-        assert(!isExpired(lastDetection: t0, now: t0.addingTimeInterval(0.5), maxAge: 5), "inside the carry window")
-        assert(isExpired(lastDetection: t0, now: t0.addingTimeInterval(6), maxAge: 5), "past the carry window")
-
-        assert(textDetectionDue(pass: 1, everyN: 2, hasCarriedBoxes: false), "first pass always runs text -- nothing carried yet to fall back on")
-        assert(!textDetectionDue(pass: 1, everyN: 2, hasCarriedBoxes: true), "off-cadence pass skips once boxes are already carried")
-        assert(textDetectionDue(pass: 2, everyN: 2, hasCarriedBoxes: true), "every Nth pass re-runs regardless of carried boxes")
-
-        print("Privacy.demo() ok")
-    }
-}
-#endif

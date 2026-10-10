@@ -50,4 +50,10 @@ targets:
         product: RTMPHaishinKit
       - package: HaishinKit
         product: SRTHaishinKit
+  MetaStreamTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [MetaStreamTests]
+    dependencies:
+      - target: MetaStream
 

@@ -84,17 +84,17 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
 
     /// Generic alert with no template, e.g. "ad break in 90 seconds".
     func speakAlert(_ text: String) {
-        enqueueAlert(String(text.prefix(200)))
+        enqueue(String(text.prefix(200)), into: &alertQueue)
     }
 
     // MARK: Chat lane + templated alerts (tip/follow/subscribe/raid)
 
     func speak(_ event: ChatEvent) {
-        guard var text = sentence(for: event) else { return }   // mute is enforced in enqueueAlert/enqueueChat
+        guard var text = sentence(for: event) else { return }   // mute is enforced in enqueue(_:into:)
         if showOrigin, !event.origin.isEmpty { text = "on \(event.origin), " + text }
         switch event.kind {
-        case .message: enqueueChat(text)
-        default: enqueueAlert(text)
+        case .message: enqueue(text, into: &chatQueue)
+        default: enqueue(text, into: &alertQueue)
         }
     }
 
@@ -123,15 +123,9 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         }
     }
 
-    private func enqueueAlert(_ text: String) {
+    private func enqueue(_ text: String, into queue: inout [String]) {
         guard !muted else { return }
-        pushBounded(text, into: &alertQueue)
-        if !synth.isSpeaking { speakNext() }
-    }
-
-    private func enqueueChat(_ text: String) {
-        guard !muted else { return }
-        pushBounded(text, into: &chatQueue)
+        pushBounded(text, into: &queue)
         if !synth.isSpeaking { speakNext() }
     }
 
@@ -176,24 +170,19 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
 
     // MARK: text shaping
 
-    private static let urlPattern = try! NSRegularExpression(pattern: #"https?://\S+|\bwww\.\S+"#)
-    private static let bracketEmote = try! NSRegularExpression(pattern: #"\[emote:\d+:[^\]]+\]"#)   // Kick: [emote:12345:catJAM]
-    private static let colonEmote = try! NSRegularExpression(pattern: #":[A-Za-z0-9_]+:"#)           // e.g. :LUL:
-    private static let mention = try! NSRegularExpression(pattern: #"@(\w+)"#)                       // @Bob -> Bob
-
     /// Strips URLs/emotes/@ (keeping the name), collapses whitespace, caps length so one troll can't hog the queue.
-    private static func sanitize(_ raw: String, maxLength: Int = 200) -> String {
+    static func sanitize(_ raw: String, maxLength: Int = 200) -> String {
         var s = raw
-        for re in [urlPattern, bracketEmote, colonEmote] {
+        for re in [SharedPatterns.url, SharedPatterns.kickEmote, SharedPatterns.colonEmote] {
             s = re.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "")
         }
-        s = mention.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "$1")
+        s = SharedPatterns.mention.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "$1")
         s = s.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
         return s.count > maxLength ? String(s.prefix(maxLength)) : s
     }
 
     /// Spells whole-dollar amounts ("five dollars"); anything with cents stays a plain number ("12.50 dollars").
-    private static func spokenAmount(cents: Int) -> String {
+    static func spokenAmount(cents: Int) -> String {
         guard cents > 0 else { return "money" }
         let dollars = cents / 100
         guard cents % 100 == 0 else { return String(format: "%.2f dollars", Double(cents) / 100) }
@@ -203,19 +192,3 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     }
 }
 
-#if DEBUG
-extension Speaker {
-    /// Self-check for the two non-trivial bits: text sanitising and drop-oldest bounding. No framework, no fixtures.
-    static func demo() {
-        let s = sanitize("hey @Bob check https://x.co/y :LUL: [emote:12345:catJAM]   nice   clip")
-        assert(s == "hey Bob check nice clip", "sanitize: \(s)")
-        let capped = sanitize(String(repeating: "a", count: 250))
-        assert(capped.count == 200, "cap: \(capped.count)")
-        assert(spokenAmount(cents: 500) == "five dollars", "amount: \(spokenAmount(cents: 500))")
-        var q: [Int] = []
-        for i in 1...7 { q.append(i); if q.count > 5 { q.removeFirst() } }   // mirrors pushBounded's drop-oldest
-        assert(q == [3, 4, 5, 6, 7], "drop-oldest: \(q)")
-        print("Speaker.demo() ok")
-    }
-}
-#endif

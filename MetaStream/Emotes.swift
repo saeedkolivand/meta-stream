@@ -34,22 +34,21 @@ final class Emotes: ObservableObject {
         guard key != loadedFor else { return }
         loadedFor = key
 
-        async let sevenGlobal = Self.sevenTVGlobal()
-        async let bttvGlobal = Self.bttvGlobal()
-        async let ffzGlobal = Self.ffzGlobal()
+        async let sevenGlobal = Self.sevenTV(id: nil)
+        async let bttvGlobal = Self.bttv(id: nil)
+        async let ffzGlobal = Self.ffz(id: nil)
         var map: [String: URL] = [:]
-        for (name, url) in await sevenGlobal { map[name] = url }
-        for (name, url) in await bttvGlobal { map[name] = url }
-        for (name, url) in await ffzGlobal { map[name] = url }
+        map.merge(await sevenGlobal) { _, new in new }
+        map.merge(await bttvGlobal) { _, new in new }
+        map.merge(await ffzGlobal) { _, new in new }
 
         if !key.isEmpty {
-            let id = key
-            async let sevenUser = Self.sevenTVUser(id: id)
-            async let bttvUser = Self.bttvUser(id: id)
-            async let ffzRoom = Self.ffzRoom(id: id)
-            for (name, url) in await sevenUser { map[name] = url }
-            for (name, url) in await bttvUser { map[name] = url }
-            for (name, url) in await ffzRoom { map[name] = url }
+            async let sevenUser = Self.sevenTV(id: key)
+            async let bttvUser = Self.bttv(id: key)
+            async let ffzRoom = Self.ffz(id: key)
+            map.merge(await sevenUser) { _, new in new }
+            map.merge(await bttvUser) { _, new in new }
+            map.merge(await ffzRoom) { _, new in new }
         }
         byName = map
         applog("chat", "emotes loaded: \(map.count) names (twitch=\(key.isEmpty ? "none" : key))")
@@ -97,7 +96,7 @@ final class Emotes: ObservableObject {
         var runs: [Run] = []
         let nsText = text as NSString
         var lastEnd = text.startIndex
-        for match in Self.kickEmotePattern.matches(in: text, range: NSRange(location: 0, length: nsText.length)) {
+        for match in SharedPatterns.kickEmote.matches(in: text, range: NSRange(location: 0, length: nsText.length)) {
             guard let range = Range(match.range, in: text) else { continue }
             if lastEnd < range.lowerBound {
                 runs.append(contentsOf: wordRuns(String(text[lastEnd..<range.lowerBound]), byName: byName))
@@ -111,8 +110,6 @@ final class Emotes: ObservableObject {
         }
         return runs
     }
-
-    private static let kickEmotePattern = try! NSRegularExpression(pattern: #"\[emote:(\d+):[^\]]*\]"#)
 
     private static func wordRuns(_ text: String, byName: [String: URL]) -> [Run] {
         guard !text.isEmpty else { return [] }
@@ -131,21 +128,19 @@ final class Emotes: ObservableObject {
         return runs
     }
 
-    // MARK: - Twitch login -> numeric ID
-
-
     // MARK: - 7TV
 
-    private static func sevenTVGlobal() async -> [String: URL] {
-        guard let json = await fetchObject("https://7tv.io/v3/emote-sets/global") else { return [:] }
-        return sevenTVEmotes(json["emotes"])
-    }
-
-    private static func sevenTVUser(id: String) async -> [String: URL] {
-        guard let json = await fetchObject("https://7tv.io/v3/users/twitch/\(id)"),
-              let set = json["emote_set"] as? [String: Any]
-        else { return [:] }
-        return sevenTVEmotes(set["emotes"])
+    /// Global set when `id` is nil, per-channel set otherwise. One function covers both callers.
+    private static func sevenTV(id: String?) async -> [String: URL] {
+        if let id {
+            let json: [String: Any]? = await fetchJSON("https://7tv.io/v3/users/twitch/\(id)")
+            guard let json, let set = json["emote_set"] as? [String: Any] else { return [:] }
+            return sevenTVEmotes(set["emotes"])
+        } else {
+            let json: [String: Any]? = await fetchJSON("https://7tv.io/v3/emote-sets/global")
+            guard let json else { return [:] }
+            return sevenTVEmotes(json["emotes"])
+        }
     }
 
     private static func sevenTVEmotes(_ raw: Any?) -> [String: URL] {
@@ -167,15 +162,17 @@ final class Emotes: ObservableObject {
 
     // MARK: - BTTV
 
-    private static func bttvGlobal() async -> [String: URL] {
-        bttvEmotes(await fetchArray("https://api.betterttv.net/3/cached/emotes/global") ?? [])
-    }
-
-    private static func bttvUser(id: String) async -> [String: URL] {
-        guard let json = await fetchObject("https://api.betterttv.net/3/cached/users/twitch/\(id)") else { return [:] }
-        var out = bttvEmotes(json["channelEmotes"] as? [[String: Any]] ?? [])
-        for (name, url) in bttvEmotes(json["sharedEmotes"] as? [[String: Any]] ?? []) { out[name] = url }
-        return out
+    private static func bttv(id: String?) async -> [String: URL] {
+        if let id {
+            let json: [String: Any]? = await fetchJSON("https://api.betterttv.net/3/cached/users/twitch/\(id)")
+            guard let json else { return [:] }
+            var out = bttvEmotes(json["channelEmotes"] as? [[String: Any]] ?? [])
+            out.merge(bttvEmotes(json["sharedEmotes"] as? [[String: Any]] ?? [])) { _, new in new }
+            return out
+        } else {
+            let arr: [[String: Any]]? = await fetchJSON("https://api.betterttv.net/3/cached/emotes/global")
+            return bttvEmotes(arr ?? [])
+        }
     }
 
     /// BTTV's CDN serves the image straight off `/emote/{id}/{size}` with no extension - content type comes
@@ -193,18 +190,16 @@ final class Emotes: ObservableObject {
 
     // MARK: - FFZ
 
-    private static func ffzGlobal() async -> [String: URL] {
-        guard let json = await fetchObject("https://api.frankerfacez.com/v1/set/global"),
-              let sets = json["default_sets"] as? [Int]
-        else { return [:] }
-        return ffzEmotes(json, setIDs: sets)
-    }
-
-    private static func ffzRoom(id: String) async -> [String: URL] {
-        guard let json = await fetchObject("https://api.frankerfacez.com/v1/room/id/\(id)"),
-              let setID = (json["room"] as? [String: Any])?["set"] as? Int
-        else { return [:] }
-        return ffzEmotes(json, setIDs: [setID])
+    private static func ffz(id: String?) async -> [String: URL] {
+        if let id {
+            let json: [String: Any]? = await fetchJSON("https://api.frankerfacez.com/v1/room/id/\(id)")
+            guard let json, let setID = (json["room"] as? [String: Any])?["set"] as? Int else { return [:] }
+            return ffzEmotes(json, setIDs: [setID])
+        } else {
+            let json: [String: Any]? = await fetchJSON("https://api.frankerfacez.com/v1/set/global")
+            guard let json, let sets = json["default_sets"] as? [Int] else { return [:] }
+            return ffzEmotes(json, setIDs: sets)
+        }
     }
 
     private static func ffzEmotes(_ json: [String: Any], setIDs: [Int]) -> [String: URL] {
@@ -224,24 +219,12 @@ final class Emotes: ObservableObject {
 
     // MARK: - shared HTTP
 
-    private static func fetchObject(_ urlString: String) async -> [String: Any]? {
+    private static func fetchJSON<T>(_ urlString: String) async -> T? {
         guard let url = URL(string: urlString) else { return nil }
         do {
             let (data, resp) = try await URLSession.shared.data(from: url)
             guard (resp as? HTTPURLResponse)?.statusCode == 200 else { return nil }
-            return try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        } catch {
-            applog("chat", "emote fetch failed \(urlString): \(error.localizedDescription)", error: true)
-            return nil
-        }
-    }
-
-    private static func fetchArray(_ urlString: String) async -> [[String: Any]]? {
-        guard let url = URL(string: urlString) else { return nil }
-        do {
-            let (data, resp) = try await URLSession.shared.data(from: url)
-            guard (resp as? HTTPURLResponse)?.statusCode == 200 else { return nil }
-            return try JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+            return try JSONSerialization.jsonObject(with: data) as? T
         } catch {
             applog("chat", "emote fetch failed \(urlString): \(error.localizedDescription)", error: true)
             return nil
@@ -249,24 +232,3 @@ final class Emotes: ObservableObject {
     }
 }
 
-#if DEBUG
-extension Emotes {
-    /// Self-check for the one piece of real logic in this file: a message mixing a known-by-name emote
-    /// and a Kick inline token has to split into text/emote runs in the right order, with plain text left
-    /// untouched either side.
-    static func demo() {
-        let byName = ["PogChamp": URL(string: "https://cdn.example.com/pog.webp")!]
-        let runs = tokenize("gg PogChamp [emote:12345:catJAM] well played", byName: byName)
-        assert(runs.count == 4)
-        assert(runs[0] == .text("gg"))
-        assert(runs[1] == .emote(byName["PogChamp"]!))
-        assert(runs[2] == .emote(URL(string: "https://files.kick.com/emotes/12345/fullsize")!))
-        assert(runs[3] == .text("well played"))
-
-        assert(tokenize("no emotes here", byName: [:]) == [.text("no emotes here")])
-        assert(tokenize("[emote:1:x]", byName: [:]) == [.emote(URL(string: "https://files.kick.com/emotes/1/fullsize")!)])
-
-        applog("chat", "Emotes.demo() passed")
-    }
-}
-#endif

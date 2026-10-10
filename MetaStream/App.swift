@@ -9,9 +9,10 @@ struct MetaStreamApp: App {
     @StateObject private var chat = ChatFeed()
     @StateObject private var privacy = Privacy()
 
-    // ponytail: `try?` swallows a config error into an empty registration status;
-    // Streamer's own status strings are where the user will notice something's wrong.
-    init() { try? Wearables.configure() }
+    init() {
+        do { try Wearables.configure() }
+        catch { applog("ui", "Wearables.configure failed: \(error.localizedDescription)", error: true) }
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -24,8 +25,10 @@ struct MetaStreamApp: App {
                 // Streamer speaks connection changes on Speaker's System lane (never muted).
                 .onAppear { streamer.speaker = speaker; streamer.privacy = privacy }
                 .onOpenURL { url in
-                    // Meta AI registration/permission callbacks. (Kick OAuth is caught by ASWebAuthenticationSession.)
-                    Task { _ = try? await Wearables.shared.handleUrl(url) }
+                    Task {
+                        do { _ = try await Wearables.shared.handleUrl(url) }
+                        catch { applog("ui", "handleUrl failed: \(error.localizedDescription)", error: true) }
+                    }
                 }
         }
     }

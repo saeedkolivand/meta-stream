@@ -213,14 +213,9 @@ Bluetooth but never receives a frame. This is Apple's rule, and the app can't wo
 
 ## Roadmap
 
-Local recording, native chat with 7TV/BTTV/FFZ emotes, Twitch and YouTube chat feeds, and privacy
-blur for faces, text and licence plates.
+Done: SRT output, adaptive bitrate, chat read-aloud, 7TV/BTTV/FFZ emotes, privacy blur, Twitch + YouTube chat.
 
-SRT output, adaptive bitrate and chat read aloud are done.
-
-Local recording is blocked on a format problem worth
-knowing about: one `AVAssetWriterInput` cannot take both the glasses' already-encoded HEVC and the
-mixer's raw frames, and the video source switches between them mid-session on fallback.
+Next: local recording (blocked: one `AVAssetWriterInput` cannot take both the glasses' encoded HEVC and the mixer's raw frames across a mid-session fallback).
 
 ## Credits
 
