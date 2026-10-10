@@ -1,7 +1,6 @@
 package com.saeedkolivand.metastream.car
 
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import androidx.car.app.CarAppService
 import androidx.car.app.CarContext
 import androidx.car.app.CarToast
@@ -42,12 +41,10 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 
 class CarApp : CarAppService() {
-    // Debug builds accept any host (needed for the DHU); release only Android Auto's certs, bundled in the library.
-    override fun createHostValidator(): HostValidator = if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
-        HostValidator.ALLOW_ALL_HOSTS_VALIDATOR
-    } else {
+    // Only Android Auto (gearhead, by its signing certs bundled in the library) may bind: this service can turn the
+    // camera and mic on, so any-host is never allowed, not even in debug builds. The DHU connects through gearhead too.
+    override fun createHostValidator(): HostValidator =
         HostValidator.Builder(this).addAllowedHosts(androidx.car.app.R.array.hosts_allowlist_sample).build()
-    }
 
     override fun onCreateSession(): Session = CarSession()
 }
