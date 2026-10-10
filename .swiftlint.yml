@@ -1,0 +1,90 @@
+# SwiftLint — MetaStream (Swift 6.0, XcodeGen, feature-based layout)
+# Run: swiftlint lint --strict  (CI). XcodeGen sources are globbed, so no
+# include/exclude of build/ derived data needed beyond defaults.
+
+only_rules:
+  # Correctness / safety (audit: force unwraps, unredacted logs, swallowed errors)
+  - force_cast
+  - force_try
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - empty_count
+  - empty_string
+  - redundant_nil_coalescing
+  - optional_enum_case_matching
+  - discarded_notification_center_observer
+
+  # Complexity / size (audit: KISS + 300 code-line rule)
+  - cyclomatic_complexity
+  - function_body_length
+  - type_body_length
+  - file_length
+  - nesting
+  - function_parameter_count
+
+  # Style / consistency (audit: CONTEXT.md naming, DRY)
+  - identifier_name
+  - type_name
+  - colon
+  - comma
+  - trailing_comma
+  - vertical_whitespace
+  - trailing_whitespace
+  - line_length
+  - todo
+  - nslogger_tool
+  - print_using_os_log
+  - private_over_fileprivate
+  - redundant_extension_access_modifier
+  - sorted_imports
+  - vertical_parameter_alignment_on_call
+
+# 300 code-line rule (excl. blank/comments is approximated by file_length on
+# total lines — keep total comfortably under ~400 so code stays <300).
+file_length:
+  warning: 400
+  error: 600
+  ignore_comment_only_lines: true
+
+type_body_length:
+  warning: 300
+  error: 500
+
+function_body_length:
+  warning: 60
+  error: 120
+
+cyclomatic_complexity:
+  warning: 10
+  error: 18
+
+function_parameter_count:
+  warning: 5
+  error: 8
+
+nesting:
+  type_level:
+    warning: 2
+
+line_length:
+  warning: 140
+  error: 180
+  ignores_urls: true
+  ignores_function_declarations: true
+
+identifier_name:
+  min_length:
+    warning: 2
+  excluded:
+    - id
+    - x
+    - y
+    - e
+
+todo:
+  include: "^(TODO|FIXME|HACK)"
+
+excluded:
+  - build
+  - graphify-out
+  - signing

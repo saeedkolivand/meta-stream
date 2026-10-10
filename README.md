@@ -109,7 +109,7 @@ certificate for you). No Mac is required at any point. GitHub's macOS runners do
 ### 1. Fork and rename
 
 Fork this repo. Pick a bundle ID (**no hyphens**, Meta rejects them) and replace `com.saeedkolivand.metastream` in
-`project.yml`, `MetaStream/Info.plist` and `MetaStream/Platforms.swift`. Replace `metastream.iamsaeed.dev` in
+`project.yml`, `MetaStream/Info.plist` and `MetaStream/Platforms/Platforms.swift`. Replace `metastream.iamsaeed.dev` in
 `Platforms.swift` with your redirect page host (step 5).
 
 ### 2. Meta Wearables Developer Center
