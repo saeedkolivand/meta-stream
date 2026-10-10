@@ -61,6 +61,14 @@ object Engine {
     var source by mutableStateOf(Source.Phone)
         private set
 
+    /** Epoch ms of the session's first successful connect; null until then and after stop. */
+    var liveSince by mutableStateOf<Long?>(null)
+        private set
+
+    /** False while (re)connecting; lets the notification tell "LIVE" from "RECONNECTING". */
+    var connected by mutableStateOf(false)
+        private set
+
     private var askWearables: suspend (Permission) -> PermissionStatus = DENY_WEARABLES
 
     @Volatile private var stream: GenericStream? = null
@@ -172,12 +180,13 @@ object Engine {
         val full = url.trimEnd('/') + "/" + key
         if (s == null) glasses.start(full, askWearables) else s.startStream(full)
         live = true
-        StreamingService.refresh(app)
     }
 
     fun stop(reason: String = "idle") {
         if (source == Source.Glasses) glasses.stop() else stream?.stopStream()
         live = false
+        connected = false
+        liveSince = null
         status = reason
         StreamingService.release(app, "live")
         alert("Stream stopped")
@@ -205,6 +214,10 @@ object Engine {
             glasses.onRtmpUp()
             applog("stream", "connected")
             scope.launch {
+                if (live) {
+                    connected = true
+                    if (liveSince == null) liveSince = System.currentTimeMillis()
+                }
                 status = "connected"
                 speak("stream connected")
                 alert("Back live")
@@ -216,6 +229,7 @@ object Engine {
             glasses.onRtmpDown()
             val retrying = if (source == Source.Glasses) glasses.retry(reason) else stream?.getStreamClient()?.reTry(5000, reason) == true
             scope.launch {
+                connected = false
                 if (retrying) {
                     status = "retrying: $reason"
                     speak("connection lost, retrying")
@@ -229,6 +243,7 @@ object Engine {
         override fun onDisconnect() {
             glasses.onRtmpDown()
             applog("stream", "disconnected")
+            scope.launch { connected = false }
         }
 
         override fun onAuthError() {

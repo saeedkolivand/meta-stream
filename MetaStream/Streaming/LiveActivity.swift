@@ -23,7 +23,9 @@ enum LiveActivityPolicy {
 
 @MainActor
 final class LiveActivityController {
-    private var activity: Activity<StreamActivityAttributes>?
+    // The id, not the Activity: Activity isn't Sendable, so awaiting update/end on a stored (main-actor) one is a
+    // Swift 6 "sending risks data races" error. A value freshly read from .activities is free to send (as in attach).
+    private var activityID: String?
     private var last: StreamActivityAttributes.ContentState?
     private var lastPushAt: Date?
     private var gaveUp = false   // request failed or activities are off: don't retry (and re-log) every tick
@@ -53,11 +55,11 @@ final class LiveActivityController {
         last = new
         lastPushAt = now
         let content = ActivityContent(state: new, staleDate: nil)
-        if let activity {
-            Task { await activity.update(content) }
+        if let id = activityID {
+            Task { for a in Activity<StreamActivityAttributes>.activities where a.id == id { await a.update(content) } }
         } else if ActivityAuthorizationInfo().areActivitiesEnabled {
             do {
-                activity = try Activity.request(attributes: StreamActivityAttributes(), content: content)
+                activityID = try Activity.request(attributes: StreamActivityAttributes(), content: content).id
                 applog("stream", "live activity started")
             } catch {
                 gaveUp = true
@@ -70,12 +72,12 @@ final class LiveActivityController {
     }
 
     func end() {
-        if let activity, var final = last {
+        if let id = activityID, var final = last {
             final.phase = "ended"
             final.endedAt = Date()
             let content = ActivityContent(state: final, staleDate: nil)
-            Task { await activity.end(content, dismissalPolicy: .default) }
+            Task { for a in Activity<StreamActivityAttributes>.activities where a.id == id { await a.end(content, dismissalPolicy: .default) } }
         }
-        activity = nil; last = nil; lastPushAt = nil; gaveUp = false
+        activityID = nil; last = nil; lastPushAt = nil; gaveUp = false
     }
 }
