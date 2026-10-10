@@ -3,7 +3,12 @@ package com.saeedkolivand.metastream.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.meta.wearable.dat.core.Wearables
@@ -30,7 +35,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Engine.setWearablesAsker(::askWearables)
-        setContent { MaterialTheme { MainScreen() } }
+        enableEdgeToEdge() // system-bar icons follow light/dark instead of staying white
+        // Surface gives text a content color; without it plain Text drew black on the dark window.
+        setContent {
+            val scheme = if (isSystemInDarkTheme()) dynamicDarkColorScheme(this) else dynamicLightColorScheme(this)
+            MaterialTheme(colorScheme = scheme) { Surface { MainScreen() } }
+        }
     }
 
     // Visible activity = the one place Android allows starting the camera|microphone service; keep it idle for the car

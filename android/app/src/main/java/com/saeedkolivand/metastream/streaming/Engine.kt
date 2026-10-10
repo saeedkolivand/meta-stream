@@ -3,6 +3,7 @@ package com.saeedkolivand.metastream.streaming
 import android.Manifest
 import android.app.Application
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.hardware.usb.UsbManager
 import android.view.SurfaceView
 import androidx.compose.runtime.getValue
@@ -113,25 +114,47 @@ object Engine {
         s.getStreamClient().setReTries(10) // RootEncoder's built-in reconnect, driven from onConnectionFailed
         // ponytail: 720p30 requested of every source; CameraUvcSource has no size API, so UVCAndroid picks its default
         // preview size and the GL pipeline scales it. Upgrade path: own VideoSource wrapping ICameraHelper.setPreviewSize.
-        val ok = try {
-            s.prepareVideo(1280, 720, 4_000_000, fps = 30) && s.prepareAudio(44100, true, 128_000)
-        } catch (e: IllegalArgumentException) {
-            false
-        }
-        if (!ok) {
-            status = "camera/mic setup failed"
-            return null
-        }
+        if (!prepare(s)) return null
         stream = s
         return s
     }
 
+    private var preview: SurfaceView? = null
+    private var preparedPortrait: Boolean? = null
+
+    private fun portrait() = app.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+
+    /** Upright phone = 720x1280 out (rotation 90, as RootEncoder's sample), else 1280x720. */
+    private fun prepare(s: GenericStream): Boolean {
+        val vertical = portrait()
+        val ok = try {
+            s.prepareVideo(1280, 720, 4_000_000, fps = 30, rotation = if (vertical) 90 else 0) &&
+                s.prepareAudio(44100, true, 128_000)
+        } catch (e: IllegalArgumentException) {
+            false
+        }
+        if (ok) preparedPortrait = vertical else status = "camera/mic setup failed"
+        return ok
+    }
+
+    // ponytail: orientation is fixed when going live (like iOS); turning the phone mid-stream letterboxes via
+    // autoHandleOrientation instead of re-encoding. Re-preparing needs a released stream, so the preview restarts.
+    private fun matchOrientation(s: GenericStream): Boolean {
+        if (portrait() == preparedPortrait) return true
+        s.release()
+        val ok = prepare(s)
+        preview?.let { if (ok) s.startPreview(it, true) }
+        return ok
+    }
+
     /** Preview is optional: it follows the SurfaceView, and streaming continues when it goes away. */
     fun attach(view: SurfaceView) {
+        preview = view
         ensure()?.startPreview(view, true)
     }
 
     fun detach() {
+        preview = null
         stream?.let { if (it.isOnPreview) it.stopPreview(true) }
     }
 
@@ -168,6 +191,7 @@ object Engine {
             return
         }
         val s = if (source == Source.Glasses) null else ensure() ?: return
+        if (s != null && !matchOrientation(s)) return
         redactFromLogs(key)
         Prefs.put("url", url)
         Prefs.put("key", key)

@@ -48,8 +48,9 @@ class Glasses(private val app: Application, private val scope: CoroutineScope, c
     var status by mutableStateOf("")
         private set
 
-    private val selector = AutoDeviceSelector()
-    private val kit = MockDeviceKit.getInstance(app)
+    // Lazy: the DAT SDK throws if these are built before Wearables.initialize() (which waits for Bluetooth permission).
+    private val selector by lazy { AutoDeviceSelector() }
+    private val kit by lazy { MockDeviceKit.getInstance(app) }
     private var mockGlasses: MockGlasses? = null
     private var initialized = false
 
@@ -83,10 +84,13 @@ class Glasses(private val app: Application, private val scope: CoroutineScope, c
         scope.launch { Wearables.registrationState.collect { registration = it } }
     }
 
-    fun register(activity: Activity) = Wearables.startRegistration(activity)
-    fun unregister(activity: Activity) = Wearables.startUnregistration(activity)
+    fun register(activity: Activity) = ifReady { Wearables.startRegistration(activity) }
+    fun unregister(activity: Activity) = ifReady { Wearables.startUnregistration(activity) }
+
+    private fun ifReady(block: () -> Unit) = if (initialized) block() else status = "glasses need Bluetooth permission"
 
     fun enableMock(on: Boolean) {
+        if (!initialized) return ifReady {}
         mock = on
         if (on) {
             kit.enable()
@@ -118,6 +122,7 @@ class Glasses(private val app: Application, private val scope: CoroutineScope, c
 
     /** Session (retry up to 3x on "Device unavailable", as iOS) -> camera stream -> frames to preview and RTMP. */
     fun start(rtmpUrl: String, askCamera: suspend (Permission) -> PermissionStatus) {
+        if (!initialized) return ifReady {}
         url = rtmpUrl
         job = scope.launch {
             val perm = Wearables.checkPermissionStatus(Permission.CAMERA).fold({ it }, { _, _ -> PermissionStatus.Denied })
