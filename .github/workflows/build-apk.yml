@@ -16,7 +16,7 @@ jobs:
           distribution: temurin
           java-version: 17
       - name: Install Android 37 platform
-        run: sdkmanager "platforms;android-37.0"
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" > /dev/null
       - name: Build, test, lint
         run: cd android && ./gradlew assembleDebug test lint ktlintCheck && bash loc.sh
       - uses: actions/upload-artifact@v4
