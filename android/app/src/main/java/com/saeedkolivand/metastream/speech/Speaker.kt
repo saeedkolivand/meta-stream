@@ -59,6 +59,7 @@ object Speaker {
     fun updateReadAloud(on: Boolean) {
         readAloud = on
         Prefs.put("readAloud", on)
+        if (!on) tts?.stop() // off means quiet now, not after the queued messages finish
     }
 
     private fun speak(text: String, flush: Boolean) {

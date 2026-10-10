@@ -29,3 +29,9 @@ internal fun parseTwitchLine(line: String): ChatEvent? {
     val name = m[1].split(';').firstOrNull { it.startsWith("display-name=") }?.substringAfter('=').orEmpty().ifEmpty { m[2] }
     return ChatEvent("twitch", name, m[3])
 }
+
+private val kickEmote = Regex("""\[emote:\d+:([^\]]*)]""")
+
+// ponytail: Kick emotes shown by name; iOS draws the images (Emotes.swift). Upgrade path: Coil inline images.
+/** Chat text for display: Kick's `[emote:id:name]` tokens become `name`. Read-aloud strips them instead (sanitize). */
+internal fun displayText(text: String) = kickEmote.replace(text, "$1")

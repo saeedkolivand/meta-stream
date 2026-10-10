@@ -47,4 +47,10 @@ class ChatParsersTest {
         assertTrue(isTwitchPing("PING :tmi.twitch.tv"))
         assertFalse(isTwitchPing("@id=1 :bob!bob@bob.tmi.twitch.tv PRIVMSG #chan :PING"))
     }
+
+    @Test fun displayTextShowsKickEmoteNames() {
+        assertEquals("another EZ  5k", displayText("another [emote:5756668:EZ]  5k"))
+        assertEquals("collectiblesModTime", displayText("[emote:5748074:collectiblesModTime]"))
+        assertEquals("plain text", displayText("plain text"))
+    }
 }

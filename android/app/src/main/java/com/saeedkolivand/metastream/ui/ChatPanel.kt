@@ -23,6 +23,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saeedkolivand.metastream.chat.ChatFeed
+import com.saeedkolivand.metastream.chat.displayText
 import com.saeedkolivand.metastream.speech.Speaker
 
 @Composable
@@ -48,7 +49,7 @@ internal fun ChatPanel(modifier: Modifier) {
                 Text(
                     buildAnnotatedString {
                         withStyle(SpanStyle(color = if (e.platform == "kick") Color(0xFF2BB600) else Color(0xFF9146FF))) { append(e.user) }
-                        append(": ${e.text}")
+                        append(": ${displayText(e.text)}")
                     }
                 )
             }
