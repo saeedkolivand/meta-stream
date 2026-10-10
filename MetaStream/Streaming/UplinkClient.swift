@@ -366,7 +366,7 @@ extension Streamer {
     }
 
     // SRT carries the stream key in the URL's streamid query item: never log it raw.
-    static func redactedURL(_ url: String) -> String {
+    nonisolated static func redactedURL(_ url: String) -> String {
         let masked = url.replacingOccurrences(of: "(streamid=)[^&\\s]*", with: "$1***", options: [.regularExpression, .caseInsensitive])
         return redact(masked)
     }

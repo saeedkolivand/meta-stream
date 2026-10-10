@@ -45,7 +45,7 @@ final class KeychainTokenStore: TokenStore {
         let q = query(key)
         let attrs = [kSecValueData as String: data]
         let status = SecItemUpdate(q as CFDictionary, attrs as CFDictionary)
-        if status == errSecNotFound {
+        if status != errSecSuccess {
             var add = q
             add[kSecValueData as String] = data
             add[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
