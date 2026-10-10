@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MetaStream</string>
+    <string name="live_title">MetaStream is live</string>
+    <string name="ready_title">MetaStream is ready</string>
+    <color name="ic_launcher_background">#1E3A8A</color>
+</resources>

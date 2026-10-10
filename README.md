@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/saeedkolivand/meta-stream/actions/workflows/build.yml"><img src="https://github.com/saeedkolivand/meta-stream/actions/workflows/build.yml/badge.svg" alt="build"></a>
-  <img src="https://img.shields.io/badge/iOS-17.2%2B-black" alt="iOS 17.2+">
+  <img src="https://img.shields.io/badge/iOS-26.0%2B-black" alt="iOS 26.0+">
   <img src="https://img.shields.io/badge/Meta%20DAT%20SDK-0.9.0-blue" alt="DAT 0.9.0">
   <img src="https://img.shields.io/badge/video-HEVC%20passthrough-purple" alt="HEVC">
 </p>
@@ -102,7 +102,7 @@ stay on the phone.
 
 ## Build your own copy
 
-You need: a pair of Ray-Ban Meta (Gen 1/2, Display, Oakley Meta), an iPhone on iOS 17.2+, the Meta AI app, a
+You need: a pair of Ray-Ban Meta (Gen 1/2, Display, Oakley Meta), an iPhone on iOS 26.0+, the Meta AI app, a
 GitHub account, and access to a **paid Apple Developer team** (yours, or a friend who exports a development
 certificate for you). No Mac is required at any point. GitHub's macOS runners do the compiling.
 

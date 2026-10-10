@@ -13,7 +13,7 @@ import MWDATCamera
 // ponytail: plain vars behind @unchecked Sendable; counters can race by a frame, which the HUD can't show anyway.
 final class Hot: @unchecked Sendable {
     var live = false
-    var forward = true                 // source == "glasses" && !cameraOff
+    var forward = false                // source == "glasses" && !cameraOff (phone is the default source)
     var frames = 0
     var bytes = 0
     var transcoder: Transcoder?         // non-nil = decode HEVC → H.264 encoder instead of passthrough
@@ -23,7 +23,7 @@ final class Hot: @unchecked Sendable {
     var mixerOut = 0                    // composited frames the mixer actually emitted (OUT) -- see LayerSink below.
                                          // appended climbing while this stalls is output starvation, not input starvation
                                          // (this is the diagnostic that would have caught the offscreen-mode freeze without a device).
-    var showMixerVideo = false          // preview shows mixer output (phone camera / black) instead of glasses frames
+    var showMixerVideo = true           // preview shows mixer output (phone camera / black) instead of glasses frames
     weak var preview: AVSampleBufferDisplayLayer?
     // Outbound-pressure telemetry for the bitrate controller (acted on only while Streamer.phoneEncodes is
     // true). Written by QueueWatcher below (HaishinKit's own NetworkMonitor callback), read once a second by

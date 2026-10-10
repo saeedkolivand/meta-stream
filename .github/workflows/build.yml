@@ -3,7 +3,7 @@ name: build-ipa
 on:
   push:
     branches: [main]
-    paths-ignore: ["docs/**", "README.md"]   # site/docs changes don't need an app build
+    paths-ignore: ["docs/**", "README.md", "android/**"]   # site/docs changes don't need an app build
   workflow_dispatch:
 
 concurrency:
@@ -19,9 +19,6 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Generate Xcode project
-        run: xcodegen generate
-
       # Development-signed build: the Meta SDK's Wi-Fi video link needs two entitlements
       # that only a paid Apple Developer team can grant (see README).
       - name: Install signing certificate and profile
@@ -29,6 +26,7 @@ jobs:
           P12_BASE64: ${{ secrets.P12_BASE64 }}
           P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
           PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
+          LIVE_ACTIVITY_PROFILE_BASE64: ${{ secrets.LIVE_ACTIVITY_PROFILE_BASE64 }}
         run: |
           set -e
           KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
@@ -50,6 +48,28 @@ jobs:
           done
           echo "PROFILE_NAME=$NAME" >> "$GITHUB_ENV"
           echo "Installed profile '$NAME' ($UUID)"
+          # Optional second profile for the Live Activity widget extension (com.saeedkolivand.metastream.LiveActivity).
+          # Absent = app-only build, exactly as before. Present = LIVE_ACTIVITY=true makes xcodegen include
+          # liveactivity.yml, so the extension is built, embedded and signed with its own profile.
+          if [ -n "$LIVE_ACTIVITY_PROFILE_BASE64" ]; then
+            echo "$LIVE_ACTIVITY_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/la.mobileprovision"
+            security cms -D -i "$RUNNER_TEMP/la.mobileprovision" > "$RUNNER_TEMP/la.plist"
+            LA_UUID=$(/usr/libexec/PlistBuddy -c 'Print UUID' "$RUNNER_TEMP/la.plist")
+            LA_NAME=$(/usr/libexec/PlistBuddy -c 'Print Name' "$RUNNER_TEMP/la.plist")
+            for d in "$HOME/Library/MobileDevice/Provisioning Profiles" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+              mkdir -p "$d" && cp "$RUNNER_TEMP/la.mobileprovision" "$d/$LA_UUID.mobileprovision"
+            done
+            echo "LIVE_ACTIVITY=true" >> "$GITHUB_ENV"
+            echo "LIVE_ACTIVITY_PROFILE_NAME=$LA_NAME" >> "$GITHUB_ENV"
+            echo "Installed Live Activity profile '$LA_NAME' ($LA_UUID)"
+          else
+            echo "LIVE_ACTIVITY=false" >> "$GITHUB_ENV"
+            echo "No Live Activity profile: building the app without the widget extension"
+          fi
+
+      # After the signing step: it decides LIVE_ACTIVITY, which liveactivity.yml's include is gated on.
+      - name: Generate Xcode project
+        run: xcodegen generate
 
       # The demo() self-checks are `#if DEBUG`, and the archive below is Release, so without this
       # step they are never even compiled. This builds Debug for device so they are type-checked
@@ -71,7 +91,7 @@ jobs:
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Development" \
             DEVELOPMENT_TEAM="${{ secrets.TEAM_ID }}" \
-            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+            APP_PROFILE_NAME="$PROFILE_NAME" LIVE_ACTIVITY_PROFILE_NAME="$LIVE_ACTIVITY_PROFILE_NAME" \
             META_APP_ID="${{ secrets.META_APP_ID }}" CLIENT_TOKEN="${{ secrets.CLIENT_TOKEN }}" TEAM_ID="${{ secrets.TEAM_ID }}" \
             KICK_CLIENT_ID="${{ secrets.KICK_CLIENT_ID }}" KICK_CLIENT_SECRET="${{ secrets.KICK_CLIENT_SECRET }}" TWITCH_CLIENT_ID="${{ secrets.TWITCH_CLIENT_ID }}" \
             RESTREAM_CLIENT_ID="${{ secrets.RESTREAM_CLIENT_ID }}" RESTREAM_CLIENT_SECRET="${{ secrets.RESTREAM_CLIENT_SECRET }}" YOUTUBE_CLIENT_ID="${{ secrets.YOUTUBE_CLIENT_ID }}"

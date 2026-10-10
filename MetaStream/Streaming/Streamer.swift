@@ -48,9 +48,9 @@ final class Streamer: ObservableObject {
 
     @Published var devices = "none seen yet"
 
-    @Published var source = "glasses" { didSet { syncHot(); applog("stream", "source=\(source) manual=\(manualSource)") } }   // what is going out right now
+    @Published var source = "phone" { didSet { syncHot(); applog("stream", "source=\(source) manual=\(manualSource)") } }   // what is going out right now
 
-    @Published var manualSource = "auto"       // "auto" | "glasses" | "back" | "front" | "external" (user's choice)
+    @Published var manualSource = "back"       // phone camera by default; "auto" | "glasses" | "back" | "front" | "external" (user's choice)
 
     /// localizedName of the connected UVC camera (iPad USB-C; iPhones never expose one), nil when none. Drives
     /// whether the source picker offers "External camera"; kept fresh by the connect/disconnect observers in init.
@@ -253,6 +253,7 @@ final class Streamer: ObservableObject {
     init() {
         teamID = Self.readTeamID()
         applog("ui", "launch team=\(teamID)")
+        liveActivity.attach(self)
         // Active playback session from launch: iOS only auto-starts PiP for an app that is "playing".
         // Playback (not record) so the orange mic indicator stays off until Go Live.
         let s = AVAudioSession.sharedInstance()
@@ -295,6 +296,7 @@ final class Streamer: ObservableObject {
                 await self.adaptBitrate()
                 await self.syncBlurEffect()
                 self.checkBlurStall()
+                self.liveActivity.sync(self)
                 if self.live, tick % 5 == 0 {
                     let mode = self.hot.transcoder == nil ? "hevc-passthrough" : "h264-transcode"
                     applog("stream", "stats source=\(self.source) \(mode) glassesFps=\(self.fps) glassesKbps=\(self.kbps) sent=\(self.hot.sent) decoded=\(self.hot.transcoder?.decoded ?? 0) appended=\(self.hot.appended) mixerOut=\(self.hot.mixerOut)")
@@ -304,6 +306,7 @@ final class Streamer: ObservableObject {
     }
 
     var rotateTask: Task<Void, Never>?
+    let liveActivity = LiveActivityController()   // Lock Screen / Dynamic Island card, see LiveActivity.swift
 
     func stopLive() {
         reconnectTask?.cancel()
@@ -318,6 +321,7 @@ final class Streamer: ObservableObject {
             applog("stream", summary)
         }
         live = false
+        liveActivity.end()
         liveSince = nil
         connectedSince = nil
         hot.warm = false

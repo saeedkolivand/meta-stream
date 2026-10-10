@@ -1,8 +1,14 @@
 name: MetaStream
+# Live Activity widget extension: needs its own App ID + profile, so it is opt-in. CI sets LIVE_ACTIVITY=true
+# only when that profile is installed. Unset/false = app-only build (XcodeGen reads "${...}" as a bool; the
+# unexpanded literal is false). Included specs merge FIRST, arrays append (see liveactivity.yml).
+include:
+  - path: liveactivity.yml
+    enable: ${LIVE_ACTIVITY}
 options:
   bundleIdPrefix: com.saeedkolivand
   deploymentTarget:
-    iOS: "17.2"
+    iOS: "26.0"
   xcodeVersion: "26.4"
 packages:
   MetaWearablesDAT:
@@ -38,6 +44,7 @@ targets:
         RESTREAM_CLIENT_SECRET: ""
         YOUTUBE_CLIENT_ID: ""
         CODE_SIGN_STYLE: Manual
+        PROVISIONING_PROFILE_SPECIFIER: $(APP_PROFILE_NAME)   # per-target, passed by CI (a command-line specifier would hit the extension too)
         CODE_SIGN_ENTITLEMENTS: MetaStream/MetaStream.entitlements   # Wi-Fi entitlements the Meta SDK needs for video
     dependencies:
       - package: MetaWearablesDAT

@@ -1,0 +1,23 @@
+# Included by project.yml only when LIVE_ACTIVITY=true (see `include:` there). Kept separate because the
+# extension needs its own App ID + provisioning profile; without them the signed archive must still build.
+# Merge semantics: included specs merge first, project.yml on top; dicts merge, arrays APPEND. So the
+# MetaStream entry below only adds one dependency to the app target defined in project.yml.
+targets:
+  MetaStream:
+    dependencies:
+      - target: MetaStreamLiveActivity   # app targets embed non-static dependencies; an app extension lands in PlugIns/
+  MetaStreamLiveActivity:
+    type: app-extension
+    platform: iOS
+    sources:
+      - MetaStreamLiveActivity
+      - MetaStream/Streaming/StreamActivity.swift   # shared with the app target
+    settings:
+      base:
+        INFOPLIST_FILE: MetaStreamLiveActivity/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.saeedkolivand.metastream.LiveActivity
+        SWIFT_VERSION: "6.0"
+        SWIFT_STRICT_CONCURRENCY: minimal
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Manual
+        PROVISIONING_PROFILE_SPECIFIER: $(LIVE_ACTIVITY_PROFILE_NAME)   # passed per-target from CI, see build.yml

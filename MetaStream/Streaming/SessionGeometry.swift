@@ -61,7 +61,7 @@ extension Streamer {
 
     /// Apple's "Action mode" is Camera-app branding for the extended cinematic algorithm; AVFoundation
     /// exposes it as a stabilisation mode on the capture connection. `.cinematicExtendedEnhanced` is the
-    /// strongest and needs iOS 18, so anything older falls back to `.cinematicExtended`.
+    /// strongest one (iOS 18+, always available at our iOS 26 minimum).
     /// ponytail: sets the REQUESTED mode only — AVFoundation quietly ignores one the active format cannot
     /// do, and `activeVideoStabilizationMode` is where to look if that ever needs surfacing in the UI.
     /// nonisolated: pure String -> enum mapping, no Streamer state -- CameraFormatCapabilities.probe
@@ -71,9 +71,7 @@ extension Streamer {
         switch name {
         case "standard": return .standard
         case "cinematic": return .cinematic
-        case "action":
-            if #available(iOS 18.0, *) { return .cinematicExtendedEnhanced }
-            return .cinematicExtended
+        case "action": return .cinematicExtendedEnhanced
         default: return .off
         }
     }

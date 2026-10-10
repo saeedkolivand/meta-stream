@@ -91,6 +91,8 @@
 		<string>audio</string>
 		<string>bluetooth-central</string>
 	</array>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Connects to your Meta glasses</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
