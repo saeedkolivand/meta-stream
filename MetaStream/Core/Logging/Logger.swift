@@ -1,11 +1,11 @@
 import Foundation
 import os
 
-protocol Logging {
+protocol Logging: Sendable {
     func log(category: String, message: String, error: Bool)
 }
 
-final class OSLogLogger: Logging {
+final class OSLogLogger: Logging, @unchecked Sendable {
     private let loggers: [String: Logger] = ["api", "stream", "glasses", "auth", "ui"].reduce(into: [:]) {
         $0[$1] = Logger(subsystem: "com.saeedkolivand.metastream", category: $1)
     }
@@ -15,13 +15,13 @@ final class OSLogLogger: Logging {
     }
 }
 
-final class InMemoryLogger: Logging {
+final class InMemoryLogger: Logging, @unchecked Sendable {
     func log(category: String, message: String, error: Bool) {
         Task { @MainActor in LogStore.shared.add("[\(category)] \(message)") }
     }
 }
 
-final class CompositeLogger: Logging {
+final class CompositeLogger: Logging, @unchecked Sendable {
     private let loggers: [Logging]
     init(_ loggers: [Logging]) { self.loggers = loggers }
     func log(category: String, message: String, error: Bool) {
@@ -30,7 +30,7 @@ final class CompositeLogger: Logging {
 }
 
 enum AppLogger {
-    static var shared: Logging = CompositeLogger([OSLogLogger(), InMemoryLogger()])
+    static let shared: Logging = CompositeLogger([OSLogLogger(), InMemoryLogger()])
 }
 
 func applog(_ category: String, _ message: String, error: Bool = false) {

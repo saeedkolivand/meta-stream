@@ -34,7 +34,7 @@ struct PlatformAdapter {
     let load: @MainActor (Platforms, [(id: String, name: String)]) -> StreamInfoDraft
     let apply: @MainActor (Platforms, StreamInfoDraft) async -> Void
 
-    static let all: [String: PlatformAdapter] = [
+    @MainActor static let all: [String: PlatformAdapter] = [
         "kick": PlatformAdapter(
             name: "Kick", hasApp: true, hasCategory: true, canSendChat: true,
             connected: { $0.kickConnected }, user: { $0.kickUser }, isLive: { $0.kickLive }, viewers: { $0.kickViewers },

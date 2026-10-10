@@ -6,17 +6,10 @@ import UIKit
 struct StreamCategory: Identifiable, Hashable { let id: String; let name: String }
 struct RestreamDestination: Identifiable, Hashable { let id: Int; let name: String; let url: String; var active: Bool }
 
-// MARK: - TokenStore
+// MARK: - TokenStore helpers
 
-/// UserDefaults-shaped token persistence behind a protocol so services never touch Platforms internals.
-protocol TokenStore: AnyObject {
-    func string(forKey key: String) -> String?
-    func set(_ value: Any?, forKey key: String)
-    func removeObject(forKey key: String)
-    func stringArray(forKey key: String) -> [String]?
-}
-
-extension UserDefaults: TokenStore {}
+/// Canonical TokenStore lives in Core/Storage/TokenStore.swift; these helpers
+/// persist access/refresh tokens so services never touch Platforms internals.
 
 extension TokenStore {
     /// Persists access/refresh tokens; returns the granted scope list when the provider sends one.
@@ -43,7 +36,7 @@ extension TokenStore {
 
 /// Client IDs/secrets (from Info.plist), OAuth redirects, and ingest URLs in one place.
 enum PlatformConfig {
-    private static let info = Bundle.main.infoDictionary ?? [:]
+    private static var info: [String: Any] { Bundle.main.infoDictionary ?? [:] }
     static let kickID = info["KickClientID"] as? String ?? ""
     static let kickSecret = info["KickClientSecret"] as? String ?? ""
     static let twitchID = info["TwitchClientID"] as? String ?? ""
