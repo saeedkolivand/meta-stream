@@ -1,86 +1,76 @@
-"""Renders the MetaStream icon (iOS AppIcon.png + previews): python design/make_icon.py <out_dir>. The Android vectors in
-android/app/src/main/res/drawable/ic_launcher_*.xml and both splash screens use the same geometry and colours."""
+"""Renders the MetaStream icon: python design/make_icon.py <out_dir> [android_layer.png].
+
+A titanium-rimmed camera lens on graphite with a red "live" tally light in the glass. Writes <out_dir>/AppIcon.png
+(iOS, 1024, opaque) and preview.png; with a second argument also the Android adaptive-icon layer (432 px = 108 dp at
+xxxhdpi). The splash screens on both platforms draw the same lens (radii below, scaled) and open it onto the camera.
+"""
 import math
 import sys
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
-C = 54.0
-BG_A, BG_B = (0x34, 0x0E, 0x9E), (0x06, 0x05, 0x1C)  # top-left -> bottom-right
-GLOW = (0x6D, 0x3B, 0xFF)
-RED_A, RED_B = (0xFF, 0x7A, 0x3D), (0xFF, 0x1F, 0x5A)
-ARCS = [(15.5, 5.0, None), (25.5, 5.0, ((0x3D, 0xE8, 0xFF), (0xC8, 0x4B, 0xFF)))]  # radius, stroke, gradient (None = white)
-SPAN = 42  # degrees either side of horizontal
-DOT = 7.5
+BG_TOP, BG_BOT = (0x22, 0x22, 0x25), (0x0A, 0x0A, 0x0C)
+RIM_OUT, RIM_IN, HAIRLINE, DOT = 0.335, 0.300, 0.205, 0.062  # radii as fractions of the icon side
 
 
-def render(size, k):
-    """size px canvas; k scales the mark around the centre (1 = Android geometry)."""
-    ss = 4
+def render(size, k=1.0, ss=3):
+    """k scales the lens: 1 for iOS; 72/108 for the Android layer, whose launcher mask shows only the inner 72 dp."""
     n = size * ss
-    u = n / 108.0  # px per unit
     y, x = np.mgrid[0:n, 0:n].astype(np.float32)
-    t = np.clip((x + y) / (2 * n), 0, 1)[..., None]
-    img = np.array(BG_A) * (1 - t) + np.array(BG_B) * t
-    d = np.hypot(x - C * u, y - C * u) / u
-    g = np.clip(1 - d / (42 * k), 0, 1)[..., None] ** 2 * 0.65
-    img = img * (1 - g) + np.array(GLOW) * g
-    g = np.clip(1 - d / (16 * k), 0, 1)[..., None] ** 2 * 0.6
-    img = img * (1 - g) + np.array(RED_B) * g
-    base = Image.fromarray(img.astype(np.uint8), "RGB").convert("RGBA")
+    c = n / 2
+    dist = np.hypot(x - c, y - c) / n
 
-    over = Image.new("RGBA", (n, n), (0, 0, 0, 0))
-    for r, w, grad in ARCS:
-        r, w = r * k * u, w * k * u
-        m = Image.new("L", (n, n), 0)
-        ld = ImageDraw.Draw(m)
-        for mid in (0, 180):
-            box = [C * u - r, C * u - r, C * u + r, C * u + r]
-            ld.arc(box, mid - SPAN, mid + SPAN, fill=255, width=int(w))
-            for ang in (mid - SPAN, mid + SPAN):
-                # cap centre sits mid-stroke (PIL draws the width inward from the box edge)
-                rc = r - w / 2
-                cx, cy = C * u + rc * math.cos(math.radians(ang)), C * u + rc * math.sin(math.radians(ang))
-                ld.ellipse([cx - w / 2, cy - w / 2, cx + w / 2, cy + w / 2], fill=255)
-        if grad is None:
-            fill = Image.new("RGBA", (n, n), (255, 255, 255, 255))
-        else:
-            tv = np.clip((y - (C * u - r)) / (2 * r), 0, 1)[..., None]
-            fill = Image.fromarray((np.array(grad[0]) * (1 - tv) + np.array(grad[1]) * tv).astype(np.uint8), "RGB").convert("RGBA")
-        fill.putalpha(m)
-        over = Image.alpha_composite(over, fill)
-    # dot with a vertical warm gradient + soft highlight
-    rr = DOT * k * u
-    mask = Image.new("L", (n, n), 0)
-    ImageDraw.Draw(mask).ellipse([C * u - rr, C * u - rr, C * u + rr, C * u + rr], fill=255)
-    tt = np.clip((y - (C * u - rr)) / (2 * rr), 0, 1)[..., None]
-    grad = (np.array(RED_A) * (1 - tt) + np.array(RED_B) * tt).astype(np.uint8)
-    dot = Image.fromarray(grad, "RGB").convert("RGBA")
-    dot.putalpha(mask)
-    over = Image.alpha_composite(over, dot)
-    hr, hx, hy = 2.4 * k * u, (C - 2.6 * k) * u, (C - 2.6 * k) * u
-    hl = Image.new("RGBA", (n, n), (0, 0, 0, 0))
-    ImageDraw.Draw(hl).ellipse([hx - hr, hy - hr, hx + hr, hy + hr], fill=(255, 255, 255, 90))
-    over = Image.alpha_composite(over, hl)
-    out = Image.alpha_composite(base, over).convert("RGB")
-    return out.resize((size, size), Image.LANCZOS)
+    def disc(r, cx=0.5, cy=0.5):
+        d = np.hypot(x / n - cx, y / n - cy)
+        return np.clip((r * k - d) / 0.0012 + 0.5, 0, 1)[..., None]
+
+    def ring(r, w):
+        return np.clip((w * k / 2 - np.abs(dist - r * k)) / 0.0012 + 0.5, 0, 1)[..., None]
+
+    def blur(a, sigma):
+        im = Image.fromarray(np.clip(a[..., 0] * 255, 0, 255).astype(np.uint8), "L")
+        return (np.asarray(im.filter(ImageFilter.GaussianBlur(sigma * k * n)), np.float32) / 255)[..., None]
+
+    def over(img, col, a):
+        return img * (1 - a) + np.array(col, np.float32) * a
+
+    t = (y / n)[..., None]
+    img = np.array(BG_TOP, np.float32) * (1 - t) + np.array(BG_BOT, np.float32) * t
+    # Titanium rim, lit from the top-left.
+    light = (0.5 + 0.5 * np.cos(np.arctan2(y - c, x - c) + 3 * math.pi / 4))[..., None]
+    rim = disc(RIM_OUT) - disc(RIM_IN)
+    rim_col = np.array((0x3A, 0x3A, 0x3E), np.float32) * (1 - light) + np.array((0xC8, 0xC8, 0xCE), np.float32) * light
+    img = img * (1 - rim) + rim_col * rim
+    # Dark glass, a faint inner element ring and a soft reflection arc.
+    glass = disc(RIM_IN)
+    g = np.clip(dist / (RIM_IN * k), 0, 1)[..., None]
+    img = img * (1 - glass) + (np.array((0x16, 0x18, 0x1E), np.float32) * (1 - g) + np.array((2, 2, 3), np.float32) * g) * glass
+    img = over(img, (255, 255, 255), ring(HAIRLINE, 0.004) * 0.07 * glass)
+    off = 0.03 * k
+    arc = (disc(0.27, 0.5 - off, 0.5 - off) - disc(0.27, 0.5, 0.5 + 0.02 * k)).clip(0, 1) * glass
+    img = over(img, (255, 255, 255), blur(arc, 0.01) * 0.16)
+    # Red tally light: additive bloom, warm vertical gradient, glassy top highlight.
+    img = img + np.array((255, 40, 20), np.float32) * blur(disc(DOT * 1.05), DOT * 0.9) * 0.81
+    m = disc(DOT)
+    td = np.clip((y / n - (0.5 - DOT * k)) / (2 * DOT * k), 0, 1)[..., None]
+    img = img * (1 - m) + (np.array((0xFF, 0x5A, 0x3C), np.float32) * (1 - td) + np.array((0xE8, 0x10, 0x1E), np.float32) * td) * m
+    hl = blur(disc(DOT * 0.72, 0.5, 0.5 - DOT * 0.32 * k) * m, DOT * 0.12) * 0.28
+    img = over(img, (255, 255, 255), hl)
+    return Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB").resize((size, size), Image.LANCZOS)
 
 
 if __name__ == "__main__":
     out = sys.argv[1]
-    ios = render(1024, 1.32)
+    ios = render(1024)
     ios.save(f"{out}/AppIcon.png")
-    # preview: iOS rounded mask + Android circle mask (adaptive icons crop to the inner 72/108)
-    prev = Image.new("RGB", (1100, 560), (240, 240, 240))
+    if len(sys.argv) > 2:
+        render(432, 72 / 108).save(sys.argv[2])
+    prev = Image.new("RGB", (1100, 560), (128, 128, 132))
     m = Image.new("L", (512, 512), 0)
     ImageDraw.Draw(m).rounded_rectangle([0, 0, 511, 511], 115, fill=255)
     prev.paste(ios.resize((512, 512), Image.LANCZOS), (24, 24), m)
-    a = render(768, 1.0).crop((128, 128, 640, 640))
+    a = render(768, 72 / 108).crop((128, 128, 640, 640))  # what an Android launcher circle mask shows
     m2 = Image.new("L", (512, 512), 0)
     ImageDraw.Draw(m2).ellipse([0, 0, 511, 511], fill=255)
     prev.paste(a, (564, 24), m2)
     prev.save(f"{out}/preview.png")
-    small = Image.new("RGB", (300, 120), (30, 30, 30))
-    for i, s in enumerate((96, 60, 40)):
-        small.paste(ios.resize((s, s), Image.LANCZOS), (10 + i * 110, 10))
-    small.save(f"{out}/preview_small.png")

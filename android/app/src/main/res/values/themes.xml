@@ -3,7 +3,7 @@
 
     <style name="Theme.MetaStream" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:colorBackground">#000000</item>
-        <item name="android:windowSplashScreenBackground">#1D0A5D</item>
+        <item name="android:windowSplashScreenBackground">#121214</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
     </style>
 </resources>

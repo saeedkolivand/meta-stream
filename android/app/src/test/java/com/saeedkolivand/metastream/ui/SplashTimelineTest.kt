@@ -13,24 +13,25 @@ class SplashTimelineTest {
     }
 
     @Test
-    fun easedHitsEndpointsAndLeadsLinear() {
-        assertEquals(0f, eased(0f, 0f, 100f), 0f)
-        assertEquals(1f, eased(100f, 0f, 100f), 0f)
+    fun easeOutHitsEndpointsAndLeadsLinear() {
+        assertEquals(0f, easeOut(0f), 0f)
+        assertEquals(1f, easeOut(1f), 0f)
         assertTrue(eased(50f, 0f, 100f) > 0.5f)
-        assertTrue(eased(50f, 0f, 100f, ::easeIn) < 0.5f)
     }
 
     @Test
-    fun popOvershootsThenSettles() {
-        assertEquals(0f, pop(0f), 1e-6f)
-        assertEquals(1f, pop(1f), 1e-6f)
-        assertTrue((1..99).maxOf { pop(it / 100f) } > 1.1f)
+    fun easeInOutCubicIsSymmetric() {
+        assertEquals(0f, easeInOutCubic(0f), 0f)
+        assertEquals(0.5f, easeInOutCubic(0.5f), 1e-6f)
+        assertEquals(1f, easeInOutCubic(1f), 1e-6f)
+        assertTrue(easeInOutCubic(0.25f) < 0.25f)
     }
 
     @Test
-    fun beatReturnsToOne() {
-        assertEquals(1f, beat(0f, 0f, 250f), 1e-6f)
-        assertEquals(1.12f, beat(125f, 0f, 250f), 1e-5f)
-        assertEquals(1f, beat(300f, 0f, 250f), 1e-5f)
+    fun bloomPeaksThenSettles() {
+        assertEquals(0f, bloom(100f), 1e-6f)
+        assertEquals(0.9f, bloom(350f), 1e-6f)
+        assertEquals(0.65f, bloom(600f), 1e-6f)
+        assertEquals(0.65f, bloom(1000f), 1e-6f)
     }
 }

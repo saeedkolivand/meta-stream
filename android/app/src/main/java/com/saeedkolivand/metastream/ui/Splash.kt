@@ -1,6 +1,7 @@
 package com.saeedkolivand.metastream.ui
 
 import android.provider.Settings
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -9,19 +10,23 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -30,20 +35,27 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.em
 import kotlin.math.hypot
 import kotlin.math.min
+import kotlinx.coroutines.flow.first
 
-private val Launch = Color(0xFF1D0A5D) // identical to the native splash background: no flash
-private val Cyan = Color(0xFF3DE8FF)
-private val Magenta = Color(0xFFC84BFF)
-private val Violet = Color(0xFF6D3BFF)
-private val Pink = Color(0xFFFF1F5A)
-private val DotOrange = Color(0xFFFF7A3D)
-private const val HALF_SWEEP = 42f
-private const val STATIC_T = 1100f // reduce motion: final mark, no pulse, no zoom
+private val Launch = Color(0xFF121214) // identical to the native splash background: no flash
+private val BgTop = Color(0xFF1C1C1F)
+private val BgBottom = Color(0xFF0A0A0C)
+private val Silver = Color(0xFFC8C8CE)
+private val Titanium = Color(0xFF3A3A3E)
+private val GlassCenter = Color(0xFF16181E)
+private val GlassEdge = Color(0xFF020203)
+private val LedTop = Color(0xFFFF5A3C)
+private val LedBottom = Color(0xFFE8101E)
+private val Bloom = Color(0xFFFF2814)
+private const val END_MS = 1750f
+private const val REDUCED_END_MS = 850f
+private const val STATIC_T = 1000f // reduce motion: finished lens, before the camera wakes
 
-/** Animated "live broadcast" mark, once per cold launch. Draws over the already-running app. */
+/** "Lens reveal": the icon's lens assembles, then opens onto the already-running app. Once per cold launch. */
 @Composable
 fun Splash(onDone: () -> Unit) {
     val ctx = LocalContext.current
+    val view = LocalView.current
     val reduce =
         remember {
             Settings.Global.getFloat(ctx.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
@@ -51,100 +63,128 @@ fun Splash(onDone: () -> Unit) {
     val clock = remember { Animatable(0f) }
     val measurer = rememberTextMeasurer()
     LaunchedEffect(Unit) {
-        val end = if (reduce) 850f else 1950f
+        val end = if (reduce) REDUCED_END_MS else END_MS
         clock.animateTo(end, tween(end.toInt(), easing = LinearEasing))
         onDone()
+    }
+    LaunchedEffect(Unit) {
+        if (reduce) return@LaunchedEffect
+        snapshotFlow { clock.value }.first { it >= 1000f }
+        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
     }
     Canvas(
         Modifier
             .fillMaxSize()
-            .graphicsLayer {
-                val t = clock.value
-                alpha = if (reduce) 1f - segment(t, 600f, 250f) else 1f - segment(t, 1650f, 300f)
-            }
+            .graphicsLayer { alpha = if (reduce) 1f - easeOut(segment(clock.value, 600f, 250f)) else 1f }
             // Swallow touches so nothing underneath (GO LIVE) is hit while visible.
             .pointerInput(Unit) {
                 awaitPointerEventScope { while (true) awaitPointerEvent().changes.forEach { it.consume() } }
             }
-    ) { drawSplash(if (reduce) STATIC_T else clock.value, !reduce, measurer) }
+    ) { drawSplash(if (reduce) STATIC_T else clock.value, measurer) }
 }
 
-private fun DrawScope.drawSplash(t: Float, animated: Boolean, measurer: TextMeasurer) {
-    val u = 0.62f * min(size.width, size.height) / 55f
+private fun DrawScope.drawSplash(t: Float, measurer: TextMeasurer) {
+    val m = min(size.width, size.height)
     val c = center
-    drawRect(Launch)
-    drawRect(
-        Brush.linearGradient(listOf(Color(0xFF340E9E), Color(0xFF06051C)), Offset.Zero, Offset(size.width, size.height)),
-        alpha = eased(t, 0f, 350f)
+    val reveal = easeInOutCubic(segment(t, 1200f, 550f))
+    val maxR = 0.75f * hypot(size.width, size.height) + 0.05f * m
+    val rimR = lerp(0.199f * m, maxR, reveal)
+    val rimW = lerp(0.022f * m, 0.035f * m, reveal)
+    val holeR = rimR - rimW / 2f // inner edge of the rim
+    val wake = easeOut(segment(t, 1000f, 200f)) // the camera shows through from here on
+    val bg = Brush.verticalGradient(listOf(BgTop, BgBottom), 0f, size.height)
+    val bgIn = eased(t, 0f, 300f)
+
+    // Outside the rim the background is always drawn; inside it clears as the camera wakes.
+    val outside =
+        Path().apply {
+            fillType = PathFillType.EvenOdd
+            addRect(Rect(Offset.Zero, size))
+            addOval(Rect(c, holeR))
+        }
+    drawPath(outside, Launch)
+    drawPath(outside, bg, alpha = bgIn)
+    drawCircle(Launch, holeR, c, alpha = 1f - wake)
+    drawCircle(bg, holeR, c, alpha = bgIn * (1f - wake))
+
+    drawGlass(t, m, c, 1f - wake)
+    drawRim(t, m, c, rimR, rimW)
+    drawLed(t, m, c)
+    drawWordmark(t, m, c, measurer)
+}
+
+private fun DrawScope.drawGlass(t: Float, m: Float, c: Offset, keep: Float) {
+    val glassR = 0.188f * m
+    val glass = eased(t, 200f, 300f) * keep
+    drawCircle(Brush.radialGradient(listOf(GlassCenter, GlassEdge), c, glassR), glassR, c, alpha = glass)
+    drawCircle(
+        Color.White,
+        0.1285f * m,
+        c,
+        alpha = 0.07f * eased(t, 500f, 300f) * keep,
+        style = Stroke(0.0025f * m)
     )
-    val zoom = if (animated) 1f + 8f * eased(t, 1500f, 450f, ::easeIn) else 1f
-    withTransform({ scale(zoom, zoom, c) }) { drawMark(t, u, c, animated) }
-    if (animated) drawRings(t, u, c)
-    drawWordmark(t, u, c, measurer)
+    val reflect = eased(t, 600f, 300f) * keep
+    if (reflect <= 0f) return
+    val r = 0.169f * m
+    val a = Path().apply { addOval(Rect(c + Offset(-0.019f * m, -0.019f * m), r)) }
+    val b = Path().apply { addOval(Rect(c + Offset(0f, 0.0125f * m), r)) }
+    val crescent = Path.combine(PathOperation.Difference, a, b)
+    val lens = Path().apply { addOval(Rect(c, glassR)) }
+    // Unblurred, so slightly lower alpha than the 0.16 of the blurred icon.
+    clipPath(lens) { drawPath(crescent, Color.White, alpha = 0.12f * reflect) }
 }
 
-private fun glow(color: Color, peak: Float, c: Offset, r: Float) = Brush.radialGradient(
-    0f to color.copy(alpha = peak),
-    0.5f to color.copy(alpha = peak * 0.25f),
-    1f to color.copy(alpha = 0f),
-    center = c,
-    radius = r
-)
-
-private fun DrawScope.drawMark(t: Float, u: Float, c: Offset, animated: Boolean) {
-    val glowIn = eased(t, 0f, 500f)
-    val violetR = 42f * u * (0.6f + 0.4f * glowIn)
-    drawCircle(glow(Violet, 0.65f * glowIn, c, violetR), violetR, c)
-    val dotIn = segment(t, 150f, 450f)
-    drawCircle(glow(Pink, 0.6f * easeOut(dotIn), c, 16f * u), 16f * u, c)
-
-    val inner = eased(t, 350f, 300f)
-    drawArcs(13f * u, u, c, inner * HALF_SWEEP, SolidColor(Color.White), inner)
-    val outer = eased(t, 550f, 300f)
-    drawArcs(23f * u, u, c, outer * HALF_SWEEP, outlineBrush(u, c), outer)
-
-    var s = pop(dotIn)
-    if (animated) s *= beat(t, 900f, 250f) * beat(t, 1150f, 250f)
-    val r = 7.5f * u * s
-    drawCircle(Brush.verticalGradient(listOf(DotOrange, Pink), c.y - r, c.y + r), r, c)
-    drawCircle(Color.White, 2.4f * u * s, c - Offset(2.6f * u, 2.6f * u) * s, alpha = 0.35f * dotIn)
+private fun DrawScope.drawRim(t: Float, m: Float, c: Offset, r: Float, w: Float) {
+    val alpha = 1f - segment(t, 1580f, 170f)
+    // Trimmed from 12 o'clock clockwise.
+    val sweep = 360f * easeInOutCubic(segment(t, 200f, 600f))
+    if (sweep <= 0f || alpha <= 0f) return
+    val shade = Brush.linearGradient(listOf(Silver, Titanium), c - Offset(0.15f * m, 0.15f * m), c + Offset(0.15f * m, 0.15f * m))
+    drawArc(
+        shade,
+        startAngle = -90f,
+        sweepAngle = sweep,
+        useCenter = false,
+        topLeft = c - Offset(r, r),
+        size = Size(2 * r, 2 * r),
+        alpha = alpha,
+        style = Stroke(w)
+    )
 }
 
-private fun outlineBrush(u: Float, c: Offset) = Brush.verticalGradient(listOf(Cyan, Magenta), c.y - 25.5f * u, c.y + 25.5f * u)
-
-/** A right and a left arc growing outward from their midpoints (0 and 180 degrees). */
-private fun DrawScope.drawArcs(radius: Float, u: Float, c: Offset, sweep: Float, brush: Brush, alpha: Float) {
-    if (sweep <= 0f) return
-    val tl = c - Offset(radius, radius)
-    val box = Size(radius * 2, radius * 2)
-    val stroke = Stroke(5f * u, cap = StrokeCap.Round)
-    drawArc(brush, -sweep, 2 * sweep, false, tl, box, alpha, stroke)
-    drawArc(brush, 180f - sweep, 2 * sweep, false, tl, box, alpha, stroke)
+/** Red tally light: bloom behind, warm gradient disc, glassy highlight. */
+private fun DrawScope.drawLed(t: Float, m: Float, c: Offset) {
+    val fade = 1f - segment(t, 1000f, 150f)
+    val on = eased(t, 100f, 450f) * fade
+    if (on <= 0f) return
+    val dotR = 0.0389f * m
+    val bloomR = lerp(1.4f, 2.2f, eased(t, 100f, 500f)) * dotR
+    val glow = bloom(t) * fade
+    drawCircle(Brush.radialGradient(listOf(Bloom.copy(alpha = glow), Bloom.copy(alpha = 0f)), c, bloomR), bloomR, c)
+    drawCircle(Brush.verticalGradient(listOf(LedTop, LedBottom), c.y - dotR, c.y + dotR), dotR, c, alpha = on)
+    val dot = Path().apply { addOval(Rect(c, dotR)) }
+    clipPath(dot) { drawCircle(Color.White, 0.72f * dotR, c - Offset(0f, 0.32f * dotR), alpha = 0.28f * on) }
 }
 
-private fun DrawScope.drawRings(t: Float, u: Float, c: Offset) {
-    val grad = outlineBrush(u, c)
-    val maxR = 0.75f * hypot(size.width, size.height)
-    for (start in listOf(900f, 1150f)) {
-        val p = segment(t, start, 700f)
-        if (p <= 0f || p >= 1f) continue
-        val e = easeOut(p)
-        drawCircle(grad, 8f * u + (maxR - 8f * u) * e, c, alpha = 0.7f * (1f - e), style = Stroke(1.2f * u))
-    }
-}
-
-private fun DrawScope.drawWordmark(t: Float, u: Float, c: Offset, measurer: TextMeasurer) {
-    val fadeIn = eased(t, 700f, 400f)
-    val alpha = fadeIn * (1f - segment(t, 1500f, 150f))
+private fun DrawScope.drawWordmark(t: Float, m: Float, c: Offset, measurer: TextMeasurer) {
+    val e = eased(t, 650f, 350f)
+    val alpha = 0.92f * e * (1f - segment(t, 1000f, 150f))
     if (alpha <= 0f) return
+    val spacing = lerp(0.32f, 0.20f, e)
+    val size = 0.048f * m
     val style =
         TextStyle(
             color = Color.White.copy(alpha = alpha),
-            fontSize = (9f * u).toSp(),
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = (0.35f - 0.27f * fadeIn).em
+            fontSize = size.toSp(),
+            fontWeight = FontWeight.Normal,
+            letterSpacing = spacing.em
         )
     val layout = measurer.measure("MetaStream", style)
-    val y = c.y + 40f * u - layout.size.height / 2f + 6f * u * (1f - fadeIn)
-    drawText(layout, topLeft = Offset(c.x - layout.size.width / 2f, y))
+    // Letter spacing also trails the last glyph; shift back by half so the word stays optically centred.
+    val x = c.x - layout.size.width / 2f + spacing * size / 2f
+    val y = c.y + 0.34f * m - layout.size.height / 2f + 0.015f * m * (1f - e)
+    drawText(layout, topLeft = Offset(x, y))
 }
+
+private fun lerp(a: Float, b: Float, f: Float) = a + (b - a) * f
