@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import com.pedro.common.ConnectChecker
+import androidx.core.net.toUri
 import com.pedro.common.StreamingStatsReport
 import com.pedro.common.VideoCodec
 import com.pedro.encoder.input.sources.audio.MicrophoneSource
@@ -228,7 +229,8 @@ object Engine {
         redactFromLogs(key)
         Prefs.put("url", url)
         Prefs.put("key", key)
-        applog("stream", "connecting to $url")
+        // Scheme/host/path only: SRT URLs carry passphrase/streamid in the query, RTMP ones can embed user:pass.
+        applog("stream", "connecting to ${url.toUri().let { "${it.scheme}://${it.host}:${it.port}${it.path}" }}")
         // Reuses the idle service when the activity/car already started it; otherwise Android may refuse from the background.
         if (!StreamingService.hold(app, "live")) {
             status = "open the app on the phone once, then retry"

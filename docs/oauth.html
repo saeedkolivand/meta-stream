@@ -3,6 +3,10 @@
 <script>
   // Kick requires an https redirect; this page just hands the code back to the app's URL scheme.
   var target = "metastream://oauth/kick" + location.search;
+  // Android: name the package so only MetaStream can receive the code. Any app can claim the metastream:// scheme,
+  // and Restream has no PKCE, so an intercepted code plus the APK's client secret would be a stolen login.
+  if (/Android/i.test(navigator.userAgent))
+    target = "intent://oauth/kick" + location.search + "#Intent;scheme=metastream;package=com.saeedkolivand.metastream;end";
   document.getElementById("a").href = target;
   location.replace(target);
 </script>
