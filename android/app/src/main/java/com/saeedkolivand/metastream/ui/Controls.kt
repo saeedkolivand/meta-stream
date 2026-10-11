@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.camera.FaceCam
+import com.saeedkolivand.metastream.privacy.BlurState
+import com.saeedkolivand.metastream.privacy.Privacy
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 
@@ -61,6 +63,21 @@ private fun QuickControls(granted: Boolean) {
             granted,
             Engine::toggleCameraOff
         )
+        // iOS: grey off, blue protecting, amber when asked for but not in effect yet.
+        val blur = Privacy.state
+        QuickTile(
+            if (blur == BlurState.Off) R.drawable.ic_eye else R.drawable.ic_eye_off,
+            when (blur) {
+                BlurState.Off -> "Blur off"
+                BlurState.Pending -> "Next stream"
+                BlurState.Protecting -> "Blur on"
+            },
+            when (blur) {
+                BlurState.Off -> null
+                BlurState.Pending -> Orange
+                BlurState.Protecting -> SystemBlue
+            }
+        ) { Privacy.updateOn(!Privacy.on) }
         if (Engine.source == Source.Phone) {
             QuickTile(R.drawable.ic_flip_camera, "Flip", null, granted, Engine::switchCamera)
         }

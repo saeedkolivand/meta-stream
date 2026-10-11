@@ -33,6 +33,7 @@ import com.saeedkolivand.metastream.core.redactFromLogs
 import com.saeedkolivand.metastream.core.toVideoParams
 import com.saeedkolivand.metastream.glasses.Glasses
 import com.saeedkolivand.metastream.overlay.Overlays
+import com.saeedkolivand.metastream.privacy.Privacy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -100,6 +101,7 @@ object Engine {
         Health.init(app, scope, speak, alert)
         Cam.init(app)
         FaceCam.init(app)
+        Privacy.init(speak)
     }
 
     fun updateUrl(value: String) {
@@ -242,11 +244,11 @@ object Engine {
             status = "open the app on the phone once, then retry"
             return
         }
+        Overlays.refresh() // before the encoder starts, so the privacy blur is already in the chain for the first frame
         val full = url.trimEnd('/') + "/" + key
         if (s == null) glasses.start(full, askWearables) else startStream(s, full)
         // Glasses passthrough has no encoder knob, so Health only watches it.
         Health.start(AppSettings.ingest.bitrateKbps, s?.getStreamClient()) { s?.setVideoBitrateOnFly(it * 1000) }
-        Overlays.refresh()
         live = true
     }
 

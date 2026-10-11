@@ -52,7 +52,9 @@ class MainActivity : ComponentActivity() {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 }
             }
-            MaterialTheme(darkColorScheme(primary = Color(0xFF0A84FF))) { Surface(color = Color.Black) { MainScreen() } }
+            MaterialTheme(darkColorScheme(primary = Color(0xFF0A84FF), onPrimary = Color.White)) {
+                Surface(color = Color.Black) { MainScreen() }
+            }
         }
     }
 

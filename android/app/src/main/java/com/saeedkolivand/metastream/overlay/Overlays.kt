@@ -15,6 +15,7 @@ import com.pedro.library.view.GlInterface
 import com.pedro.library.view.GlStreamInterface
 import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.privacy.Privacy
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 import java.io.File
@@ -29,6 +30,7 @@ object Overlays {
     private lateinit var app: Application
     private val main = Handler(Looper.getMainLooper())
     private var gl: GlInterface? = null
+    private var sink: FilterSink? = null
     private var outW = 0
     private var outH = 0
     private var browser: BrowserOverlay? = null
@@ -41,7 +43,9 @@ object Overlays {
     /** Called when the stream is (re)prepared: the output size is only known then. */
     fun bind(gl: GlInterface, w: Int, h: Int) {
         release()
+        Privacy.forget() // a new pipeline starts with an empty chain
         this.gl = gl
+        sink = FilterSink(gl)
         outW = w
         outH = h
     }
@@ -49,7 +53,9 @@ object Overlays {
     fun unbind() {
         release()
         FaceCam.stop()
+        Privacy.forget()
         gl = null
+        sink = null
     }
 
     /** Filters survive nothing: the GL thread drops them when it stops, so callers refresh after (re)starting it. */
@@ -59,14 +65,19 @@ object Overlays {
             return
         }
         release()
-        val g = gl ?: return
-        val face = FaceCam.install(g, outW, outH) // first, so it draws under every overlay layer
+        val glNow = gl ?: return
+        val g = sink ?: return
+        // Chain order is face-cam -> blur -> overlays: the blur must see (and hide faces in) the face-cam window, while
+        // alerts stay sharp. Privacy keeps its filter across refreshes; the face-cam goes back in at index 0, ahead of it.
+        Privacy.install(glNow)
+        FaceCam.install(g, outW, outH)
         val pack = OverlayStore.pack
-        val scene = pack?.let { OverlayStore.active() }?.takeIf { Engine.source != Source.Glasses }
+        val scene = OverlayStore.active()?.takeIf { pack != null && Engine.source != Source.Glasses }
         // ponytail: RootEncoder 2.8.1 draws a black preview when filters meet AspectRatioMode.Fill (the encoder output is fine),
-        // so the preview letterboxes while an overlay scene is on. Upgrade path: fix or work around in a RootEncoder patch.
-        (g as? GlStreamInterface)?.setAspectRatioMode(if (scene == null) AspectRatioMode.Fill else AspectRatioMode.Adjust)
-        if (scene == null) return
+        // so the preview letterboxes while an overlay scene or the privacy blur is on. Upgrade path: fix or work around in a RootEncoder patch.
+        val fill = scene == null && !Privacy.wanted
+        (glNow as? GlStreamInterface)?.setAspectRatioMode(if (fill) AspectRatioMode.Fill else AspectRatioMode.Adjust)
+        if (scene == null || pack == null) return
         val fit = fit(pack.canvasW, pack.canvasH, outW, outH)
         val web = BrowserOverlay(app, outW, outH)
         browser = web
@@ -80,7 +91,7 @@ object Overlays {
     }
 
     private fun release() {
-        gl?.clearFilters()
+        sink?.clear()
         browser?.destroy()
         browser = null
         players.forEach { it.release() }
@@ -88,7 +99,7 @@ object Overlays {
         main.removeCallbacksAndMessages(null)
     }
 
-    private fun add(g: GlInterface, web: BrowserOverlay, l: Layer, fit: Fit) {
+    private fun add(g: FilterSink, web: BrowserOverlay, l: Layer, fit: Fit) {
         when (l.type) {
             LayerType.Browser -> web.add(l, fit)
             LayerType.Image -> OverlayStore.local(l.data["file"].orEmpty())?.let { addImage(g, l, it, fit) }
@@ -118,7 +129,7 @@ object Overlays {
         it.put(box, fit, l.rotation)
     }
 
-    private fun addImage(g: GlInterface, l: Layer, f: File, fit: Fit) {
+    private fun addImage(g: FilterSink, l: Layer, f: File, fit: Fit) {
         val (w, h) = imageSize(f) ?: return
         val nw = w - l.crop[0] - l.crop[2]
         val box = place(l, nw.toFloat(), (h - l.crop[1] - l.crop[3]).toFloat())
@@ -126,7 +137,7 @@ object Overlays {
         g.addFilter(imageFilter(d.bitmap, box, fit, l))
     }
 
-    private fun addText(g: GlInterface, l: Layer, fit: Fit) {
+    private fun addText(g: FilterSink, l: Layer, fit: Fit) {
         val px = (l.data["size"]?.toFloatOrNull() ?: 36f) * fit.scale
         val color = l.data["color"]?.toLongOrNull()?.toInt() ?: -1
         val bmp = textBitmap(l.data["text"].orEmpty(), l.data["face"].orEmpty(), l.data["bold"] == "true", px, color) ?: return
@@ -135,7 +146,7 @@ object Overlays {
     }
 
     // ponytail: the media player is muted and a rotated phone video isn't corrected; sizes come from the container metadata.
-    private fun addMedia(g: GlInterface, l: Layer, f: File, fit: Fit) {
+    private fun addMedia(g: FilterSink, l: Layer, f: File, fit: Fit) {
         val mmr = MediaMetadataRetriever()
         val (w, h) = try {
             mmr.setDataSource(f.path)
@@ -162,7 +173,7 @@ object Overlays {
         )
     }
 
-    private fun addSlideshow(g: GlInterface, l: Layer, fit: Fit) {
+    private fun addSlideshow(g: FilterSink, l: Layer, fit: Fit) {
         val files = l.files.mapNotNull(OverlayStore::local).take(MAX_SLIDES)
         val (w, h) = files.firstOrNull()?.let(::imageSize) ?: return
         val box = place(l, w.toFloat(), h.toFloat())

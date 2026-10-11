@@ -26,6 +26,8 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
+        // Phones are arm64 and the emulator x86_64; the 32-bit copies of RootEncoder/ML Kit/UVC natives only add size.
+        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
 
         // Meta DAT credentials; empty is fine with Developer Mode on.
         manifestPlaceholders["mwdat_application_id"] = localProperties.getProperty("mwdat_application_id", "")
@@ -74,6 +76,9 @@ dependencies {
     implementation(libs.mwdat.mockdevice)
     implementation(libs.rootencoder)
     implementation(libs.rootencoder.extra)
+    implementation(libs.mlkit.face)
+    implementation(libs.mlkit.text)
+    implementation(libs.mlkit.barcode)
     implementation(libs.okhttp)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)

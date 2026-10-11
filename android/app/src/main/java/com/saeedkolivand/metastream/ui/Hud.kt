@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.camera.Cam
+import com.saeedkolivand.metastream.privacy.Privacy
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Health
@@ -69,6 +70,14 @@ internal fun Hud() {
         }
         Pill(icon, name, Color.White)
         ScenePill()
+        if (Privacy.wanted) {
+            val bad = Privacy.stalled
+            Pill(
+                if (bad) R.drawable.ic_warning else R.drawable.ic_eye_off,
+                if (bad) "blur failed" else "blur",
+                if (bad) Orange else Color.White
+            )
+        }
         if (Engine.source ==
             Source.Phone
         ) {

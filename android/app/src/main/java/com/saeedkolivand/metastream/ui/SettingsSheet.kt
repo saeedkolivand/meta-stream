@@ -38,6 +38,7 @@ private enum class Page(val title: String, val parent: Page?) {
     Glasses("Video (glasses)", Root),
     Camera("Camera", Root),
     ReadAloud("Read aloud", Root),
+    Privacy("Privacy", Root),
     Diagnostics("Diagnostics & about", Root),
     Logs("Logs", Diagnostics)
 }
@@ -61,6 +62,7 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
                 Page.Audio -> AudioPage()
                 Page.Camera -> CameraSettingsContent()
                 Page.ReadAloud -> ReadAloudSettings()
+                Page.Privacy -> PrivacySettings()
                 Page.Glasses -> GlassesVideoPage()
                 Page.Diagnostics -> DiagnosticsPage { page = Page.Logs }
                 Page.Logs -> LogsPage()
@@ -77,6 +79,7 @@ private fun RootPage(go: (Page) -> Unit) {
     NavRow(Page.Camera.title) { go(Page.Camera) }
     NavRow(Page.Audio.title) { go(Page.Audio) }
     NavRow(Page.ReadAloud.title) { go(Page.ReadAloud) }
+    NavRow(Page.Privacy.title) { go(Page.Privacy) }
     NavRow(Page.Glasses.title) { go(Page.Glasses) }
     NavRow(Page.Diagnostics.title) { go(Page.Diagnostics) }
     Section("Stream") {

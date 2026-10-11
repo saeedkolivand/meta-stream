@@ -19,9 +19,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
-import com.pedro.library.view.GlInterface
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.overlay.FilterSink
 import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
@@ -128,7 +128,7 @@ object FaceCam {
     }
 
     /** Called from Overlays.refresh() after it cleared the filters; returns whether a face-cam filter is in the chain. */
-    fun install(g: GlInterface, w: Int, h: Int): Boolean {
+    fun install(g: FilterSink, w: Int, h: Int): Boolean {
         outW = w
         outH = h
         filter = null
@@ -141,7 +141,7 @@ object FaceCam {
         f.show = !hidden
         filter = f
         layout()
-        g.addFilter(f)
+        g.addFirst(f) // under the blur, so a face in the window is hidden too
         active = true
         return true
     }

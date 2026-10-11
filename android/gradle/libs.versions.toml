@@ -30,6 +30,10 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
+# Bundled (not Play-services) models: blur must keep working offline mid-stream and without Play services.
+mlkit-face = { group = "com.google.mlkit", name = "face-detection", version = "16.1.7" }
+mlkit-text = { group = "com.google.mlkit", name = "text-recognition", version = "16.0.1" }
+mlkit-barcode = { group = "com.google.mlkit", name = "barcode-scanning", version = "17.3.0" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 
 [plugins]
