@@ -27,7 +27,14 @@ jobs:
           RESTREAM_CLIENT_SECRET: ${{ secrets.RESTREAM_CLIENT_SECRET }}
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
         run: cd android && ./gradlew assembleDebug test lint ktlintCheck && bash loc.sh
+      # Public repo: artifacts are downloadable by anyone, and the APK carries the Kick/Restream client secrets.
+      # Encrypted like the IPA (build.yml); decrypt with signing/ipa-password.txt.
+      - name: Encrypt APK
+        env:
+          IPA_PASSWORD: ${{ secrets.IPA_PASSWORD }}
+        run: openssl enc -aes-256-cbc -pbkdf2 -salt -in android/app/build/outputs/apk/debug/app-debug.apk -out MetaStream.apk.enc -pass env:IPA_PASSWORD
       - uses: actions/upload-artifact@v7
         with:
           name: MetaStream-apk
-          path: android/app/build/outputs/apk/debug/*.apk
+          path: MetaStream.apk.enc
+          retention-days: 1
