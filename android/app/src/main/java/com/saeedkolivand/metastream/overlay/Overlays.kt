@@ -10,9 +10,7 @@ import android.view.Surface
 import com.pedro.encoder.input.gl.render.filters.`object`.BaseObjectFilterRender
 import com.pedro.encoder.input.gl.render.filters.`object`.ImageFilterRender
 import com.pedro.encoder.input.gl.render.filters.`object`.SurfaceFilterRender
-import com.pedro.encoder.utils.gl.AspectRatioMode
 import com.pedro.library.view.GlInterface
-import com.pedro.library.view.GlStreamInterface
 import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.core.applog
 import com.saeedkolivand.metastream.privacy.Privacy
@@ -73,10 +71,6 @@ object Overlays {
         FaceCam.install(g, outW, outH)
         val pack = OverlayStore.pack
         val scene = OverlayStore.active()?.takeIf { pack != null && Engine.source != Source.Glasses }
-        // ponytail: RootEncoder 2.8.1 draws a black preview when filters meet AspectRatioMode.Fill (the encoder output is fine),
-        // so the preview letterboxes while an overlay scene or the privacy blur is on. Upgrade path: fix or work around in a RootEncoder patch.
-        val fill = scene == null && !Privacy.wanted
-        (glNow as? GlStreamInterface)?.setAspectRatioMode(if (fill) AspectRatioMode.Fill else AspectRatioMode.Adjust)
         if (scene == null || pack == null) return
         val fit = fit(pack.canvasW, pack.canvasH, outW, outH)
         val web = BrowserOverlay(app, outW, outH)
