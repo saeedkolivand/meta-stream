@@ -26,6 +26,7 @@ import com.meta.wearable.dat.mockdevice.api.camera.CameraFacing
 import com.pedro.common.ConnectChecker
 import com.pedro.common.VideoCodec
 import com.pedro.rtmp.rtmp.RtmpClient
+import com.saeedkolivand.metastream.core.AppSettings
 import com.saeedkolivand.metastream.core.applog
 import java.nio.ByteBuffer
 import kotlinx.coroutines.CoroutineScope
@@ -154,7 +155,13 @@ class Glasses(private val app: Application, private val scope: CoroutineScope, c
             }
             val s = started ?: return@launch
             session = s
-            val cam = s.addCamera(StreamConfiguration(videoQuality = VideoQuality.HIGH, frameRate = 30, compressVideo = true))
+            // Settings > Video (glasses): read per session start, so a change applies the next time Go Live is pressed.
+            val quality = when (AppSettings.glassesResolution) {
+                "low" -> VideoQuality.LOW
+                "medium" -> VideoQuality.MEDIUM
+                else -> VideoQuality.HIGH
+            }
+            val cam = s.addCamera(StreamConfiguration(videoQuality = quality, frameRate = AppSettings.glassesFps, compressVideo = true))
                 .fold({ it }, { e, _ ->
                     status = "camera: ${e.description}"
                     null
@@ -229,7 +236,7 @@ class Glasses(private val app: Application, private val scope: CoroutineScope, c
             rtmp.setVideoCodec(VideoCodec.H265)
             rtmp.setOnlyVideo(true) // audio is a later phase
             rtmp.setVideoResolution(f.width, f.height)
-            rtmp.setFps(30)
+            rtmp.setFps(AppSettings.glassesFps)
             rtmp.setReTries(10)
             rtmp.setVideoInfo(ByteBuffer.wrap(params.sps!!), ByteBuffer.wrap(params.pps!!), ByteBuffer.wrap(params.vps!!))
             rtmp.connect(url)

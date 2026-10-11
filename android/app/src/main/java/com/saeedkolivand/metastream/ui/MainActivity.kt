@@ -9,10 +9,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
+import com.saeedkolivand.metastream.core.AppSettings
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.StreamingService
 import kotlinx.coroutines.CompletableDeferred
@@ -37,9 +39,18 @@ class MainActivity : ComponentActivity() {
         // Always dark like iOS (.preferredColorScheme(.dark)): white system-bar icons over the black preview.
         val dark = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
         enableEdgeToEdge(dark, dark)
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) // iOS keepAwake defaults to on
         // Surface gives text a content color; without it plain Text drew black on the dark window.
-        setContent { MaterialTheme(darkColorScheme(primary = Color(0xFF0A84FF))) { Surface(color = Color.Black) { MainScreen() } } }
+        setContent {
+            // iOS keepAwake (Settings > Diagnostics), default on.
+            SideEffect {
+                if (AppSettings.keepAwake) {
+                    window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                } else {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
+            MaterialTheme(darkColorScheme(primary = Color(0xFF0A84FF))) { Surface(color = Color.Black) { MainScreen() } }
+        }
     }
 
     // Visible activity = the one place Android allows starting the camera|microphone service; keep it idle for the car

@@ -7,6 +7,7 @@ import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
+import com.saeedkolivand.metastream.streaming.Mics
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -19,6 +20,8 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         Prefs.init(this)
+        AppSettings.init()
+        Mics.init()
         Speaker.init(this)
         OverlayStore.init(this)
         Overlays.init(this)
