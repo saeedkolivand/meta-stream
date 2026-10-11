@@ -14,15 +14,20 @@ import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import com.pedro.common.ConnectChecker
 import com.pedro.common.StreamingStatsReport
+import com.pedro.common.VideoCodec
 import com.pedro.encoder.input.sources.audio.MicrophoneSource
 import com.pedro.encoder.input.sources.video.Camera2Source
 import com.pedro.encoder.input.sources.video.VideoSource
 import com.pedro.encoder.utils.gl.AspectRatioMode
 import com.pedro.extrasources.CameraUvcSource
 import com.pedro.library.generic.GenericStream
+import com.pedro.library.util.streamclient.SrtStreamClient
+import com.saeedkolivand.metastream.core.AppSettings
 import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.VideoParams
 import com.saeedkolivand.metastream.core.applog
 import com.saeedkolivand.metastream.core.redactFromLogs
+import com.saeedkolivand.metastream.core.toVideoParams
 import com.saeedkolivand.metastream.glasses.Glasses
 import com.saeedkolivand.metastream.overlay.Overlays
 import kotlinx.coroutines.CoroutineScope
@@ -89,6 +94,7 @@ object Engine {
         url = Prefs.string("url", DEFAULT_INGEST_URL)
         key = Prefs.string("key")
         glasses = Glasses(app, scope, checker)
+        Health.init(app, scope, speak, alert)
     }
 
     fun updateUrl(value: String) {
@@ -115,11 +121,12 @@ object Engine {
             status = "camera/mic permission needed"
             return null
         }
-        val s = GenericStream(app, checker, video(source), MicrophoneSource())
+        val mic = MicrophoneSource().also { Mics.apply(app, it) }
+        val s = GenericStream(app, checker, video(source), mic)
         s.getGlInterface().autoHandleOrientation = true // output follows device rotation
         s.getGlInterface().setAspectRatioMode(AspectRatioMode.Fill) // the preview crops to fill the screen like iOS
         s.getStreamClient().setReTries(10) // RootEncoder's built-in reconnect, driven from onConnectionFailed
-        // ponytail: 720p30 requested of every source; CameraUvcSource has no size API, so UVCAndroid picks its default
+        // ponytail: the configured size/fps is requested of every source; CameraUvcSource has no size API, so UVCAndroid picks its default
         // preview size and the GL pipeline scales it. Upgrade path: own VideoSource wrapping ICameraHelper.setPreviewSize.
         if (!prepare(s)) return null
         stream = s
@@ -127,29 +134,33 @@ object Engine {
     }
 
     private var preview: SurfaceView? = null
-    private var preparedPortrait: Boolean? = null
+    private var prepared: Pair<VideoParams, Boolean>? = null
 
     private fun portrait() = app.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
 
-    /** Upright phone = 720x1280 out (rotation 90, as RootEncoder's sample), else 1280x720. */
+    private fun wanted() = AppSettings.ingest.let { it.toVideoParams(portrait()) to it.h265 }
+
+    /** Applies the saved ingest settings; an upright phone with no lock = 720x1280 out (rotation 90, as RootEncoder's sample). */
     private fun prepare(s: GenericStream): Boolean {
-        val vertical = portrait()
+        val want = wanted()
+        val (p, h265) = want
         val ok = try {
-            s.prepareVideo(1280, 720, 4_000_000, fps = 30, rotation = if (vertical) 90 else 0) &&
+            s.setVideoCodec(if (h265) VideoCodec.H265 else VideoCodec.H264)
+            s.prepareVideo(p.width, p.height, p.bitrate, fps = p.fps, rotation = p.rotation) &&
                 s.prepareAudio(44100, true, 128_000)
         } catch (e: IllegalArgumentException) {
             false
         }
         if (ok) applyCameraOff(s)
-        if (ok) Overlays.bind(s.getGlInterface(), if (vertical) 720 else 1280, if (vertical) 1280 else 720)
-        if (ok) preparedPortrait = vertical else status = "camera/mic setup failed"
+        if (ok) Overlays.bind(s.getGlInterface(), p.outW, p.outH)
+        if (ok) prepared = want else status = "camera/mic setup failed"
         return ok
     }
 
-    // ponytail: orientation is fixed when going live (like iOS); turning the phone mid-stream letterboxes via
+    // ponytail: size/orientation/codec are fixed when going live (like iOS); turning the phone mid-stream letterboxes via
     // autoHandleOrientation instead of re-encoding. Re-preparing needs a released stream, so the preview restarts.
-    private fun matchOrientation(s: GenericStream): Boolean {
-        if (portrait() == preparedPortrait) return true
+    private fun matchSettings(s: GenericStream): Boolean {
+        if (wanted() == prepared) return true
         Overlays.unbind() // the re-prepare drops the GL filters; prepare() binds again and goLive refreshes
         s.release()
         val ok = prepare(s)
@@ -213,7 +224,7 @@ object Engine {
             return
         }
         val s = if (source == Source.Glasses) null else ensure() ?: return
-        if (s != null && !matchOrientation(s)) return
+        if (s != null && !matchSettings(s)) return
         redactFromLogs(key)
         Prefs.put("url", url)
         Prefs.put("key", key)
@@ -224,12 +235,15 @@ object Engine {
             return
         }
         val full = url.trimEnd('/') + "/" + key
-        if (s == null) glasses.start(full, askWearables) else s.startStream(full)
+        if (s == null) glasses.start(full, askWearables) else startStream(s, full)
+        // Glasses passthrough has no encoder knob, so Health only watches it.
+        Health.start(AppSettings.ingest.bitrateKbps, s?.getStreamClient()) { s?.setVideoBitrateOnFly(it * 1000) }
         Overlays.refresh()
         live = true
     }
 
     fun stop(reason: String = "idle") {
+        Health.stop()
         if (source == Source.Glasses) glasses.stop() else stream?.stopStream()
         live = false
         connected = false
@@ -243,8 +257,30 @@ object Engine {
         speak("stream stopped")
     }
 
+    private fun startStream(s: GenericStream, full: String) {
+        if (full.startsWith("srt://")) setSrtLatency(s, AppSettings.ingest.srtLatencyMs)
+        s.startStream(full)
+    }
+
+    // ponytail: GenericStreamClient hides the SRT client's setLatency (its setDelay is something else); reflection reaches it.
+    // Upgrade path: build SrtStream directly when the URL is srt://.
+    private fun setSrtLatency(s: GenericStream, ms: Int) {
+        try {
+            val client = s.getStreamClient()
+            val f = client.javaClass.getDeclaredField("srtClient").apply { isAccessible = true }
+            (f.get(client) as SrtStreamClient).setLatency(ms)
+        } catch (e: ReflectiveOperationException) {
+            applog("stream", "SRT latency not applied: ${e.message}")
+        }
+    }
+
     fun switchCamera() {
         (stream?.videoSource as? Camera2Source)?.switchCamera()
+    }
+
+    /** Re-applies the picked microphone to the running source (a new choice from Settings). */
+    fun refreshMic() {
+        (stream?.audioSource as? MicrophoneSource)?.let { Mics.apply(app, it) }
     }
 
     fun toggleMute() {
@@ -263,6 +299,7 @@ object Engine {
             glasses.onRtmpUp()
             applog("stream", "connected")
             scope.launch {
+                Health.markUp()
                 if (live) {
                     connected = true
                     if (liveSince == null) liveSince = System.currentTimeMillis()
@@ -281,8 +318,7 @@ object Engine {
                 connected = false
                 if (retrying) {
                     status = "retrying: $reason"
-                    speak("connection lost, retrying")
-                    alert("Stream dropped, retrying")
+                    Health.markDown()
                 } else {
                     stop("failed: $reason")
                 }
@@ -302,6 +338,7 @@ object Engine {
         override fun onAuthSuccess() {}
 
         override fun onStreamingStats(report: StreamingStatsReport) {
+            Health.onStats(report.bytesOutPerSecond, report.smoothedBitrate)
             scope.launch {
                 if (live) status = "%s · %.1f Mb/s".format(status.substringBefore(" ·"), report.smoothedBitrate / 1e6)
             }

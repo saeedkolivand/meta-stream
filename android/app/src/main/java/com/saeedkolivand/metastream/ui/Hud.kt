@@ -17,7 +17,9 @@ import androidx.compose.ui.unit.dp
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
+import com.saeedkolivand.metastream.streaming.Health
 import com.saeedkolivand.metastream.streaming.Source
+import com.saeedkolivand.metastream.streaming.thermalLabel
 import kotlinx.coroutines.delay
 
 private fun elapsed(ms: Long): String {
@@ -51,11 +53,14 @@ internal fun Hud() {
     Row(Modifier.horizontalScroll(rememberScrollState()).padding(top = 4.dp), Arrangement.spacedBy(8.dp)) {
         if (Engine.live) {
             TimerPill()
-            // status is "<state> · <bitrate>" while streaming
-            Pill(R.drawable.ic_antenna, Engine.status.substringAfter(" · ", Engine.status), Color.White)
+            val rate = if (Health.fps > 0) "${Health.fps} fps · ${Health.kbps} kbps" else "${Health.kbps} kbps"
+            Pill(R.drawable.ic_waveform, rate, Color.White)
+            if (Health.capKbps in 1 until Health.ceilingKbps) Pill(R.drawable.ic_cap, "${Health.capKbps}k cap", Orange)
         } else {
             Pill(R.drawable.ic_antenna, Engine.status, Color.Gray)
         }
+        Health.battery?.takeIf { it < 30 }?.let { Pill(R.drawable.ic_battery, "phone $it%", if (it < 15) Orange else Color.White) }
+        thermalLabel(Health.thermal)?.let { Pill(R.drawable.ic_thermo, it, if (it == "warm") Color.White else Orange) }
         val (icon, name) = when (Engine.source) {
             Source.Phone -> R.drawable.ic_phone to "Phone"
             Source.Usb -> R.drawable.ic_usb to "USB"
