@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.meta.wearable.dat.core.types.RegistrationState
+import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 import com.saeedkolivand.metastream.streaming.StreamingService
@@ -89,6 +90,7 @@ internal fun MainScreen() {
                 onRelease = { Engine.detach() },
                 modifier = Modifier.fillMaxSize()
             )
+            if (Engine.source == Source.Phone) CamPreviewLayer()
         } else {
             Box(Modifier.fillMaxSize(), Alignment.Center) {
                 PermissionCard {
@@ -115,6 +117,11 @@ internal fun MainScreen() {
             Box(Modifier.onGloballyPositioned { restPx = totalPx - it.positionInRoot().y + 8 * density }) {
                 val open = detent != Detent.Hidden
                 Controls(granted, open, { detent = if (open) Detent.Hidden else Detent.Partial }, { settingsOpen = true })
+            }
+        }
+        if (granted && Engine.source == Source.Phone && Cam.stripOpen) {
+            Box(Modifier.fillMaxSize().safeDrawingPadding().padding(end = 10.dp, top = 56.dp, bottom = 190.dp)) {
+                CamStrip(Modifier.align(Alignment.CenterEnd))
             }
         }
         val args = SheetArgs(

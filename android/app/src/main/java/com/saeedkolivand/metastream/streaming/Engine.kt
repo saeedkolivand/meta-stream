@@ -10,10 +10,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import com.pedro.common.ConnectChecker
-import androidx.core.net.toUri
 import com.pedro.common.StreamingStatsReport
 import com.pedro.common.VideoCodec
 import com.pedro.encoder.input.sources.audio.MicrophoneSource
@@ -23,6 +23,7 @@ import com.pedro.encoder.utils.gl.AspectRatioMode
 import com.pedro.extrasources.CameraUvcSource
 import com.pedro.library.generic.GenericStream
 import com.pedro.library.util.streamclient.SrtStreamClient
+import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.core.AppSettings
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.VideoParams
@@ -96,6 +97,7 @@ object Engine {
         key = Prefs.string("key")
         glasses = Glasses(app, scope, checker)
         Health.init(app, scope, speak, alert)
+        Cam.init(app)
     }
 
     fun updateUrl(value: String) {
@@ -154,6 +156,7 @@ object Engine {
         }
         if (ok) applyCameraOff(s)
         if (ok) Overlays.bind(s.getGlInterface(), p.outW, p.outH)
+        if (ok) Cam.attach(s)
         if (ok) prepared = want else status = "camera/mic setup failed"
         return ok
     }
@@ -209,6 +212,7 @@ object Engine {
         if (s != null && next != Source.Glasses && (next == Source.Usb) != (s.videoSource is CameraUvcSource)) {
             try {
                 s.changeVideoSource(video(next))
+                Cam.attach(s)
             } catch (e: IllegalArgumentException) {
                 status = "source unsupported: ${e.message}"
                 return

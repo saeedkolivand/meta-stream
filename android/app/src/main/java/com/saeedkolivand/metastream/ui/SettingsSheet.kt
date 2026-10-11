@@ -36,6 +36,7 @@ private enum class Page(val title: String, val parent: Page?) {
     Ingest("Ingest & protocol", Root),
     Audio("Audio", Root),
     Glasses("Video (glasses)", Root),
+    Camera("Camera", Root),
     Diagnostics("Diagnostics & about", Root),
     Logs("Logs", Diagnostics)
 }
@@ -57,6 +58,7 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
                 Page.Root -> RootPage { page = it }
                 Page.Ingest -> IngestPage()
                 Page.Audio -> AudioPage()
+                Page.Camera -> CameraSettingsContent()
                 Page.Glasses -> GlassesVideoPage()
                 Page.Diagnostics -> DiagnosticsPage { page = Page.Logs }
                 Page.Logs -> LogsPage()
@@ -69,6 +71,7 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
 private fun RootPage(go: (Page) -> Unit) {
     val activity = requireNotNull(LocalActivity.current)
     NavRow(Page.Ingest.title) { go(Page.Ingest) }
+    NavRow(Page.Camera.title) { go(Page.Camera) }
     NavRow(Page.Audio.title) { go(Page.Audio) }
     NavRow(Page.Glasses.title) { go(Page.Glasses) }
     NavRow(Page.Diagnostics.title) { go(Page.Diagnostics) }
