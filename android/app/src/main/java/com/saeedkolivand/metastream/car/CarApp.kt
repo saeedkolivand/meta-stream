@@ -30,6 +30,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
@@ -81,7 +82,9 @@ private class CarSession : Session() {
 private fun autoRefresh(screen: Screen, chat: Boolean) {
     // ponytail: status ticks with the bitrate (~1/s) and re-sends the same template type, which the host doesn't count against
     // the 5-template quota. Upgrade path: drop the bitrate from the status row if a host ever complains.
-    val state = snapshotFlow { listOf(Engine.live, Engine.status, Engine.source, Engine.muted, Speaker.readAloud) }.drop(1)
+    val state = snapshotFlow {
+        listOf(Engine.live, Engine.status, Engine.source, Engine.muted, Speaker.readAloud, OverlayStore.scene)
+    }.drop(1)
     val flow = if (chat) merge(state, ChatFeed.chat.drop(1)) else state
     screen.lifecycleScope.launch {
         screen.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -183,9 +186,33 @@ private class ControlsScreen(c: CarContext) : Screen(c) {
                 }
             )
         }
+        list.addItem(
+            Row.Builder().setTitle("Scene: ${OverlayStore.scene.ifEmpty { "None" }}").setBrowsable(true)
+                .apply { if (Engine.source == Source.Glasses) addText("Off for glasses") }
+                .setOnClickListener { screenManager.push(SceneScreen(carContext)) }.build()
+        )
         list.addItem(row("Flip camera") { Engine.switchCamera() })
         list.addItem(row("Read chat aloud", if (Speaker.readAloud) "On" else "Off") { Speaker.updateReadAloud(!Speaker.readAloud) })
         val header = Header.Builder().setTitle("Controls").setStartHeaderAction(Action.BACK).build()
+        return ListTemplate.Builder().setHeader(header).setSingleList(list.build()).build()
+    }
+}
+
+/** Overlay scenes: None plus every imported scene, the active one marked. */
+private class SceneScreen(c: CarContext) : Screen(c) {
+    init {
+        autoRefresh(this, chat = false)
+    }
+
+    override fun onGetTemplate(): Template {
+        val list = ItemList.Builder()
+        for (name in listOf("") + OverlayStore.pack?.scenes?.map { it.name }.orEmpty()) {
+            list.addItem(
+                Row.Builder().setTitle(name.ifEmpty { "None" }).apply { if (OverlayStore.scene == name) addText("Active") }
+                    .setOnClickListener { OverlayStore.select(name) }.build()
+            )
+        }
+        val header = Header.Builder().setTitle("Scene").setStartHeaderAction(Action.BACK).build()
         return ListTemplate.Builder().setHeader(header).setSingleList(list.build()).build()
     }
 }

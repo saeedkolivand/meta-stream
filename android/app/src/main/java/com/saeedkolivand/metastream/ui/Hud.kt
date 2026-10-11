@@ -62,6 +62,7 @@ internal fun Hud() {
             Source.Glasses -> R.drawable.ic_glasses to "Glasses"
         }
         Pill(icon, name, Color.White)
+        ScenePill()
         if (Engine.source == Source.Glasses) {
             val g = Engine.glasses.status
             Pill(R.drawable.ic_glasses, g.ifEmpty { "idle" }, glassesColor(g))

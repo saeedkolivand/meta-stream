@@ -24,6 +24,7 @@ import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.applog
 import com.saeedkolivand.metastream.core.redactFromLogs
 import com.saeedkolivand.metastream.glasses.Glasses
+import com.saeedkolivand.metastream.overlay.Overlays
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -140,6 +141,7 @@ object Engine {
             false
         }
         if (ok) applyCameraOff(s)
+        if (ok) Overlays.bind(s.getGlInterface(), if (vertical) 720 else 1280, if (vertical) 1280 else 720)
         if (ok) preparedPortrait = vertical else status = "camera/mic setup failed"
         return ok
     }
@@ -148,6 +150,7 @@ object Engine {
     // autoHandleOrientation instead of re-encoding. Re-preparing needs a released stream, so the preview restarts.
     private fun matchOrientation(s: GenericStream): Boolean {
         if (portrait() == preparedPortrait) return true
+        Overlays.unbind() // the re-prepare drops the GL filters; prepare() binds again and goLive refreshes
         s.release()
         val ok = prepare(s)
         preview?.let { if (ok) s.startPreview(it, true) }
@@ -160,6 +163,7 @@ object Engine {
         ensure()?.let {
             it.startPreview(view, true)
             applyCameraOff(it)
+            Overlays.refresh()
         }
     }
 
@@ -199,6 +203,7 @@ object Engine {
             }
         }
         source = next
+        Overlays.refresh()
     }
 
     fun goLive() {
@@ -220,6 +225,7 @@ object Engine {
         }
         val full = url.trimEnd('/') + "/" + key
         if (s == null) glasses.start(full, askWearables) else s.startStream(full)
+        Overlays.refresh()
         live = true
     }
 
