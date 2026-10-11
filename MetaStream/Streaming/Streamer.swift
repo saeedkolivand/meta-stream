@@ -232,6 +232,8 @@ final class Streamer: ObservableObject {
 
     var overlayObject: VideoTrackScreenObject?   // the face-cam window; created once per mixer
 
+    let overlays = OverlayCompositor()           // OBS scene layers on the mixer's Screen, see StreamerOverlays.swift
+
     var makingOverlay = false                // guards the await in syncBlurEffect against the 1 s tick re-entering
 
     var warnedNoMultiCam = false

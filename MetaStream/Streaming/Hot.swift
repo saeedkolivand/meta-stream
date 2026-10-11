@@ -120,7 +120,7 @@ extension Streamer {
         // actually going out rather than a clean picture that silently isn't what the audience gets. Called
         // from goLive()/stopLive()/syncBlurEffect() too, since those flip the state this depends on without
         // themselves being observed properties.
-        let glassesBlurredLive = hot.forward && hot.transcoder != nil && (hot.live || hot.warm) && (privacy?.enabled == true || dualCamActive)
+        let glassesBlurredLive = hot.forward && hot.transcoder != nil && (hot.live || hot.warm) && (privacy?.enabled == true || dualCamActive || overlaysWanted)
         let show = source == "phone" || cameraOff || glassesBlurredLive
         if show != hot.showMixerVideo { hot.showMixerVideo = show; hot.preview?.flush() }   // format switches between sources
     }

@@ -254,7 +254,8 @@ extension Streamer {
                 // Re-attach with the session's quality (preset, fps, orientation): the idle attach may have run with
                 // different Settings, and a portrait capture into a landscape encoder is the "still portrait" bug.
                 if source == "phone" { await switchTo(glasses: false) }
-                if h264 || dualLocked == true {           // decoded frames (or the face-cam composite) need the mixer → encoder → stream path
+                // decoded frames, the face-cam composite or an OBS overlay scene on the phone camera need the mixer → encoder → stream path
+                if h264 || dualLocked == true || (onPhone && OverlayStore.shared.activeScene != nil) {
                     await wireMixer()
                     // Force the render loop off before resizing, regardless of whether stopLive()'s own
                     // teardown Task has finished yet -- goLive() must not trust that timing (see

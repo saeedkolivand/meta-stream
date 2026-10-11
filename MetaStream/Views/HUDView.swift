@@ -14,6 +14,31 @@ struct HUDView: View {
     @Binding var showChat: Bool
     @Binding var showCameraControls: Bool
 
+    @ObservedObject var overlays = OverlayStore.shared   // not private: it would make HUDView's memberwise init private
+
+    /// Active OBS scene; tap for the list. Glasses HEVC passthrough can't be drawn on, so it says so there.
+    private var scenePill: some View {
+        let usable = streamer.overlaysUsable
+        return Menu {
+            sceneButton("", "None")
+            if let pack = overlays.pack {
+                ForEach(Array(pack.scenes.enumerated()), id: \.offset) { _, scene in sceneButton(scene.name, scene.name) }
+            }
+        } label: {
+            StripStyles.pill("rectangle.stack", usable ? (overlays.scene.isEmpty ? "no overlay" : overlays.scene) : "overlays off for glasses",
+                             usable && !overlays.scene.isEmpty ? .green : .gray)
+        }
+    }
+
+    private func sceneButton(_ name: String, _ label: String) -> some View {
+        Button {
+            hapticTap()
+            overlays.select(name)
+        } label: {
+            if overlays.scene == name { Label(label, systemImage: "checkmark") } else { Text(label) }
+        }
+    }
+
     private var phoneCamControllable: Bool { streamer.source == "phone" && streamer.manualSource != "external" }
 
     var body: some View {
@@ -58,6 +83,7 @@ struct HUDView: View {
                      streamer.manualSource == "auto" ? "auto · \(streamer.source)"
                          : streamer.manualSource == "external" ? (streamer.externalCameraName ?? "external") : streamer.manualSource,
                      streamer.source == "phone" ? .orange : .white)
+                if overlays.pack != nil { scenePill }
                 StripStyles.stripButton(label: {
                     // Silences chat and alerts only. Stream warnings speak regardless — see Speaker.
                     StripStyles.pill(speaker.muted ? "speaker.slash.fill" : "speaker.wave.2.fill", speaker.muted ? "tts off" : "tts", speaker.muted ? .orange : .white)
