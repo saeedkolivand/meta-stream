@@ -11,6 +11,7 @@ carApp = "1.7.0"
 ktlint = "14.2.0"
 junit = "4.13.2"
 orgJson = "20260814"
+coil = "3.3.0"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -27,6 +28,8 @@ rootencoder-extra = { group = "com.github.pedroSG94.RootEncoder", name = "extra-
 carapp = { group = "androidx.car.app", name = "app", version.ref = "carApp" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 
 [plugins]

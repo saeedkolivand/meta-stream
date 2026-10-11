@@ -8,12 +8,16 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@Volatile
-private var secret = ""
+// Stream key plus every OAuth token seen this process; insertion-ordered so the oldest can be dropped at the cap.
+private val secrets = LinkedHashSet<String>()
 
-/** The stream key to scrub from every later log line. */
+/** A value (stream key, access/refresh token) to scrub from every later log line. */
 fun redactFromLogs(value: String) {
-    secret = value
+    if (value.length < 6) return // too short to be a secret, and replacing it would mangle ordinary words
+    synchronized(secrets) {
+        secrets.add(value)
+        if (secrets.size > 64) secrets.remove(secrets.first()) // tokens refresh hourly; never grows without bound
+    }
 }
 
 /** Fixed-size ring of log lines; the oldest drop first. Thread-safe. */
@@ -44,10 +48,11 @@ object LogBuffer {
     fun lines() = ring.snapshot()
 }
 
-/** Same idea as iOS applog: one tag, a category, and the stream key never reaches the log. */
+internal fun scrub(message: String): String = synchronized(secrets) { secrets.fold(message) { m, s -> m.replace(s, "***") } }
+
+/** Same idea as iOS applog: one tag, a category, and secrets never reach the log (nor the shareable Logs screen). */
 fun applog(category: String, message: String) {
-    val s = secret
-    val safe = if (s.isEmpty()) message else message.replace(s, "***")
+    val safe = scrub(message)
     Log.i("MetaStream", "[$category] $safe")
     LogBuffer.add("${SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())} [$category] $safe")
 }

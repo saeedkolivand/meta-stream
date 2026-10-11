@@ -12,6 +12,10 @@ val localProperties =
         if (file.exists()) file.inputStream().use { load(it) }
     }
 
+// Platform OAuth credentials: CI env vars win, local.properties for dev builds; empty means the app shows "no client ID".
+fun credential(name: String) =
+    (System.getenv(name)?.takeIf { it.isNotBlank() } ?: localProperties.getProperty(name, "")).trim().replace("\"", "")
+
 android {
     namespace = "com.saeedkolivand.metastream"
     compileSdk = 37
@@ -26,7 +30,23 @@ android {
         // Meta DAT credentials; empty is fine with Developer Mode on.
         manifestPlaceholders["mwdat_application_id"] = localProperties.getProperty("mwdat_application_id", "")
         manifestPlaceholders["mwdat_client_token"] = localProperties.getProperty("mwdat_client_token", "")
+
+        // Same names as the iOS secrets. The two *_SECRET values ship in the APK like iOS Info.plist (Kick/Restream need them).
+        listOf(
+            "KICK_CLIENT_ID",
+            "KICK_CLIENT_SECRET",
+            "TWITCH_CLIENT_ID",
+            "RESTREAM_CLIENT_ID",
+            "RESTREAM_CLIENT_SECRET",
+            "YOUTUBE_CLIENT_ID"
+        )
+            .forEach { buildConfigField("String", it, "\"${credential(it)}\"") }
     }
+
+    buildFeatures { buildConfig = true }
+
+    // android.util.Log (applog) is a stub on the JVM; make it a no-op instead of throwing.
+    testOptions { unitTests.isReturnDefaultValues = true }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -55,6 +75,8 @@ dependencies {
     implementation(libs.rootencoder)
     implementation(libs.rootencoder.extra)
     implementation(libs.okhttp)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
     implementation(libs.carapp)
 
     testImplementation(libs.junit)

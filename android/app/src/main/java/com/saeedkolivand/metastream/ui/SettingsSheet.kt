@@ -37,6 +37,7 @@ private enum class Page(val title: String, val parent: Page?) {
     Audio("Audio", Root),
     Glasses("Video (glasses)", Root),
     Camera("Camera", Root),
+    ReadAloud("Read aloud", Root),
     Diagnostics("Diagnostics & about", Root),
     Logs("Logs", Diagnostics)
 }
@@ -59,6 +60,7 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
                 Page.Ingest -> IngestPage()
                 Page.Audio -> AudioPage()
                 Page.Camera -> CameraSettingsContent()
+                Page.ReadAloud -> ReadAloudSettings()
                 Page.Glasses -> GlassesVideoPage()
                 Page.Diagnostics -> DiagnosticsPage { page = Page.Logs }
                 Page.Logs -> LogsPage()
@@ -70,9 +72,11 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
 @Composable
 private fun RootPage(go: (Page) -> Unit) {
     val activity = requireNotNull(LocalActivity.current)
+    NavRow("Stream Manager") { ManagerState.open = true }
     NavRow(Page.Ingest.title) { go(Page.Ingest) }
     NavRow(Page.Camera.title) { go(Page.Camera) }
     NavRow(Page.Audio.title) { go(Page.Audio) }
+    NavRow(Page.ReadAloud.title) { go(Page.ReadAloud) }
     NavRow(Page.Glasses.title) { go(Page.Glasses) }
     NavRow(Page.Diagnostics.title) { go(Page.Diagnostics) }
     Section("Stream") {

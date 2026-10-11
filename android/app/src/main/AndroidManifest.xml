@@ -52,6 +52,13 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="metastream" />
             </intent-filter>
+            <!-- Google (YouTube) sign-in redirect: com.saeedkolivand.metastream:/oauth2redirect. Scheme only: path matching needs a host. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="com.saeedkolivand.metastream" />
+            </intent-filter>
         </activity>
 
         <meta-data android:name="com.google.android.gms.car.application" android:resource="@xml/automotive_app_desc" />
