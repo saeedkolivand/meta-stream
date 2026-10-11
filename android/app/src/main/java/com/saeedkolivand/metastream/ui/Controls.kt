@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
+import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 
@@ -115,10 +116,20 @@ private fun GoLive(enabled: Boolean) {
 internal fun Controls(granted: Boolean, chatOpen: Boolean, onChat: () -> Unit, onSettings: () -> Unit) {
     Column(Modifier.padding(bottom = 12.dp)) {
         QuickControls(granted)
-        Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally), Alignment.CenterVertically) {
+        // iOS tightens the spacing to fit the extra eye button.
+        Row(
+            Modifier.fillMaxWidth(),
+            Arrangement.spacedBy(if (FaceCam.active) 8.dp else 18.dp, Alignment.CenterHorizontally),
+            Alignment.CenterVertically
+        ) {
             SourcePicker()
             // granted is required even for glasses: the camera|microphone foreground service throws without it.
             GoLive(granted)
+            if (FaceCam.active) {
+                RoundButton(if (FaceCam.hidden) R.drawable.ic_eye_off else R.drawable.ic_eye, FaceCam.hidden) {
+                    FaceCam.hide(!FaceCam.hidden)
+                }
+            }
             RoundButton(R.drawable.ic_chat, chatOpen, onChat)
             RoundButton(R.drawable.ic_settings, false, onSettings)
         }

@@ -13,6 +13,7 @@ import com.pedro.encoder.input.gl.render.filters.`object`.SurfaceFilterRender
 import com.pedro.encoder.utils.gl.AspectRatioMode
 import com.pedro.library.view.GlInterface
 import com.pedro.library.view.GlStreamInterface
+import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.core.applog
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
@@ -47,6 +48,7 @@ object Overlays {
 
     fun unbind() {
         release()
+        FaceCam.stop()
         gl = null
     }
 
@@ -58,8 +60,9 @@ object Overlays {
         }
         release()
         val g = gl ?: return
-        val pack = OverlayStore.pack ?: return
-        val scene = OverlayStore.active()?.takeIf { Engine.source != Source.Glasses }
+        val face = FaceCam.install(g, outW, outH) // first, so it draws under every overlay layer
+        val pack = OverlayStore.pack
+        val scene = pack?.let { OverlayStore.active() }?.takeIf { Engine.source != Source.Glasses }
         // ponytail: RootEncoder 2.8.1 draws a black preview when filters meet AspectRatioMode.Fill (the encoder output is fine),
         // so the preview letterboxes while an overlay scene is on. Upgrade path: fix or work around in a RootEncoder patch.
         (g as? GlStreamInterface)?.setAspectRatioMode(if (scene == null) AspectRatioMode.Fill else AspectRatioMode.Adjust)
