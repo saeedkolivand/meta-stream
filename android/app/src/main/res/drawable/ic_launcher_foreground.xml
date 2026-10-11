@@ -1,3 +1,30 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFF" android:pathData="M30,38h32v32h-32zM66,48l12,-8v28l-12,-8z"/>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Live dot with broadcast arcs, ((•)). Arcs span ±42° around horizontal; content stays inside the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M63.66,45.3A13,13 0,0 1,63.66,62.7M44.34,62.7A13,13 0,0 1,44.34,45.3"
+        android:strokeWidth="5"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M71.09,38.61A23,23 0,0 1,71.09,69.39M36.91,69.39A23,23 0,0 1,36.91,38.61"
+        android:strokeWidth="5"
+        android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor">
+            <gradient android:type="linear" android:startX="54" android:startY="28.5" android:endX="54" android:endY="79.5"
+                android:startColor="#FF3DE8FF" android:endColor="#FFC84BFF" />
+        </aapt:attr>
+    </path>
+    <path android:pathData="M46.5,54a7.5,7.5 0,1 0,15 0a7.5,7.5 0,1 0,-15 0z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="54" android:startY="46.5" android:endX="54" android:endY="61.5"
+                android:startColor="#FFFF7A3D" android:endColor="#FFFF1F5A" />
+        </aapt:attr>
+    </path>
+    <path android:fillColor="#59FFFFFF" android:pathData="M49,51.4a2.4,2.4 0,1 0,4.8 0a2.4,2.4 0,1 0,-4.8 0z" />
 </vector>

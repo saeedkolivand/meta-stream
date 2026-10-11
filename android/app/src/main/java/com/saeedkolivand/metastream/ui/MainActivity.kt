@@ -7,10 +7,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.types.Permission
@@ -36,6 +41,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // The Compose Splash overlay takes over with the same colour, so drop the system one at once.
+        splashScreen.setOnExitAnimationListener { it.remove() }
         super.onCreate(savedInstanceState)
         Engine.setWearablesAsker(::askWearables)
         OAuth.handle(intent.data) // cold start from a sign-in redirect
@@ -53,7 +60,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
             MaterialTheme(darkColorScheme(primary = Color(0xFF0A84FF), onPrimary = Color.White)) {
-                Surface(color = Color.Black) { MainScreen() }
+                // Cold launch only: rotation/recreation restores false. The app composes underneath right away.
+                var showSplash by rememberSaveable { mutableStateOf(savedInstanceState == null) }
+                Box {
+                    Surface(color = Color.Black) { MainScreen() }
+                    if (showSplash) Splash { showSplash = false }
+                }
             }
         }
     }

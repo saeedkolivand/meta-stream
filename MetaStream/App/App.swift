@@ -8,6 +8,8 @@ struct MetaStreamApp: App {
     @StateObject private var speaker = Speaker()
     @StateObject private var chat = ChatFeed()
     @StateObject private var privacy = Privacy()
+    // Cold launch only: App state survives rotation and backgrounding.
+    @State private var showSplash = true
 
     init() {
         do { try Wearables.configure() }
@@ -16,20 +18,23 @@ struct MetaStreamApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(streamer)
-                .environmentObject(platforms)
-                .environmentObject(speaker)
-                .environmentObject(chat)
-                .environmentObject(privacy)
-                // Streamer speaks connection changes on Speaker's System lane (never muted).
-                .onAppear { streamer.speaker = speaker; streamer.privacy = privacy }
-                .onOpenURL { url in
-                    Task {
-                        do { _ = try await Wearables.shared.handleUrl(url) }
-                        catch { applog("ui", "handleUrl failed: \(error.localizedDescription)", error: true) }
+            ZStack {
+                ContentView()
+                    .environmentObject(streamer)
+                    .environmentObject(platforms)
+                    .environmentObject(speaker)
+                    .environmentObject(chat)
+                    .environmentObject(privacy)
+                    // Streamer speaks connection changes on Speaker's System lane (never muted).
+                    .onAppear { streamer.speaker = speaker; streamer.privacy = privacy }
+                    .onOpenURL { url in
+                        Task {
+                            do { _ = try await Wearables.shared.handleUrl(url) }
+                            catch { applog("ui", "handleUrl failed: \(error.localizedDescription)", error: true) }
+                        }
                     }
-                }
+                if showSplash { SplashView { showSplash = false } }
+            }
         }
     }
 }

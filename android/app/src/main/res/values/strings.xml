@@ -2,5 +2,4 @@
 <resources>
     <string name="app_name">MetaStream</string>
     <string name="ready_title">MetaStream is ready</string>
-    <color name="ic_launcher_background">#1E3A8A</color>
 </resources>

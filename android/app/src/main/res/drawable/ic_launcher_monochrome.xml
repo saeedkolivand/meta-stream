@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed (Material You) icon: the same mark in one colour; the launcher tints it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M63.66,45.3A13,13 0,0 1,63.66,62.7M44.34,62.7A13,13 0,0 1,44.34,45.3M71.09,38.61A23,23 0,0 1,71.09,69.39M36.91,69.39A23,23 0,0 1,36.91,38.61"
+        android:strokeWidth="5"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M46.5,54a7.5,7.5 0,1 0,15 0a7.5,7.5 0,1 0,-15 0z" />
+</vector>
