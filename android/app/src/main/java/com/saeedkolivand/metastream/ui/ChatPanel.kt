@@ -1,57 +1,116 @@
 package com.saeedkolivand.metastream.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.chat.displayText
-import com.saeedkolivand.metastream.speech.Speaker
+import com.saeedkolivand.metastream.core.Prefs
+
+private val SIZES = listOf(16, 20, 26, 32)
+private val Kick = Color(0xFF53FC18)
+private val Twitch = Color(0xFF9146FF)
 
 @Composable
-internal fun ChatPanel(modifier: Modifier) {
+private fun Header(step: Int, resize: (Int) -> Unit, maximized: Boolean, onMaximize: () -> Unit) {
+    val haptic = rememberHaptic()
+    fun tap(action: () -> Unit) = {
+        haptic(false)
+        action()
+    }
+    Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        TextButton(tap { resize(step - 1) }, enabled = step > 0) { Text("A−", fontSize = 16.sp, color = Color.White) }
+        TextButton(tap { resize(step + 1) }, enabled = step < SIZES.lastIndex) { Text("A+", fontSize = 20.sp, color = Color.White) }
+        Spacer(Modifier.weight(1f))
+        IconButton(tap(onMaximize)) {
+            Icon(
+                painterResource(if (maximized) R.drawable.ic_fullscreen_exit else R.drawable.ic_fullscreen),
+                "Resize chat",
+                tint = Color.White
+            )
+        }
+    }
+}
+
+/** Non-modal like the iOS sheet with background interaction: the preview and controls stay usable. */
+@Composable
+internal fun ChatPanel(modifier: Modifier, maximized: Boolean, onMaximize: () -> Unit, onSettings: () -> Unit) {
     val events by ChatFeed.chat.collectAsStateWithLifecycle()
     val list = rememberLazyListState()
-    LaunchedEffect(events.lastOrNull()) { if (events.isNotEmpty()) list.scrollToItem(events.lastIndex) }
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(ChatFeed.kickSlug, ChatFeed::setKick, Modifier.weight(1f), label = {
-                Text("Kick channel")
-            }, singleLine = true)
-            OutlinedTextField(ChatFeed.twitchChannel, ChatFeed::setTwitch, Modifier.weight(1f), label = {
-                Text("Twitch channel")
-            }, singleLine = true)
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Switch(Speaker.readAloud, Speaker::updateReadAloud)
-            Text("Read chat aloud", Modifier.padding(top = 12.dp))
-        }
-        LazyColumn(Modifier.fillMaxWidth().weight(1f), list) {
-            items(events) { e ->
-                Text(
-                    buildAnnotatedString {
-                        withStyle(SpanStyle(color = if (e.platform == "kick") Color(0xFF2BB600) else Color(0xFF9146FF))) { append(e.user) }
-                        append(": ${displayText(e.text)}")
-                    }
-                )
+    // Default one step above system size: chat is read at a glance from a phone mounted on a dash.
+    var step by remember { mutableIntStateOf(Prefs.string("chatTextSize", "1").toIntOrNull()?.coerceIn(0, SIZES.lastIndex) ?: 1) }
+    val size = SIZES[step]
+    fun resize(to: Int) {
+        step = to.coerceIn(0, SIZES.lastIndex)
+        Prefs.put("chatTextSize", step.toString())
+    }
+    // Follow new messages only while the bottom is on screen; scrolled up to read history = stay put.
+    // The layout still reflects the previous list here, so canScrollForward says where the user was.
+    LaunchedEffect(events.size) {
+        if (events.isNotEmpty() && !list.canScrollForward) list.scrollToItem(events.lastIndex)
+    }
+    Column(modifier.clip(RoundedCornerShape(20.dp)).background(Color.Black.copy(alpha = if (maximized) 0.92f else 0.7f))) {
+        Header(step, ::resize, maximized, onMaximize)
+        if (ChatFeed.kickSlug.isEmpty() && ChatFeed.twitchChannel.isEmpty()) {
+            Column(
+                Modifier.fillMaxSize().padding(16.dp),
+                Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+                Alignment.CenterHorizontally
+            ) {
+                Text("No chat source set", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                Text("Set a channel name in Settings.", fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f))
+                Button(onSettings) { Text("Settings") }
+            }
+        } else {
+            LazyColumn(Modifier.fillMaxSize(), list, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
+                items(events) { e ->
+                    Text(
+                        buildAnnotatedString {
+                            withStyle(SpanStyle(color = if (e.platform == "kick") Kick else Twitch, fontWeight = FontWeight.SemiBold)) {
+                                append(e.user)
+                            }
+                            append(": ${displayText(e.text)}")
+                        },
+                        Modifier.padding(vertical = 5.dp),
+                        color = Color.White,
+                        fontSize = size.sp,
+                        lineHeight = (size * 1.3f).sp
+                    )
+                }
             }
         }
     }

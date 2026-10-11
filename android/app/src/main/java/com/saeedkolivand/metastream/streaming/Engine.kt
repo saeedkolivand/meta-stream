@@ -17,6 +17,7 @@ import com.pedro.common.StreamingStatsReport
 import com.pedro.encoder.input.sources.audio.MicrophoneSource
 import com.pedro.encoder.input.sources.video.Camera2Source
 import com.pedro.encoder.input.sources.video.VideoSource
+import com.pedro.encoder.utils.gl.AspectRatioMode
 import com.pedro.extrasources.CameraUvcSource
 import com.pedro.library.generic.GenericStream
 import com.saeedkolivand.metastream.core.Prefs
@@ -56,6 +57,10 @@ object Engine {
     var live by mutableStateOf(false)
         private set
     var muted by mutableStateOf(false)
+        private set
+
+    /** Sends black video while the audio keeps going. */
+    var cameraOff by mutableStateOf(false)
         private set
     var status by mutableStateOf("idle")
         private set
@@ -111,6 +116,7 @@ object Engine {
         }
         val s = GenericStream(app, checker, video(source), MicrophoneSource())
         s.getGlInterface().autoHandleOrientation = true // output follows device rotation
+        s.getGlInterface().setAspectRatioMode(AspectRatioMode.Fill) // the preview crops to fill the screen like iOS
         s.getStreamClient().setReTries(10) // RootEncoder's built-in reconnect, driven from onConnectionFailed
         // ponytail: 720p30 requested of every source; CameraUvcSource has no size API, so UVCAndroid picks its default
         // preview size and the GL pipeline scales it. Upgrade path: own VideoSource wrapping ICameraHelper.setPreviewSize.
@@ -133,6 +139,7 @@ object Engine {
         } catch (e: IllegalArgumentException) {
             false
         }
+        if (ok) applyCameraOff(s)
         if (ok) preparedPortrait = vertical else status = "camera/mic setup failed"
         return ok
     }
@@ -150,7 +157,17 @@ object Engine {
     /** Preview is optional: it follows the SurfaceView, and streaming continues when it goes away. */
     fun attach(view: SurfaceView) {
         preview = view
-        ensure()?.startPreview(view, true)
+        ensure()?.let {
+            it.startPreview(view, true)
+            applyCameraOff(it)
+        }
+    }
+
+    private fun applyCameraOff(s: GenericStream) = s.getGlInterface().let { if (cameraOff) it.muteVideo() else it.unMuteVideo() }
+
+    fun toggleCameraOff() {
+        cameraOff = !cameraOff
+        stream?.let(::applyCameraOff)
     }
 
     fun detach() {
@@ -211,6 +228,8 @@ object Engine {
         live = false
         connected = false
         liveSince = null
+        cameraOff = false
+        stream?.let(::applyCameraOff)
         status = reason
         StreamingService.release(app, "live")
         alert("Stream stopped")

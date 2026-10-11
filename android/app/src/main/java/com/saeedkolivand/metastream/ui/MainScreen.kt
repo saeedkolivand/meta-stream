@@ -1,34 +1,33 @@
 package com.saeedkolivand.metastream.ui
 
 import android.Manifest
+import android.content.Intent
+import android.provider.Settings
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.net.toUri
 import com.meta.wearable.dat.core.types.RegistrationState
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
@@ -37,86 +36,80 @@ import com.saeedkolivand.metastream.streaming.StreamingService
 private val required = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
 private val bluetooth = arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_CONNECT)
 
+// POST_NOTIFICATIONS only decides whether the live notification shows, so it isn't required.
+// Android 17: LAN ingests (OBS/relay on the LAN) need ACCESS_LOCAL_NETWORK; it shares the NEARBY_DEVICES group
+// with BLUETOOTH_CONNECT, so users see no extra prompt. Not required: public ingests work without it.
+private val everything = required + bluetooth + Manifest.permission.ACCESS_LOCAL_NETWORK + Manifest.permission.POST_NOTIFICATIONS
+
+@Composable
+private fun GlassesPreview() = AndroidView(
+    factory = { ctx ->
+        SurfaceView(ctx).apply {
+            holder.addCallback(object : SurfaceHolder.Callback {
+                override fun surfaceCreated(h: SurfaceHolder) = Engine.glasses.setSurface(h.surface)
+                override fun surfaceChanged(h: SurfaceHolder, f: Int, w: Int, ht: Int) {}
+                override fun surfaceDestroyed(h: SurfaceHolder) = Engine.glasses.setSurface(null)
+            })
+        }
+    },
+    modifier = Modifier.fillMaxSize()
+)
+
 @Composable
 internal fun MainScreen() {
     val activity = requireNotNull(LocalActivity.current)
     var granted by remember { mutableStateOf(false) }
     var chatOpen by remember { mutableStateOf(false) }
+    var maximized by remember { mutableStateOf(false) }
+    var settingsOpen by remember { mutableStateOf(false) }
     val ask = rememberLauncherForActivityResult(RequestMultiplePermissions()) { r ->
         granted = required.all { r[it] == true }
         if (granted) StreamingService.hold(activity, "app") // onStart ran before the permission existed
         // The DAT SDK must be initialized after the Bluetooth permissions are granted.
         if (bluetooth.all { r[it] == true }) Engine.glasses.init(activity)
     }
-    LaunchedEffect(Unit) {
-        // POST_NOTIFICATIONS only decides whether the live notification shows, so it isn't required.
-        // Android 17: LAN ingests (OBS/relay on the LAN) need ACCESS_LOCAL_NETWORK; it shares the NEARBY_DEVICES group
-        // with BLUETOOTH_CONNECT, so users see no extra prompt. Not required: public ingests work without it.
-        val all = required + bluetooth + Manifest.permission.ACCESS_LOCAL_NETWORK
-        ask.launch(all + Manifest.permission.POST_NOTIFICATIONS)
-    }
+    LaunchedEffect(Unit) { ask.launch(everything) }
 
-    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Source:", Modifier.padding(top = 8.dp))
-            FilterChip(Engine.source == Source.Phone, { Engine.pick(Source.Phone) }, { Text("Phone") })
-            FilterChip(Engine.source == Source.Usb, { Engine.pick(Source.Usb) }, { Text("USB camera") })
-            FilterChip(Engine.source == Source.Glasses, { Engine.pick(Source.Glasses) }, { Text("Glasses") })
-        }
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
         if (Engine.source == Source.Glasses) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val registered = Engine.glasses.registration == RegistrationState.REGISTERED
-                OutlinedButton({ if (registered) Engine.glasses.unregister(activity) else Engine.glasses.register(activity) }) {
-                    Text(if (registered) "Unregister" else "Register with Meta AI")
-                }
-                Text("Mock glasses", Modifier.padding(top = 12.dp))
-                Switch(Engine.glasses.mock, Engine.glasses::enableMock)
-            }
-            AndroidView(
-                factory = { ctx ->
-                    SurfaceView(ctx).apply {
-                        holder.addCallback(object : SurfaceHolder.Callback {
-                            override fun surfaceCreated(h: SurfaceHolder) = Engine.glasses.setSurface(h.surface)
-                            override fun surfaceChanged(h: SurfaceHolder, f: Int, w: Int, ht: Int) {}
-                            override fun surfaceDestroyed(h: SurfaceHolder) = Engine.glasses.setSurface(null)
-                        })
-                    }
-                },
-                modifier = Modifier.weight(1f).fillMaxWidth()
-            )
+            GlassesPreview()
         } else if (granted) {
             AndroidView(
                 factory = { SurfaceView(it).also(Engine::attach) },
                 onRelease = { Engine.detach() },
-                modifier = Modifier.weight(1f).fillMaxWidth()
+                modifier = Modifier.fillMaxSize()
             )
         } else {
-            Text("Camera and microphone permission are required.", Modifier.weight(1f))
-        }
-        OutlinedTextField(Engine.url, Engine::updateUrl, Modifier.fillMaxWidth(), label = {
-            Text("RTMP / SRT URL")
-        }, singleLine = true, enabled = !Engine.live)
-        OutlinedTextField(
-            Engine.key,
-            Engine::updateKey,
-            Modifier.fillMaxWidth(),
-            label = { Text("Stream key") },
-            singleLine = true,
-            enabled = !Engine.live,
-            visualTransformation = PasswordVisualTransformation()
-        )
-        Text(if (Engine.source == Source.Glasses) "${Engine.glasses.status} | ${Engine.status}" else Engine.status)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // granted is required even for glasses: the camera|microphone foreground service throws without it.
-            Button({
-                if (Engine.live) Engine.stop() else Engine.goLive()
-            }, enabled = granted) { Text(if (Engine.live) "Stop" else "Go Live") }
-            OutlinedButton(Engine::switchCamera, enabled = granted && Engine.source == Source.Phone) { Text("Flip") }
-            OutlinedButton(Engine::toggleMute, enabled = granted && Engine.source != Source.Glasses) {
-                Text(if (Engine.muted) "Unmute" else "Mute")
+            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                PermissionCard {
+                    // After a second denial Android stops showing the dialog (no rationale left), so send them to Settings.
+                    if (required.any(activity::shouldShowRequestPermissionRationale)) {
+                        ask.launch(everything)
+                    } else {
+                        activity.startActivity(
+                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${activity.packageName}".toUri())
+                        )
+                    }
+                }
             }
-            OutlinedButton({ chatOpen = !chatOpen }) { Text(if (chatOpen) "Hide chat" else "Chat") }
         }
-        if (chatOpen) ChatPanel(Modifier.weight(1f))
+        val unregistered = Engine.source == Source.Glasses && Engine.glasses.registration != RegistrationState.REGISTERED
+        if (unregistered) {
+            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                RegisterCard(Engine.glasses.registration.name.lowercase()) { Engine.glasses.register(activity) }
+            }
+        }
+        Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp)) {
+            Hud()
+            Box(Modifier.weight(1f).fillMaxWidth().padding(bottom = 8.dp), Alignment.BottomCenter) {
+                if (chatOpen) {
+                    ChatPanel(Modifier.fillMaxWidth().fillMaxHeight(if (maximized) 1f else 0.65f), maximized, { maximized = !maximized }) {
+                        settingsOpen = true
+                    }
+                }
+            }
+            Controls(granted, chatOpen, { chatOpen = !chatOpen }, { settingsOpen = true })
+        }
     }
+    if (settingsOpen) SettingsSheet { settingsOpen = false }
 }
