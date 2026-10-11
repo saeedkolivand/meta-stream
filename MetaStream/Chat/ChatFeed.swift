@@ -13,6 +13,9 @@ struct ChatEvent: Sendable {
     var amountCents: Int = 0
     var count: Int = 0
     var origin: String = ""
+    /// Normalized role badges (see ChatBadges) and the sender's "#RRGGBB" name color; messages only.
+    var badges: [String] = []
+    var color: String? = nil
 }
 
 /// Live chat as one AsyncStream<ChatEvent> (text-to-speech drives off it) plus a recent-messages buffer

@@ -58,7 +58,7 @@ struct ChatSheetView: View {
         VStack(spacing: 0) {
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 2) {
+                    LazyVStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(chat.recent.enumerated()), id: \.offset) { _, event in
                             chatRow(event)
                         }
@@ -79,27 +79,48 @@ struct ChatSheetView: View {
         }
     }
 
-    /// `.message` gets full weight — badge, username, message with inline emotes. Everything else
-    /// (tips/cheers/follows/subs/raids) is already spoken aloud by Speaker, so it renders smaller here.
+    /// `.message` gets full weight - a card per message: origin circle, role chips + bold colored name on
+    /// the first line, message with inline emotes below. Everything else (tips/cheers/follows/subs/raids)
+    /// is already spoken aloud by Speaker, so it renders compact and secondary with no card.
     @ViewBuilder
     private func chatRow(_ event: ChatEvent) -> some View {
         if event.kind == .message {
             HStack(alignment: .top, spacing: 10) {
                 originBadge(event.origin)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(event.user).font(.subheadline.weight(.semibold))
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        ForEach(event.badges, id: \.self) { badgeChip($0) }
+                        Text(event.user).font(.subheadline.weight(.bold))
+                            .foregroundStyle(DisplayNames.nameColor(event))
+                    }
                     messageText(event).font(.body)
                 }
+                Spacer(minLength: 0)
             }
-            .padding(.vertical, 10)
+            .padding(.horizontal, 10).padding(.vertical, 8)
+            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+            .padding(.vertical, 3)
         } else {
             HStack(spacing: 8) {
                 originBadge(event.origin)
                 Text(DisplayNames.eventSummary(event)).font(.footnote)
             }
             .foregroundStyle(.secondary)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 10).padding(.vertical, 4)
         }
+    }
+
+    private func badgeChip(_ badge: String) -> some View {
+        let style = DisplayNames.badgeStyle(badge)
+        return HStack(spacing: 2) {
+            Image(systemName: style.symbol)
+            if !style.label.isEmpty { Text(style.label) }
+        }
+        .font(.caption2.weight(.heavy))
+        .foregroundStyle(style.color)
+        .padding(.horizontal, 5).padding(.vertical, 2)
+        .background(style.color.opacity(0.18), in: Capsule())
+        .accessibilityLabel(style.label.isEmpty ? badge : style.label.capitalized)
     }
 
     private func originBadge(_ origin: String) -> some View {

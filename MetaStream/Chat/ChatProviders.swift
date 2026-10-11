@@ -113,7 +113,9 @@ final class KickChatProvider: ChatProvider {
               let sender = inner["sender"] as? [String: Any],
               let username = sender["username"] as? String
         else { return nil }
-        return ChatEvent(kind: .message, user: username, text: content, origin: "kick")
+        let identity = sender["identity"] as? [String: Any]
+        return ChatEvent(kind: .message, user: username, text: content, origin: "kick",
+                         badges: ChatBadges.kick(identity), color: ChatBadges.color(identity?["color"]))
     }
 }
 
@@ -210,7 +212,8 @@ final class TwitchEventSubProvider: ChatProvider {
             guard let user = event["chatter_user_name"] as? String,
                   let text = (event["message"] as? [String: Any])?["text"] as? String
             else { return nil }
-            return ChatEvent(kind: .message, user: user, text: text, origin: "twitch")
+            return ChatEvent(kind: .message, user: user, text: text, origin: "twitch",
+                             badges: ChatBadges.twitch(event["badges"]), color: ChatBadges.color(event["color"]))
         case "channel.follow":
             guard let user = event["user_name"] as? String else { return nil }
             return ChatEvent(kind: .follow, user: user, origin: "twitch")
@@ -276,12 +279,13 @@ final class YouTubePollProvider: ChatProvider {
     static func parseItem(_ item: [String: Any]) -> ChatEvent? {
         guard let snippet = item["snippet"] as? [String: Any],
               let type = snippet["type"] as? String,
-              let user = (item["authorDetails"] as? [String: Any])?["displayName"] as? String
+              let author = item["authorDetails"] as? [String: Any],
+              let user = author["displayName"] as? String
         else { return nil }
         switch type {
         case "textMessageEvent":
             guard let text = (snippet["textMessageDetails"] as? [String: Any])?["messageText"] as? String else { return nil }
-            return ChatEvent(kind: .message, user: user, text: text, origin: "youtube")
+            return ChatEvent(kind: .message, user: user, text: text, origin: "youtube", badges: ChatBadges.youtube(author))
         case "superChatEvent", "superStickerEvent":
             let details = (snippet[type == "superChatEvent" ? "superChatDetails" : "superStickerDetails"] as? [String: Any]) ?? [:]
             let micros = (details["amountMicros"] as? String).flatMap(Int.init) ?? (details["amountMicros"] as? NSNumber)?.intValue ?? 0

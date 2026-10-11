@@ -30,6 +30,26 @@ enum DisplayNames {
         origin == "twitch" ? .purple : origin == "youtube" ? .red : .green
     }
 
+    /// SF Symbol + short label + tint per normalized badge id (see ChatBadges).
+    static func badgeStyle(_ badge: String) -> (symbol: String, label: String, color: Color) {
+        switch badge {
+        case "broadcaster": return ("video.fill", "HOST", .red)
+        case "moderator": return ("shield.fill", "MOD", .green)
+        case "staff": return ("wrench.and.screwdriver.fill", "STAFF", .indigo)
+        case "vip": return ("diamond.fill", "VIP", .pink)
+        case "verified": return ("checkmark.seal.fill", "", .blue)
+        case "founder": return ("star.circle.fill", "FOUNDER", .yellow)
+        case "subscriber": return ("star.fill", "SUB", .purple)
+        default: return ("flame.fill", "OG", .orange)
+        }
+    }
+
+    /// Username color: the sender's own color lifted to a readable luminance, else the origin color.
+    static func nameColor(_ e: ChatEvent) -> Color {
+        guard let hex = e.color, let c = ChatBadges.readableRGB(hex: hex) else { return originColor(e.origin) }
+        return Color(red: c.r, green: c.g, blue: c.b)
+    }
+
     static func eventSummary(_ e: ChatEvent) -> String {
         switch e.kind {
         case .tip:
