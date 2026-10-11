@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 internal val Green = Color(0xFF30D158)
 internal val Red = Color(0xFFFF453A)
 internal val Orange = Color(0xFFFF9F0A)
+internal val SystemBlue = Color(0xFF0A84FF)
 internal val Scrim = Color.Black.copy(alpha = 0.45f)
 internal val Hairline = Color.White.copy(alpha = 0.15f)
 
