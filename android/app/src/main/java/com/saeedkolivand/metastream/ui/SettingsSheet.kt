@@ -81,6 +81,7 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
                 }, singleLine = true)
                 SwitchRow("Read chat aloud", Speaker.readAloud, Speaker::updateReadAloud)
             }
+            Section("Overlays") { OverlaySettings() }
             if (Engine.source == Source.Glasses) {
                 Section("Glasses") {
                     val registered = Engine.glasses.registration == RegistrationState.REGISTERED

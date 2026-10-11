@@ -3,6 +3,8 @@ package com.saeedkolivand.metastream.core
 import android.app.Application
 import com.saeedkolivand.metastream.car.Notify
 import com.saeedkolivand.metastream.chat.ChatFeed
+import com.saeedkolivand.metastream.overlay.OverlayStore
+import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
 import kotlinx.coroutines.CoroutineScope
@@ -18,6 +20,8 @@ class App : Application() {
         super.onCreate()
         Prefs.init(this)
         Speaker.init(this)
+        OverlayStore.init(this)
+        Overlays.init(this)
         ChatFeed.init(scope, onMessage = Speaker::speakChat)
         Engine.init(this, scope, speak = Speaker::speakSystem, alert = { Notify.alert(this, it) })
     }
