@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.saeedkolivand.metastream.R
+import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
@@ -63,6 +64,11 @@ internal fun Hud() {
         }
         Pill(icon, name, Color.White)
         ScenePill()
+        if (Engine.source ==
+            Source.Phone
+        ) {
+            Pill(R.drawable.ic_camera, "cam", if (Cam.stripOpen) Green else Color.White) { Cam.toggleStrip() }
+        }
         if (Engine.source == Source.Glasses) {
             val g = Engine.glasses.status
             Pill(R.drawable.ic_glasses, g.ifEmpty { "idle" }, glassesColor(g))

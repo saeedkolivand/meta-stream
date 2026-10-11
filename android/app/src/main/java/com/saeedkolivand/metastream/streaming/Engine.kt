@@ -20,6 +20,7 @@ import com.pedro.encoder.input.sources.video.VideoSource
 import com.pedro.encoder.utils.gl.AspectRatioMode
 import com.pedro.extrasources.CameraUvcSource
 import com.pedro.library.generic.GenericStream
+import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.applog
 import com.saeedkolivand.metastream.core.redactFromLogs
@@ -89,6 +90,7 @@ object Engine {
         url = Prefs.string("url", DEFAULT_INGEST_URL)
         key = Prefs.string("key")
         glasses = Glasses(app, scope, checker)
+        Cam.init(app)
     }
 
     fun updateUrl(value: String) {
@@ -141,6 +143,7 @@ object Engine {
             false
         }
         if (ok) applyCameraOff(s)
+        if (ok) Cam.attach(s)
         if (ok) Overlays.bind(s.getGlInterface(), if (vertical) 720 else 1280, if (vertical) 1280 else 720)
         if (ok) preparedPortrait = vertical else status = "camera/mic setup failed"
         return ok
@@ -197,6 +200,7 @@ object Engine {
         if (s != null && next != Source.Glasses && (next == Source.Usb) != (s.videoSource is CameraUvcSource)) {
             try {
                 s.changeVideoSource(video(next))
+                Cam.attach(s)
             } catch (e: IllegalArgumentException) {
                 status = "source unsupported: ${e.message}"
                 return
