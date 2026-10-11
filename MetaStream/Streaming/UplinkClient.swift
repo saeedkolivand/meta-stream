@@ -151,6 +151,9 @@ extension Streamer {
     /// codec: "hevc" passes the glasses' stream through untouched (YouTube, Restream, own relay);
     /// "h264" decodes and re-encodes on the phone (Kick, Twitch without Affiliate). Phone-camera video follows the same choice.
     func goLive(url: String, key: String, micUID: String, fallbackPosition: AVCaptureDevice.Position, bitrateKbps: Int = 4000, codec: String = "hevc", srtLatencyMs: Int = 2000, quality: PhoneQuality = .init()) {
+        // Arm PiP background auto-start for this session only (see PiPController); stopLive() disarms it.
+        // This is what lets the stream survive the phone going into a pocket -- and nothing else does.
+        pip?.setArmed(true)
         // Dual camera is decided once per session (the capture-session mode can't change live) and caps the
         // phone geometry: two simultaneous captures + a composite + an encode is what a phone can sustain at
         // 1080p30, not at 4K/60.

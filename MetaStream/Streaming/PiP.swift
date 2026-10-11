@@ -1,8 +1,8 @@
 import AVKit
 import CoreMedia
 
-/// Picture in Picture for the glasses preview layer. Starts automatically when the app goes to the background
-/// while the preview is on screen. Besides the floating window, PiP keeps the app "playing" in iOS's eyes,
+/// Picture in Picture for the glasses preview layer. Starts automatically when the app goes to the background while live
+/// (armed by goLive). Besides the floating window, PiP keeps the app "playing" in iOS's eyes,
 /// which is what lets media pipelines (the H.264 transcoder included) survive backgrounding.
 final class PiPController: NSObject, AVPictureInPictureSampleBufferPlaybackDelegate, AVPictureInPictureControllerDelegate {
     private var controller: AVPictureInPictureController?
@@ -13,9 +13,18 @@ final class PiPController: NSObject, AVPictureInPictureSampleBufferPlaybackDeleg
         let source = AVPictureInPictureController.ContentSource(sampleBufferDisplayLayer: layer, playbackDelegate: self)
         let c = AVPictureInPictureController(contentSource: source)
         c.delegate = self
-        c.canStartPictureInPictureAutomaticallyFromInline = true
+        // Off by default. Auto-start is what keeps the app "playing" in iOS's eyes while backgrounded, so
+        // it must only be armed during a live session (goLive arms, stopLive disarms). Left on, an idle
+        // backgrounded app never suspends and the camera, mixer and every timer keep running for nothing.
+        c.canStartPictureInPictureAutomaticallyFromInline = false
         controller = c
         applog("ui", "PiP ready")
+    }
+
+    /// Arms/disarms background auto-start. Called once per session from Streamer.goLive/stopLive.
+    func setArmed(_ on: Bool) {
+        controller?.canStartPictureInPictureAutomaticallyFromInline = on
+        applog("ui", "PiP armed=\(on)")
     }
 
     // Live stream: no seeking, never paused.

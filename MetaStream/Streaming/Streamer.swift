@@ -323,6 +323,7 @@ final class Streamer: ObservableObject {
             applog("stream", summary)
         }
         live = false
+        pip?.setArmed(false)   // idle: backgrounding may suspend the app again
         liveActivity.end()
         liveSince = nil
         connectedSince = nil
@@ -354,7 +355,7 @@ final class Streamer: ObservableObject {
             if dualLocked == nil { _ = await rebuildMixerIfNeeded() }   // a dual-camera toggle flipped mid-stream takes effect now (skipped if GO LIVE was already pressed again)
         }
         source = "glasses"
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [])   // mic off, PiP stays armed
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [])   // mic off; the playback session stays so the next goLive can arm PiP
     }
 
     /// "m:ss" for the session summary, e.g. 1:48. Minutes aren't padded/capped — a long stream just reads "72:03".
