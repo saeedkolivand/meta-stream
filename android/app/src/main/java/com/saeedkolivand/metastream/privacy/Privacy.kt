@@ -15,11 +15,19 @@ import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 
 private const val PAD = 0.3f // iOS padFraction: motion between detections is the risk, not one frame of under-blur
-private const val EVERY_MS = 110L // ~9 detections a second, so the encoder keeps its frame budget
+private const val EVERY_MS = 165L // ~6 detections a second, as iOS (detectAtLeastEvery 0.4 s, ~6/s at 30 fps)
+private const val TEXT_EVERY = 2 // iOS textEveryNPasses: text recognition is the costliest model; between runs its boxes carry
 private const val LOST_MS = 1000L // a capture that never answered is retried instead of wedging blur
 private const val WATCH_MS = 500L
 
 enum class BlurState { Off, Protecting, Pending }
+
+/** Blur runs only when asked, on a source it can reach, and at least one detector is on (else capture would burn CPU for nothing). */
+/** iOS textDetectionDue: always while nothing is carried (first pass, or the last run found none), else every [everyN]th. */
+internal fun textDue(pass: Int, everyN: Int, carried: Boolean) = !carried || pass % everyN == 0
+
+internal fun blurWanted(on: Boolean, applicable: Boolean, faces: Boolean, text: Boolean, barcodes: Boolean) =
+    on && applicable && (faces || text || barcodes)
 
 /**
  * Privacy blur: faces, text (so licence plates) and QR/barcodes are pixelated before the encoder sees them, Phone and USB only.
@@ -55,13 +63,18 @@ object Privacy : BlurFeed {
 
     @Volatile private var inFlightSince = 0L
 
+    @Volatile private var reuseNext = false
+    private var pass = 0 // main thread
+    private var textBoxes: List<Box> = emptyList() // last text result, carried across passes that skip text
+
     /** Glasses passthrough is HEVC straight from the glasses; there are no frames here to alter. */
     val applicable get() = Engine.source != Source.Glasses
-    val wanted get() = on && applicable
+    val hasDetector get() = faces || text || barcodes
+    val wanted get() = blurWanted(on, applicable, faces, text, barcodes)
 
     val state
         get() = when {
-            !on -> BlurState.Off
+            !on || !hasDetector -> BlurState.Off
             Engine.live && !installed -> BlurState.Pending
             else -> BlurState.Protecting
         }
@@ -77,37 +90,45 @@ object Privacy : BlurFeed {
     fun updateOn(v: Boolean) {
         on = v
         Prefs.put("blurOn", v)
-        Overlays.refresh() // installs or removes the filter and re-picks the preview aspect mode
+        // Target the privacy filter only; a full refresh would also destroy and reload the overlay scene's browser/media.
+        Overlays.syncPrivacy()
     }
 
     fun updateFaces(v: Boolean) {
         faces = v
         Prefs.put("blurFaces", v)
+        Overlays.syncPrivacy() // dropping the last detector removes the filter rather than capturing for nothing
     }
 
     fun updateText(v: Boolean) {
         text = v
         Prefs.put("blurText", v)
+        Overlays.syncPrivacy()
     }
 
     fun updateBarcodes(v: Boolean) {
         barcodes = v
         Prefs.put("blurBarcodes", v)
+        Overlays.syncPrivacy()
     }
 
     /**
-     * Makes the chain match the setting; the filter goes first so overlays stay sharp. It outlives Overlays' own rebuilds
-     * (those remove only their filters), because a clear would leave frames unblurred until the next filter op, one per frame.
+     * Makes the chain match the setting; the filter goes first so overlays stay sharp (after the face-cam window when one is
+     * in the chain). It outlives Overlays' own rebuilds (those remove only their filters), because a clear would leave frames
+     * unblurred until the next filter op, one per frame. [index] matters only for the targeted sync: on a full rebuild the
+     * face-cam filter does not exist yet, so index 0 is right; a live chain already has it at 0, so blur goes to 1.
      */
-    fun install(g: GlInterface) {
+    fun install(g: GlInterface, index: Int = 0) {
         if (owner !== g) forget() // fail closed: a filter in a replaced pipeline protects nothing, so never trust it
         val f = filter
         if (wanted && f == null) {
-            detector.warm()
+            detector.warm(Targets(faces, text, barcodes))
             synchronized(tracker) { tracker.clear() }
+            textBoxes = emptyList()
+            pass = 0
             lastOk = 0
             armedAt = SystemClock.elapsedRealtime()
-            filter = RegionBlurFilter(this).also { g.addFilter(0, it) }
+            filter = RegionBlurFilter(this).also { g.addFilter(index, it) }
             owner = g
             installed = true
             main.removeCallbacks(watch)
@@ -157,19 +178,26 @@ object Privacy : BlurFeed {
     override fun wantFrame(now: Long): Boolean {
         val busy = inFlightSince != 0L && now - inFlightSince < LOST_MS
         if (busy || now - lastCapture < EVERY_MS) return false
+        // The previous pass finished normally exactly when nothing was in flight: that is the only case a bitmap is reusable.
+        reuseNext = inFlightSince == 0L
         lastCapture = now
         inFlightSince = now
         return true
     }
 
+    override fun reuseInput() = reuseNext
+
     override fun onFrame(frame: Bitmap) {
-        val want = Targets(faces, text, barcodes)
+        val since = inFlightSince // this pass's token: a pass that outlived LOST_MS must not clear a newer pass's flag
         main.post {
-            detector.detect(frame, want) { found ->
-                inFlightSince = 0
+            if (!text) textBoxes = emptyList()
+            val runText = text && textDue(pass++, TEXT_EVERY, textBoxes.isNotEmpty())
+            detector.detect(frame, Targets(faces, runText, barcodes)) { found ->
+                if (inFlightSince == since) inFlightSince = 0
                 if (found != null) {
                     val now = SystemClock.elapsedRealtime()
-                    synchronized(tracker) { tracker.update(found.map { it.pad(PAD) }, now) }
+                    found.text?.let { textBoxes = it }
+                    synchronized(tracker) { tracker.update((found.other + textBoxes).map { it.pad(PAD) }, now) }
                     lastOk = now
                 } else {
                     applog("privacy", "detection pass failed")

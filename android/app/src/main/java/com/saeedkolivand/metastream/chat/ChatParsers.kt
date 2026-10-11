@@ -18,7 +18,9 @@ data class ChatEvent(
     val badges: List<String> = emptyList(),
     val kind: Kind = Kind.Message,
     val amountCents: Int = 0,
-    val count: Int = 0
+    val count: Int = 0,
+    // Unique per message, set by ChatFeed so the LazyColumn can key its rows.
+    val id: Long = 0
 )
 
 private val ROLES = listOf("broadcaster", "staff", "moderator", "vip", "founder", "subscriber", "verified", "og")

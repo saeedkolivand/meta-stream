@@ -17,6 +17,12 @@ import kotlinx.coroutines.launch
 
 private const val LOW_BATTERY = 15
 
+/** Battery percentage moves slowly; refreshing the HUD every ~30 s is plenty and skips a systems-server wake per tick. */
+private const val BATTERY_MS = 30_000L
+
+/** True when a battery refresh is due; the first tick after go-live always refreshes (last is 0). */
+internal fun batteryDue(now: Long, last: Long) = last == 0L || now - last >= BATTERY_MS
+
 /** iOS HUD wording: fair -> warm, serious -> hot, critical -> overheating; null while nominal (Android NONE/LIGHT). */
 fun thermalLabel(status: Int): String? = when {
     status >= PowerManager.THERMAL_STATUS_CRITICAL -> "overheating"
@@ -95,6 +101,7 @@ object Health {
         listening = true
         job = scope.launch {
             var lastFrames = client?.getSentVideoFrames() ?: 0
+            var lastBattery = 0L
             warnedBattery = false
             warnedThermal = false
             while (true) {
@@ -104,7 +111,10 @@ object Health {
                     fps = (it.getSentVideoFrames() - lastFrames).toInt()
                     lastFrames = it.getSentVideoFrames()
                 }
-                updateBattery()
+                if (batteryDue(now, lastBattery)) {
+                    lastBattery = now
+                    updateBattery()
+                }
                 if (controller != null && client != null) {
                     val change = controller.thermal(now, thermalSerious(thermal))
                         ?: if (downSince == null) controller.tick(now, client.hasCongestion(), outKbps) else null

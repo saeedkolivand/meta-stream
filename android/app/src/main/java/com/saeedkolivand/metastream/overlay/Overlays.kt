@@ -84,6 +84,30 @@ object Overlays {
         if (!web.isEmpty) g.addFilter(web.filter())
     }
 
+    /**
+     * The privacy-blur and face-cam toggles touch only their own filters, so they re-sync just that part of the chain.
+     * A full [refresh] would destroy the browser view (reloading its page) and restart media players for a blur toggle.
+     */
+    fun syncPrivacy() {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            main.post(::syncPrivacy)
+            return
+        }
+        val glNow = gl ?: return
+        // In a live chain the face-cam window sits at 0, so the blur slots in at 1; without it, at 0, like a fresh rebuild.
+        Privacy.install(glNow, if (FaceCam.inChain) 1 else 0)
+    }
+
+    fun syncFaceCam() {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            main.post(::syncFaceCam)
+            return
+        }
+        val g = sink ?: return
+        FaceCam.remove(g) // re-installs below with a fresh filter; overlay layers keep their place
+        FaceCam.install(g, outW, outH)
+    }
+
     private fun release() {
         sink?.clear()
         browser?.destroy()

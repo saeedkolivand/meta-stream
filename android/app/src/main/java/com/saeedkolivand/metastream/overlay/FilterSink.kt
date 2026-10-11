@@ -25,4 +25,9 @@ class FilterSink(private val gl: GlInterface) {
         mine.forEach(gl::removeFilter)
         mine.clear()
     }
+
+    /** Removes just [f] (a refresh usually clears everything; targeted syncs touch one filter). */
+    fun remove(f: BaseFilterRender) {
+        if (mine.remove(f)) gl.removeFilter(f)
+    }
 }

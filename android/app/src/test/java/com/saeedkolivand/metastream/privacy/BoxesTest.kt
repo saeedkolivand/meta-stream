@@ -90,4 +90,19 @@ class BoxesTest {
         assertFalse(Stall.blurAll(now = 500, lastOk = 400, armedAt = 100))
         assertTrue(Stall.blurAll(now = 4000, lastOk = 400, armedAt = 100))
     }
+
+    @Test fun blurNeedsTheSwitchASupportedSourceAndOneDetector() {
+        assertTrue(blurWanted(on = true, applicable = true, faces = true, text = false, barcodes = false))
+        assertTrue(blurWanted(on = true, applicable = true, faces = false, text = true, barcodes = false))
+        assertFalse(blurWanted(on = false, applicable = true, faces = true, text = true, barcodes = true))
+        assertFalse(blurWanted(on = true, applicable = false, faces = true, text = true, barcodes = true))
+        // Every detector off would still capture a frame every 110 ms for nothing, so blur turns itself off instead.
+        assertFalse(blurWanted(on = true, applicable = true, faces = false, text = false, barcodes = false))
+    }
+
+    @Test fun textRunsEveryOtherPassOnlyWhileItHasBoxesToCarry() {
+        assertTrue(textDue(pass = 1, everyN = 2, carried = false)) // nothing carried: look every pass, like iOS
+        assertTrue(textDue(pass = 2, everyN = 2, carried = true))
+        assertFalse(textDue(pass = 3, everyN = 2, carried = true))
+    }
 }

@@ -34,4 +34,12 @@ class HealthTest {
         listOf("a", "b", "c", "d").forEach(r::add)
         assertEquals(listOf("b", "c", "d"), r.snapshot())
     }
+
+    @Test fun batteryRefreshIsThrottledToThirtySeconds() {
+        assertTrue(batteryDue(now = 1000, last = 0)) // first tick after go-live
+        assertFalse(batteryDue(now = 1000, last = 1))
+        assertFalse(batteryDue(now = 30_999, last = 1_000))
+        assertTrue(batteryDue(now = 31_000, last = 1_000)) // at the 30 s mark
+        assertTrue(batteryDue(now = 120_000, last = 60_000))
+    }
 }

@@ -11,6 +11,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,6 +60,8 @@ private fun PrefSwitch(label: String, pref: BoolPref, after: () -> Unit = {}) = 
 /** Read-aloud settings as iOS ReadAloudSettingsView: voice, speed, per-event toggles, tip floor, per-platform chat. Self-contained so any sheet can host it. */
 @Composable
 internal fun ReadAloudSettings() {
+    // The engine is created on demand; opening this sheet is a demand, so the picker has voices to show.
+    LaunchedEffect(Unit) { Speaker.prepare() }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         VoicePicker()
         Note("Voices installed on this phone (system Settings > Text-to-speech output adds more).")

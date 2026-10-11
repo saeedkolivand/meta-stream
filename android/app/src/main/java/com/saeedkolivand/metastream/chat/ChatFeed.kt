@@ -9,6 +9,7 @@ import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.platforms.YouTube
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.speech.SpeechSettings
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -36,6 +37,7 @@ object ChatFeed {
     private var kickJob: Job? = null
     private var twitchJob: Job? = null
     private var youtubeJob: Job? = null
+    private val seq = AtomicLong()
 
     /** [onMessage] sees every new message (read-aloud hooks in here). Restores and reconnects the saved channels. */
     fun init(scope: CoroutineScope, onMessage: (ChatEvent) -> Unit) {
@@ -52,7 +54,7 @@ object ChatFeed {
     }
 
     private fun onChat(e: ChatEvent) {
-        _chat.update { (it + e).takeLast(200) }
+        _chat.update { (it + e.copy(id = seq.incrementAndGet())).takeLast(200) }
         onMessage(e)
     }
 

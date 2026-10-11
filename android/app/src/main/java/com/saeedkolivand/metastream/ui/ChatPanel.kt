@@ -98,7 +98,8 @@ internal fun ChatPanel(sheet: SheetArgs, onSettings: () -> Unit) {
         } else {
             Column(Modifier.fillMaxSize()) {
                 LazyColumn(Modifier.weight(1f), list) {
-                    items(events) { ChatRow(it, size) }
+                    // Keyed rows stay put when the 200-message cap drops the oldest: positions don't resettle per message.
+                    items(events, key = { it.id }) { ChatRow(it, size) }
                 }
                 ComposeBar(maximized) { sheet.onDetent(Detent.Expanded) }
             }

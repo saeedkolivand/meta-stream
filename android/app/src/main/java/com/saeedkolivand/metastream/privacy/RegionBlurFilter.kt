@@ -18,6 +18,9 @@ interface BlurFeed {
 
     fun wantFrame(now: Long): Boolean
 
+    /** True when the previous pass finished: only then may the filter hand back the same bitmap to detection. */
+    fun reuseInput(): Boolean
+
     fun onFrame(frame: Bitmap)
 }
 
@@ -83,6 +86,7 @@ class RegionBlurFilter(private val feed: BlurFeed) : BaseFilterRender() {
     private var capW = 0
     private var capH = 0
     private var pixels: ByteBuffer? = null
+    private var reusable: Bitmap? = null
 
     init {
         val v = floatArrayOf(-1f, -1f, 0f, 0f, 0f, 1f, -1f, 0f, 1f, 0f, -1f, 1f, 0f, 0f, 1f, 1f, 1f, 0f, 1f, 1f)
@@ -150,7 +154,12 @@ class RegionBlurFilter(private val feed: BlurFeed) : BaseFilterRender() {
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, prev[0])
         GLES20.glViewport(0, 0, width, height)
         buf.rewind()
-        feed.onFrame(Bitmap.createBitmap(capW, capH, Bitmap.Config.ARGB_8888).also { it.copyPixelsFromBuffer(buf) })
+        // Reuse the last capture bitmap (~9 passes a second of a 640xH ARGB; allocating fresh is pure GC churn). Only reuse
+        // when the previous pass finished, so ML Kit never reads a buffer we are overwriting: the lost-timeout path allocates.
+        val bmp = reusable?.takeIf { feed.reuseInput() && it.width == capW && it.height == capH }
+            ?: Bitmap.createBitmap(capW, capH, Bitmap.Config.ARGB_8888).also { reusable = it }
+        bmp.copyPixelsFromBuffer(buf)
+        feed.onFrame(bmp)
     }
 
     private fun ensureCaptureTarget() {
@@ -175,6 +184,7 @@ class RegionBlurFilter(private val feed: BlurFeed) : BaseFilterRender() {
 
     override fun release() {
         GLES20.glDeleteProgram(program)
+        reusable = null
         if (tex[0] != 0) {
             GLES20.glDeleteTextures(1, tex, 0)
             GLES20.glDeleteFramebuffers(1, fbo, 0)

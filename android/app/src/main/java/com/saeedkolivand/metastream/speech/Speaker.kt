@@ -29,10 +29,22 @@ object Speaker {
 
     @Volatile private var ready = false
     private val pending = AtomicInteger() // utterances queued or playing
+    private var appContext: Context? = null
 
+    @Volatile private var early: Pair<String, Boolean>? = null // the latest line asked for before the engine was ready
+
+    /** Reads the toggle and defers the engine: building TextToSpeech at app start spends memory and wakes the TTS service. */
     fun init(context: Context) {
+        appContext = context.applicationContext
         readAloud = Prefs.bool("readAloud")
-        tts = TextToSpeech(context) { status ->
+        if (readAloud) prepare()
+    }
+
+    /** Creates the engine on first actual use (read-aloud on, a preview, the voice picker, or a system alert). */
+    fun prepare() {
+        if (tts != null) return
+        val ctx = appContext ?: return
+        tts = TextToSpeech(ctx) { status ->
             if (status != TextToSpeech.SUCCESS) return@TextToSpeech
             // ponytail: NAVIGATION_GUIDANCE (not MEDIA) so alerts duck the music and play over car audio like turn-by-turn
             // prompts; USAGE_ASSISTANT would also work but some head units treat it as a call-like interruption.
@@ -61,6 +73,8 @@ object Speaker {
                 }
             )
             ready = true
+            early?.let { (t, f) -> speak(t, f) }
+            early = null
             voices =
                 runCatching {
                     tts?.voices.orEmpty().sortedWith(compareBy({ it.locale.displayName }, { it.name }))
@@ -71,6 +85,7 @@ object Speaker {
 
     /** Applies the saved voice and speed; the engine default stays when the saved voice is no longer installed. */
     fun applyVoice() {
+        prepare()
         tts?.setSpeechRate(SpeechSettings.rate / SpeechSettings.DEFAULT_RATE)
         voices.firstOrNull { it.name == SpeechSettings.voice }?.let { tts?.voice = it }
     }
@@ -81,11 +96,15 @@ object Speaker {
     fun updateReadAloud(on: Boolean) {
         readAloud = on
         Prefs.put("readAloud", on)
-        if (!on) tts?.stop() // off means quiet now, not after the queued messages finish
+        if (on) prepare() else tts?.stop() // off means quiet now, not after the queued messages finish
     }
 
     private fun speak(text: String, flush: Boolean) {
-        if (!ready) return
+        prepare() // a system alert or first chat line may be the first thing that needs the engine
+        if (!ready) {
+            early = text to flush // the engine binds asynchronously; say this once it's up instead of dropping a stream alert
+            return
+        }
         pending.incrementAndGet()
         val mode = if (flush) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
         if (tts?.speak(text, mode, Bundle(), "m${System.nanoTime()}") != TextToSpeech.SUCCESS) pending.decrementAndGet()

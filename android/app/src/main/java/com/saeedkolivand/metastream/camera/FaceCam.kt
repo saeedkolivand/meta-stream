@@ -70,6 +70,9 @@ object FaceCam {
     private var readyTex: SurfaceTexture? = null
     private var generation = 0
 
+    /** Whether the face-cam filter is in the chain right now (drives where the privacy blur slots in). */
+    val inChain get() = filter != null
+
     fun init(application: Application) {
         app = application
         manager = app.getSystemService(CameraManager::class.java)
@@ -84,7 +87,7 @@ object FaceCam {
             if (hot != overheated) {
                 overheated = hot
                 applog("facecam", if (hot) "dropped: phone is overheating" else "restored: phone cooled down")
-                Overlays.refresh()
+                Overlays.syncFaceCam()
             }
         }
     }
@@ -105,7 +108,7 @@ object FaceCam {
     fun enable(on: Boolean) {
         enabled = on
         Prefs.put("dualCam", on)
-        Overlays.refresh()
+        Overlays.syncFaceCam()
     }
 
     fun hide(h: Boolean) {
@@ -144,6 +147,13 @@ object FaceCam {
         g.addFirst(f) // under the blur, so a face in the window is hidden too
         active = true
         return true
+    }
+
+    /** The targeted sync drops the current window filter so [install] can build a fresh one for the new setting. */
+    fun remove(g: FilterSink) {
+        filter?.let(g::remove)
+        filter = null
+        active = false
     }
 
     /** The GL thread's surface exists: point the (possibly already open) front camera at it. */
@@ -292,5 +302,5 @@ object FaceCam {
     /** The main camera is about to switch lens; the front sensor can't serve two openers, so let go of it first. */
     fun beforeFlip() = closeAll()
 
-    fun afterFlip() = Overlays.refresh()
+    fun afterFlip() = Overlays.syncFaceCam()
 }

@@ -13,6 +13,9 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
 data class Targets(val faces: Boolean, val text: Boolean, val barcodes: Boolean)
 
+/** One pass: face/barcode boxes, plus text boxes when text ran this pass (null = skipped, carry the last ones). */
+class Found(val other: List<Box>, val text: List<Box>?)
+
 /**
  * ML Kit with the bundled models: they work offline mid-stream and without Play services, at the cost of a few MB of APK
  * (the Play-services variants download on first use and can't be trusted to be there when the network drops).
@@ -28,29 +31,30 @@ class Detector(private val rotation: Int) {
     private val text by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
     private val barcodes by lazy { BarcodeScanning.getClient() }
 
-    /** Calls [done] with every box (in bitmap space), or null if any enabled detector failed, so the caller can fail closed. */
-    fun detect(frame: Bitmap, want: Targets, done: (List<Box>?) -> Unit) {
+    /** Calls [done] with the boxes (in bitmap space), or null if any enabled detector failed, so the caller can fail closed. */
+    fun detect(frame: Bitmap, want: Targets, done: (Found?) -> Unit) {
         val img = InputImage.fromBitmap(frame, rotation)
         val (uw, uh) = if (rotation % 180 == 0) frame.width to frame.height else frame.height to frame.width
         fun norm(r: Rect?) = r?.let { uprightToImage(normalize(it.left, it.top, it.right, it.bottom, uw, uh), rotation) }
         val jobs = mutableListOf<Task<List<Box>>>()
         if (want.faces) jobs += faces.process(img).continueWith { t -> t.result.mapNotNull { norm(it.boundingBox) } }
-        if (want.text) {
-            jobs += text.process(img).continueWith { t -> t.result.textBlocks.flatMap { it.lines }.mapNotNull { norm(it.boundingBox) } }
-        }
         if (want.barcodes) jobs += barcodes.process(img).continueWith { t -> t.result.mapNotNull { norm(it.boundingBox) } }
-        Tasks.whenAllComplete(jobs).addOnCompleteListener { all ->
-            val parts = all.result.map { it as Task<*> }
-            @Suppress("UNCHECKED_CAST")
-            done(if (parts.all { it.isSuccessful }) parts.flatMap { it.result as List<Box> } else null)
+        val textJob = if (want.text) {
+            text.process(img).continueWith { t -> t.result.textBlocks.flatMap { it.lines }.mapNotNull { norm(it.boundingBox) } }
+        } else {
+            null
+        }
+        Tasks.whenAllComplete(jobs + listOfNotNull(textJob)).addOnCompleteListener {
+            val ok = jobs.all { it.isSuccessful } && textJob?.isSuccessful != false
+            done(if (ok) Found(jobs.flatMap { it.result }, textJob?.result) else null)
         }
     }
 
-    /** Loads the models up front: the first getClient is slow and must not happen on the GL thread. */
-    fun warm() {
-        faces
-        text
-        barcodes
+    /** Loads the enabled models up front: the first getClient is slow and must not happen on the GL thread. */
+    fun warm(want: Targets) {
+        if (want.faces) faces
+        if (want.text) text
+        if (want.barcodes) barcodes
     }
 
     private companion object {
