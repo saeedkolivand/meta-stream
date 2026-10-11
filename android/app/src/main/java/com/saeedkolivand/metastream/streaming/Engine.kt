@@ -24,6 +24,7 @@ import com.pedro.extrasources.CameraUvcSource
 import com.pedro.library.generic.GenericStream
 import com.pedro.library.util.streamclient.SrtStreamClient
 import com.saeedkolivand.metastream.camera.Cam
+import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.core.AppSettings
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.VideoParams
@@ -98,6 +99,7 @@ object Engine {
         glasses = Glasses(app, scope, checker)
         Health.init(app, scope, speak, alert)
         Cam.init(app)
+        FaceCam.init(app)
     }
 
     fun updateUrl(value: String) {
@@ -281,7 +283,10 @@ object Engine {
     }
 
     fun switchCamera() {
-        (stream?.videoSource as? Camera2Source)?.switchCamera()
+        val cam = stream?.videoSource as? Camera2Source ?: return
+        FaceCam.beforeFlip()
+        cam.switchCamera()
+        FaceCam.afterFlip()
     }
 
     /** Re-applies the picked microphone to the running source (a new choice from Settings). */

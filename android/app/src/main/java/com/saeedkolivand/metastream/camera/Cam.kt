@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.pedro.encoder.input.sources.video.Camera2Source
+import com.pedro.encoder.input.video.CameraHelper
 import com.pedro.library.generic.GenericStream
 import com.pedro.library.view.GlInterface
 import com.saeedkolivand.metastream.core.Prefs
@@ -70,6 +71,11 @@ object Cam {
         }
         applyMirror()
     }
+
+    /** The main (stream) camera is the back one; face-cam needs the front sensor free. */
+    fun facingBack() = src?.getCameraFacing() == CameraHelper.Facing.BACK
+
+    fun mainCameraId(): String? = src?.getCurrentCameraId()
 
     private fun onFrame(s: CameraCaptureSession, r: CaptureRequest, result: TotalCaptureResult) {
         if (!settings.wbManual) result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM)?.let { wbMatrix = it }

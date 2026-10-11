@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.camera.CameraSettings
+import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.camera.shutterLabel
 
 private val Dim = Color.White.copy(alpha = 0.6f)
@@ -147,6 +148,27 @@ private fun ImageGroup(s: CameraSettings) {
     }
 }
 
+@Composable
+private fun FaceCamGroup() {
+    val o = FaceCam.options
+    val why = FaceCam.unsupported
+    Group(
+        "Face cam (dual camera)",
+        why ?: "The back camera fills the stream, the front camera shows in a corner window; the eye button hides it. " +
+            "It turns off while the main camera is flipped to the front, and when the phone overheats."
+    ) {
+        Toggle("Dual camera", FaceCam.enabled && why == null, why == null) { FaceCam.enable(it) }
+        if (FaceCam.enabled && why == null) {
+            Choice(
+                listOf("topLeft" to "Top left", "topRight" to "Top right", "bottomLeft" to "Bottom left", "bottomRight" to "Bottom right"),
+                o.corner
+            ) { FaceCam.pick(o.copy(corner = it)) }
+            Choice(listOf("s" to "Small", "m" to "Medium", "l" to "Large"), o.size) { FaceCam.pick(o.copy(size = it)) }
+            Choice(listOf("rounded" to "Rounded", "circle" to "Circle"), o.shape) { FaceCam.pick(o.copy(shape = it)) }
+        }
+    }
+}
+
 /**
  * The whole Camera settings page as one self-contained column (iOS CameraSettingsView). Phone camera only; host it
  * in a "Camera" sub-page or section, it brings its own headers and needs no state from the host.
@@ -174,6 +196,7 @@ fun CameraSettingsContent() {
         ExposureGroup(s)
         WhiteBalanceGroup(s)
         ImageGroup(s)
+        FaceCamGroup()
         Group("Viewfinder overlays", "Grid and level only draw over the preview; they never reach the stream.") {
             Toggle("Rule-of-thirds grid", s.grid) { edit { copy(grid = it) } }
             Toggle("Level", s.level) { edit { copy(level = it) } }
