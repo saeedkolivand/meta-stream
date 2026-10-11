@@ -1,9 +1,7 @@
 package com.saeedkolivand.metastream.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,24 +23,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.chat.ChatFeed
-import com.saeedkolivand.metastream.chat.displayText
 import com.saeedkolivand.metastream.core.Prefs
 
 private val SIZES = listOf(16, 20, 26, 32)
-private val Kick = Color(0xFF53FC18)
-private val Twitch = Color(0xFF9146FF)
 
 @Composable
 private fun Header(step: Int, resize: (Int) -> Unit, maximized: Boolean, onMaximize: () -> Unit) {
@@ -66,9 +56,9 @@ private fun Header(step: Int, resize: (Int) -> Unit, maximized: Boolean, onMaxim
     }
 }
 
-/** Non-modal like the iOS sheet with background interaction: the preview and controls stay usable. */
+/** Sheet contents; [ChatSheet] owns the surface, sizing and dragging. */
 @Composable
-internal fun ChatPanel(modifier: Modifier, maximized: Boolean, onMaximize: () -> Unit, onSettings: () -> Unit) {
+internal fun ChatPanel(sheet: SheetArgs, onSettings: () -> Unit) {
     val events by ChatFeed.chat.collectAsStateWithLifecycle()
     val list = rememberLazyListState()
     // Default one step above system size: chat is read at a glance from a phone mounted on a dash.
@@ -83,8 +73,9 @@ internal fun ChatPanel(modifier: Modifier, maximized: Boolean, onMaximize: () ->
     LaunchedEffect(events.size) {
         if (events.isNotEmpty() && !list.canScrollForward) list.scrollToItem(events.lastIndex)
     }
-    Column(modifier.clip(RoundedCornerShape(20.dp)).background(Color.Black.copy(alpha = if (maximized) 0.92f else 0.7f))) {
-        Header(step, ::resize, maximized, onMaximize)
+    val maximized = sheet.detent == Detent.Expanded
+    val toggle = { sheet.onDetent(if (maximized) Detent.Partial else Detent.Expanded) }
+    ChatSheet(sheet, { Header(step, ::resize, maximized, toggle) }) {
         if (ChatFeed.kickSlug.isEmpty() && ChatFeed.twitchChannel.isEmpty()) {
             Column(
                 Modifier.fillMaxSize().padding(16.dp),
@@ -96,21 +87,8 @@ internal fun ChatPanel(modifier: Modifier, maximized: Boolean, onMaximize: () ->
                 Button(onSettings) { Text("Settings") }
             }
         } else {
-            LazyColumn(Modifier.fillMaxSize(), list, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
-                items(events) { e ->
-                    Text(
-                        buildAnnotatedString {
-                            withStyle(SpanStyle(color = if (e.platform == "kick") Kick else Twitch, fontWeight = FontWeight.SemiBold)) {
-                                append(e.user)
-                            }
-                            append(": ${displayText(e.text)}")
-                        },
-                        Modifier.padding(vertical = 5.dp),
-                        color = Color.White,
-                        fontSize = size.sp,
-                        lineHeight = (size * 1.3f).sp
-                    )
-                }
+            LazyColumn(Modifier.fillMaxSize(), list) {
+                items(events) { ChatRow(it, size) }
             }
         }
     }

@@ -11,20 +11,26 @@ import androidx.activity.result.contract.ActivityResultContracts.RequestMultiple
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
@@ -58,9 +64,11 @@ private fun GlassesPreview() = AndroidView(
 @Composable
 internal fun MainScreen() {
     val activity = requireNotNull(LocalActivity.current)
+    val density = LocalDensity.current.density
     var granted by remember { mutableStateOf(false) }
-    var chatOpen by remember { mutableStateOf(false) }
-    var maximized by remember { mutableStateOf(false) }
+    var detent by remember { mutableStateOf(Detent.Hidden) }
+    var totalPx by remember { mutableFloatStateOf(0f) }
+    var restPx by remember { mutableFloatStateOf(0f) }
     var settingsOpen by remember { mutableStateOf(false) }
     val ask = rememberLauncherForActivityResult(RequestMultiplePermissions()) { r ->
         granted = required.all { r[it] == true }
@@ -70,7 +78,9 @@ internal fun MainScreen() {
     }
     LaunchedEffect(Unit) { ask.launch(everything) }
 
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
+    Box(
+        Modifier.fillMaxSize().background(Color.Black).onSizeChanged { totalPx = it.height.toFloat() }
+    ) {
         if (Engine.source == Source.Glasses) {
             GlassesPreview()
         } else if (granted) {
@@ -101,15 +111,21 @@ internal fun MainScreen() {
         }
         Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp)) {
             Hud()
-            Box(Modifier.weight(1f).fillMaxWidth().padding(bottom = 8.dp), Alignment.BottomCenter) {
-                if (chatOpen) {
-                    ChatPanel(Modifier.fillMaxWidth().fillMaxHeight(if (maximized) 1f else 0.65f), maximized, { maximized = !maximized }) {
-                        settingsOpen = true
-                    }
-                }
+            Spacer(Modifier.weight(1f))
+            Box(Modifier.onGloballyPositioned { restPx = totalPx - it.positionInRoot().y + 8 * density }) {
+                val open = detent != Detent.Hidden
+                Controls(granted, open, { detent = if (open) Detent.Hidden else Detent.Partial }, { settingsOpen = true })
             }
-            Controls(granted, chatOpen, { chatOpen = !chatOpen }, { settingsOpen = true })
         }
+        val args = SheetArgs(
+            detent,
+            { detent = it },
+            totalPx,
+            WindowInsets.safeDrawing.getTop(LocalDensity.current).toFloat(),
+            restPx,
+            Modifier.align(Alignment.BottomCenter)
+        )
+        ChatPanel(args) { settingsOpen = true }
     }
     if (settingsOpen) SettingsSheet { settingsOpen = false }
 }
