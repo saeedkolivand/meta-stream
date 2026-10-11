@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -76,19 +77,30 @@ internal fun ChatPanel(sheet: SheetArgs, onSettings: () -> Unit) {
     val maximized = sheet.detent == Detent.Expanded
     val toggle = { sheet.onDetent(if (maximized) Detent.Partial else Detent.Expanded) }
     ChatSheet(sheet, { Header(step, ::resize, maximized, toggle) }) {
-        if (ChatFeed.kickSlug.isEmpty() && ChatFeed.twitchChannel.isEmpty()) {
+        if (!ChatFeed.configured) {
             Column(
                 Modifier.fillMaxSize().padding(16.dp),
                 Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
                 Alignment.CenterHorizontally
             ) {
                 Text("No chat source set", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                Text("Set a channel name in Settings.", fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f))
-                Button(onSettings) { Text("Settings") }
+                Text(
+                    "Set a channel name in Settings, or connect a platform in Stream Manager.",
+                    fontSize = 14.sp,
+                    color = Color.White.copy(alpha = 0.6f),
+                    textAlign = TextAlign.Center
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onSettings) { Text("Settings") }
+                    Button({ ManagerState.open = true }) { Text("Stream Manager") }
+                }
             }
         } else {
-            LazyColumn(Modifier.fillMaxSize(), list) {
-                items(events) { ChatRow(it, size) }
+            Column(Modifier.fillMaxSize()) {
+                LazyColumn(Modifier.weight(1f), list) {
+                    items(events) { ChatRow(it, size) }
+                }
+                ComposeBar(maximized) { sheet.onDetent(Detent.Expanded) }
             }
         }
     }

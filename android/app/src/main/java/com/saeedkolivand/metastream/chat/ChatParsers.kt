@@ -2,22 +2,31 @@ package com.saeedkolivand.metastream.chat
 
 import org.json.JSONObject
 
-/** [color] is the sender's own name color as hex; [badges] are normalized roles in [ROLES] order. */
+/** What a [ChatEvent] is; everything but [Message] is an alert (iOS ChatEvent.Kind). */
+enum class Kind { Message, Tip, Cheer, Follow, Subscribe, Raid }
+
+/**
+ * [color] is the sender's own name color as hex; [badges] are normalized roles in [ROLES] order.
+ * [amountCents] is money (tips), [count] countable things (raid viewers, cheered bits); cents as Int, never floating point.
+ */
 data class ChatEvent(
     val platform: String,
     val user: String,
     val text: String,
     val time: Long = System.currentTimeMillis(),
     val color: String? = null,
-    val badges: List<String> = emptyList()
+    val badges: List<String> = emptyList(),
+    val kind: Kind = Kind.Message,
+    val amountCents: Int = 0,
+    val count: Int = 0
 )
 
 private val ROLES = listOf("broadcaster", "staff", "moderator", "vip", "founder", "subscriber", "verified", "og")
 
 // Twitch calls verified channels "partner"; unknown types (sub_gifter, premium, bits, ...) are dropped.
-private val ROLE_ALIASES = mapOf("partner" to "verified")
+private val ROLE_ALIASES = mapOf("partner" to "verified", "admin" to "staff", "global_mod" to "staff")
 
-private fun normalizeRoles(raw: Sequence<String>): List<String> {
+internal fun normalizeRoles(raw: Sequence<String>): List<String> {
     val found = raw.map { ROLE_ALIASES[it] ?: it }.toSet()
     return ROLES.filter { it in found }
 }

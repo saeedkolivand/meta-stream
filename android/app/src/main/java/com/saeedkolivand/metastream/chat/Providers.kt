@@ -35,7 +35,7 @@ suspend fun backoff(label: String, work: suspend () -> Unit) {
 }
 
 /** One WebSocket lifetime: returns on close, throws on failure, closes the socket when cancelled. */
-private suspend fun socket(url: String, onOpen: (WebSocket) -> Unit, onText: (WebSocket, String) -> Unit) {
+internal suspend fun socket(url: String, onOpen: (WebSocket) -> Unit, onText: (WebSocket, String) -> Unit) {
     val done = CompletableDeferred<Unit>()
     val ws = http.newWebSocket(
         Request.Builder().url(url).build(),

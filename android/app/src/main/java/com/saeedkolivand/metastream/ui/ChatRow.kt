@@ -23,7 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.ChatFeed
-import com.saeedkolivand.metastream.chat.displayText
+import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.speech.eventSummary
 
 private val Kick = Color(0xFF53FC18)
 private val Twitch = Color(0xFF9146FF)
@@ -70,11 +71,34 @@ private fun Chip(role: String) {
     )
 }
 
+private val YouTube = Color(0xFFFF0033)
+
+/** Letter, circle colour and letter colour per origin. */
+private fun origin(platform: String) = when (platform) {
+    "kick" -> Triple("K", Kick, Color.Black)
+    "youtube" -> Triple("Y", YouTube, Color.White)
+    else -> Triple("T", Twitch, Color.White)
+}
+
+@Composable
+private fun OriginBadge(platform: String) {
+    val (letter, bg, fg) = origin(platform)
+    Box(Modifier.size(20.dp).clip(CircleShape).background(bg), Alignment.Center) {
+        Text(letter, color = fg, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
 @Composable
 internal fun ChatRow(e: ChatEvent, size: Int) {
-    val kick = e.platform == "kick"
-    val platform = if (kick) Kick else Twitch
-    val name = parseHex(e.color)?.let(::readable) ?: platform
+    // Alerts are already spoken, so they render as one compact secondary line with no name/badges.
+    if (e.kind != Kind.Message) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), Arrangement.spacedBy(8.dp), Alignment.CenterVertically) {
+            OriginBadge(e.platform)
+            Text(eventSummary(e), color = Color.White.copy(alpha = 0.6f), fontSize = (size * 0.8f).sp)
+        }
+        return
+    }
+    val name = parseHex(e.color)?.let(::readable) ?: origin(e.platform).second
     // The owner is whoever's channel we're reading; their @name in a message is addressed to the streamer.
     val mention = listOf(ChatFeed.kickSlug, ChatFeed.twitchChannel).any { it.isNotEmpty() && e.text.contains("@$it", ignoreCase = true) }
     // Hairline divider, not alternating stripes: the feed is capped, so indices shift and stripes would flip per message.
@@ -82,18 +106,11 @@ internal fun ChatRow(e: ChatEvent, size: Int) {
     Column(Modifier.background(bg)) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(20.dp).clip(CircleShape).background(platform), Alignment.Center) {
-                    Text(
-                        if (kick) "K" else "T",
-                        color = if (kick) Color.Black else Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                OriginBadge(e.platform)
                 e.badges.forEach { Chip(it) }
                 Text(e.user, color = name, fontSize = (size * 0.85f).sp, fontWeight = FontWeight.Bold)
             }
-            Text(displayText(e.text), Modifier.padding(top = 2.dp), color = Color.White, fontSize = size.sp, lineHeight = (size * 1.3f).sp)
+            MessageText(e.text, size, Modifier.padding(top = 2.dp))
         }
         HorizontalDivider(color = Hairline)
     }

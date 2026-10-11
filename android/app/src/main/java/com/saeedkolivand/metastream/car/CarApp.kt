@@ -29,8 +29,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.chat.ChatFeed
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.chat.Kind
 import com.saeedkolivand.metastream.overlay.OverlayStore
+import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
@@ -116,8 +117,10 @@ private class MainScreen(c: CarContext) : Screen(c) {
                     screenManager.push(ControlsScreen(carContext))
                 }.build()
             )
-        for ((p, name) in listOf("kick" to "Kick", "twitch" to "Twitch")) {
-            val msgs = ChatFeed.chat.value.filter { it.platform == p }.takeLast(5) // docs: at most the 5 most recent, oldest first
+        for ((p, name) in listOf("kick" to "Kick", "twitch" to "Twitch", "youtube" to "YouTube")) {
+            val msgs = ChatFeed.chat.value.filter {
+                it.platform == p && it.kind == Kind.Message
+            }.takeLast(5) // docs: at most the 5 most recent, oldest first
             if (msgs.isEmpty()) continue
             list.addItem(
                 ConversationItem.Builder(
@@ -136,10 +139,13 @@ private class MainScreen(c: CarContext) : Screen(c) {
                             invalidate()
                         }
 
-                        // ponytail: sending isn't implemented (no OAuth). Upgrade path: platform send() on Engine, then drop the toast.
                         override fun onTextReply(replyText: String) {
-                            applog("chat", "car reply to $p dropped: sending needs sign-in")
-                            toast(carContext, "Replies need sign-in (coming soon)")
+                            if (Accounts.sendOrigins(ChatFeed.kickSlug).contains(p)) {
+                                Accounts.scope.launch { Accounts.send(p, replyText) }
+                                toast(carContext, "Sent to $name")
+                            } else {
+                                toast(carContext, "Sign in to $name in the phone app to reply")
+                            }
                         }
                     }
                 )

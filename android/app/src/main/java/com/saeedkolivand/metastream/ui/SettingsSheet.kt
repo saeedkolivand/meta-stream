@@ -81,6 +81,10 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
                 }, singleLine = true)
                 SwitchRow("Read chat aloud", Speaker.readAloud, Speaker::updateReadAloud)
             }
+            Section("Accounts") {
+                OutlinedButton({ ManagerState.open = true }) { Text("Stream Manager") }
+            }
+            Section("Read aloud") { ReadAloudSettings() }
             Section("Overlays") { OverlaySettings() }
             if (Engine.source == Source.Glasses) {
                 Section("Glasses") {

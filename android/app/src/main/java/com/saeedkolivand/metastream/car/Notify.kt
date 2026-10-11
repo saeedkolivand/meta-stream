@@ -11,12 +11,15 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.Person
 import androidx.core.app.RemoteInput
 import com.saeedkolivand.metastream.chat.ChatEvent
+import com.saeedkolivand.metastream.chat.Kind
 import com.saeedkolivand.metastream.core.applog
 import com.saeedkolivand.metastream.core.ensureChannel
+import com.saeedkolivand.metastream.platforms.Accounts
+import kotlinx.coroutines.launch
 
 private const val CHAT = "chat"
 private const val ALERT = "alerts"
-private val platforms = listOf("kick" to "Kick", "twitch" to "Twitch")
+private val platforms = listOf("kick" to "Kick", "twitch" to "Twitch", "youtube" to "YouTube")
 
 /** Car-facing notifications: chat as MessagingStyle (Android Auto requires it next to templated messaging) and stream-health alerts. */
 object Notify {
@@ -37,7 +40,7 @@ object Notify {
         val n = nm(c)
         if (!n.areNotificationsEnabled()) return
         for ((i, p) in platforms.withIndex()) {
-            val msgs = all.filter { it.platform == p.first }.takeLast(5)
+            val msgs = all.filter { it.platform == p.first && it.kind == Kind.Message }.takeLast(5)
             val newest = msgs.lastOrNull()?.time ?: continue
             if (newest <= seen.getOrPut(p.first) { System.currentTimeMillis() }) continue
             seen[p.first] = newest
@@ -98,16 +101,10 @@ object Notify {
 class ChatReceiver : BroadcastReceiver() {
     override fun onReceive(c: Context, i: Intent) {
         val p = i.getStringExtra("p") ?: return
-        // ponytail: sending isn't implemented (no OAuth); the reply is dropped. Upgrade path: platform send() from Engine.
-        if (i.action ==
-            "reply"
-        ) {
-            applog(
-                "chat",
-                "reply to $p dropped: sending needs sign-in (${RemoteInput.getResultsFromIntent(
-                    i
-                )?.getCharSequence("reply")?.length ?: 0} chars)"
-            )
+        // A voice reply from the car goes out through the platform account, exactly like the compose bar.
+        if (i.action == "reply") {
+            val text = RemoteInput.getResultsFromIntent(i)?.getCharSequence("reply")?.toString().orEmpty()
+            if (text.isNotBlank()) Accounts.scope.launch { Accounts.send(p, text) }
         }
         Notify.cancelChat(c, p)
     }

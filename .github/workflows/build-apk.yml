@@ -18,6 +18,14 @@ jobs:
       - name: Install Android 37 platform
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" > /dev/null
       - name: Build, test, lint
+        # Same repo secrets as the iOS build; android/app/build.gradle.kts turns them into BuildConfig fields.
+        env:
+          KICK_CLIENT_ID: ${{ secrets.KICK_CLIENT_ID }}
+          KICK_CLIENT_SECRET: ${{ secrets.KICK_CLIENT_SECRET }}
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          RESTREAM_CLIENT_ID: ${{ secrets.RESTREAM_CLIENT_ID }}
+          RESTREAM_CLIENT_SECRET: ${{ secrets.RESTREAM_CLIENT_SECRET }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
         run: cd android && ./gradlew assembleDebug test lint ktlintCheck && bash loc.sh
       - uses: actions/upload-artifact@v7
         with:

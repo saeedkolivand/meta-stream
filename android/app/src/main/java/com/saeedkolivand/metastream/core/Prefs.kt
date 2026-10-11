@@ -14,7 +14,7 @@ object Prefs {
 
     fun string(key: String, default: String = ""): String = sp.getString(key, default) ?: default
 
-    fun bool(key: String): Boolean = sp.getBoolean(key, false)
+    fun bool(key: String, default: Boolean = false): Boolean = sp.getBoolean(key, default)
 
     fun put(key: String, value: String) = sp.edit { putString(key, value) }
 

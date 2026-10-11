@@ -67,6 +67,7 @@ internal fun Hud() {
             val g = Engine.glasses.status
             Pill(R.drawable.ic_glasses, g.ifEmpty { "idle" }, glassesColor(g))
         }
+        Pill(R.drawable.ic_manage, "manage", Color.Cyan) { ManagerState.open = true }
         val on = Speaker.readAloud
         Pill(
             if (on) R.drawable.ic_speaker else R.drawable.ic_speaker_off,

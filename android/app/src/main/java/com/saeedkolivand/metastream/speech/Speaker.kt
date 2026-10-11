@@ -5,6 +5,7 @@ import android.media.AudioAttributes
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.Voice
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -16,6 +17,13 @@ import java.util.concurrent.atomic.AtomicInteger
 object Speaker {
     var readAloud by mutableStateOf(false)
         private set
+
+    /** Installed voices once the engine is up, sorted for the picker; empty until then. */
+    var voices by mutableStateOf<List<Voice>>(emptyList())
+        private set
+
+    /** Set by ChatFeed when more than one chat origin is live, so lines say "on Kick, ...". */
+    @Volatile var showOrigin = false
 
     @Volatile private var tts: TextToSpeech? = null
 
@@ -53,8 +61,22 @@ object Speaker {
                 }
             )
             ready = true
+            voices =
+                runCatching {
+                    tts?.voices.orEmpty().sortedWith(compareBy({ it.locale.displayName }, { it.name }))
+                }.getOrDefault(emptyList())
+            applyVoice()
         }
     }
+
+    /** Applies the saved voice and speed; the engine default stays when the saved voice is no longer installed. */
+    fun applyVoice() {
+        tts?.setSpeechRate(SpeechSettings.rate / SpeechSettings.DEFAULT_RATE)
+        voices.firstOrNull { it.name == SpeechSettings.voice }?.let { tts?.voice = it }
+    }
+
+    /** Plays [text] in the selected voice so the picker can be auditioned. */
+    fun preview(text: String) = speak(text, true)
 
     fun updateReadAloud(on: Boolean) {
         readAloud = on
@@ -71,10 +93,12 @@ object Speaker {
 
     // ponytail: iOS has a 5-deep chat lane and a 20/min cap; here one cap of 5 queued utterances drops new chat when
     // behind (Android TTS can't drop the oldest queued item). Upgrade path: own queue like Speaker.swift.
+    /** Chat messages and alerts (tips/follows/subs/raids), gated by the read-aloud toggle and the per-kind settings. */
     fun speakChat(e: ChatEvent) {
         if (!readAloud) return
-        val text = sanitizeSpeech(e.text)
-        if (text.isNotEmpty() && pending.get() < 5) speak("${e.user} says $text", false)
+        val text = spokenText(e, SpeechSettings.options()) ?: return
+        val origin = if (showOrigin) "on ${e.platform.replaceFirstChar(Char::uppercase)}, " else ""
+        if (pending.get() < 5) speak(origin + text, false)
     }
 
     /** System alerts interrupt and ignore the read-aloud toggle, like iOS speakSystem. */

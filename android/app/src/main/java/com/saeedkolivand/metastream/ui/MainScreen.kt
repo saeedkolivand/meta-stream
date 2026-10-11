@@ -128,4 +128,5 @@ internal fun MainScreen() {
         ChatPanel(args) { settingsOpen = true }
     }
     if (settingsOpen) SettingsSheet { settingsOpen = false }
+    StreamManager()
 }
