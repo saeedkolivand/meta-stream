@@ -44,8 +44,14 @@ id -u mediamtx >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr
 ENV=/etc/mediamtx/relay.env
 SRT_PASS=$(grep -s '^SRT_PASS=' "$ENV" | cut -d= -f2- || true)
 SRT_PASS="${SRT_PASS:-$(head -c 18 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 20)}"
+# SRT encryption key (AES): without it the stream and the password in streamid cross the internet in clear.
+SRT_KEY=$(grep -s '^SRT_KEY=' "$ENV" | cut -d= -f2- || true)
+SRT_KEY="${SRT_KEY:-$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32)}"
+# Created empty with final perms first, so the secrets are never readable by others, not even for a moment.
+install -m 640 -o root -g mediamtx /dev/null "$ENV"
 cat > "$ENV" <<EOF
 SRT_PASS=$SRT_PASS
+SRT_KEY=$SRT_KEY
 KICK_URL=$KICK_URL
 KICK_KEY=$KICK_KEY
 VIDEO_KBPS=$VIDEO_KBPS
@@ -56,6 +62,8 @@ chown root:mediamtx "$ENV"
 chmod 640 "$ENV"
 
 # Pusher: reads the local SRT stream, transcodes video to H.264 (Kick's only codec), copies the phone's AAC audio.
+# ponytail: the Kick key is in ffmpeg's argv, so any local user can read it in `ps`. Fine on this single-tenant VM
+# (only you can log in); on a shared box, mount /proc with hidepid=invisible.
 # scale caps the height (a 4K phone stream would melt 4 ARM cores); keyframe every 2 s is what Kick asks for.
 cat > /usr/local/bin/kick-push <<'EOF'
 #!/usr/bin/env bash
@@ -72,6 +80,7 @@ EOF
 chmod 755 /usr/local/bin/kick-push
 
 # Only what this needs: SRT in, everything else off. Publishing needs the password; reading only from localhost.
+install -m 640 -o root -g mediamtx /dev/null /etc/mediamtx/mediamtx.yml
 cat > /etc/mediamtx/mediamtx.yml <<EOF
 logLevel: info
 authInternalUsers:
@@ -95,6 +104,7 @@ srt: true
 srtAddress: :8890
 paths:
   live:
+    srtPublishPassphrase: $SRT_KEY
     runOnReady: /usr/local/bin/kick-push
     runOnReadyRestart: true
 EOF
@@ -116,6 +126,7 @@ RestartSec=3
 [Install]
 WantedBy=multi-user.target
 EOF
+chmod 644 /etc/systemd/system/mediamtx.service
 
 # Oracle's Ubuntu images ship an iptables REJECT rule; insert the SRT port ahead of it and persist.
 iptables -C INPUT -p udp --dport 8890 -j ACCEPT 2>/dev/null || iptables -I INPUT 1 -p udp --dport 8890 -j ACCEPT
@@ -129,7 +140,7 @@ IP=$(curl -fsS https://ifconfig.me || echo "<server-ip>")
 echo
 echo "Relay is up. In MetaStream > Settings > Ingest, use this URL and pick the HEVC codec:"
 echo
-echo "  srt://${IP}:8890?streamid=publish:live:phone:${SRT_PASS}"
+echo "  srt://${IP}:8890?streamid=publish:live:phone:${SRT_PASS}&passphrase=${SRT_KEY}"
 echo
 echo "Logs: journalctl -u mediamtx -f   (ffmpeg warnings show up there too)"
 echo "Remember: UDP 8890 must also be open in the Oracle VCN security list."
