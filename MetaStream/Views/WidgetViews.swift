@@ -86,11 +86,17 @@ struct StreamChatView: View {
         return HStack(alignment: .top, spacing: 6) {
             if style.platform {
                 Circle().fill(DisplayNames.originColor(e.origin)).frame(width: size * 0.4, height: size * 0.4)
-                    .padding(.top, size * 0.4)
+                    .padding(.top, size * 0.35)
             }
             if isMessage {
-                if style.badges { ForEach(Array(e.badges.prefix(3).enumerated()), id: \.offset) { _, b in chip(b) } }
-                messageLine(e, text)
+                // Two lines, like the in-app chat sheet: who (badges + name) on top, what they said underneath.
+                VStack(alignment: .leading, spacing: size * 0.15) {
+                    HStack(spacing: 4) {
+                        if style.badges { ForEach(Array(e.badges.prefix(3).enumerated()), id: \.offset) { _, b in chip(b) } }
+                        Text(e.user).font(font(.bold)).foregroundColor(style.senderColors ? DisplayNames.nameColor(e) : text)
+                    }
+                    messageLine(e, text)
+                }
             } else {
                 Image(systemName: eventSymbol(e.kind).name).font(font(.bold)).foregroundColor(eventSymbol(e.kind).color)
                 Text(DisplayNames.eventSummary(e)).font(font(.bold)).foregroundColor(text).multilineTextAlignment(.leading)
@@ -104,13 +110,11 @@ struct StreamChatView: View {
         .frame(maxWidth: .infinity, alignment: rtl ? .trailing : .leading)
     }
 
-    /// Name and message stay one Text so bidi resolves mixed-script lines; emotes are inline images (Text concatenation).
+    /// The message as one Text so bidi resolves mixed-script lines; emotes are inline images (Text concatenation).
     // ponytail: emotes stay 22 pt (Emotes resizes once, to 22 pt) whatever the font size. Upgrade: pass a height to
     // Emotes.image(for:) and cache one size per bucket.
     private func messageLine(_ e: ChatEvent, _ text: Color) -> Text {
-        let name = style.senderColors ? DisplayNames.nameColor(e) : text
-        let head = Text(e.user + ": ").font(font(.bold)).foregroundColor(name)
-        let body = Emotes.tokenize(e.text, byName: emotes.byName).reduce(Text("")) { partial, run in
+        Emotes.tokenize(e.text, byName: emotes.byName).reduce(Text("")) { partial, run in
             switch run {
             case .text(let s): return partial + Text(s).font(font(style.bold ? .semibold : .regular)).foregroundColor(text)
             case .emote(let url):
@@ -118,7 +122,6 @@ struct StreamChatView: View {
                 return partial + Text("")
             }
         }
-        return head + body
     }
 
     private func chip(_ badge: String) -> some View {
@@ -127,10 +130,9 @@ struct StreamChatView: View {
             Image(systemName: s.symbol)
             if !s.label.isEmpty { Text(s.label) }
         }
-        .font(font(.heavy, 0.5)).foregroundColor(s.color)
+        .font(font(.heavy, 0.55)).foregroundColor(s.color)
         .padding(.horizontal, 5).padding(.vertical, 2)
         .background(s.color.opacity(0.22), in: Capsule())
-        .padding(.top, size * 0.2)
     }
 
     static var samples: [ChatEvent] {   // computed so previews get fresh timestamps and never age out under "fade"
