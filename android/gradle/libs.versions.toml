@@ -1,4 +1,6 @@
 [versions]
+uvcandroid = "1.0.13" # must match what RootEncoder extra-sources ships (it only exposes it at runtime)
+zxing = "3.5.3"
 agp = "9.4.0"
 kotlin = "2.2.21"
 activityCompose = "1.13.0"
@@ -14,6 +16,8 @@ orgJson = "20260814"
 coil = "3.3.0"
 
 [libraries]
+uvcandroid = { group = "com.herohan", name = "UVCAndroid", version.ref = "uvcandroid" }
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version = "1.1.0" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }

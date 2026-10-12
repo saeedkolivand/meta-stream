@@ -56,6 +56,10 @@ object Health {
         private set
     var kbps by mutableIntStateOf(0)
         private set
+
+    /** Smoothed outgoing bitrate for the {bitrate} text token; 0 while not streaming. */
+    var bitrateKbps by mutableIntStateOf(0)
+        private set
     var battery by mutableStateOf<Int?>(null)
         private set
     var thermal by mutableIntStateOf(PowerManager.THERMAL_STATUS_NONE)
@@ -87,6 +91,7 @@ object Health {
     fun onStats(bytesOutPerSecond: Long, smoothedBitrate: Long) {
         outKbps = bytesOutPerSecond * 8 / 1000
         kbps = (smoothedBitrate / 1000).toInt()
+        bitrateKbps = kbps
     }
 
     /** [client] is null for glasses passthrough (no encoder knob, so no adaptation); [apply] sets the encoder bitrate. */
@@ -141,6 +146,7 @@ object Health {
         listening = false
         fps = 0
         kbps = 0
+        bitrateKbps = 0
         battery = null
         capKbps = 0
         downSince = null

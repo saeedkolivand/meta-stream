@@ -20,7 +20,6 @@ import com.pedro.encoder.input.sources.audio.MicrophoneSource
 import com.pedro.encoder.input.sources.video.Camera2Source
 import com.pedro.encoder.input.sources.video.VideoSource
 import com.pedro.encoder.utils.gl.AspectRatioMode
-import com.pedro.extrasources.CameraUvcSource
 import com.pedro.library.generic.GenericStream
 import com.pedro.library.util.streamclient.SrtStreamClient
 import com.saeedkolivand.metastream.camera.Cam
@@ -117,7 +116,7 @@ object Engine {
         askWearables = ask ?: DENY_WEARABLES
     }
 
-    private fun video(s: Source): VideoSource = if (s == Source.Usb) CameraUvcSource() else Camera2Source(app)
+    private fun video(s: Source): VideoSource = if (s == Source.Usb) UvcSource() else Camera2Source(app)
 
     /** Creates the stream on first use (needs CAMERA + RECORD_AUDIO); callable without any activity. */
     private fun ensure(): GenericStream? {
@@ -133,8 +132,6 @@ object Engine {
         s.getGlInterface().autoHandleOrientation = true // output follows device rotation
         s.getGlInterface().setAspectRatioMode(AspectRatioMode.Fill) // the preview crops to fill the screen like iOS
         s.getStreamClient().setReTries(10) // RootEncoder's built-in reconnect, driven from onConnectionFailed
-        // ponytail: the configured size/fps is requested of every source; CameraUvcSource has no size API, so UVCAndroid picks its default
-        // preview size and the GL pipeline scales it. Upgrade path: own VideoSource wrapping ICameraHelper.setPreviewSize.
         if (!prepare(s)) return null
         stream = s
         return s
@@ -213,7 +210,7 @@ object Engine {
             return
         }
         val s = stream
-        if (s != null && next != Source.Glasses && (next == Source.Usb) != (s.videoSource is CameraUvcSource)) {
+        if (s != null && next != Source.Glasses && (next == Source.Usb) != (s.videoSource is UvcSource)) {
             try {
                 s.changeVideoSource(video(next))
                 Cam.attach(s)

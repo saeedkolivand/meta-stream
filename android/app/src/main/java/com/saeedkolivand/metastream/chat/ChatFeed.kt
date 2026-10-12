@@ -34,6 +34,12 @@ object ChatFeed {
         private set
     var twitchChannel by mutableStateOf("")
         private set
+
+    /** Latest follower/subscriber names for the {follower}/{sub} text tokens. */
+    var lastFollower by mutableStateOf("")
+        private set
+    var lastSubscriber by mutableStateOf("")
+        private set
     private var kickJob: Job? = null
     private var twitchJob: Job? = null
     private var youtubeJob: Job? = null
@@ -55,6 +61,11 @@ object ChatFeed {
 
     private fun onChat(e: ChatEvent) {
         _chat.update { (it + e.copy(id = seq.incrementAndGet())).takeLast(200) }
+        when (e.kind) {
+            Kind.Follow -> lastFollower = e.user
+            Kind.Subscribe -> lastSubscriber = e.user
+            else -> Unit
+        }
         onMessage(e)
     }
 

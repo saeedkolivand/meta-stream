@@ -29,6 +29,7 @@ import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
+import com.saeedkolivand.metastream.ui.scenes.ScenesPage
 
 /** Sub-pages of the settings sheet, like iOS NavigationLinks; [parent] is where Back goes. */
 private enum class Page(val title: String, val parent: Page?) {
@@ -39,6 +40,7 @@ private enum class Page(val title: String, val parent: Page?) {
     Camera("Camera", Root),
     ReadAloud("Read aloud", Root),
     Privacy("Privacy", Root),
+    Scenes("Scenes & widgets", Root),
     Diagnostics("Diagnostics & about", Root),
     Logs("Logs", Diagnostics)
 }
@@ -63,6 +65,7 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
                 Page.Camera -> CameraSettingsContent()
                 Page.ReadAloud -> ReadAloudSettings()
                 Page.Privacy -> PrivacySettings()
+                Page.Scenes -> ScenesPage()
                 Page.Glasses -> GlassesVideoPage()
                 Page.Diagnostics -> DiagnosticsPage { page = Page.Logs }
                 Page.Logs -> LogsPage()
@@ -79,6 +82,7 @@ private fun RootPage(go: (Page) -> Unit) {
     NavRow(Page.Camera.title) { go(Page.Camera) }
     NavRow(Page.Audio.title) { go(Page.Audio) }
     NavRow(Page.ReadAloud.title) { go(Page.ReadAloud) }
+    NavRow(Page.Scenes.title) { go(Page.Scenes) }
     NavRow(Page.Privacy.title) { go(Page.Privacy) }
     NavRow(Page.Glasses.title) { go(Page.Glasses) }
     NavRow(Page.Diagnostics.title) { go(Page.Diagnostics) }
@@ -105,7 +109,6 @@ private fun RootPage(go: (Page) -> Unit) {
         }, singleLine = true)
         SwitchRow("Read chat aloud", Speaker.readAloud, onChange = Speaker::updateReadAloud)
     }
-    Section("Overlays") { OverlaySettings() }
     if (Engine.source == Source.Glasses) {
         Section("Glasses") {
             val registered = Engine.glasses.registration == RegistrationState.REGISTERED

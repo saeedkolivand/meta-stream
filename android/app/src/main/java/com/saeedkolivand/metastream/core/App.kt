@@ -5,6 +5,8 @@ import com.saeedkolivand.metastream.car.Notify
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.Overlays
+import com.saeedkolivand.metastream.overlay.Scenes
+import com.saeedkolivand.metastream.overlay.WidgetFonts
 import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
@@ -21,6 +23,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         Prefs.init(this)
+        WidgetFonts.init(this)
         AppSettings.init()
         Mics.init()
         Speaker.init(this)
@@ -29,5 +32,7 @@ class App : Application() {
         Accounts.init(this, scope)
         ChatFeed.init(scope, onMessage = Speaker::speakChat)
         Engine.init(this, scope, speak = Speaker::speakSystem, alert = { Notify.alert(this, it) })
+        Scenes.init(scope)
+        Scenes.updateRotation()
     }
 }

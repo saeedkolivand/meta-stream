@@ -76,12 +76,14 @@ dependencies {
     implementation(libs.mwdat.mockdevice)
     implementation(libs.rootencoder)
     implementation(libs.rootencoder.extra)
+    implementation(libs.uvcandroid) // UvcSource picks the camera format; extra-sources keeps UVCAndroid off our compile classpath
     implementation(libs.mlkit.face)
     implementation(libs.mlkit.text)
     implementation(libs.mlkit.barcode)
     implementation(libs.okhttp)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.zxing.core) // QR widget: encoding a QR code by hand is ~600 lines; core is pure Java, no Android deps
     implementation(libs.carapp)
 
     testImplementation(libs.junit)

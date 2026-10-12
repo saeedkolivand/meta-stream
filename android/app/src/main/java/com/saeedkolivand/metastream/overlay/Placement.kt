@@ -56,3 +56,30 @@ fun place(l: Layer, nw: Float, nh: Float): Box {
     val by = anchor(l.y, l.bh, l.align, TOP, BOTTOM)
     return Box(inside(bx, l.bw, w, l.boundsAlign, LEFT, RIGHT), inside(by, l.bh, h, l.boundsAlign, TOP, BOTTOM), w, h)
 }
+
+private fun widgetScale(layout: WidgetLayout, outW: Float, outH: Float) = layout.scale * min(outW, outH) / 1080f
+
+/**
+ * An in-app widget's rectangle in output px. Its size is the natural size times [WidgetLayout.scale] at a 1080 px
+ * short side; the anchor point on the frame (and the same point on the widget) are pinned together, then offset by dx/dy.
+ */
+fun widgetBox(layout: WidgetLayout, nw: Float, nh: Float, outW: Float, outH: Float): Box {
+    val s = widgetScale(layout, outW, outH)
+    val w = nw * s
+    val h = nh * s
+    val col = layout.anchor % 3
+    val row = layout.anchor / 3
+    return Box(col * outW / 2 - col * w / 2 + layout.dx * outW, row * outH / 2 - row * h / 2 + layout.dy * outH, w, h)
+}
+
+private fun third(c: Float, size: Float) = (c / size * 3).toInt().coerceIn(0, 2)
+
+/** Inverse of [widgetBox]: the anchor nearest the box centre (by thirds), with dx/dy so the box is reproduced at [scale]. */
+fun widgetLayoutFor(box: Box, nw: Float, nh: Float, outW: Float, outH: Float, scale: Float): WidgetLayout {
+    val col = third(box.x + box.w / 2, outW)
+    val row = third(box.y + box.h / 2, outH)
+    val s = widgetScale(WidgetLayout(scale = scale), outW, outH)
+    val dx = (box.x - (col * outW / 2 - col * nw * s / 2)) / outW
+    val dy = (box.y - (row * outH / 2 - row * nh * s / 2)) / outH
+    return WidgetLayout(row * 3 + col, dx, dy, scale)
+}
