@@ -59,7 +59,7 @@ enum OverlayRaster {
         ctx.restoreGState()
     }
 
-    static func color(argb: UInt32) -> UIColor {
+    nonisolated static func color(argb: UInt32) -> UIColor {   // pure: also used by SwiftUI widget views
         UIColor(red: CGFloat((argb >> 16) & 255) / 255, green: CGFloat((argb >> 8) & 255) / 255,
                 blue: CGFloat(argb & 255) / 255, alpha: CGFloat(argb >> 24) / 255)
     }

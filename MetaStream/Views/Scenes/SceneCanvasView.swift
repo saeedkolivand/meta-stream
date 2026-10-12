@@ -59,7 +59,7 @@ struct SceneCanvasView: View {
         ZStack {
             LinearGradient(colors: [Color(white: 0.16), Color(white: 0.06)], startPoint: .top, endPoint: .bottom)
             Path { p in
-                for f in [CGFloat(1) / 3, 2 / 3] {
+                for f: CGFloat in [1.0 / 3, 2.0 / 3] {
                     p.move(to: CGPoint(x: size.width * f, y: 0)); p.addLine(to: CGPoint(x: size.width * f, y: size.height))
                     p.move(to: CGPoint(x: 0, y: size.height * f)); p.addLine(to: CGPoint(x: size.width, y: size.height * f))
                 }
