@@ -19,8 +19,8 @@ private func eventSymbol(_ k: ChatEvent.Kind) -> (name: String, color: Color) {
     }
 }
 
-/// Rows flip to right-to-left when their text starts in a Persian/Arabic/Hebrew run: dot, badges and name then
-/// sit on the right and the text flows RTL. Applied inside, so the outer frame alignment stays screen-relative.
+/// Text that starts in a Persian/Arabic/Hebrew run flows right-to-left. Only the TEXT flips: cards, badges and
+/// accents keep the same left-anchored layout as every other row, so mixed-language chat stays one tidy column.
 private extension View {
     func rowDirection(_ rtl: Bool) -> some View {
         environment(\.layoutDirection, rtl ? .rightToLeft : .leftToRight)
@@ -102,12 +102,10 @@ struct StreamChatView: View {
 
     @ViewBuilder
     private func row(_ e: ChatEvent) -> some View {
-        let rtl = WidgetFonts.isRTL(e.kind == .message ? e.text : DisplayNames.eventSummary(e))
         Group {
             if e.kind == .message { messageCard(e) } else { eventPill(e) }
         }
-        .rowDirection(rtl)
-        .frame(maxWidth: .infinity, alignment: rtl ? .trailing : .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Flat, minimal card: who on top (icon badges + name), what they said underneath, a brand accent bar on the
@@ -129,6 +127,7 @@ struct StreamChatView: View {
                     .lineLimit(1)
             }
             messageLine(e, text).lineSpacing(size * 0.08)
+                .multilineTextAlignment(.leading).rowDirection(WidgetFonts.isRTL(e.text))
         }
         .padding(.leading, style.platform ? size * 0.62 : size * 0.5)
         .padding(.trailing, size * 0.55)
@@ -155,6 +154,7 @@ struct StreamChatView: View {
         return HStack(spacing: size * 0.3) {
             Image(systemName: sym.name).font(font(.bold, 0.8))
             Text(DisplayNames.eventSummary(e)).font(font(.bold, 0.82)).lineLimit(2)
+                .rowDirection(WidgetFonts.isRTL(DisplayNames.eventSummary(e)))
         }
         .foregroundColor(.white)
         .padding(.horizontal, size * 0.55).padding(.vertical, size * 0.3)
@@ -209,7 +209,6 @@ struct AlertBannerView: View {
 
     var body: some View {
         let accent = argbColor(style.accentColor), text = argbColor(style.textColor)
-        let rtl = WidgetFonts.isRTL(event.user + event.text)
         ZStack {
             RoundedRectangle(cornerRadius: 30).fill(Color.black.opacity(0.78))
             RoundedRectangle(cornerRadius: 30).stroke(accent, lineWidth: 4)
@@ -224,12 +223,12 @@ struct AlertBannerView: View {
                     if !event.text.isEmpty {
                         Text(event.text).font(WidgetFonts.font(face: style.face, size: size * 0.55, weight: .regular))
                             .foregroundColor(text.opacity(0.85)).lineLimit(2).multilineTextAlignment(.leading)
+                            .rowDirection(WidgetFonts.isRTL(event.text))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(.horizontal, 36)
-            .rowDirection(rtl)
         }
         .frame(width: 900, height: 240)
     }
@@ -252,17 +251,16 @@ struct EventListView: View {
         let size = CGFloat(style.fontSize)
         VStack(alignment: .leading, spacing: 6) {
             ForEach(Array(Self.rows(events, style).enumerated()), id: \.offset) { _, e in
-                let rtl = WidgetFonts.isRTL(DisplayNames.eventSummary(e))
                 HStack(spacing: 8) {
                     Image(systemName: eventSymbol(e.kind).name).foregroundColor(eventSymbol(e.kind).color)
                     Text(DisplayNames.eventSummary(e)).foregroundColor(argbColor(style.textColor)).lineLimit(2).multilineTextAlignment(.leading)
+                        .rowDirection(WidgetFonts.isRTL(DisplayNames.eventSummary(e)))
                 }
                 .font(WidgetFonts.font(face: style.face, size: size, weight: .semibold))
                 .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 1)
                 .padding(.horizontal, 10).padding(.vertical, 5)
                 .background { if style.background { RoundedRectangle(cornerRadius: 10).fill(argbColor(style.backgroundColor)) } }
-                .rowDirection(rtl)
-                .frame(maxWidth: .infinity, alignment: rtl ? .trailing : .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(8)
