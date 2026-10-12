@@ -133,8 +133,9 @@ extension Streamer {
                 try await mixer.attachVideo(cam, track: 0, configuration: configureMain)
                 if isExt {
                     let dims = { (f: AVCaptureDevice.Format) in CMVideoFormatDescriptionGetDimensions(f.formatDescription) }
-                    let offered = Set((cam?.formats ?? []).map { "\(dims($0).width)x\(dims($0).height)" }).sorted()
-                    let active = cam.map { "\(dims($0.activeFormat).width)x\(dims($0.activeFormat).height)" } ?? "?"
+                    let ext = Self.externalCamera()   // not `cam`: it was sent to the mixer actor above (Swift 6 region isolation)
+                    let offered = Set((ext?.formats ?? []).map { "\(dims($0).width)x\(dims($0).height)" }).sorted()
+                    let active = ext.map { "\(dims($0.activeFormat).width)x\(dims($0.activeFormat).height)" } ?? "?"
                     applog("stream", "external camera attached: \(externalCameraName ?? "unknown") active=\(active) offered=\(offered)")
                 } else {
                     if mode != .off { applog("stream", "stabilization requested: \(phoneQuality.stabilization)") }
