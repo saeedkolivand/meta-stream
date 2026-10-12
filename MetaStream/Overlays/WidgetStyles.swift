@@ -33,7 +33,7 @@ struct ChatWidgetStyle: Equatable, Sendable {
     var maxMessages = 8
     var fadeSeconds = 0   // 0 = never
     var background = true
-    var backgroundColor: UInt32 = 0x7300_0000
+    var backgroundColor: UInt32 = 0xD910_1014   // flat near-black, 85%: reads on any video without looking like a box
     var textColor: UInt32 = 0xFFFF_FFFF
     var senderColors = true
     var shadow = true

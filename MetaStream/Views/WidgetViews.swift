@@ -67,47 +67,99 @@ struct StreamChatView: View {
         return words.contains { t.contains($0) } || (!me.isEmpty && t.contains(me))
     }
 
+    /// Entry motion: 0 -> 1 over the first 0.32 s of a message's life (ease-out), so new rows rise and fade in.
+    static func appear(_ e: ChatEvent, now: Date) -> Double {
+        let t = min(1, max(0, now.timeIntervalSince(e.at) / 0.32))
+        return 1 - pow(1 - t, 3)
+    }
+
     var body: some View {
         let rows = Self.rows(events, style, now: now)
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: size * 0.32) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, e in
-                row(e).opacity(Self.opacity(e, style, now: now))
+                let a = Self.appear(e, now: now)
+                row(e)
+                    .opacity(Self.opacity(e, style, now: now) * a)
+                    .offset(y: (1 - a) * size * 0.7)
             }
         }
         .padding(8)
         .frame(width: CGFloat(style.width), height: CGFloat(style.height), alignment: .bottomLeading)
+        // Older rows dissolve into the video instead of being cut off by a hard edge.
+        .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.18)],
+                             startPoint: .top, endPoint: .bottom))
         .clipped()
     }
 
-    private func row(_ e: ChatEvent) -> some View {
-        let isMessage = e.kind == .message
-        let rtl = WidgetFonts.isRTL(isMessage ? e.text : DisplayNames.eventSummary(e))
-        let text = argbColor(style.textColor)
-        return HStack(alignment: .top, spacing: 6) {
-            if style.platform {
-                Circle().fill(DisplayNames.originColor(e.origin)).frame(width: size * 0.4, height: size * 0.4)
-                    .padding(.top, size * 0.35)
-            }
-            if isMessage {
-                // Two lines, like the in-app chat sheet: who (badges + name) on top, what they said underneath.
-                VStack(alignment: .leading, spacing: size * 0.15) {
-                    HStack(spacing: 4) {
-                        if style.badges { ForEach(Array(e.badges.prefix(3).enumerated()), id: \.offset) { _, b in chip(b) } }
-                        Text(e.user).font(font(.bold)).foregroundColor(style.senderColors ? DisplayNames.nameColor(e) : text)
-                    }
-                    messageLine(e, text)
-                }
-            } else {
-                Image(systemName: eventSymbol(e.kind).name).font(font(.bold)).foregroundColor(eventSymbol(e.kind).color)
-                Text(DisplayNames.eventSummary(e)).font(font(.bold)).foregroundColor(text).multilineTextAlignment(.leading)
-            }
+    /// Brand accents, not DisplayNames' UI tints: on video the real brand colours read instantly.
+    static func brand(_ origin: String) -> Color {
+        switch origin {
+        case "twitch": return Color(red: 0.57, green: 0.27, blue: 1)        // #9146FF
+        case "youtube": return Color(red: 1, green: 0, blue: 0.2)          // #FF0033
+        default: return Color(red: 0.33, green: 0.99, blue: 0.09)          // Kick #53FC18
         }
-        .shadow(color: style.shadow ? Color.black.opacity(0.85) : Color.clear, radius: 2, x: 0, y: 1)
-        .padding(.horizontal, 10).padding(.vertical, 5)
-        .background { if style.background { RoundedRectangle(cornerRadius: 10).fill(argbColor(style.backgroundColor)) } }
-        .overlay { if highlighted(e) { RoundedRectangle(cornerRadius: 10).stroke(argbColor(style.highlightColor), lineWidth: 2) } }
+    }
+
+    @ViewBuilder
+    private func row(_ e: ChatEvent) -> some View {
+        let rtl = WidgetFonts.isRTL(e.kind == .message ? e.text : DisplayNames.eventSummary(e))
+        Group {
+            if e.kind == .message { messageCard(e) } else { eventPill(e) }
+        }
         .rowDirection(rtl)
         .frame(maxWidth: .infinity, alignment: rtl ? .trailing : .leading)
+    }
+
+    /// Flat, minimal card: who on top (icon badges + name), what they said underneath, a brand accent bar on the
+    /// leading edge. One solid fill, no gradients or borders.
+    private func messageCard(_ e: ChatEvent) -> some View {
+        let text = argbColor(style.textColor)
+        let radius = size * 0.55
+        return VStack(alignment: .leading, spacing: size * 0.12) {
+            HStack(spacing: size * 0.22) {
+                if style.badges {
+                    ForEach(Array(e.badges.prefix(3).enumerated()), id: \.offset) { _, b in
+                        Image(systemName: DisplayNames.badgeStyle(b).symbol)
+                            .font(font(.bold, 0.62)).foregroundColor(DisplayNames.badgeStyle(b).color)
+                    }
+                }
+                Text(e.user)
+                    .font(font(.bold, 0.78)).kerning(0.2)
+                    .foregroundColor(style.senderColors ? DisplayNames.nameColor(e) : text.opacity(0.75))
+                    .lineLimit(1)
+            }
+            messageLine(e, text).lineSpacing(size * 0.08)
+        }
+        .padding(.leading, style.platform ? size * 0.62 : size * 0.5)
+        .padding(.trailing, size * 0.55)
+        .padding(.vertical, size * 0.36)
+        .background {
+            if style.background {
+                RoundedRectangle(cornerRadius: radius, style: .continuous).fill(argbColor(style.backgroundColor))
+            }
+        }
+        .overlay(alignment: .leading) {
+            if style.platform {
+                Capsule().fill(Self.brand(e.origin)).frame(width: max(3, size * 0.12)).padding(.vertical, size * 0.34).padding(.leading, size * 0.24)
+            }
+        }
+        .overlay {
+            if highlighted(e) { RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(argbColor(style.highlightColor), lineWidth: 2) }
+        }
+        .shadow(color: style.shadow ? .black.opacity(0.45) : .clear, radius: size * 0.35, x: 0, y: size * 0.12)
+    }
+
+    /// Follows/subs/tips/raids/cheers: one flat pill in the event's colour, so they pop without shouting.
+    private func eventPill(_ e: ChatEvent) -> some View {
+        let sym = eventSymbol(e.kind)
+        return HStack(spacing: size * 0.3) {
+            Image(systemName: sym.name).font(font(.bold, 0.8))
+            Text(DisplayNames.eventSummary(e)).font(font(.bold, 0.82)).lineLimit(2)
+        }
+        .foregroundColor(.white)
+        .padding(.horizontal, size * 0.55).padding(.vertical, size * 0.3)
+        .background(Capsule().fill(sym.color))
+        .shadow(color: style.shadow ? .black.opacity(0.35) : .clear, radius: size * 0.3, x: 0, y: size * 0.1)
     }
 
     /// The message as one Text so bidi resolves mixed-script lines; emotes are inline images (Text concatenation).
@@ -124,17 +176,6 @@ struct StreamChatView: View {
         }
     }
 
-    private func chip(_ badge: String) -> some View {
-        let s = DisplayNames.badgeStyle(badge)
-        return HStack(spacing: 2) {
-            Image(systemName: s.symbol)
-            if !s.label.isEmpty { Text(s.label) }
-        }
-        .font(font(.heavy, 0.55)).foregroundColor(s.color)
-        .padding(.horizontal, 5).padding(.vertical, 2)
-        .background(s.color.opacity(0.22), in: Capsule())
-    }
-
     static var samples: [ChatEvent] {   // computed so previews get fresh timestamps and never age out under "fade"
         [
             ChatEvent(kind: .message, user: "ninja_fox", text: "that clutch was insane", origin: "twitch", badges: ["subscriber"], color: "#FF7F50"),
@@ -143,7 +184,7 @@ struct StreamChatView: View {
             ChatEvent(kind: .subscribe, user: "BigDaddyBear", origin: "twitch"),
             ChatEvent(kind: .message, user: "Reza", text: "gg خیلی خوب بود", origin: "kick", badges: ["subscriber"], color: "#B39DDB"),
             ChatEvent(kind: .tip, user: "Lena", text: "keep it up!", amountCents: 500, origin: "youtube"),
-        ]
+        ].map { e in var e = e; e.at = Date().addingTimeInterval(-3); return e }   // past the entry motion, so previews show them settled
     }
 }
 
