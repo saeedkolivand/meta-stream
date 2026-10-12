@@ -115,20 +115,27 @@ extension Streamer {
                 let mode = Self.stabilizationMode(phoneQuality.stabilization)
                 let mainMaxHeight = min(phoneQuality.height, 1080)
                 let mcFps = min(phoneQuality.fps, 30)
+                let extMaxHeight = phoneQuality.height
                 let configureMain: @Sendable (VideoDeviceUnit) throws -> Void = { unit in
-                    // UVC devices expose no stabilisation, mirroring, format or camera controls: leave the
-                    // camera's own default format alone.
-                    if isExt { return }
+                    // UVC devices expose no stabilisation, mirroring or camera controls, but they do list formats:
+                    // take the largest 16:9 one up to the quality setting (the default is often well below it).
+                    if isExt {
+                        if let device = unit.device { Streamer.applyFormat(device, maxHeight: extMaxHeight, fps: mcFps, multiCam: false) }
+                        return
+                    }
                     unit.preferredVideoStabilizationMode = mode
                     unit.isVideoMirrored = camSettings.mirrored
                     if let device = unit.device {
-                        if multi { Streamer.applyMultiCamFormat(device, maxHeight: mainMaxHeight, fps: mcFps) }   // before apply(): a format change resets zoom
+                        if multi { Streamer.applyFormat(device, maxHeight: mainMaxHeight, fps: mcFps) }   // before apply(): a format change resets zoom
                         CameraSettings.apply(camSettings, to: device)
                     }
                 }
                 try await mixer.attachVideo(cam, track: 0, configuration: configureMain)
                 if isExt {
-                    applog("stream", "external camera attached: \(externalCameraName ?? "unknown")")
+                    let dims = { (f: AVCaptureDevice.Format) in CMVideoFormatDescriptionGetDimensions(f.formatDescription) }
+                    let offered = Set((cam?.formats ?? []).map { "\(dims($0).width)x\(dims($0).height)" }).sorted()
+                    let active = cam.map { "\(dims($0.activeFormat).width)x\(dims($0.activeFormat).height)" } ?? "?"
+                    applog("stream", "external camera attached: \(externalCameraName ?? "unknown") active=\(active) offered=\(offered)")
                 } else {
                     if mode != .off { applog("stream", "stabilization requested: \(phoneQuality.stabilization)") }
                     applog("stream", "camera zoom=\(String(format: "%.2f", camSettings.zoom))x position=\(fallbackPosition == .front ? "front" : "back")")
@@ -174,8 +181,8 @@ extension Streamer {
                     cameraCapabilities = CameraCapabilities.probe(position: fallbackPosition)
                     cameraPosition = fallbackPosition
                 }
-                // UVC webcams deliver 1080p30 landscape and generally can't rotate the connection, so external
-                // is always landscape and capped at 30 regardless of the quality setting.
+                // UVC webcams can't rotate the connection, so external is always landscape; fps stays capped
+                // at 30 because an unsupported frame duration raises an ObjC exception.
                 try? await mixer.setFrameRate(Float64(isExt || multi ? mcFps : phoneQuality.fps))
                 await mixer.setVideoOrientation(isExt ? .landscapeRight : phoneQuality.landscape ? landscapeOrientation : .portrait)
                 applog("stream", "camera attached \(phoneQuality.height)p @\(phoneQuality.fps) landscape=\(isExt || phoneQuality.landscape) multi=\(multi) overlay=\(overlayOK)")
@@ -212,11 +219,12 @@ extension Streamer {
     }
 
     /// Multicam sessions ignore sessionPreset, so resolution comes from each device's activeFormat, and it
-    /// MUST be a format with isMultiCamSupported. Picks 16:9 (landscape-native dims), height <= maxHeight,
+    /// MUST be a format with isMultiCamSupported (multiCam: false drops that rule -- UVC cameras, which take no
+    /// preset either). Picks 16:9 (landscape-native dims), height <= maxHeight,
     /// supporting `fps`, preferring binned formats (cheaper for the session's hardwareCost), then the tallest.
     /// Leaves the device on its current format if nothing qualifies. nonisolated: runs inside the
     /// attachVideo configuration closure on the mixer's actor.
-    nonisolated static func applyMultiCamFormat(_ device: AVCaptureDevice, maxHeight: Int, fps: Int) {
+    nonisolated static func applyFormat(_ device: AVCaptureDevice, maxHeight: Int, fps: Int, multiCam: Bool = true) {
         let want = Double(fps)
         func supports(_ f: AVCaptureDevice.Format) -> Bool {
             f.videoSupportedFrameRateRanges.contains { $0.minFrameRate <= want && want <= $0.maxFrameRate }
@@ -226,7 +234,7 @@ extension Streamer {
         }
         let fits = device.formats.filter { f in
             let d = CMVideoFormatDescriptionGetDimensions(f.formatDescription)
-            return f.isMultiCamSupported && Int(d.width) * 9 == Int(d.height) * 16 && Int(d.height) <= maxHeight
+            return (!multiCam || f.isMultiCamSupported) && Int(d.width) * 9 == Int(d.height) * 16 && Int(d.height) <= maxHeight
         }
         let pool = fits.filter(supports).isEmpty ? fits : fits.filter(supports)
         guard let best = pool.max(by: { key($0) < key($1) }), (try? device.lockForConfiguration()) != nil else { return }
@@ -255,7 +263,7 @@ extension Streamer {
             try await mixer.attachVideo(cam, track: 1) { unit in
                 unit.preferredVideoStabilizationMode = .off
                 unit.isVideoMirrored = mirror
-                if multi, let device = unit.device { Streamer.applyMultiCamFormat(device, maxHeight: 720, fps: fps) }
+                if multi, let device = unit.device { Streamer.applyFormat(device, maxHeight: 720, fps: fps) }
             }
             applog("stream", "dual camera: overlay attached (\(mirror ? "front" : "back"))")
             return true
