@@ -92,6 +92,11 @@ struct ContentView: View {
         .onChange(of: streamer.manualSource) { _, s in if s == "external" { showCameraControls = false; aeafLocked = false } }
         .onChange(of: camLevelOn) { _, on in on ? levelMonitor.start() : levelMonitor.stop() }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = keepAwake }
+        .onAppear {
+            let c = streamer.overlays.context
+            c.chat = chat; c.emotes = emotes; c.streamer = streamer; c.platforms = platforms
+            streamer.updateSceneRotation()
+        }
         .onChange(of: keepAwake) { _, v in UIApplication.shared.isIdleTimerDisabled = v }
         .onChange(of: streamer.lastPhotoAt) { _, _ in
             withAnimation(.easeOut(duration: 0.1)) { photoFlash = true }

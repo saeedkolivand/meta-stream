@@ -1,6 +1,7 @@
 // The imported pack (JSON in Application Support), the files copied next to it, and which scene is active.
 // Counts and types only reach the log: browser-source URLs carry account tokens.
 import Combine
+import CoreGraphics
 import Foundation
 
 @MainActor
@@ -16,16 +17,28 @@ final class OverlayStore: ObservableObject {
     /// Bumped whenever the pack or the files behind it change, so the compositor rebuilds.
     @Published private(set) var revision = 0
 
+    /// "fade" | "cut": how overlays change when the scene does. Defaults-backed, not part of pack.json.
+    @Published var transition: String { didSet { UserDefaults.standard.set(transition, forKey: "sceneTransition") } }
+    @Published var rotateOn: Bool { didSet { UserDefaults.standard.set(rotateOn, forKey: "sceneRotateOn") } }
+    @Published var rotateScenes: [String] { didSet { UserDefaults.standard.set(rotateScenes, forKey: "sceneRotateScenes") } }
+    @Published var rotateSeconds: Int { didSet { UserDefaults.standard.set(rotateSeconds, forKey: "sceneRotateSeconds") } }
+
     private let dir = URL.applicationSupportDirectory.appending(path: "overlays")
     private var filesDir: URL { dir.appending(path: "files") }
     private var packURL: URL { dir.appending(path: "pack.json") }
 
     private init() {
+        let d = UserDefaults.standard
+        transition = d.string(forKey: "sceneTransition") ?? "fade"
+        rotateOn = d.bool(forKey: "sceneRotateOn")
+        rotateScenes = d.stringArray(forKey: "sceneRotateScenes") ?? []
+        rotateSeconds = d.object(forKey: "sceneRotateSeconds") as? Int ?? 60
         scene = UserDefaults.standard.string(forKey: "overlayScene") ?? ""
         if let data = try? Data(contentsOf: packURL) { pack = try? JSONDecoder().decode(OverlayPack.self, from: data) }
     }
 
     var activeScene: OverlayScene? { pack?.scenes.first { $0.name == scene } }
+    var scenes: [OverlayScene] { pack?.scenes ?? [] }
 
     func select(_ name: String) {
         scene = name
@@ -52,19 +65,19 @@ final class OverlayStore: ObservableObject {
             message = "That file isn't an OBS scene collection"
             return
         }
-        do {
-            try FileManager.default.createDirectory(at: filesDir, withIntermediateDirectories: true)
-            var d = dir
-            var rv = URLResourceValues()
-            rv.isExcludedFromBackup = true   // the pack holds tokenised URLs: keep it out of iCloud/iTunes backups
-            try? d.setResourceValues(rv)
-            try JSONEncoder().encode(parsed).write(to: packURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
-        } catch {
+        // Merge: scenes built in the app survive an import; same-named ones are replaced.
+        let before = pack
+        let names = Set(parsed.scenes.map(\.name))
+        // ponytail: the pack keeps one OBS canvas size (the latest import's); older OBS scenes from a different canvas shift.
+        var merged = parsed
+        merged.scenes = (before?.scenes.filter { !names.contains($0.name) } ?? []) + parsed.scenes
+        pack = merged
+        guard persist() else {
+            pack = before
             message = "Couldn't save the import"
             return
         }
-        pack = parsed
-        if !parsed.scenes.contains(where: { $0.name == scene }) { select("") }
+        if !merged.scenes.contains(where: { $0.name == scene }) { select("") }
         revision += 1
         let layers = parsed.scenes.reduce(0) { $0 + $1.layers.count }
         applog("overlay", "imported \(parsed.scenes.count) scenes, \(layers) layers, \(parsed.skippedCount) skipped")
@@ -74,6 +87,126 @@ final class OverlayStore: ObservableObject {
     private func missingText() -> String {
         let n = missing.count
         return n == 0 ? "" : "\(n) files not found: tap Locate files."
+    }
+
+    /// Writes the pack. The directory stays out of backups: the pack holds tokenised URLs.
+    private func persist() -> Bool {
+        guard let pack else { return false }
+        do {
+            try FileManager.default.createDirectory(at: filesDir, withIntermediateDirectories: true)
+            var d = dir
+            var rv = URLResourceValues()
+            rv.isExcludedFromBackup = true
+            try? d.setResourceValues(rv)
+            try JSONEncoder().encode(pack).write(to: packURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            return true
+        } catch {
+            applog("overlay", "pack save failed", error: true)
+            return false
+        }
+    }
+
+    // MARK: scene editing
+
+    /// `base`, then "base 2", "base 3"... (or "Scene 1", "Scene 2"... when `numbered`), whichever is free first.
+    private func freeName(_ base: String, numbered: Bool) -> String {
+        let taken = Set(scenes.map(\.name))
+        if !numbered, !taken.contains(base) { return base }
+        var n = numbered ? 1 : 2
+        while taken.contains("\(base) \(n)") { n += 1 }
+        return "\(base) \(n)"
+    }
+
+    func addScene() -> String {
+        if pack == nil { pack = OverlayPack(canvasW: 1920, canvasH: 1080, scenes: [], skipped: [:]) }
+        let name = freeName("Scene", numbered: true)
+        pack?.scenes.append(OverlayScene(name: name, layers: []))
+        _ = persist()
+        return name
+    }
+
+    func duplicateScene(_ name: String) -> String? {
+        guard var copy = scenes.first(where: { $0.name == name }) else { return nil }
+        copy.name = freeName("\(name) copy", numbered: false)
+        pack?.scenes.append(copy)
+        _ = persist()
+        return copy.name
+    }
+
+    func renameScene(_ old: String, to new: String) -> Bool {
+        let n = new.trimmingCharacters(in: .whitespaces)
+        guard !n.isEmpty, let i = scenes.firstIndex(where: { $0.name == old }) else { return false }
+        if n == old { return true }
+        guard !scenes.contains(where: { $0.name == n }) else { return false }
+        pack?.scenes[i].name = n
+        if scene == old { select(n) }
+        rotateScenes = rotateScenes.map { $0 == old ? n : $0 }
+        _ = persist()
+        return true
+    }
+
+    func deleteScene(_ name: String) {
+        pack?.scenes.removeAll { $0.name == name }
+        if scene == name { select("") }
+        rotateScenes.removeAll { $0 == name }
+        _ = persist()
+        revision += 1
+    }
+
+    func setLayers(_ layers: [OverlayLayer], in scene: String) {
+        guard let i = scenes.firstIndex(where: { $0.name == scene }) else { return }
+        pack?.scenes[i].layers = layers
+        _ = persist()
+        revision += 1
+    }
+
+    func setCamera(_ camera: String?, in scene: String) {
+        guard let i = scenes.firstIndex(where: { $0.name == scene }) else { return }
+        pack?.scenes[i].camera = camera
+        _ = persist()
+    }
+
+    /// Stores picked image bytes untouched (a GIF must stay animated) and returns the name for `data["file"]`.
+    func saveImage(_ data: Data) -> String? {
+        let b = [UInt8](data.prefix(12))
+        let ext: String
+        if b.starts(with: [0x89, 0x50, 0x4E, 0x47]) { ext = "png" }
+        else if b.starts(with: [0xFF, 0xD8, 0xFF]) { ext = "jpg" }
+        else if b.starts(with: [0x47, 0x49, 0x46, 0x38]) { ext = "gif" }
+        else if b.count >= 8, Array(b[4...7]) == [0x66, 0x74, 0x79, 0x70] { ext = "heic" }   // "ftyp"
+        else { ext = "png" }   // unknown: UIImage sniffs the content anyway
+        let name = "img-\(UUID().uuidString).\(ext)"
+        do {
+            try FileManager.default.createDirectory(at: filesDir, withIntermediateDirectories: true)
+            try data.write(to: filesDir.appending(path: name), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            return name
+        } catch {
+            return nil
+        }
+    }
+
+    /// The layer's own size before its transform/layout: what `widgetRect` scales. nil when its file isn't there yet.
+    func naturalSize(_ l: OverlayLayer) -> CGSize? {
+        func dim(_ k: String, _ d: Double) -> CGFloat { CGFloat(Double(l.data[k] ?? "") ?? d) }
+        switch l.type {
+        case .image:
+            guard let url = local(l.data["file"] ?? ""), let img = OverlayRaster.load(url) else { return nil }
+            return OverlayRaster.croppedSize(img, l.crop)
+        case .text:
+            let t = TextWidgetStyle(l.data)
+            if l.layout != nil { return OverlayRaster.textNatural(t) }
+            return OverlayRaster.textSize(t.text, OverlayRaster.textAttributes(face: t.face, bold: t.bold, px: t.size, argb: t.color))
+        case .chat: return ChatWidgetStyle(l.data).natural
+        case .events: return EventListStyle(l.data).natural
+        case .alerts: return AlertWidgetStyle(l.data).natural
+        case .qr: return QRWidgetStyle(l.data).natural
+        case .browser: return CGSize(width: dim("width", 800), height: dim("height", 600))
+        case .color: return CGSize(width: dim("width", 1920), height: dim("height", 1080))
+        case .media: return local(l.data["file"] ?? "").flatMap { OverlayRaster.mediaSize($0) }
+        case .slideshow:
+            guard let f = l.files.first, let url = local(f), let img = OverlayRaster.load(url) else { return nil }
+            return img.size
+        }
     }
 
     // MARK: locate files

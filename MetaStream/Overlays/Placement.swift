@@ -56,3 +56,26 @@ func overlayPlace(_ l: OverlayLayer, _ nw: CGFloat, _ nh: CGFloat) -> CGRect {
     let by = anchor(l.y, l.bh, l.align, top, bottom)
     return CGRect(x: inside(bx, l.bw, w, l.boundsAlign, left, right), y: inside(by, l.bh, h, l.boundsAlign, top, bottom), width: w, height: h)
 }
+
+// MARK: in-app widgets
+
+/// Output rect of a widget: s = layout.scale * min(canvas.w, canvas.h) / 1080; size = natural * s;
+/// anchor point = (col * W/2, row * H/2); origin = anchorPoint - (col * w/2, row * h/2) + (dx * W, dy * H).
+func widgetRect(_ layout: WidgetLayout, natural: CGSize, canvas: CGSize) -> CGRect {
+    let s = layout.scale * min(canvas.width, canvas.height) / 1080
+    let w = natural.width * s, h = natural.height * s
+    let a = min(max(layout.anchor, 0), 8)
+    let col = CGFloat(a % 3), row = CGFloat(a / 3)
+    return CGRect(x: col * (canvas.width - w) / 2 + layout.dx * canvas.width,
+                  y: row * (canvas.height - h) / 2 + layout.dy * canvas.height, width: w, height: h)
+}
+
+/// Inverse: the layout (nearest anchor by the rect's centre: thirds of the canvas) that reproduces `rect` at `scale`.
+func widgetLayout(for rect: CGRect, natural: CGSize, canvas: CGSize, scale: CGFloat) -> WidgetLayout {
+    guard canvas.width > 0, canvas.height > 0 else { return WidgetLayout(scale: scale) }
+    func third(_ v: CGFloat, _ total: CGFloat) -> Int { v < total / 3 ? 0 : v < total * 2 / 3 ? 1 : 2 }
+    let col = third(rect.midX, canvas.width), row = third(rect.midY, canvas.height)
+    return WidgetLayout(anchor: row * 3 + col,
+                        dx: (rect.minX - CGFloat(col) * (canvas.width - rect.width) / 2) / canvas.width,
+                        dy: (rect.minY - CGFloat(row) * (canvas.height - rect.height) / 2) / canvas.height, scale: scale)
+}

@@ -232,7 +232,9 @@ final class Streamer: ObservableObject {
 
     var overlayObject: VideoTrackScreenObject?   // the face-cam window; created once per mixer
 
-    let overlays = OverlayCompositor()           // OBS scene layers on the mixer's Screen, see StreamerOverlays.swift
+    let overlays = OverlayCompositor()           // scene layers on the mixer's Screen, see StreamerOverlays.swift
+    var sceneRotationTask: Task<Void, Never>?    // auto-rotate loop, see updateSceneRotation()
+    var pendingSceneFade = false                 // set by a scene change, consumed by the next syncOverlays
 
     var makingOverlay = false                // guards the await in syncBlurEffect against the 1 s tick re-entering
 

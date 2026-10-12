@@ -108,6 +108,14 @@
 	</array>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Saves photos taken with your glasses</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Shows your speed and city in on-stream text widgets, only when a scene uses them.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Vazirmatn-Regular.ttf</string>
+		<string>Vazirmatn-SemiBold.ttf</string>
+		<string>Vazirmatn-Bold.ttf</string>
+	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Adds your voice to the live stream</string>
 	<key>NSCameraUsageDescription</key>

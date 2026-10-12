@@ -24,8 +24,14 @@ enum OverlayScreen {
         return o
     }
 
-    @ScreenActor static func setImage(_ o: ImageScreenObject, _ bitmap: OverlayBitmap) {
-        o.cgImage = bitmap.image
+    /// nil blanks the object (an alert between alerts, a faded-out still).
+    @ScreenActor static func setImage(_ o: ImageScreenObject, _ bitmap: OverlayBitmap?) {
+        o.cgImage = bitmap?.image
+    }
+
+    /// Re-lays an object out at a new rect (live text whose width follows its content).
+    @ScreenActor static func move(_ o: ImageScreenObject, to rect: CGRect) {
+        layout(o, rect)
     }
 
     /// Plays a local clip (muted: AssetScreenObject reads video only). Reads from the start; see `restart` for looping.

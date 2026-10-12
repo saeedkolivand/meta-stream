@@ -16,6 +16,7 @@ struct ChatEvent: Sendable {
     /// Normalized role badges (see ChatBadges) and the sender's "#RRGGBB" name color; messages only.
     var badges: [String] = []
     var color: String? = nil
+    var at: Date = Date()
 }
 
 /// Live chat as one AsyncStream<ChatEvent> (text-to-speech drives off it) plus a recent-messages buffer
@@ -25,6 +26,10 @@ struct ChatEvent: Sendable {
 @MainActor
 final class ChatFeed: ObservableObject {
     @Published private(set) var recent: [ChatEvent] = []   // last 100, across every origin
+    /// Events yielded so far. Not @Published: widgets poll it on their own tick instead of re-rendering SwiftUI.
+    private(set) var serial = 0
+    @Published private(set) var lastFollower = ""
+    @Published private(set) var lastSubscriber = ""
 
     let events: AsyncStream<ChatEvent>
     private let emit: AsyncStream<ChatEvent>.Continuation
@@ -75,9 +80,18 @@ final class ChatFeed: ObservableObject {
     // MARK: - shared sink
 
     func yield(_ e: ChatEvent) {
+        serial += 1
+        if e.kind == .follow { lastFollower = e.user }
+        if e.kind == .subscribe { lastSubscriber = e.user }
         recent.append(e)
         if recent.count > 100 { recent.removeFirst(recent.count - 100) }
         emit.yield(e)
+    }
+
+    /// Events yielded after `serial` that are still in `recent` (older ones scrolled out of the 100-event buffer).
+    func events(since serial: Int) -> [ChatEvent] {
+        guard serial < self.serial else { return [] }
+        return Array(recent.suffix(min(self.serial - serial, recent.count)))
     }
 }
 

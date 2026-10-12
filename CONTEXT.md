@@ -48,6 +48,23 @@ _Avoid_: direct, copy, native
 Decoding video and re-encoding it, which is what any modification to the picture requires.
 _Avoid_: convert, process
 
+### Overlays
+
+**Scene**:
+A named set of layers shown over the stream, optionally with a camera to switch to when it is
+selected. Built in the app or imported from OBS.
+_Avoid_: overlay pack, collection, profile
+
+**Layer**:
+One item in a scene: a widget, image, text, color, clip or web page. Placed relative to the frame
+(in-app) or by OBS transform (imported).
+_Avoid_: source, item, element
+
+**Widget**:
+A native in-app layer (chat, alerts, event list, text, QR code) drawn as one bitmap that is
+redrawn only when its content changes. Never a hidden web view.
+_Avoid_: plugin, browser source, embed
+
 ### Chat
 
 **Chat origin**:

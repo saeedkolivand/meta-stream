@@ -16,7 +16,7 @@ struct SettingsView: View {
                     NavigationLink("Ingest & protocol") { IngestSettingsView() }
                     NavigationLink("Video (glasses)") { GlassesVideoSettingsView() }
                     NavigationLink("Camera") { CameraSettingsView() }
-                    NavigationLink("Overlays") { OverlaySettingsView() }
+                    NavigationLink("Scenes & widgets") { OverlaySettingsView() }
                     NavigationLink("Audio") { AudioSettingsView() }
                     NavigationLink("Read aloud") { ReadAloudSettingsView() }
                     NavigationLink("Privacy") { PrivacySettingsView() }

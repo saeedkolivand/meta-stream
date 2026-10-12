@@ -69,12 +69,14 @@ enum OverlayRaster {
         UIRectFill(box)
     }
 
-    /// OBS text sizes are canvas px, so callers pass `size * canvas-to-output scale`.
+    /// OBS text sizes are canvas px, so callers pass `size * canvas-to-output scale`. Natural alignment/direction
+    /// lets Persian/Arabic lines lay out right-to-left; the font carries a Vazirmatn cascade (see WidgetFonts).
     static func textAttributes(face: String, bold: Bool, px: CGFloat, argb: UInt32) -> [NSAttributedString.Key: Any] {
-        let named = UIFont(name: face, size: px) ?? UIFont.fontNames(forFamilyName: face).first.flatMap { UIFont(name: $0, size: px) }
-        var font = named ?? UIFont.systemFont(ofSize: px)
-        if bold, let d = font.fontDescriptor.withSymbolicTraits(.traitBold) { font = UIFont(descriptor: d, size: px) }
-        return [.font: font, .foregroundColor: color(argb: argb)]
+        let para = NSMutableParagraphStyle()
+        para.baseWritingDirection = .natural
+        para.alignment = .natural
+        return [.font: WidgetFonts.uiFont(face: face, size: px, weight: bold ? .bold : .regular),
+                .foregroundColor: color(argb: argb), .paragraphStyle: para]
     }
 
     static func textSize(_ text: String, _ attrs: [NSAttributedString.Key: Any]) -> CGSize {
@@ -91,6 +93,61 @@ enum OverlayRaster {
         ctx.scaleBy(x: box.width / natural.width, y: box.height / natural.height)
         (text as NSString).draw(with: CGRect(origin: .zero, size: natural), options: .usesLineFragmentOrigin, attributes: attrs, context: nil)
         ctx.restoreGState()
+    }
+
+    // MARK: in-app text (layout != nil): sized for a 1080 short side, optional shadow and rounded background
+
+    /// Breathing room around the glyphs: a backdrop needs a margin, a shadow needs room to fall into the bitmap.
+    private static func textPad(_ s: TextWidgetStyle) -> CGFloat { s.background ? s.size * 0.3 : s.shadow ? s.size * 0.1 : 0 }
+
+    private static func textAttributes(_ s: TextWidgetStyle) -> [NSAttributedString.Key: Any] {
+        var a = textAttributes(face: s.face, bold: s.bold, px: s.size, argb: s.color)
+        if s.shadow {
+            let sh = NSShadow()
+            sh.shadowColor = UIColor.black.withAlphaComponent(0.6)
+            sh.shadowOffset = CGSize(width: 0, height: s.size * 0.04)
+            sh.shadowBlurRadius = s.size * 0.08
+            a[.shadow] = sh
+        }
+        return a
+    }
+
+    /// Natural size of an in-app text widget, padding included (the compositor and the store both size from this).
+    static func textNatural(_ s: TextWidgetStyle) -> CGSize {
+        let t = textSize(s.text, textAttributes(s))
+        let pad = textPad(s)
+        return CGSize(width: t.width + 2 * pad, height: t.height + 2 * pad)
+    }
+
+    /// In-app text stretched from its natural size into `box`: backdrop first, then the glyphs inset by the padding.
+    static func drawWidgetText(_ s: TextWidgetStyle, natural: CGSize, in box: CGRect) {
+        guard natural.width > 0, natural.height > 0, let ctx = UIGraphicsGetCurrentContext() else { return }
+        let pad = textPad(s)
+        ctx.saveGState()
+        ctx.translateBy(x: box.minX, y: box.minY)
+        ctx.scaleBy(x: box.width / natural.width, y: box.height / natural.height)
+        if s.background {
+            color(argb: s.backgroundColor).setFill()
+            UIBezierPath(roundedRect: CGRect(origin: .zero, size: natural), cornerRadius: s.size * 0.25).fill()
+        }
+        let inner = CGRect(x: pad, y: pad, width: natural.width - 2 * pad, height: natural.height - 2 * pad)
+        (s.text as NSString).draw(with: inner, options: .usesLineFragmentOrigin, attributes: textAttributes(s), context: nil)
+        ctx.restoreGState()
+    }
+
+    /// `b` redrawn at opacity `a` (ScreenObject has no alpha, so fades re-draw the stored full-opacity bitmap). nil = invisible.
+    static func withAlpha(_ b: OverlayBitmap, _ a: CGFloat) -> OverlayBitmap? {
+        guard a > 0 else { return nil }
+        guard a < 1 else { return b }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = false
+        format.preferredRange = .standard
+        let size = CGSize(width: b.image.width, height: b.image.height)
+        let img = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            UIImage(cgImage: b.image).draw(in: CGRect(origin: .zero, size: size), blendMode: .normal, alpha: a)
+        }
+        return img.cgImage.map { OverlayBitmap(image: $0) }
     }
 
     /// Pixel size of a clip's first video track, rotation applied. Synchronous on purpose (no AVAssetTrack across awaits).
