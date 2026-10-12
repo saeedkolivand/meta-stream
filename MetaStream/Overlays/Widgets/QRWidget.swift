@@ -1,4 +1,5 @@
 // Native QR code: static, so it is rendered once and has no task.
+import HaishinKit
 import UIKit
 
 extension OverlayCompositor {

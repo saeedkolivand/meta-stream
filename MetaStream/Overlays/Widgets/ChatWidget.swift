@@ -1,4 +1,5 @@
 // Native chat widget: one bitmap, re-rendered only when the chat, the loaded emotes or an in-progress fade changes.
+import HaishinKit
 import SwiftUI
 import UIKit
 

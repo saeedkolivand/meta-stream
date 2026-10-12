@@ -1,4 +1,5 @@
 // Native "recent events" list (latest follows, subs, tips, raids), newest on top. Redrawn only when the feed moves.
+import HaishinKit
 import SwiftUI
 
 extension OverlayCompositor {

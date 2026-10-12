@@ -1,6 +1,7 @@
 // Native alert banner: queues follow/sub/raid/tip/cheer events from the chat feed and shows each one in turn.
 // The banner is rendered once per alert; the fade is three pre-multiplied alpha copies, so a whole alert costs one
 // SwiftUI render plus a handful of cheap CGContext redraws.
+import HaishinKit
 import SwiftUI
 import UIKit
 

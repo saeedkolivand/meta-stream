@@ -1,5 +1,6 @@
 // Text with {tokens} (time, viewers, speed...): the string is re-resolved once a second and the bitmap redrawn only
 // when it actually changed. The box follows the text size, re-anchored so a growing "9:59" -> "10:00" stays put.
+import HaishinKit
 import UIKit
 
 extension OverlayCompositor {

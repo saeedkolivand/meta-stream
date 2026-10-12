@@ -1,5 +1,6 @@
 // Animated GIF layer: every frame is decoded once and scaled to the output box, then the task just swaps bitmaps
 // on the frame delays. No per-frame decoding while live.
+import HaishinKit
 import ImageIO
 import UIKit
 
