@@ -257,9 +257,10 @@ final class Streamer: ObservableObject {
         applog("ui", "launch team=\(teamID)")
         liveActivity.attach(self)
         // Active playback session from launch: iOS only auto-starts PiP for an app that is "playing".
-        // Playback (not record) so the orange mic indicator stays off until Go Live.
+        // Playback (not record) so the orange mic indicator stays off until Go Live. Every category this app sets
+        // carries .mixWithOthers: without it, launching (or going live) stops the streamer's music app.
         let s = AVAudioSession.sharedInstance()
-        try? s.setCategory(.playback, mode: .moviePlayback, options: [])
+        try? s.setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])
         try? s.setActive(true)
         Task { [weak self] in
             for await state in Wearables.shared.registrationStateStream() {
@@ -355,7 +356,7 @@ final class Streamer: ObservableObject {
             if dualLocked == nil { _ = await rebuildMixerIfNeeded() }   // a dual-camera toggle flipped mid-stream takes effect now (skipped if GO LIVE was already pressed again)
         }
         source = "glasses"
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [])   // mic off; the playback session stays so the next goLive can arm PiP
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])   // mic off; the playback session stays so the next goLive can arm PiP
     }
 
     /// "m:ss" for the session summary, e.g. 1:48. Minutes aren't padded/capped — a long stream just reads "72:03".

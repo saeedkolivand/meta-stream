@@ -255,9 +255,9 @@ extension Streamer {
         let s = AVAudioSession.sharedInstance()
         let wasPlayback = s.category == .playback
         // allowBluetoothHFP is what makes the glasses show up as an input; inputs are only listed under a record category.
-        try? s.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP])
+        try? s.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP, .allowBluetoothA2DP, .mixWithOthers])
         let list = (s.availableInputs ?? []).map { Mic(id: $0.uid, name: $0.portName) }
-        if wasPlayback && !live { try? s.setCategory(.playback, mode: .moviePlayback, options: []) }
+        if wasPlayback && !live { try? s.setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers]) }
         guard list != mics else { return }
         mics = list
         applog("stream", "mics: \(mics.map(\.name))")

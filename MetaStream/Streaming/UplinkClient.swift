@@ -224,7 +224,7 @@ extension Streamer {
             do {
                 // Meta docs: audio route must be settled before frames flow; do this before connect.
                 let audioSession = AVAudioSession.sharedInstance()
-                try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP])
+                try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP, .allowBluetoothA2DP, .mixWithOthers])
                 if let port = audioSession.availableInputs?.first(where: { $0.uid == micUID }) {
                     try audioSession.setPreferredInput(port)
                 }
