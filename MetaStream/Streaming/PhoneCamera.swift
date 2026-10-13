@@ -29,7 +29,9 @@ extension Streamer {
     /// Updates externalCameraName from the current device list. If the camera was unplugged while it was the
     /// chosen source, falls back to auto (glasses / phone camera) instead of leaving a dead feed -- never ends a live stream.
     func refreshExternalCamera() {
-        externalCameraName = Self.externalCamera()?.localizedName
+        let name = Self.externalCamera()?.localizedName
+        if name != externalCameraName { applog("stream", "external camera now: \(name ?? "none")") }
+        externalCameraName = name
         guard externalCameraName == nil, manualSource == "external" else { return }
         applog("stream", "external camera disconnected -- falling back to auto", error: true)
         speaker?.speakSystem("external camera disconnected")

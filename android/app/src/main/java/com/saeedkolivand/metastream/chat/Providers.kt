@@ -64,7 +64,8 @@ internal suspend fun socket(url: String, onOpen: (WebSocket) -> Unit, onText: (W
     }
 }
 
-private const val PUSHER = "wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0-rc2&flash=false"
+/** Last known Pusher app; Kick rotates it, so [pusherUrl] asks Kick for the live one first. */
+private val FALLBACK_PUSHER = "34bf7a0ff419a2a775b9" to "us2"
 private const val KICK_UA = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36"
 
 /** KickChatProvider: anonymous Pusher socket on chatrooms.<id>.v2. */
@@ -81,7 +82,7 @@ suspend fun kickChat(slug: String, emit: (ChatEvent) -> Unit) {
     }
     applog("chat", "kick chat connecting room=$id")
     socket(
-        PUSHER,
+        pusherUrl(),
         {
             it.send(
                 JSONObject().put(
@@ -94,6 +95,34 @@ suspend fun kickChat(slug: String, emit: (ChatEvent) -> Unit) {
             if (isKickPing(text)) ws.send("""{"event":"pusher:pong"}""") else parseKickFrame(text)?.let(emit)
         }
     )
+}
+
+/** Same anonymous call kick.com's own web client makes to learn which Pusher app/cluster is live. */
+private suspend fun pusherUrl(): String {
+    val (key, cluster) = withContext(Dispatchers.IO) {
+        try {
+            val body = """{"client":{"id":"${java.util.UUID.randomUUID()}","type":"web"},""" +
+                """"capabilities":{"accepted_providers":[{"provider":"pusher"}]}}"""
+            val c = URL("https://web.kick.com/api/v1/realtime/connection").openConnection() as HttpURLConnection
+            try {
+                c.requestMethod = "POST"
+                c.doOutput = true
+                c.setRequestProperty("Content-Type", "application/json")
+                c.outputStream.use { it.write(body.toByteArray()) }
+                val conns = JSONObject(c.inputStream.bufferedReader().readText())
+                    .getJSONObject("data").getJSONArray("connections")
+                val creds = (0 until conns.length()).map(conns::getJSONObject)
+                    .first { it.optString("provider") == "pusher" }.getJSONObject("credentials")
+                creds.getString("app_key") to creds.getString("cluster")
+            } finally {
+                c.disconnect()
+            }
+        } catch (e: Exception) {
+            applog("chat", "kick realtime lookup failed, using fallback pusher key: ${e.message}")
+            FALLBACK_PUSHER
+        }
+    }
+    return "wss://ws-$cluster.pusher.com/app/$key?protocol=7&client=js&version=8.4.0-rc2&flash=false"
 }
 
 /** Anonymous read-only Twitch IRC (justinfan login), display-name from the tags capability. */

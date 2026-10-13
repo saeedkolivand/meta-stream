@@ -275,10 +275,16 @@ final class Streamer: ObservableObject {
             }
         }
         refreshExternalCamera()
+        applog("stream", "external camera at launch: \(externalCameraName ?? "none")")
         // Same observer shape as the battery/thermal ones (proven to compile here); app-lifetime, never removed.
-        for name in [AVCaptureDevice.wasConnectedNotification, AVCaptureDevice.wasDisconnectedNotification] {
-            _ = NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                Task { @MainActor in self?.refreshExternalCamera() }
+        // didBecomeActive too: a replug while backgrounded must show up on return, not only on the next hot-plug event.
+        for name in [AVCaptureDevice.wasConnectedNotification, AVCaptureDevice.wasDisconnectedNotification, UIApplication.didBecomeActiveNotification] {
+            _ = NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
+                let device = (note.object as? AVCaptureDevice).map { " \($0.localizedName) (\($0.deviceType.rawValue))" }
+                Task { @MainActor in
+                    if let device { applog("stream", "\(name.rawValue):\(device)") }   // did iPadOS report the plug at all?
+                    self?.refreshExternalCamera()
+                }
             }
         }
         // Auto-rotate: only fires with rotation lock off. Same observer shape as above.

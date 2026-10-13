@@ -31,8 +31,8 @@ protocol ChatProvider: AnyObject {
 
 @MainActor
 final class KickChatProvider: ChatProvider {
-    private static let pusherAppKey = "32cbd69e4b950bf97679"
-    private static let pusherURL = URL(string: "wss://ws-us2.pusher.com/app/\(pusherAppKey)?protocol=7&client=js&version=8.4.0-rc2&flash=false")!
+    /// Last known Pusher app; Kick rotates it, so `pusherURL()` asks Kick for the live one first.
+    private static let fallbackPusher = (key: "34bf7a0ff419a2a775b9", cluster: "us2")
 
     private let onEvent: @MainActor (ChatEvent) -> Void
     private var socket: URLSessionWebSocketTask?
@@ -78,12 +78,33 @@ final class KickChatProvider: ChatProvider {
         return id
     }
 
+    /// Same anonymous call kick.com's own web client makes to learn which Pusher app/cluster is live.
+    private static func pusherURL() async -> URL {
+        var req = URLRequest(url: URL(string: "https://web.kick.com/api/v1/realtime/connection")!)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: [
+            "client": ["id": UUID().uuidString.lowercased(), "type": "web"],
+            "capabilities": ["accepted_providers": [["provider": "pusher"]]],
+        ])
+        var (key, cluster) = fallbackPusher
+        if let data = try? await URLSession.shared.data(for: req).0,
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let connections = (json["data"] as? [String: Any])?["connections"] as? [[String: Any]],
+           let creds = connections.first(where: { $0["provider"] as? String == "pusher" })?["credentials"] as? [String: Any],
+           let liveKey = creds["app_key"] as? String, let liveCluster = creds["cluster"] as? String {
+            (key, cluster) = (liveKey, liveCluster)
+        } else {
+            applog("chat", "kick realtime lookup failed, using fallback pusher key", error: true)
+        }
+        return URL(string: "wss://ws-\(cluster).pusher.com/app/\(key)?protocol=7&client=js&version=8.4.0-rc2&flash=false")!
+    }
+
     private func connect(roomID: Int) async throws {
-        let socket = URLSession.shared.webSocketTask(with: Self.pusherURL)
+        let socket = URLSession.shared.webSocketTask(with: await Self.pusherURL())
         self.socket = socket
         socket.resume()
         try await send(socket, ["event": "pusher:subscribe", "data": ["auth": "", "channel": "chatrooms.\(roomID).v2"]])
-        applog("chat", "kick chat connected room=\(roomID)")
         while !Task.isCancelled, !stopped {
             guard case .string(let text) = try await socket.receive() else { continue }
             try await handle(frame: text, socket: socket)
@@ -102,6 +123,8 @@ final class KickChatProvider: ChatProvider {
             return
         }
         if event == "pusher:ping" { try await socket.send(.string(#"{"event":"pusher:pong"}"#)); return }
+        if event == "pusher_internal:subscription_succeeded" { applog("chat", "kick chat connected \(outer["channel"] ?? "")"); return }
+        if event == "pusher:error" { applog("chat", "kick pusher error: \(outer["data"] ?? "")", error: true); return }
         guard let chatEvent = Self.parse(event: event, data: outer["data"] as? String) else { return }
         onEvent(chatEvent)
     }
