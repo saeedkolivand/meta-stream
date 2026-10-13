@@ -117,14 +117,11 @@ extension Streamer {
                 let mode = Self.stabilizationMode(phoneQuality.stabilization)
                 let mainMaxHeight = min(phoneQuality.height, 1080)
                 let mcFps = min(phoneQuality.fps, 30)
-                let extMaxHeight = phoneQuality.height
                 let configureMain: @Sendable (VideoDeviceUnit) throws -> Void = { unit in
-                    // UVC devices expose no stabilisation, mirroring or camera controls, but they do list formats:
-                    // take the largest 16:9 one up to the quality setting (the default is often well below it).
-                    if isExt {
-                        if let device = unit.device { Streamer.applyFormat(device, maxHeight: extMaxHeight, fps: mcFps, multiCam: false) }
-                        return
-                    }
+                    // UVC devices expose no stabilisation, mirroring or camera controls. ponytail: their format is
+                    // left alone too -- the Osmo vanished from iPadOS (even FaceTime) until a restart, and we're
+                    // testing whether forcing its activeFormat caused it. Default is often 720p; revisit if not the cause.
+                    if isExt { return }
                     unit.preferredVideoStabilizationMode = mode
                     unit.isVideoMirrored = camSettings.mirrored
                     if let device = unit.device {
@@ -222,12 +219,11 @@ extension Streamer {
     }
 
     /// Multicam sessions ignore sessionPreset, so resolution comes from each device's activeFormat, and it
-    /// MUST be a format with isMultiCamSupported (multiCam: false drops that rule -- UVC cameras, which take no
-    /// preset either). Picks 16:9 (landscape-native dims), height <= maxHeight,
+    /// MUST be a format with isMultiCamSupported. Picks 16:9 (landscape-native dims), height <= maxHeight,
     /// supporting `fps`, preferring binned formats (cheaper for the session's hardwareCost), then the tallest.
     /// Leaves the device on its current format if nothing qualifies. nonisolated: runs inside the
     /// attachVideo configuration closure on the mixer's actor.
-    nonisolated static func applyFormat(_ device: AVCaptureDevice, maxHeight: Int, fps: Int, multiCam: Bool = true) {
+    nonisolated static func applyFormat(_ device: AVCaptureDevice, maxHeight: Int, fps: Int) {
         let want = Double(fps)
         func supports(_ f: AVCaptureDevice.Format) -> Bool {
             f.videoSupportedFrameRateRanges.contains { $0.minFrameRate <= want && want <= $0.maxFrameRate }
@@ -237,7 +233,7 @@ extension Streamer {
         }
         let fits = device.formats.filter { f in
             let d = CMVideoFormatDescriptionGetDimensions(f.formatDescription)
-            return (!multiCam || f.isMultiCamSupported) && Int(d.width) * 9 == Int(d.height) * 16 && Int(d.height) <= maxHeight
+            return f.isMultiCamSupported &&Int(d.width) * 9 == Int(d.height) * 16 && Int(d.height) <= maxHeight
         }
         let pool = fits.filter(supports).isEmpty ? fits : fits.filter(supports)
         guard let best = pool.max(by: { key($0) < key($1) }), (try? device.lockForConfiguration()) != nil else { return }
