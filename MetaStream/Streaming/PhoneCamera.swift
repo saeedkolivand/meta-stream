@@ -233,7 +233,7 @@ extension Streamer {
         }
         let fits = device.formats.filter { f in
             let d = CMVideoFormatDescriptionGetDimensions(f.formatDescription)
-            return f.isMultiCamSupported &&Int(d.width) * 9 == Int(d.height) * 16 && Int(d.height) <= maxHeight
+            return f.isMultiCamSupported && Int(d.width) * 9 == Int(d.height) * 16 && Int(d.height) <= maxHeight
         }
         let pool = fits.filter(supports).isEmpty ? fits : fits.filter(supports)
         guard let best = pool.max(by: { key($0) < key($1) }), (try? device.lockForConfiguration()) != nil else { return }
