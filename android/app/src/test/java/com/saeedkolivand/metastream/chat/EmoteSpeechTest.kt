@@ -35,13 +35,15 @@ class EmoteSpeechTest {
         )
     }
 
-    @Test fun sevenTvUsesTheStaticFrame() {
+    @Test fun sevenTvPicksStaticOrAnimatedFile() {
         val json = JSONArray(
             """[{"name":"catJAM","data":{"host":{"url":"//cdn.7tv.app/emote/abc","files":[
                 {"name":"1x.webp","static_name":"1x_static.webp"},{"name":"2x.webp","static_name":"2x_static.webp"}]}}},
                 {"name":"broken"}]"""
         )
         assertEquals(mapOf("catJAM" to "https://cdn.7tv.app/emote/abc/2x_static.webp"), sevenTvEmotes(json))
+        val animated = JSONArray(json.toString().replace("\"data\":{", "\"data\":{\"animated\":true,"))
+        assertEquals(mapOf("catJAM" to "https://cdn.7tv.app/emote/abc/2x.webp"), sevenTvEmotes(animated))
     }
 
     @Test fun bttvAndFfz() {

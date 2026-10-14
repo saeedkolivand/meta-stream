@@ -59,14 +59,15 @@ private fun wordRuns(text: String, byName: Map<String, String>): List<Run> {
     return runs
 }
 
-/** 7TV emote list -> name to URL. Uses `static_name`, a genuinely single-frame WebP, so animated emotes stay still. */
+/** 7TV emote list -> name to URL. Animated emotes (`data.animated`) use the animated file itself, static ones `static_name`. */
 internal fun sevenTvEmotes(emotes: JSONArray?): Map<String, String> = buildMap {
     for (e in emotes.objects()) {
-        val host = e.optJSONObject("data")?.optJSONObject("host") ?: continue
+        val data = e.optJSONObject("data")
+        val host = data?.optJSONObject("host") ?: continue
         val files = host.optJSONArray("files").objects()
         val file = files.firstOrNull { it.optString("name") == "2x.webp" } ?: files.firstOrNull { it.optString("name") == "1x.webp" }
-        val static = file?.optString("static_name").orEmpty()
-        if (e.has("name") && static.isNotEmpty()) put(e.optString("name"), "https:${host.optString("url")}/$static")
+        val pick = file?.optString(if (data.optBoolean("animated")) "name" else "static_name").orEmpty()
+        if (e.has("name") && pick.isNotEmpty()) put(e.optString("name"), "https:${host.optString("url")}/$pick")
     }
 }
 

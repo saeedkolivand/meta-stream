@@ -13,16 +13,14 @@ import UIKit
 ///   BTTV   GET api.betterttv.net/3/cached/users/twitch/{id}  -> {"channelEmotes":[...],"sharedEmotes":[...]}
 ///   FFZ    GET api.frankerfacez.com/v1/set/global      -> {"default_sets":[Int],"sets":{"<id>":{"emoticons":[{"name","urls":{"1","2","4"}}]}}}
 ///   FFZ    GET api.frankerfacez.com/v1/room/id/{id}    -> {"room":{"set":Int},"sets":{...same as above...}}
-/// A 7TV emote's `host.files` always carries a `static_name` (equal to `name` itself when the emote isn't
-/// animated) - that's a genuinely single-frame WebP, which is what makes the "static frame only" rule in
-/// this file actually true for 7TV. BTTV/FFZ serve PNG/GIF/WebP with no separate static variant; ImageIO
-/// only decodes the first frame of those anyway when built into a single UIImage, so the same rule holds
-/// by accident rather than by API design.
+/// Animated emotes play: 7TV's animated file (not `static_name`), Kick's and BTTV's GIF/WebP are decoded into all
+/// frames + delays (ImageIO, capped at 60 frames) and `image(for:at:)` picks the frame for a given time. FFZ stays static.
 @MainActor
 final class Emotes: ObservableObject {
     @Published private(set) var byName: [String: URL] = [:]
     @Published private(set) var images: [URL: Image] = [:]   // decoded static frames, by emote URL
 
+    private var animations: [URL: Animation] = [:]   // multi-frame emotes only; `images` holds frame 0 of everything
     private var loadedFor: String?   // "<twitch id>|<kick slug>" the current byName was built for; "|" = none
     private var loadingImages: Set<URL> = []
 
@@ -57,32 +55,119 @@ final class Emotes: ObservableObject {
     }
 
     /// Decoded image for an emote URL, or nil while it's still loading (caller re-renders once it lands).
-    /// URLSession's own URLCache handles the network-level cache; this dictionary only avoids re-decoding
-    /// the same WebP/PNG bytes on every row re-render. ponytail: never evicted - emote vocabulary in one
-    /// stream session is small, an LRU here would be solving a problem this app doesn't have.
-    func image(for url: URL) -> Image? {
+    /// With `at`, an animated emote returns the frame for that moment; without it (or while the phone is
+    /// thermally serious) the first frame. URLSession's own URLCache handles the network-level cache; these
+    /// dictionaries only avoid re-decoding the same bytes on every row re-render. ponytail: never evicted -
+    /// emote vocabulary in one stream session is small, an LRU here would be solving a problem this app doesn't have.
+    func image(for url: URL, at time: Date? = nil) -> Image? {
+        if let anim = animations[url], let time, !Self.isHot {
+            return anim.images[Self.frameIndex(delays: anim.delays, at: time.timeIntervalSinceReferenceDate)]
+        }
         if let img = images[url] { return img }
         if loadingImages.insert(url).inserted {
             Task {
                 defer { loadingImages.remove(url) }
-                guard let (data, _) = try? await URLSession.shared.data(from: url), let raw = UIImage(data: data) else {
+                guard let (data, _) = try? await URLSession.shared.data(from: url),
+                      let decoded = await Task.detached(priority: .utility, operation: { Self.decode(data) }).value
+                else {
                     applog("chat", "emote image failed: \(url)", error: true)
                     return
                 }
-                images[url] = Image(uiImage: Self.resized(raw, toHeight: 22))
+                let frames = decoded.frames.map { Image(decorative: $0, scale: Self.pixelScale) }
+                if frames.count > 1 { animations[url] = Animation(images: frames, delays: decoded.delays) }
+                images[url] = frames[0]   // last: this is the @Published write that re-renders the rows
             }
         }
         return nil
     }
 
-    /// Providers hand back wildly different native pixel sizes (7TV's 2x ~64px, BTTV's 2x ~56px, FFZ's "2" ~56px,
-    /// Kick's "fullsize" bigger still) and a plain `UIImage(data:)` has scale 1.0, so dropped straight into Text
-    /// it would render at its raw pixel size - way too large inline. Redrawing at a fixed point height keeps
-    /// every emote the same visual size next to body text, regardless of source.
-    private static func resized(_ image: UIImage, toHeight height: CGFloat) -> UIImage {
-        let scale = height / max(image.size.height, 1)
-        let size = CGSize(width: image.size.width * scale, height: height)
-        return UIGraphicsImageRenderer(size: size).image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
+    /// True when `url` decoded to more than one frame.
+    func isAnimated(_ url: URL) -> Bool { animations[url] != nil }
+
+    /// True when the message holds a loaded animated emote and the phone is cool enough to play it - the
+    /// caller's cue to keep re-rendering on a 10 fps tick.
+    func animates(_ text: String) -> Bool {
+        guard !Self.isHot, !animations.isEmpty else { return false }
+        return Self.tokenize(text, byName: byName).contains { run in
+            if case .emote(let url) = run { return isAnimated(url) }
+            return false
+        }
+    }
+
+    /// Frames of one animated emote, already scaled to the inline height.
+    private struct Animation {
+        let images: [Image]
+        let delays: [Double]
+    }
+
+    private nonisolated static let pointHeight: CGFloat = 22
+    private nonisolated static let pixelScale: CGFloat = 3   // render px per point; plenty for any iPhone and the stream bitmap
+    // ponytail: 60-frame ceiling per emote (evenly sampled beyond it) bounds memory; 10 fps is the callers' tick.
+    private nonisolated static let maxFrames = 60
+
+    private static var isHot: Bool { ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue }
+
+    /// Frame to show `t` seconds into the loop: position of (t mod total) in the cumulative delays.
+    nonisolated static func frameIndex(delays: [Double], at t: Double) -> Int {
+        let total = delays.reduce(0, +)
+        guard total > 0 else { return 0 }
+        var rest = t.truncatingRemainder(dividingBy: total)
+        if rest < 0 { rest += total }
+        for (i, d) in delays.enumerated() {
+            if rest < d { return i }
+            rest -= d
+        }
+        return delays.count - 1
+    }
+
+    struct Decoded: @unchecked Sendable {   // CGImage is immutable; safe to hand across actors
+        let frames: [CGImage]
+        let delays: [Double]
+    }
+
+    /// All frames (evenly sampled down to maxFrames, skipped frames' time folded into the kept one) scaled to the
+    /// inline height. Providers hand back wildly different native pixel sizes (7TV's 2x ~64px, BTTV's 2x ~56px,
+    /// Kick's "fullsize" bigger still), so every frame is thumbnailed to the same height. Any failure after the
+    /// first frame falls back to a static emote; nil only when not even frame 0 decodes.
+    nonisolated static func decode(_ data: Data) -> Decoded? {
+        guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        let count = CGImageSourceGetCount(src)
+        guard count > 0 else { return nil }
+        let targetPx = pointHeight * pixelScale
+        // Thumbnail bounds the LONGER side, so scale it up by the aspect ratio to land on the target height.
+        let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any]
+        let w = (props?[kCGImagePropertyPixelWidth] as? Double) ?? 1
+        let h = max((props?[kCGImagePropertyPixelHeight] as? Double) ?? 1, 1)
+        let opts: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: Int((targetPx * max(w / h, 1)).rounded(.up)),
+        ]
+        let picked = count > maxFrames ? (0..<maxFrames).map { Int(Double($0) * Double(count) / Double(maxFrames)) } : Array(0..<count)
+        var frames: [CGImage] = []
+        var delays: [Double] = []
+        for (n, i) in picked.enumerated() {
+            guard let cg = CGImageSourceCreateThumbnailAtIndex(src, i, opts as CFDictionary) else { break }
+            let next = n + 1 < picked.count ? picked[n + 1] : count
+            frames.append(cg)
+            delays.append((i..<next).reduce(0) { $0 + delay(src, $1) })
+        }
+        guard !frames.isEmpty else { return nil }
+        if frames.count < picked.count { return Decoded(frames: [frames[0]], delays: [delays[0]]) }   // partial decode: static
+        return Decoded(frames: frames, delays: delays)
+    }
+
+    /// Per-frame delay in seconds: unclamped GIF/WebP value, else the clamped one, default 0.1, never under 0.02.
+    private nonisolated static func delay(_ src: CGImageSource, _ index: Int) -> Double {
+        let props = CGImageSourceCopyPropertiesAtIndex(src, index, nil) as? [CFString: Any]
+        let gif = props?[kCGImagePropertyGIFDictionary] as? [CFString: Any]
+        let webp = props?[kCGImagePropertyWebPDictionary] as? [CFString: Any]
+        let d = (gif?[kCGImagePropertyGIFUnclampedDelayTime] as? Double)
+            ?? (webp?[kCGImagePropertyWebPUnclampedDelayTime] as? Double)
+            ?? (gif?[kCGImagePropertyGIFDelayTime] as? Double)
+            ?? (webp?[kCGImagePropertyWebPDelayTime] as? Double)
+            ?? 0.1
+        return max(d, 0.02)
     }
 
     // MARK: - Tokenizer
@@ -166,9 +251,12 @@ final class Emotes: ObservableObject {
                   let hostURL = host["url"] as? String,
                   let files = host["files"] as? [[String: Any]]
             else { continue }
-            // Prefer 2x for a crisp inline glyph on Retina; static_name is a genuinely non-animated WebP.
+            // Prefer 2x for a crisp inline glyph on Retina. Animated emotes use the animated file itself;
+            // everything else keeps static_name (a genuinely non-animated WebP).
             let file = files.first { $0["name"] as? String == "2x.webp" } ?? files.first { $0["name"] as? String == "1x.webp" }
-            guard let staticName = file?["static_name"] as? String, let url = URL(string: "https:" + hostURL + "/" + staticName) else { continue }
+            let animated = (e["data"] as? [String: Any])?["animated"] as? Bool == true
+            guard let fileName = animated ? file?["name"] as? String : file?["static_name"] as? String,
+                  let url = URL(string: "https:" + hostURL + "/" + fileName) else { continue }
             out[name] = url
         }
         return out

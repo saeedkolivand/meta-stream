@@ -33,6 +33,7 @@ extension OverlayCompositor {
         let task = Task {
             var last = ""
             var entering = false
+            var animating = false
             while !Task.isCancelled {
                 if let chat = ctx.chat, let emotes = ctx.emotes {
                     let now = Date()
@@ -41,8 +42,10 @@ extension OverlayCompositor {
                     // 4 fps inside a fade-out ramp. Otherwise the picture is static and never re-rendered.
                     entering = rows.contains { StreamChatView.appear($0, now: now) < 1 }
                     let ramping = rows.contains { StreamChatView.opacity($0, style, now: now) < 1 }
+                    // ponytail: animated emotes tick at 10 fps; Emotes.animates is false when the phone runs hot (frozen).
+                    animating = rows.contains { $0.kind == .message && emotes.animates($0.text) }
                     let t = now.timeIntervalSinceReferenceDate
-                    let sig = "\(chat.serial)|\(rows.count)|\(emotes.images.count)|\(entering ? Int(t * 20) : ramping ? Int(t * 4) : 0)"
+                    let sig = "\(chat.serial)|\(rows.count)|\(emotes.images.count)|\(entering ? Int(t * 20) : animating ? Int(t * 10) : ramping ? Int(t * 4) : 0)"
                     if sig != last {
                         last = sig
                         let piece = rows.isEmpty ? nil : WidgetRaster.piece(
@@ -52,7 +55,7 @@ extension OverlayCompositor {
                         await OverlayScreen.setImage(o, piece?.bitmap)
                     }
                 }
-                try? await Task.sleep(for: WidgetRaster.pause(entering ? 50 : 200))
+                try? await Task.sleep(for: WidgetRaster.pause(entering ? 50 : animating ? 100 : 200))
             }
         }
         let object: ScreenObject = o

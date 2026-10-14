@@ -93,7 +93,12 @@ struct ChatSheetView: View {
                         Text(event.user).font(.subheadline.weight(.bold))
                             .foregroundStyle(DisplayNames.nameColor(event))
                     }
-                    messageText(event).font(.body)
+                    if emotes.animates(event.text) {
+                        // ponytail: 10 fps; only rows holding an animated emote tick, and LazyVStack only builds visible ones.
+                        TimelineView(.periodic(from: .now, by: 0.1)) { ctx in messageText(event, at: ctx.date).font(.body) }
+                    } else {
+                        messageText(event).font(.body)
+                    }
                 }
                 Spacer(minLength: 0)
             }
@@ -134,12 +139,12 @@ struct ChatSheetView: View {
     /// Inline emotes via Text concatenation: `Text(Image(...))` is the only way to get an image flowing
     /// inside wrapped text instead of breaking out as a separate view. An emote still loading renders as
     /// an empty run this pass; the row redraws once it lands.
-    private func messageText(_ event: ChatEvent) -> Text {
+    private func messageText(_ event: ChatEvent, at time: Date? = nil) -> Text {
         Emotes.tokenize(event.text, byName: emotes.byName).reduce(Text("")) { partial, run in
             switch run {
             case .text(let s): return Text("\(partial)\(Text(s))")
             case .emote(let url):
-                if let img = emotes.image(for: url) { return Text("\(partial)\(Text(img))") }
+                if let img = emotes.image(for: url, at: time) { return Text("\(partial)\(Text(img))") }
                 return partial
             }
         }

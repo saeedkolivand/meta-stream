@@ -3,6 +3,10 @@ package com.saeedkolivand.metastream.overlay
 import com.pedro.encoder.input.gl.render.filters.`object`.ImageFilterRender
 import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.ChatFeed
+import com.saeedkolivand.metastream.chat.Emotes
+import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.chat.Run
+import com.saeedkolivand.metastream.chat.tokenize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -12,6 +16,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 private const val ENTER_TICK_MS = 50L
 private const val RAMP_TICK_MS = 250L
+private const val ANIM_TICK_MS = 100L // ponytail: animated emotes redraw at 10 fps
 private const val RAMP_LEAD_MS = 2000L
 
 /** Suspends until the chat list or the emote set changes, or [timeoutMs] passes (null = wait for a change only). */
@@ -24,7 +29,7 @@ private suspend fun awaitChange(chat: List<ChatEvent>, version: Int, timeoutMs: 
 
 /**
  * The chat widget: one bitmap, re-rendered only when the visible rows, a loaded emote or an in-progress motion changes.
- * Idle chat costs nothing; a new row ticks at 20 fps for its 320 ms entry, a fade-out ramp at 4 fps.
+ * Idle chat costs nothing; a new row ticks at 20 fps for its 320 ms entry, a fade-out ramp at 4 fps, animated emotes at 10 fps.
  */
 internal fun chatWidget(l: Layer, box: Box, outW: Int, outH: Int, scope: CoroutineScope): WidgetBuild? {
     val style = ChatStyle.from(l.data)
@@ -43,29 +48,29 @@ internal fun chatWidget(l: Layer, box: Box, outW: Int, outH: Int, scope: Corouti
             val rows = chatRows(chat, style, now)
             val entering = rows.any { chatAppear(it, now) < 1f }
             val ramping = rows.any { chatOpacity(it, style, now) < 1f }
+            // Hot phones freeze emotes on their first frame: streaming matters more than moving emotes.
+            val animating = rows.any(::hasAnimatedEmote) && !thermalHot()
+            val period = listOfNotNull(
+                ENTER_TICK_MS.takeIf { entering },
+                RAMP_TICK_MS.takeIf { ramping },
+                ANIM_TICK_MS.takeIf { animating }
+            ).minOrNull()
             // Time joins the signature only while something moves; otherwise the picture is static.
-            val tick = if (entering) {
-                now / ENTER_TICK_MS
-            } else if (ramping) {
-                now / RAMP_TICK_MS
-            } else {
-                0L
-            }
+            val tick = period?.let { now / it } ?: 0L
             val sig = "${rows.map { it.id }.hashCode()}|$version|$tick"
             if (sig != last) {
                 last = sig
                 // ponytail: the replaced bitmap is left to GC; RootEncoder's GL thread may still be uploading it.
-                filter.setImage(renderChat(chat, style, now, scale, channel) ?: blankBitmap())
+                filter.setImage(renderChat(chat, style, now, scale, channel, if (animating) now else 0L) ?: blankBitmap())
             }
-            when {
-                entering -> awaitChange(chat, version, thermalDelay(ENTER_TICK_MS))
-                ramping -> awaitChange(chat, version, thermalDelay(RAMP_TICK_MS))
-                else -> awaitChange(chat, version, nextRampIn(rows, style, now))
-            }
+            awaitChange(chat, version, period?.let(::thermalDelay) ?: nextRampIn(rows, style, now))
         }
     }
     return WidgetBuild(filter, job)
 }
+
+private fun hasAnimatedEmote(e: ChatEvent) =
+    e.kind == Kind.Message && tokenize(e.text, Emotes.byName).any { it is Run.Emote && EmoteBitmaps.isAnimated(it.url) }
 
 /** Time until the oldest row starts its fade-out ramp, or null when nothing will ever fade. */
 private fun nextRampIn(rows: List<ChatEvent>, style: ChatStyle, now: Long): Long? {

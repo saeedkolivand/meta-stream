@@ -28,10 +28,9 @@ import kotlin.math.roundToInt
 internal val appContext: Context get() = Accounts.app
 
 /** Doubles a render/poll delay while the phone is hot, same backoff as the browser snapshot loop. */
-internal fun thermalDelay(ms: Long): Long {
-    val hot = appContext.getSystemService(PowerManager::class.java).currentThermalStatus >= PowerManager.THERMAL_STATUS_SEVERE
-    return if (hot) ms * 2 else ms
-}
+internal fun thermalDelay(ms: Long): Long = if (thermalHot()) ms * 2 else ms
+
+internal fun thermalHot() = appContext.getSystemService(PowerManager::class.java).currentThermalStatus >= PowerManager.THERMAL_STATUS_SEVERE
 
 internal fun newBitmap(w: Float, h: Float): Bitmap =
     Bitmap.createBitmap(max(1, w.roundToInt()), max(1, h.roundToInt()), Bitmap.Config.ARGB_8888)
@@ -112,15 +111,15 @@ private class EmoteSpan(private val bmp: Bitmap?, private val h: Float) : Replac
     }
 }
 
-/** The message as one string so bidi resolves mixed-script lines; emotes are ReplacementSpans of height [emotePx]. */
-internal fun emoteText(text: String, emotePx: Float): CharSequence {
+/** The message as one string so bidi resolves mixed-script lines; emotes are ReplacementSpans of height [emotePx]; [animMs] picks the frame of animated ones. */
+internal fun emoteText(text: String, emotePx: Float, animMs: Long = 0): CharSequence {
     val out = SpannableStringBuilder()
     for (run in tokenize(text, Emotes.byName)) {
         when (run) {
             is Run.Text -> out.append(run.text)
             is Run.Emote -> {
                 out.append('￼')
-                val span = EmoteSpan(EmoteBitmaps.get(run.url, emotePx.roundToInt()), emotePx)
+                val span = EmoteSpan(EmoteBitmaps.get(run.url, emotePx.roundToInt(), animMs), emotePx)
                 out.setSpan(span, out.length - 1, out.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
         }

@@ -74,7 +74,7 @@ private fun highlighted(e: ChatEvent, style: ChatStyle, channel: String): Boolea
  * gradients or borders; with the background off the text sits flush left on the video. The layout never mirrors; only
  * the message text runs RTL.
  */
-private fun messageCard(e: ChatEvent, st: ChatStyle, size: Float, avail: Float, s: Float, channel: String): Row {
+private fun messageCard(e: ChatEvent, st: ChatStyle, size: Float, avail: Float, s: Float, channel: String, animMs: Long): Row {
     val padL = if (st.background) size * 0.5f else 0f
     val padR = if (st.background) size * 0.55f else 0f
     val padV = size * if (st.background) 0.36f else 0.15f
@@ -96,7 +96,7 @@ private fun messageCard(e: ChatEvent, st: ChatStyle, size: Float, avail: Float, 
     val nameW = minOf(inner - iconsW, ceil(namePaint.measureText(e.user)) + 1f)
     val name = textLayout(e.user, namePaint, nameW.toInt(), maxLines = 1)
     val msgPaint = widgetPaint(st.face, if (st.bold) 600 else 400, size, st.textColor, textShadow)
-    val text = emoteText(e.text, size * 1.3f)
+    val text = emoteText(e.text, size * 1.3f, animMs)
     val spacing = size * 0.08f
     val wide = textLayout(text, msgPaint, inner.toInt(), spacing = spacing)
     val blockW = max(iconsW + name.widest(), wide.widest())
@@ -160,8 +160,8 @@ private fun eventPill(e: ChatEvent, st: ChatStyle, size: Float, avail: Float): R
     }
 }
 
-/** Newest at the bottom, clipped, with the top 18% dissolving into the video. Null when there is nothing to draw. */
-internal fun renderChat(events: List<ChatEvent>, style: ChatStyle, now: Long, scale: Float, channel: String): Bitmap? {
+/** Newest at the bottom, clipped, with the top 18% dissolving into the video; animated emotes show their frame at [animMs]. Null when nothing is drawn. */
+internal fun renderChat(events: List<ChatEvent>, style: ChatStyle, now: Long, scale: Float, channel: String, animMs: Long = 0): Bitmap? {
     val rows = chatRows(events, style, now)
     if (rows.isEmpty()) return null
     val size = style.fontSize * scale
@@ -171,7 +171,8 @@ internal fun renderChat(events: List<ChatEvent>, style: ChatStyle, now: Long, sc
     val avail = bmp.width - 2 * pad
     var y = bmp.height - pad
     for (e in rows.asReversed()) {
-        val row = if (e.kind == Kind.Message) messageCard(e, style, size, avail, scale, channel) else eventPill(e, style, size, avail)
+        val isMsg = e.kind == Kind.Message
+        val row = if (isMsg) messageCard(e, style, size, avail, scale, channel, animMs) else eventPill(e, style, size, avail)
         y -= row.h
         val appear = chatAppear(e, now)
         val top = y + (1f - appear) * size * 0.7f

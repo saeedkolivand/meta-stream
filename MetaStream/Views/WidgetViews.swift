@@ -177,7 +177,7 @@ struct StreamChatView: View {
             switch run {
             case .text(let s): return Text("\(partial)\(Text(s).font(font(style.bold ? .semibold : .regular)).foregroundColor(text))")
             case .emote(let url):
-                if let img = emotes.image(for: url) { return Text("\(partial)\(Text(img))") }
+                if let img = emotes.image(for: url, at: now) { return Text("\(partial)\(Text(img))") }
                 return partial
             }
         }
