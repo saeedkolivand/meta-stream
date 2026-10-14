@@ -36,6 +36,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +67,7 @@ import com.saeedkolivand.metastream.overlay.Layer
 import com.saeedkolivand.metastream.overlay.LayerType
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.Scenes
+import com.saeedkolivand.metastream.overlay.WidgetLocation
 import com.saeedkolivand.metastream.overlay.WidgetVariables
 import com.saeedkolivand.metastream.ui.Choice
 import com.saeedkolivand.metastream.ui.Footnote
@@ -146,9 +148,12 @@ internal fun SceneEditor(name: String, onClose: () -> Unit) {
     val askLocation = rememberLauncherForActivityResult(RequestPermission()) {}
     val ctx = LocalContext.current
     val needsLocation = layers.any { it.type == LayerType.Text && WidgetVariables.needsLocation(it.data["text"].orEmpty()) }
-    LaunchedEffect(needsLocation) {
+    // The editor preview resolves {speed}/{weather} itself, so it keeps GPS on while it shows them.
+    DisposableEffect(needsLocation) {
         val granted = ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         if (needsLocation && !granted) askLocation.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        if (needsLocation) WidgetLocation.retain()
+        onDispose { if (needsLocation) WidgetLocation.release() }
     }
 
     // The output the stream will use, so the canvas matches what viewers see; the toggle previews the other orientation.

@@ -34,6 +34,7 @@ struct SceneEditorView: View {
 
     private var portrait: Bool { portraitOverride ?? (streamer.blurCanvasSize.height > streamer.blurCanvasSize.width) }
     private var stored: [OverlayLayer] { store.scenes.first { $0.name == name }?.layers ?? [] }
+    private var wantsLocation: Bool { layers.contains { $0.type == .text && WidgetVariables.needsLocation($0.data["text"] ?? "") } }
     private var camera: String { store.scenes.first { $0.name == name }?.camera ?? "" }
 
     var body: some View {
@@ -75,6 +76,13 @@ struct SceneEditorView: View {
             Text(webNote + "Paste a Streamlabs, StreamElements or BotRix widget link for alerts, goals or anything web-based.")
         }
         .onAppear { layers = stored }
+        .task(id: wantsLocation) {
+            // The editor preview resolves {speed}/{weather} itself, so it keeps GPS on while it shows them.
+            guard wantsLocation else { return }
+            WidgetLocation.shared.retain()
+            while !Task.isCancelled { try? await Task.sleep(for: .seconds(3600)) }
+            WidgetLocation.shared.release()
+        }
         .onChange(of: layers) { scheduleSave() }
         .onDisappear { renameIfNeeded(); saveNow() }
     }
