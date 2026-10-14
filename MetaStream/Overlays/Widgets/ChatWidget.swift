@@ -78,7 +78,7 @@ extension OverlayCompositor {
                     entering = !burst && rows.contains { StreamChatView.appear($0, now: now) < 1 }
                     let ramping = rows.contains { StreamChatView.opacity($0, style, now: now) < 1 }
                     // ponytail: animated emotes tick at 10 fps; Emotes.animates is false when the phone runs hot (frozen).
-                    animating = rows.contains { $0.kind == .message && emotes.animates($0.text) }
+                    animating = rows.suffix(StreamChatView.animatedRows).contains { $0.kind == .message && emotes.animates($0.text) }
                     let t = now.timeIntervalSinceReferenceDate
                     let sig = "\(chat.serial)|\(rows.count)|\(emotes.images.count)|\(entering ? Int(t * 20) : animating ? Int(t * 10) : ramping ? Int(t * 4) : 0)"
                     // Burst: a change that arrives inside the gap waits; the next pass renders the latest state once.

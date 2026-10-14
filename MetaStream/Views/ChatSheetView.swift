@@ -59,8 +59,8 @@ struct ChatSheetView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(chat.recent.enumerated()), id: \.offset) { _, event in
-                            chatRow(event)
+                        ForEach(Array(chat.recent.enumerated()), id: \.offset) { i, event in
+                            chatRow(event, animate: i >= chat.recent.count - StreamChatView.animatedRows)
                         }
                         Color.clear.frame(height: 1).id("bottom")
                             .onAppear { atBottom = true }
@@ -83,7 +83,7 @@ struct ChatSheetView: View {
     /// the first line, message with inline emotes below. Everything else (tips/cheers/follows/subs/raids)
     /// is already spoken aloud by Speaker, so it renders compact and secondary with no card.
     @ViewBuilder
-    private func chatRow(_ event: ChatEvent) -> some View {
+    private func chatRow(_ event: ChatEvent, animate: Bool) -> some View {
         if event.kind == .message {
             HStack(alignment: .top, spacing: 10) {
                 originBadge(event.origin)
@@ -93,7 +93,7 @@ struct ChatSheetView: View {
                         Text(event.user).font(.subheadline.weight(.bold))
                             .foregroundStyle(DisplayNames.nameColor(event))
                     }
-                    if emotes.animates(event.text) {
+                    if animate, emotes.animates(event.text) {
                         // ponytail: 10 fps; only rows holding an animated emote tick, and LazyVStack only builds visible ones.
                         TimelineView(.periodic(from: .now, by: 0.1)) { ctx in messageText(event, at: ctx.date).font(.body) }
                     } else {

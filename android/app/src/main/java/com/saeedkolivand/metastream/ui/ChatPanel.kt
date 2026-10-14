@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.overlay.ANIMATED_ROWS
 
 private val SIZES = listOf(16, 20, 26, 32)
 
@@ -109,6 +110,8 @@ private fun MessageList(size: Int, modifier: Modifier) {
     }
     LazyColumn(modifier, list) {
         // Keyed rows stay put when the 200-message cap drops the oldest: positions don't resettle per message.
-        items(events, key = { it.id }) { ChatRow(it, size) }
+        // Only the newest rows animate their emotes, same as the stream widget.
+        val live = events.takeLast(ANIMATED_ROWS).map { it.id }.toSet()
+        items(events, key = { it.id }) { ChatRow(it, size, it.id in live) }
     }
 }

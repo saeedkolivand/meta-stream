@@ -178,9 +178,10 @@ internal fun renderChat(
     val c = Canvas(bmp)
     val avail = bmp.width - 2 * pad
     var y = bmp.height - pad
-    for (e in rows.asReversed()) {
+    for ((k, e) in rows.asReversed().withIndex()) {
         val isMsg = e.kind == Kind.Message
-        val row = if (isMsg) messageCard(e, style, size, avail, scale, channel, animMs) else eventPill(e, style, size, avail)
+        val rowAnim = if (k < ANIMATED_ROWS) animMs else 0L // k = 0 is the newest
+        val row = if (isMsg) messageCard(e, style, size, avail, scale, channel, rowAnim) else eventPill(e, style, size, avail)
         y -= row.h
         val appear = if (burst) 1f else chatAppear(e, now)
         val top = y + (1f - appear) * size * 0.7f

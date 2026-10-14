@@ -19,6 +19,10 @@ import kotlinx.coroutines.withTimeoutOrNull
 private const val ENTER_TICK_MS = 50L
 private const val RAMP_TICK_MS = 250L
 private const val ANIM_TICK_MS = 100L // ponytail: animated emotes redraw at 10 fps
+
+/** Only the newest rows play animated emotes; older ones hold their first frame. ponytail: 3 keeps an idle chat with
+ * one old animated emote from redrawing the whole widget at 10 fps. */
+internal const val ANIMATED_ROWS = 3
 private const val RAMP_LEAD_MS = 2000L
 private const val BURST_COUNT = 3 // ponytail: 3+ messages inside BURST_WINDOW_MS = a burst: no entry slide, coalesced redraws
 private const val BURST_WINDOW_MS = 1000L
@@ -97,7 +101,7 @@ internal fun chatWidget(l: Layer, box: Box, outW: Int, outH: Int, scope: Corouti
             val entering = !burst && rows.any { chatAppear(it, now) < 1f }
             val ramping = rows.any { chatOpacity(it, style, now) < 1f }
             // Hot phones freeze emotes on their first frame: streaming matters more than moving emotes.
-            val animating = rows.any(::hasAnimatedEmote) && !thermalHot()
+            val animating = rows.takeLast(ANIMATED_ROWS).any(::hasAnimatedEmote) && !thermalHot()
             val period = listOfNotNull(
                 ENTER_TICK_MS.takeIf { entering },
                 RAMP_TICK_MS.takeIf { ramping },

@@ -89,7 +89,7 @@ private fun OriginBadge(platform: String) {
 }
 
 @Composable
-internal fun ChatRow(e: ChatEvent, size: Int) {
+internal fun ChatRow(e: ChatEvent, size: Int, animate: Boolean = true) {
     // Alerts are already spoken, so they render as one compact secondary line with no name/badges.
     if (e.kind != Kind.Message) {
         Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), Arrangement.spacedBy(8.dp), Alignment.CenterVertically) {
@@ -110,7 +110,7 @@ internal fun ChatRow(e: ChatEvent, size: Int) {
                 e.badges.forEach { Chip(it) }
                 Text(e.user, color = name, fontSize = (size * 0.85f).sp, fontWeight = FontWeight.Bold)
             }
-            MessageText(e.text, size, Modifier.padding(top = 2.dp))
+            MessageText(e.text, size, Modifier.padding(top = 2.dp), animate)
         }
         HorizontalDivider(color = Hairline)
     }

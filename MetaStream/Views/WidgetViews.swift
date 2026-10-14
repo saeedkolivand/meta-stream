@@ -78,9 +78,9 @@ struct StreamChatView: View {
     var body: some View {
         let rows = Self.rows(events, style, now: now)
         VStack(alignment: .leading, spacing: size * 0.32) {
-            ForEach(Array(rows.enumerated()), id: \.offset) { _, e in
+            ForEach(Array(rows.enumerated()), id: \.offset) { i, e in
                 let a = burst ? 1 : Self.appear(e, now: now)
-                row(e)
+                row(e, animate: i >= rows.count - Self.animatedRows)
                     .opacity(Self.opacity(e, style, now: now) * a)
                     .offset(y: (1 - a) * size * 0.7)
             }
@@ -103,16 +103,20 @@ struct StreamChatView: View {
     }
 
     @ViewBuilder
-    private func row(_ e: ChatEvent) -> some View {
+    private func row(_ e: ChatEvent, animate: Bool) -> some View {
         Group {
-            if e.kind == .message { messageCard(e) } else { eventPill(e) }
+            if e.kind == .message { messageCard(e, animate: animate) } else { eventPill(e) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Flat, minimal card: who on top (platform chip, icon badges, name), what they said underneath. One solid fill, no
     /// gradients or borders; with the background off the text sits flush left on the video.
-    private func messageCard(_ e: ChatEvent) -> some View {
+    /// Only the newest rows play animated emotes; older ones hold their first frame. ponytail: 3 rows keeps an idle
+    /// chat with one old catJAM from redrawing the whole widget at 10 fps.
+    static let animatedRows = 3
+
+    private func messageCard(_ e: ChatEvent, animate: Bool) -> some View {
         let text = argbColor(style.textColor)
         let radius = size * 0.55
         return VStack(alignment: .leading, spacing: size * 0.12) {
@@ -129,7 +133,7 @@ struct StreamChatView: View {
                     .foregroundColor(style.senderColors ? DisplayNames.nameColor(e) : text.opacity(0.75))
                     .lineLimit(1)
             }
-            messageLine(e, text).lineSpacing(size * 0.08)
+            messageLine(e, text, animate: animate).lineSpacing(size * 0.08)
                 .multilineTextAlignment(.leading).rowDirection(WidgetFonts.isRTL(e.text))
         }
         .padding(.leading, style.background ? size * 0.5 : 0)
@@ -174,12 +178,12 @@ struct StreamChatView: View {
     /// The message as one Text so bidi resolves mixed-script lines; emotes are inline images (Text concatenation).
     // ponytail: emotes stay 22 pt (Emotes resizes once, to 22 pt) whatever the font size. Upgrade: pass a height to
     // Emotes.image(for:) and cache one size per bucket.
-    private func messageLine(_ e: ChatEvent, _ text: Color) -> Text {
+    private func messageLine(_ e: ChatEvent, _ text: Color, animate: Bool) -> Text {
         Emotes.tokenize(e.text, byName: emotes.byName).reduce(Text("")) { partial, run in
             switch run {
             case .text(let s): return Text("\(partial)\(Text(s).font(font(style.bold ? .semibold : .regular)).foregroundColor(text))")
             case .emote(let url):
-                if let img = emotes.image(for: url, at: now) { return Text("\(partial)\(Text(img))") }
+                if let img = emotes.image(for: url, at: animate ? now : nil) { return Text("\(partial)\(Text(img))") }
                 return partial
             }
         }

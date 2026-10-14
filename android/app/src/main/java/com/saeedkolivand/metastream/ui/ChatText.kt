@@ -36,11 +36,11 @@ private const val ANIM_TICK_MS = 100L
 
 /** One emote from the shared decoder cache, so GIF/animated WebP play; a still just draws its bitmap. */
 @Composable
-private fun EmoteImage(url: String, alt: String, size: Int) {
+private fun EmoteImage(url: String, alt: String, size: Int, animate: Boolean) {
     EmoteBitmaps.version.collectAsState().value // recompose when a load lands
     val px = with(LocalDensity.current) { (size * 1.5f).sp.toPx().toInt() }
     var t by remember { mutableLongStateOf(0L) }
-    if (EmoteBitmaps.isAnimated(url)) {
+    if (animate && EmoteBitmaps.isAnimated(url)) {
         LaunchedEffect(url) {
             while (true) {
                 t = if (thermalHot()) 0L else System.currentTimeMillis()
@@ -53,10 +53,10 @@ private fun EmoteImage(url: String, alt: String, size: Int) {
 
 /** A chat line with Kick and 7TV/BTTV/FFZ emotes drawn inline as images (EmoteBitmaps) through InlineTextContent. */
 @Composable
-internal fun MessageText(text: String, size: Int, modifier: Modifier = Modifier) {
+internal fun MessageText(text: String, size: Int, modifier: Modifier = Modifier, animate: Boolean = true) {
     val byName = Emotes.byName
     val runs = remember(text, byName) { tokenize(text, byName) }
-    val (annotated, inline) = remember(runs) {
+    val (annotated, inline) = remember(runs, animate) {
         val content = mutableMapOf<String, InlineTextContent>()
         val built = buildAnnotatedString {
             for (run in runs) {
@@ -65,7 +65,7 @@ internal fun MessageText(text: String, size: Int, modifier: Modifier = Modifier)
                     is Run.Emote -> {
                         appendInlineContent(run.url, run.name)
                         content.getOrPut(run.url) {
-                            InlineTextContent(EMOTE_SLOT) { alt -> EmoteImage(run.url, alt, size) }
+                            InlineTextContent(EMOTE_SLOT) { alt -> EmoteImage(run.url, alt, size, animate) }
                         }
                     }
                 }
