@@ -57,7 +57,8 @@ enum DisplayNames {
             return "\(e.user) tipped $\(amount)" + (e.text.isEmpty ? "" : " — \(e.text)")
         case .cheer: return "\(e.user) cheered \(e.count) bits" + (e.text.isEmpty ? "" : " — \(e.text)")
         case .follow: return "\(e.user) followed"
-        case .subscribe: return "\(e.user) subscribed"
+        case .subscribe:
+            return e.count == 0 ? "\(e.user) subscribed" : e.count == 1 ? "\(e.user) gifted a sub" : "\(e.user) gifted \(e.count) subs"
         case .raid: return "\(e.user) raided with \(e.count) viewers"
         case .message: return e.text
         }

@@ -5,6 +5,7 @@ import Foundation
 /// Two numeric fields cover everything: `amountCents` is money (tips), `count` is countable
 /// things (raid viewers, cheered bits). ponytail: cents as Int, never Double — currency in
 /// floating point is a rounding bug waiting to happen.
+/// `subscribe` with count > 0 is a GIFT of `count` subs by `user`; count 0 is a normal (re)sub.
 struct ChatEvent: Sendable {
     enum Kind: Equatable { case message, tip, cheer, follow, subscribe, raid }
     let kind: Kind

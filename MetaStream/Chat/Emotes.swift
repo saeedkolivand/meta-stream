@@ -23,16 +23,17 @@ final class Emotes: ObservableObject {
     @Published private(set) var byName: [String: URL] = [:]
     @Published private(set) var images: [URL: Image] = [:]   // decoded static frames, by emote URL
 
-    private var loadedFor: String?   // twitch login (lowercased) the current byName was built for; "" = none
+    private var loadedFor: String?   // "<twitch id>|<kick slug>" the current byName was built for; "|" = none
     private var loadingImages: Set<URL> = []
 
     /// Fetches every provider's global set, plus per-channel sets when `twitchLogin` is given and connected.
     /// No-ops if already loaded for this exact identity, so repeat calls from every `startChat()` re-run
     /// (voice toggle flips, channel edits) don't re-hit six APIs for nothing.
-    func load(twitchID: String?) async {
+    func load(twitchID: String?, kickSlug: String? = nil) async {
         let key = twitchID ?? ""
-        guard key != loadedFor else { return }
-        loadedFor = key
+        let slug = kickSlug ?? ""
+        guard "\(key)|\(slug)" != loadedFor else { return }
+        loadedFor = "\(key)|\(slug)"
 
         async let sevenGlobal = Self.sevenTV(id: nil)
         async let bttvGlobal = Self.bttv(id: nil)
@@ -50,8 +51,9 @@ final class Emotes: ObservableObject {
             map.merge(await bttvUser) { _, new in new }
             map.merge(await ffzRoom) { _, new in new }
         }
+        if !slug.isEmpty { map.merge(await Self.sevenTVKick(slug: slug)) { _, new in new } }
         byName = map
-        applog("chat", "emotes loaded: \(map.count) names (twitch=\(key.isEmpty ? "none" : key))")
+        applog("chat", "emotes loaded: \(map.count) names (twitch=\(key.isEmpty ? "none" : key), kick=\(slug.isEmpty ? "none" : slug))")
     }
 
     /// Decoded image for an emote URL, or nil while it's still loading (caller re-renders once it lands).
@@ -141,6 +143,18 @@ final class Emotes: ObservableObject {
             guard let json else { return [:] }
             return sevenTVEmotes(json["emotes"])
         }
+    }
+
+    /// 7TV serves Kick channels by Kick *user* id (`user_id` in kick.com's channel lookup), not the channel id.
+    private static func sevenTVKick(slug: String) async -> [String: URL] {
+        var req = URLRequest(url: URL(string: "https://kick.com/api/v2/channels/\(slug)")!)
+        req.setValue(KickChatProvider.userAgent, forHTTPHeaderField: "User-Agent")
+        guard let data = try? await URLSession.shared.data(for: req).0,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let userID = chatInt(json["user_id"])
+        else { return [:] }
+        let seven: [String: Any]? = await fetchJSON("https://7tv.io/v3/users/kick/\(userID)")
+        return sevenTVEmotes((seven?["emote_set"] as? [String: Any])?["emotes"])
     }
 
     private static func sevenTVEmotes(_ raw: Any?) -> [String: URL] {

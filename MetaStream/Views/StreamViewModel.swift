@@ -72,7 +72,8 @@ final class StreamViewModel: ObservableObject {
         if voiceYouTube, platforms.ytConnected { chat.startYouTube(platforms: platforms); origins += 1 } else { chat.stopYouTube() }
         // Only prefix "on Kick, …" when more than one origin is live — otherwise it's noise on every line.
         speaker.showOrigin = origins > 1
-        Task { await emotes.load(twitchID: platforms.twitchConnected ? platforms.twitchUserID : nil) }
+        let kickSlug = voiceKick && !chatChannel.isEmpty ? chatChannel : nil
+        Task { await emotes.load(twitchID: platforms.twitchConnected ? platforms.twitchUserID : nil, kickSlug: kickSlug) }
     }
 
     /// Privacy exposes plain vars, not @Published — a published hot path would cost a MainActor hop on

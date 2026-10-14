@@ -196,7 +196,11 @@ final class TwitchService: ObservableObject {
         ]
         if p.twitchHasScopes(["user:read:chat"]) { subs.append(("channel.chat.message", "1", ["broadcaster_user_id": p.twitchUserID, "user_id": p.twitchUserID])) }
         if p.twitchHasScopes(["moderator:read:followers"]) { subs.append(("channel.follow", "2", ["broadcaster_user_id": p.twitchUserID, "moderator_user_id": p.twitchUserID])) }
-        if p.twitchHasScopes(["channel:read:subscriptions"]) { subs.append(("channel.subscribe", "1", ["broadcaster_user_id": p.twitchUserID])) }
+        if p.twitchHasScopes(["channel:read:subscriptions"]) {
+            for type in ["channel.subscribe", "channel.subscription.gift", "channel.subscription.message"] {
+                subs.append((type, "1", ["broadcaster_user_id": p.twitchUserID]))
+            }
+        }
         if p.twitchHasScopes(["bits:read"]) { subs.append(("channel.cheer", "1", ["broadcaster_user_id": p.twitchUserID])) }
         for s in subs {
             do {

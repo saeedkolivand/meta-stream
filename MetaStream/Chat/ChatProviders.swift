@@ -1,5 +1,8 @@
 import Foundation
 
+/// Lenient Int from a JSON number or numeric string (platforms are inconsistent about which they send).
+func chatInt(_ v: Any?) -> Int? { (v as? Int) ?? (v as? String).flatMap(Int.init) }
+
 /// Shared reconnect ladder for chat providers: runs `work` until it returns/throws, then retries with
 /// 1/2/4/8/15s backoff until stopped. Kick/Twitch pass one connection lifetime; YouTube passes its
 /// never-returning poll loop (success sleeps live inside `work`, so this sleep only fires after failures).
@@ -31,6 +34,8 @@ protocol ChatProvider: AnyObject {
 
 @MainActor
 final class KickChatProvider: ChatProvider {
+    /// kick.com's API rejects non-browser agents; Emotes uses the same one for its channel lookup.
+    static let userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1"
     /// Last known Pusher app; Kick rotates it, so `pusherURL()` asks Kick for the live one first.
     private static let fallbackPusher = (key: "34bf7a0ff419a2a775b9", cluster: "us2")
 
@@ -39,6 +44,9 @@ final class KickChatProvider: ChatProvider {
     private var task: Task<Void, Never>?
     private var stopped = true
     private var slug = ""
+    /// Non-chat event names whose raw payload was already logged once (see `handle`).
+    private var loggedEvents: Set<String> = []
+    private var rules = KickRules.defaults
 
     init(onEvent: @escaping @MainActor (ChatEvent) -> Void) { self.onEvent = onEvent }
 
@@ -49,8 +57,11 @@ final class KickChatProvider: ChatProvider {
         applog("chat", "starting kick chat for \(slug)")
         task = runWithBackoff(label: "kick chat", isStopped: { [weak self] in self?.stopped ?? true }) { [weak self] in
             guard let self else { return }
-            let roomID = try await Self.chatroomID(slug: self.slug)
-            try await self.connect(roomID: roomID)
+            let loaded = await KickRules.load()
+            self.rules = loaded.rules
+            applog("chat", "kick rules: \(loaded.source), \(loaded.rules.events.count) events, \(loaded.rules.channels.count) channels")
+            let ids = try await Self.chatroomID(slug: self.slug)
+            try await self.connect(roomID: ids.chatroom, channelID: ids.channel)
         }
     }
 
@@ -61,10 +72,10 @@ final class KickChatProvider: ChatProvider {
         socket?.cancel(with: .goingAway, reason: nil); socket = nil
     }
 
-    private static func chatroomID(slug: String) async throws -> Int {
+    /// `chatroom` is the chat room id; `channel` is the channel's own top-level id (follower events live there).
+    private static func chatroomID(slug: String) async throws -> (chatroom: Int, channel: Int?) {
         var req = URLRequest(url: URL(string: "https://kick.com/api/v2/channels/\(slug)")!)
-        req.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1",
-                     forHTTPHeaderField: "User-Agent")
+        req.setValue(userAgent, forHTTPHeaderField: "User-Agent")
         let (data, resp) = try await URLSession.shared.data(for: req)
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
         guard code == 200,
@@ -75,7 +86,7 @@ final class KickChatProvider: ChatProvider {
             applog("chat", "kick channel lookup failed slug=\(slug) code=\(code) body=\(String(decoding: data.prefix(200), as: UTF8.self))", error: true)
             throw NSError(domain: "ChatFeed", code: 1, userInfo: [NSLocalizedDescriptionKey: "Kick channel lookup failed for \(slug) (HTTP \(code))"])
         }
-        return id
+        return (id, json["id"] as? Int)
     }
 
     /// Same anonymous call kick.com's own web client makes to learn which Pusher app/cluster is live.
@@ -88,23 +99,28 @@ final class KickChatProvider: ChatProvider {
             "capabilities": ["accepted_providers": [["provider": "pusher"]]],
         ])
         var (key, cluster) = fallbackPusher
+        var live = false
         if let data = try? await URLSession.shared.data(for: req).0,
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let connections = (json["data"] as? [String: Any])?["connections"] as? [[String: Any]],
            let creds = connections.first(where: { $0["provider"] as? String == "pusher" })?["credentials"] as? [String: Any],
            let liveKey = creds["app_key"] as? String, let liveCluster = creds["cluster"] as? String {
             (key, cluster) = (liveKey, liveCluster)
+            live = true
         } else {
             applog("chat", "kick realtime lookup failed, using fallback pusher key", error: true)
         }
+        applog("chat", "kick pusher key \(key.prefix(6))… cluster \(cluster) (\(live ? "live" : "fallback"))")
         return URL(string: "wss://ws-\(cluster).pusher.com/app/\(key)?protocol=7&client=js&version=8.4.0-rc2&flash=false")!
     }
 
-    private func connect(roomID: Int) async throws {
+    private func connect(roomID: Int, channelID: Int?) async throws {
         let socket = URLSession.shared.webSocketTask(with: await Self.pusherURL())
         self.socket = socket
         socket.resume()
-        try await send(socket, ["event": "pusher:subscribe", "data": ["auth": "", "channel": "chatrooms.\(roomID).v2"]])
+        for channel in KickRules.channels(rules, chatroomID: roomID, channelID: channelID) {
+            try await send(socket, ["event": "pusher:subscribe", "data": ["auth": "", "channel": channel]])
+        }
         while !Task.isCancelled, !stopped {
             guard case .string(let text) = try await socket.receive() else { continue }
             try await handle(frame: text, socket: socket)
@@ -125,14 +141,26 @@ final class KickChatProvider: ChatProvider {
         if event == "pusher:ping" { try await socket.send(.string(#"{"event":"pusher:pong"}"#)); return }
         if event == "pusher_internal:subscription_succeeded" { applog("chat", "kick chat connected \(outer["channel"] ?? "")"); return }
         if event == "pusher:error" { applog("chat", "kick pusher error: \(outer["data"] ?? "")", error: true); return }
-        guard let chatEvent = Self.parse(event: event, data: outer["data"] as? String) else { return }
-        onEvent(chatEvent)
+        let data = outer["data"] as? String
+        let chatEvent = Self.parse(event: event, data: data, rules: rules)
+        // Undocumented payloads: log the first of each non-chat event (handled or not) to learn the real shapes.
+        if !event.hasPrefix("pusher"), event != Self.chatMessage, loggedEvents.insert(event).inserted {
+            applog("chat", "kick event \(event) on \(outer["channel"] as? String ?? ""): \(String((data ?? "").prefix(300)))")
+        }
+        if let chatEvent { onEvent(chatEvent) }
     }
 
-    static func parse(event: String, data: String?) -> ChatEvent? {
-        guard event == "App\\Events\\ChatMessageEvent", let data,
-              let inner = try? JSONSerialization.jsonObject(with: Data(data.utf8)) as? [String: Any],
-              let content = inner["content"] as? String,
+    private static let chatMessage = "App\\Events\\ChatMessageEvent"
+
+    /// Chat messages are parsed here; every other event goes through the (remote-overridable) `rules` table.
+    static func parse(event: String, data: String?, rules: KickRules.Rules = KickRules.defaults) -> ChatEvent? {
+        guard event == chatMessage else { return KickRules.parse(rules, event: event, data: data) }
+        guard let data, let inner = try? JSONSerialization.jsonObject(with: Data(data.utf8)) as? [String: Any] else { return nil }
+        return parseMessage(inner)
+    }
+
+    private static func parseMessage(_ inner: [String: Any]) -> ChatEvent? {
+        guard let content = inner["content"] as? String,
               let sender = inner["sender"] as? [String: Any],
               let username = sender["username"] as? String
         else { return nil }
@@ -250,6 +278,20 @@ final class TwitchEventSubProvider: ChatProvider {
             let user = event["user_name"] as? String ?? "an anonymous cheerer"
             return ChatEvent(kind: .cheer, user: user, text: event["message"] as? String ?? "", count: event["bits"] as? Int ?? 0, origin: "twitch")
         default:
+            return parseSubscriptionEvent(type: type, event: event)
+        }
+    }
+
+    /// Gifted subs (`total` of them; an anonymous gifter has a null user_name) and resubs with a message.
+    private static func parseSubscriptionEvent(type: String, event: [String: Any]) -> ChatEvent? {
+        switch type {
+        case "channel.subscription.gift":
+            let user = event["user_name"] as? String ?? "Anonymous"
+            return ChatEvent(kind: .subscribe, user: user, count: max(chatInt(event["total"]) ?? 1, 1), origin: "twitch")
+        case "channel.subscription.message":
+            guard let user = event["user_name"] as? String else { return nil }
+            return ChatEvent(kind: .subscribe, user: user, text: (event["message"] as? [String: Any])?["text"] as? String ?? "", origin: "twitch")
+        default:
             return nil
         }
     }
@@ -313,6 +355,22 @@ final class YouTubePollProvider: ChatProvider {
             let details = (snippet[type == "superChatEvent" ? "superChatDetails" : "superStickerDetails"] as? [String: Any]) ?? [:]
             let micros = (details["amountMicros"] as? String).flatMap(Int.init) ?? (details["amountMicros"] as? NSNumber)?.intValue ?? 0
             return ChatEvent(kind: .tip, user: user, text: details["userComment"] as? String ?? "", amountCents: micros / 10_000, origin: "youtube")
+        default:
+            return parseMembership(type: type, snippet: snippet, user: user)
+        }
+    }
+
+    /// New members, milestones and gifted memberships map to `subscribe`; per-recipient giftMembershipReceivedEvent is ignored (spam).
+    private static func parseMembership(type: String, snippet: [String: Any], user: String) -> ChatEvent? {
+        switch type {
+        case "newSponsorEvent":
+            return ChatEvent(kind: .subscribe, user: user, origin: "youtube")
+        case "memberMilestoneChatEvent":
+            let comment = (snippet["memberMilestoneChatDetails"] as? [String: Any])?["userComment"] as? String ?? ""
+            return ChatEvent(kind: .subscribe, user: user, text: comment, origin: "youtube")
+        case "membershipGiftingEvent":
+            let n = chatInt((snippet["membershipGiftingDetails"] as? [String: Any])?["giftMembershipsCount"]) ?? 1
+            return ChatEvent(kind: .subscribe, user: user, count: max(n, 1), origin: "youtube")
         default:
             return nil
         }
