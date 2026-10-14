@@ -16,6 +16,7 @@ private const val MIN_DELAY_MS = 20
 // Emote files come from third-party CDNs: bound everything a hostile file could inflate. Over a cap = a still.
 private const val MAX_RAW_FRAMES = 300 // decoded before sampling down to MAX_FRAMES
 private const val MAX_CANVAS = 512 // px per side; real emotes are <= 128
+private const val MAX_RAW_PIXELS = 4_000_000L // all raw frames together (~16 MB ARGB), checked before each decode
 internal const val MAX_EMOTE_BYTES = 2_000_000
 
 /** An emote: one bitmap, or a looping animation whose frame n shows until `ends[n]` ms into the loop. */
@@ -104,6 +105,7 @@ private fun gifFrames(b: ByteArray): List<Raw> {
     val palette = if (packed and 0x80 != 0) 3 shl ((packed and 7) + 1) else 0
     var i = 13 + palette
     val out = mutableListOf<Raw>()
+    var pixels = 0L
     var gce: ByteArray? = null
     while (i < b.size && b[i].toInt() != 0x3B) {
         when (b[i].toInt() and 0xFF) {
@@ -130,6 +132,8 @@ private fun gifFrames(b: ByteArray): List<Raw> {
                 one.write(0x3B)
                 require(out.size < MAX_RAW_FRAMES) { "frames" }
                 require(u16(b, i + 5) <= MAX_CANVAS && u16(b, i + 7) <= MAX_CANVAS) { "frame size" }
+                pixels += u16(b, i + 5).toLong() * u16(b, i + 7)
+                require(pixels <= MAX_RAW_PIXELS) { "pixels" }
                 val bmp = BitmapFactory.decodeByteArray(one.toByteArray(), 0, one.size()) ?: error("frame")
                 val flags = gce?.get(3)?.toInt() ?: 0
                 val ms = gce?.let { u16(it, 4) * 10 } ?: 0
@@ -146,6 +150,7 @@ private fun gifFrames(b: ByteArray): List<Raw> {
 /** Animated WebP: each ANMF chunk's image data is rewrapped as a standalone extended WebP and decoded on its own. */
 private fun webpFrames(b: ByteArray): List<Raw> {
     val out = mutableListOf<Raw>()
+    var pixels = 0L
     var i = 12
     while (i + 8 <= b.size) {
         val size = u32(b, i + 4)
@@ -156,6 +161,8 @@ private fun webpFrames(b: ByteArray): List<Raw> {
             val w = u24(b, p + 6) + 1
             val h = u24(b, p + 9) + 1
             require(w <= MAX_CANVAS && h <= MAX_CANVAS) { "frame size" }
+            pixels += w.toLong() * h
+            require(pixels <= MAX_RAW_PIXELS) { "pixels" }
             val flags = b[p + 15].toInt()
             val body = b.copyOfRange(p + 16, p + size)
             val one = ByteArrayOutputStream()
