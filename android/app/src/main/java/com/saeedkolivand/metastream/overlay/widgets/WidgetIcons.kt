@@ -1,6 +1,7 @@
 package com.saeedkolivand.metastream.overlay
 
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
@@ -27,6 +28,13 @@ internal fun brandColor(platform: String): Int = when (platform) {
     "twitch" -> 0xFF9146FF.toInt()
     "youtube" -> 0xFFFF0033.toInt()
     else -> 0xFF53FC18.toInt()
+}
+
+/** Letter on the platform chip before a chat name; dark on Kick's light green, white on the others. */
+internal fun brandLetter(platform: String): Pair<String, Int> = when (platform) {
+    "twitch" -> "T" to Color.WHITE
+    "youtube" -> "Y" to Color.WHITE
+    else -> "K" to Color.BLACK
 }
 
 private fun badgeColor(role: String): Int = when (role) {

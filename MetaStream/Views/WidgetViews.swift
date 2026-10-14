@@ -108,13 +108,14 @@ struct StreamChatView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Flat, minimal card: who on top (icon badges + name), what they said underneath, a brand accent bar on the
-    /// leading edge. One solid fill, no gradients or borders.
+    /// Flat, minimal card: who on top (platform chip, icon badges, name), what they said underneath. One solid fill, no
+    /// gradients or borders; with the background off the text sits flush left on the video.
     private func messageCard(_ e: ChatEvent) -> some View {
         let text = argbColor(style.textColor)
         let radius = size * 0.55
         return VStack(alignment: .leading, spacing: size * 0.12) {
             HStack(spacing: size * 0.22) {
+                if style.platform { platformChip(e.origin) }
                 if style.badges {
                     ForEach(Array(e.badges.prefix(3).enumerated()), id: \.offset) { _, b in
                         Image(systemName: DisplayNames.badgeStyle(b).symbol)
@@ -122,30 +123,36 @@ struct StreamChatView: View {
                     }
                 }
                 Text(e.user)
-                    .font(font(.bold, 0.78)).kerning(0.2)
+                    .font(font(.bold)).kerning(0.2)
                     .foregroundColor(style.senderColors ? DisplayNames.nameColor(e) : text.opacity(0.75))
                     .lineLimit(1)
             }
             messageLine(e, text).lineSpacing(size * 0.08)
                 .multilineTextAlignment(.leading).rowDirection(WidgetFonts.isRTL(e.text))
         }
-        .padding(.leading, style.platform ? size * 0.62 : size * 0.5)
-        .padding(.trailing, size * 0.55)
-        .padding(.vertical, size * 0.36)
+        .padding(.leading, style.background ? size * 0.5 : 0)
+        .padding(.trailing, style.background ? size * 0.55 : 0)
+        .padding(.vertical, size * (style.background ? 0.36 : 0.15))
         .background {
             if style.background {
                 RoundedRectangle(cornerRadius: radius, style: .continuous).fill(argbColor(style.backgroundColor))
             }
         }
-        .overlay(alignment: .leading) {
-            if style.platform {
-                Capsule().fill(Self.brand(e.origin)).frame(width: max(3, size * 0.12)).padding(.vertical, size * 0.34).padding(.leading, size * 0.24)
-            }
-        }
         .overlay {
             if highlighted(e) { RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(argbColor(style.highlightColor), lineWidth: 2) }
         }
-        .shadow(color: style.shadow ? .black.opacity(0.45) : .clear, radius: size * 0.35, x: 0, y: size * 0.12)
+        // No card behind the text: a tight dark shadow keeps the glyphs readable on bright video.
+        .shadow(color: style.shadow ? .black.opacity(style.background ? 0.45 : 0.9) : .clear,
+                radius: size * (style.background ? 0.35 : 0.12), x: 0, y: size * (style.background ? 0.12 : 0.04))
+    }
+
+    /// "K" / "T" / "Y" on the platform's colour, before the name.
+    private func platformChip(_ origin: String) -> some View {
+        let letter = origin == "twitch" ? "T" : origin == "youtube" ? "Y" : "K"
+        return Text(letter).font(font(.heavy, 0.55))
+            .foregroundColor(origin == "twitch" || origin == "youtube" ? .white : .black)
+            .padding(.horizontal, size * 0.16).padding(.vertical, size * 0.06)
+            .background(RoundedRectangle(cornerRadius: size * 0.15).fill(Self.brand(origin)))
     }
 
     /// Follows/subs/tips/raids/cheers: one flat pill in the event's colour, so they pop without shouting.

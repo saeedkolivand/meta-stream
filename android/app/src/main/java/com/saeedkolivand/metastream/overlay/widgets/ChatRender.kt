@@ -70,22 +70,28 @@ private fun highlighted(e: ChatEvent, style: ChatStyle, channel: String): Boolea
 }
 
 /**
- * Flat, minimal card: who on top (icon badges + name), what they said underneath, a brand accent bar on the leading edge.
- * One solid fill, no gradients or borders. The layout never mirrors; only the message text runs RTL.
+ * Flat, minimal card: who on top (platform chip, icon badges, name), what they said underneath. One solid fill, no
+ * gradients or borders; with the background off the text sits flush left on the video. The layout never mirrors; only
+ * the message text runs RTL.
  */
 private fun messageCard(e: ChatEvent, st: ChatStyle, size: Float, avail: Float, s: Float, channel: String): Row {
-    val padL = size * if (st.platform) 0.62f else 0.5f
-    val padR = size * 0.55f
-    val padV = size * 0.36f
+    val padL = if (st.background) size * 0.5f else 0f
+    val padR = if (st.background) size * 0.55f else 0f
+    val padV = size * if (st.background) 0.36f else 0.15f
     val gap = size * 0.12f
     val iconD = size * 0.62f
     val iconGap = size * 0.22f
     val inner = max(1f, avail - padL - padR)
     val textShadow = if (!st.background && st.shadow) size * 0.12f else 0f
+    val (letter, letterColor) = brandLetter(e.platform)
+    val chip = if (st.platform) textLayout(letter, widgetPaint(st.face, 800, size * 0.55f, letterColor), size.toInt()) else null
+    val chipPad = size * 0.16f
+    val chipW = chip?.let { it.widest() + 2 * chipPad } ?: 0f
+    val chipH = chip?.let { it.height + chipPad } ?: 0f
     val roles = if (st.badges) e.badges.take(3) else emptyList()
-    val iconsW = roles.size * (iconD + iconGap)
+    val iconsW = (if (chip != null) chipW + iconGap else 0f) + roles.size * (iconD + iconGap)
     val nameColor = if (st.senderColors) readable(e.color, brandColor(e.platform)) else withAlpha(st.textColor, 0.75f)
-    val namePaint = widgetPaint(st.face, 700, size * 0.78f, nameColor, textShadow)
+    val namePaint = widgetPaint(st.face, 700, size, nameColor, textShadow)
     // Laid out at its own width: a Persian name in a full-width box would right-align away from the badges.
     val nameW = minOf(inner - iconsW, ceil(namePaint.measureText(e.user)) + 1f)
     val name = textLayout(e.user, namePaint, nameW.toInt(), maxLines = 1)
@@ -96,7 +102,7 @@ private fun messageCard(e: ChatEvent, st: ChatStyle, size: Float, avail: Float, 
     val blockW = max(iconsW + name.widest(), wide.widest())
     // Re-wrap at the shrunk width so an RTL line sits against the right edge of its own block, not of the whole card.
     val msg = textLayout(text, msgPaint, ceil(blockW).toInt(), spacing = spacing)
-    val headerH = max(name.height.toFloat(), iconD)
+    val headerH = max(max(name.height.toFloat(), iconD), chipH)
     val w = padL + blockW + padR
     val h = padV * 2 + headerH + gap + msg.height
     val fill = fillPaint(st.backgroundColor, if (st.shadow) size * 0.35f else 0f)
@@ -111,13 +117,13 @@ private fun messageCard(e: ChatEvent, st: ChatStyle, size: Float, avail: Float, 
         val r = RectF(x, y, x + w, y + h)
         val radius = size * 0.55f
         if (st.background) c.drawRoundRect(r, radius, radius, fill)
-        if (st.platform) {
-            val bw = max(3f * s, size * 0.12f)
-            val bx = x + size * 0.24f
-            c.drawRoundRect(bx, y + size * 0.34f, bx + bw, y + h - size * 0.34f, bw / 2, bw / 2, brand)
-        }
         val cy = y + padV + headerH / 2
         var hx = x + padL
+        if (chip != null) {
+            c.drawRoundRect(hx, cy - chipH / 2, hx + chipW, cy + chipH / 2, size * 0.15f, size * 0.15f, brand)
+            c.drawLayout(chip, hx + chipPad, cy - chip.height / 2f)
+            hx += chipW + iconGap
+        }
         for (role in roles) {
             c.badgeIcon(role, hx + iconD / 2, cy, iconD / 2)
             hx += iconD + iconGap
