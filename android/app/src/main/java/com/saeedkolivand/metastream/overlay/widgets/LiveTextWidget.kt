@@ -14,6 +14,13 @@ import kotlinx.coroutines.launch
 private const val MEASURE_WIDTH = 8192
 private const val TICK_MS = 1000L
 
+/** The line of [template] to show at [nowMs] when rotating: one per [seconds], blank lines skipped. */
+internal fun rotatingLine(template: String, seconds: Int, nowMs: Long): String {
+    val lines = template.split('\n').filter { it.isNotBlank() }
+    if (lines.isEmpty()) return template
+    return lines[((nowMs / 1000) / seconds.coerceAtLeast(1) % lines.size).toInt()]
+}
+
 /**
  * In-app text (shadow, optional rounded background) at [scale] output px per canvas px of font size. Null for blank text.
  * The same function sizes the layer for the editor, so the box and the picture always agree.
@@ -49,7 +56,10 @@ internal fun liveTextWidget(l: Layer, box: Box, outW: Int, outH: Int, scope: Cor
     val layout = l.layout
     // Imported OBS text has no in-app shadow; its scale is fixed from the box the engine placed for the first string.
     val style = TextStyle.from(l.data).let { if (layout == null) it.copy(shadow = false) else it }
-    val first = WidgetVariables.resolve(template)
+    fun current() = WidgetVariables.resolve(
+        if (style.rotate) rotatingLine(template, style.rotateSeconds, System.currentTimeMillis()) else template
+    )
+    val first = current()
     val scale = if (layout != null) {
         layout.scale * min(outW, outH) / 1080f
     } else {
@@ -75,7 +85,7 @@ internal fun liveTextWidget(l: Layer, box: Box, outW: Int, outH: Int, scope: Cor
             var shown = first
             while (isActive) {
                 delay(thermalDelay(TICK_MS))
-                val now = WidgetVariables.resolve(template)
+                val now = current()
                 if (now != shown) {
                     shown = now
                     show(now)

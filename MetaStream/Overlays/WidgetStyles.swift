@@ -29,10 +29,10 @@ private func eventShown(_ k: ChatEvent.Kind, follow: Bool, subscribe: Bool, raid
 struct ChatWidgetStyle: Equatable, Sendable {
     var width: CGFloat = 600
     var height: CGFloat = 500
-    var fontSize: CGFloat = 28
+    var fontSize: CGFloat = 22
     var maxMessages = 8
     var fadeSeconds = 0   // 0 = never
-    var background = true
+    var background = false
     var backgroundColor: UInt32 = 0xD910_1014   // flat near-black, 85%: reads on any video without looking like a box
     var textColor: UInt32 = 0xFFFF_FFFF
     var senderColors = true
@@ -178,7 +178,9 @@ struct TextWidgetStyle: Equatable, Sendable {
     var face = ""
     var shadow = true
     var background = false
-    var backgroundColor: UInt32 = 0x8C00_0000
+    var backgroundColor: UInt32 = 0x3310_1014   // 20% near-black
+    var rotate = false        // show one line of `text` at a time (socials)
+    var rotateSeconds = 5
 
     init() {}
     init(_ d: [String: String]) {
@@ -186,10 +188,13 @@ struct TextWidgetStyle: Equatable, Sendable {
         text = d.str("text", o.text); size = d.num("size", o.size); bold = d.flag("bold", o.bold)
         color = d.argb("color", o.color); face = d.str("face", o.face); shadow = d.flag("shadow", o.shadow)
         background = d.flag("background", o.background); backgroundColor = d.argb("backgroundColor", o.backgroundColor)
+        rotate = d.flag("rotate", o.rotate)
+        rotateSeconds = Int(d.num("rotateSeconds", CGFloat(o.rotateSeconds)))   // the slider may store "5.0"
     }
 
     var data: [String: String] {
-        ["text": text, "size": "\(Double(size))", "bold": flagText(bold), "color": "\(color)", "face": face,
+        ["rotate": flagText(rotate), "rotateSeconds": "\(rotateSeconds)",
+         "text": text, "size": "\(Double(size))", "bold": flagText(bold), "color": "\(color)", "face": face,
          "shadow": flagText(shadow), "background": flagText(background), "backgroundColor": "\(backgroundColor)"]
     }
 }

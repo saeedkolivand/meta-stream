@@ -8,17 +8,21 @@ extension OverlayCompositor {
         let template = l.data["text"] ?? ""
         guard !template.allSatisfy(\.isWhitespace) else { return nil }
         let ctx = context
-        let first = Self.liveText(l, WidgetVariables.resolve(template, ctx), canvas)
+        let style = TextWidgetStyle(l.data)
+        func current() -> String {
+            WidgetVariables.resolve(style.rotate ? Self.rotatingLine(template, seconds: style.rotateSeconds, now: Date()) : template, ctx)
+        }
+        let first = Self.liveText(l, current(), canvas)
         let o = await OverlayScreen.makeImage(first.visible ?? CGRect(x: 0, y: 0, width: 1, height: 1), first.piece?.bitmap)
         let task = Task {
             let wantsLocation = WidgetVariables.needsLocation(template)
             if wantsLocation { WidgetLocation.shared.retain() }
             defer { if wantsLocation { WidgetLocation.shared.release() } }
-            var shown = WidgetVariables.resolve(template, ctx)
+            var shown = current()
             var rect = first.visible
             while !Task.isCancelled {
                 try? await Task.sleep(for: WidgetRaster.pause(1000))
-                let now = WidgetVariables.resolve(template, ctx)
+                let now = current()
                 guard now != shown, !Task.isCancelled else { continue }
                 shown = now
                 let next = Self.liveText(l, now, canvas)
@@ -29,6 +33,13 @@ extension OverlayCompositor {
         }
         let object: ScreenObject = o
         return WidgetBuild(object: object, task: task)
+    }
+
+    /// The non-blank line of `template` shown at `now`, advancing every `seconds`; the whole template if it has no lines.
+    nonisolated static func rotatingLine(_ template: String, seconds: Int, now: Date) -> String {
+        let lines = template.split(separator: "\n").map(String.init).filter { !$0.allSatisfy(\.isWhitespace) }
+        if lines.isEmpty { return template }
+        return lines[(Int(now.timeIntervalSince1970) / max(1, seconds)) % lines.count]
     }
 
     /// Lays out and draws `text` for layer `l`. In-app layers (layout != nil) size from TextWidgetStyle at the

@@ -6,10 +6,13 @@ enum WidgetVariables {
     /// For the editor's insert menu, in menu order.
     static let tokens: [(token: String, label: String)] = [
         ("{time}", "Time"), ("{date}", "Date"), ("{uptime}", "Live time"), ("{viewers}", "Viewers"), ("{bitrate}", "Bitrate"),
-        ("{battery}", "Battery"), ("{speed}", "Speed"), ("{city}", "City"), ("{follower}", "Latest follower"), ("{sub}", "Latest sub"),
+        ("{battery}", "Battery"), ("{speed}", "Speed"), ("{distance}", "Distance"), ("{city}", "City"), ("{weather}", "Weather"),
+        ("{follower}", "Latest follower"), ("{sub}", "Latest sub"),
     ]
 
-    static func needsLocation(_ template: String) -> Bool { template.contains("{speed}") || template.contains("{city}") }
+    static func needsLocation(_ template: String) -> Bool {
+        ["{speed}", "{distance}", "{city}", "{weather}"].contains { template.contains($0) }
+    }
 
     /// Only tokens present in the template are evaluated, so e.g. battery monitoring stays off unless {battery} is used.
     static func resolve(_ template: String, _ ctx: WidgetContext) -> String {
@@ -35,7 +38,9 @@ enum WidgetVariables {
             let level = UIDevice.current.batteryLevel
             return level < 0 ? "--" : "\(Int((level * 100).rounded()))%"
         case "{speed}": return WidgetLocation.shared.speedText
+        case "{distance}": return WidgetLocation.shared.distanceText(since: ctx.streamer?.liveSince)
         case "{city}": return WidgetLocation.shared.cityText
+        case "{weather}": return WidgetWeather.shared.text
         case "{follower}": return ctx.chat?.lastFollower ?? ""
         case "{sub}": return ctx.chat?.lastSubscriber ?? ""
         default: return token

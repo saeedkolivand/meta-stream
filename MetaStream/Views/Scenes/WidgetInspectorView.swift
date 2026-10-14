@@ -125,10 +125,13 @@ struct WidgetInspectorView: View {
             Toggle("Bold", isOn: flag("bold"))
             Toggle("Shadow", isOn: flag("shadow"))
             Toggle("Background", isOn: flag("background"))
+            Toggle("Rotate lines", isOn: flag("rotate"))
+            slider("Seconds per line", num("rotateSeconds"), 3...15, format: "%.0f")
             ColorPicker("Text color", selection: color("color"))
             ColorPicker("Background color", selection: color("backgroundColor"))
         } header: { Text("Text") } footer: {
-            Text("Values like {time} or {viewers} update on stream every second. Speed and city ask for location access.")
+            Text("Values like {time} or {viewers} update on stream every second. Speed, distance, city and weather ask for location "
+                 + "access. Rotate lines shows one line at a time, for socials.")
         }
     }
 

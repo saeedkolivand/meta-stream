@@ -38,6 +38,10 @@ internal enum class NewWidget(val title: String) {
     Alerts("Alerts"),
     Events("Event list"),
     Label("Text"),
+    Clock("Clock"),
+    LiveTime("Live time"),
+    Drive("Drive"),
+    Socials("Socials"),
     Image("Image or GIF"),
     Qr("QR code"),
     Web("Web widget");
@@ -48,9 +52,20 @@ internal enum class NewWidget(val title: String) {
         Alerts -> widgetLayer(LayerType.Alerts, "Alerts", WidgetLayout.inset(1), AlertStyle().toData())
         Events -> widgetLayer(LayerType.Events, "Event list", WidgetLayout.inset(2), EventListStyle().toData())
         Label -> widgetLayer(LayerType.Text, "Text", WidgetLayout.inset(0), TextWidgetStyle(text = "{time}").toData())
+        Clock -> preset("🕒 {time}  {date}  {weather}", 0)
+        LiveTime -> preset("🔴 {uptime}", 2)
+        Drive -> preset("🚗 {speed}  🛣 {distance}", 6)
+        Socials -> preset("📷 IG @yourname\n🎵 TikTok @yourname\n✈️ TG @yourname", 8, rotate = true)
         Qr -> widgetLayer(LayerType.Qr, "QR code", WidgetLayout.inset(8), QrStyle(text = "https://example.com").toData())
         Image, Web -> null
     }
+
+    private fun preset(text: String, inset: Int, rotate: Boolean = false) = widgetLayer(
+        LayerType.Text,
+        title,
+        WidgetLayout.inset(inset),
+        TextWidgetStyle(text = text, size = 32f, background = true, rotate = rotate).toData()
+    )
 }
 
 /** Centred image, sized to span at most 35% of the short side so a 4000 px photo can't cover the frame. */

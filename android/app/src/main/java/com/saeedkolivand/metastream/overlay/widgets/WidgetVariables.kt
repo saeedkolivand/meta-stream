@@ -22,12 +22,14 @@ internal object WidgetVariables {
         "{bitrate}" to "Bitrate",
         "{battery}" to "Battery",
         "{speed}" to "Speed",
+        "{distance}" to "Distance",
         "{city}" to "City",
+        "{weather}" to "Weather",
         "{follower}" to "Latest follower",
         "{sub}" to "Latest sub"
     )
 
-    fun needsLocation(template: String) = "{speed}" in template || "{city}" in template
+    fun needsLocation(template: String) = listOf("{speed}", "{city}", "{distance}", "{weather}").any { it in template }
 
     /** Only tokens present in the template are evaluated. */
     fun resolve(template: String): String {
@@ -45,7 +47,9 @@ internal object WidgetVariables {
         "{bitrate}" -> "${Health.bitrateKbps} kbps"
         "{battery}" -> battery()
         "{speed}" -> WidgetLocation.speedText
+        "{distance}" -> WidgetLocation.distanceText(Engine.liveSince)
         "{city}" -> WidgetLocation.cityText
+        "{weather}" -> WidgetWeather.text
         "{follower}" -> ChatFeed.lastFollower
         "{sub}" -> ChatFeed.lastSubscriber
         else -> token

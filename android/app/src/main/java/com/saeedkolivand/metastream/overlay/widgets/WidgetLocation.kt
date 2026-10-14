@@ -14,10 +14,10 @@ import java.util.Locale
 
 private const val GEOCODE_MS = 60_000L
 private const val GEOCODE_METERS = 500f
-private val IMPERIAL = setOf("US", "LR", "MM")
+internal val IMPERIAL = setOf("US", "LR", "MM")
 
 /**
- * Speed and city for the {speed}/{city} text tokens. Updates run only while a live text widget uses them (retain/release),
+ * Speed, distance and city for the {speed}/{distance}/{city} text tokens. Updates run only while a live text widget uses them (retain/release),
  * so a scene without those tokens never touches the GPS. Permission is requested by the UI, never here; until it is
  * granted the tokens read "--", and updates start on the first read after the grant.
  */
@@ -25,6 +25,9 @@ internal object WidgetLocation {
     private var users = 0
     private var started = false
     private var mps: Float? = null
+    private var meters = 0.0
+    private var distanceKey: Long? = null
+    private var lastFix: Location? = null
     private var city = ""
     private var geocodedAt = 0L
     private var geocodedLoc: Location? = null
@@ -39,6 +42,17 @@ internal object WidgetLocation {
             val n = (v * if (imperial) 2.23694f else 3.6f).toInt()
             return "$n ${if (imperial) "mph" else "km/h"}"
         }
+
+    /** Distance driven since [since] (the go-live time), summed from accurate fixes while moving; resets when a new stream starts. */
+    fun distanceText(since: Long?): String {
+        ensureStarted()
+        if (since != distanceKey) {
+            distanceKey = since
+            meters = 0.0
+        }
+        val imperial = Locale.getDefault().country in IMPERIAL
+        return String.format(Locale.US, if (imperial) "%.1f mi" else "%.1f km", meters / if (imperial) 1609.344 else 1000.0)
+    }
 
     val cityText: String
         get() {
@@ -56,6 +70,7 @@ internal object WidgetLocation {
         if (users == 0 && started) {
             appContext.getSystemService(LocationManager::class.java).removeUpdates(listener)
             started = false
+            lastFix = null
         }
     }
 
@@ -75,6 +90,17 @@ internal object WidgetLocation {
 
     private fun handle(loc: Location) {
         mps = if (loc.hasSpeed()) loc.speed.coerceAtLeast(0f) else 0f
+        if (loc.hasAccuracy() && loc.accuracy <= 30f) {
+            val prev = lastFix
+            if (prev != null) {
+                val d = loc.distanceTo(prev)
+                val dt = (loc.time - prev.time) / 1000.0
+                // Under 1 m/s adds nothing, so a parked car doesn't creep; over 70 m/s is a GPS jump.
+                if ((mps ?: 0f) >= 1f && (dt <= 0 || d / dt <= 70)) meters += d
+            }
+            lastFix = loc
+        }
+        WidgetWeather.update(loc.latitude, loc.longitude)
         val now = System.currentTimeMillis()
         // At most one reverse geocode per 60 s and 500 m: the geocoder is rate limited and a city rarely changes.
         val prev = geocodedLoc

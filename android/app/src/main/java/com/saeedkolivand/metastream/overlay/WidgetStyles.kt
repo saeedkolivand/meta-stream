@@ -35,10 +35,10 @@ private fun shown(k: Kind, follow: Boolean, subscribe: Boolean, raid: Boolean, t
 data class ChatStyle(
     val width: Float = 600f,
     val height: Float = 500f,
-    val fontSize: Float = 28f,
+    val fontSize: Float = 22f,
     val maxMessages: Int = 8,
     val fadeSeconds: Int = 0, // 0 = never
-    val background: Boolean = true,
+    val background: Boolean = false,
     val backgroundColor: Int = 0xD9101014.toInt(), // flat near-black, 85%
     val textColor: Int = 0xFFFFFFFF.toInt(),
     val senderColors: Boolean = true,
@@ -195,7 +195,9 @@ data class TextStyle(
     val face: String = "",
     val shadow: Boolean = true,
     val background: Boolean = false,
-    val backgroundColor: Int = 0x8C000000.toInt()
+    val backgroundColor: Int = 0x33101014.toInt(), // 20% near-black
+    val rotate: Boolean = false, // show one line of the text at a time
+    val rotateSeconds: Int = 5
 ) {
     fun toData() = mapOf(
         "text" to text,
@@ -205,7 +207,9 @@ data class TextStyle(
         "face" to face,
         "shadow" to "$shadow",
         "background" to "$background",
-        "backgroundColor" to backgroundColor.unsigned()
+        "backgroundColor" to backgroundColor.unsigned(),
+        "rotate" to "$rotate",
+        "rotateSeconds" to "$rotateSeconds"
     )
 
     companion object {
@@ -219,7 +223,9 @@ data class TextStyle(
                 d.str("face", o.face),
                 d.flag("shadow", o.shadow),
                 d.flag("background", o.background),
-                d.argb("backgroundColor", o.backgroundColor)
+                d.argb("backgroundColor", o.backgroundColor),
+                d.flag("rotate", o.rotate),
+                d.num("rotateSeconds", o.rotateSeconds.toFloat()).toInt() // the inspector slider stores "5.0"
             )
         }
     }

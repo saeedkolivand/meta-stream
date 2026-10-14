@@ -159,9 +159,14 @@ private fun DataKeys.TextSection() {
         Flag("bold", "Bold")
         Flag("shadow", "Shadow")
         Flag("background", "Background")
+        Flag("rotate", "Rotate lines")
+        NumSlider("rotateSeconds", "Seconds per line", 3f..15f)
         Swatches("color", "Text color")
         Swatches("backgroundColor", "Background color")
-        Footnote("Values like {time} or {viewers} update on stream every second. Speed and city ask for location access.")
+        Footnote(
+            "Values like {time} or {viewers} update on stream every second. Speed, distance, city and weather ask for " +
+                "location access. Rotate lines shows one line at a time, for socials."
+        )
     }
 }
 
