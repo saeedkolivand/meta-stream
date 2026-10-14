@@ -160,8 +160,16 @@ private fun eventPill(e: ChatEvent, st: ChatStyle, size: Float, avail: Float): R
     }
 }
 
-/** Newest at the bottom, clipped, with the top 18% dissolving into the video; animated emotes show their frame at [animMs]. Null when nothing is drawn. */
-internal fun renderChat(events: List<ChatEvent>, style: ChatStyle, now: Long, scale: Float, channel: String, animMs: Long = 0): Bitmap? {
+/** Newest at the bottom, clipped, with the top 18% dissolving into the video; animated emotes show their frame at [animMs]; [burst] skips the entry slide. Null when nothing is drawn. */
+internal fun renderChat(
+    events: List<ChatEvent>,
+    style: ChatStyle,
+    now: Long,
+    scale: Float,
+    channel: String,
+    animMs: Long = 0,
+    burst: Boolean = false
+): Bitmap? {
     val rows = chatRows(events, style, now)
     if (rows.isEmpty()) return null
     val size = style.fontSize * scale
@@ -174,7 +182,7 @@ internal fun renderChat(events: List<ChatEvent>, style: ChatStyle, now: Long, sc
         val isMsg = e.kind == Kind.Message
         val row = if (isMsg) messageCard(e, style, size, avail, scale, channel, animMs) else eventPill(e, style, size, avail)
         y -= row.h
-        val appear = chatAppear(e, now)
+        val appear = if (burst) 1f else chatAppear(e, now)
         val top = y + (1f - appear) * size * 0.7f
         val bounds = RectF(pad - size, top - size, pad + row.w + size, top + row.h + size)
         c.withOpacity(bounds, chatOpacity(e, style, now) * appear) { row.draw(c, pad, top) }

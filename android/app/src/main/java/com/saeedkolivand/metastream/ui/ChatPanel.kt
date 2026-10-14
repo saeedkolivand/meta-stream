@@ -60,19 +60,12 @@ private fun Header(step: Int, resize: (Int) -> Unit, maximized: Boolean, onMaxim
 /** Sheet contents; [ChatSheet] owns the surface, sizing and dragging. */
 @Composable
 internal fun ChatPanel(sheet: SheetArgs, onSettings: () -> Unit) {
-    val events by ChatFeed.chat.collectAsStateWithLifecycle()
-    val list = rememberLazyListState()
     // Default one step above system size: chat is read at a glance from a phone mounted on a dash.
     var step by remember { mutableIntStateOf(Prefs.string("chatTextSize", "1").toIntOrNull()?.coerceIn(0, SIZES.lastIndex) ?: 1) }
     val size = SIZES[step]
     fun resize(to: Int) {
         step = to.coerceIn(0, SIZES.lastIndex)
         Prefs.put("chatTextSize", step.toString())
-    }
-    // Follow new messages only while the bottom is on screen; scrolled up to read history = stay put.
-    // The layout still reflects the previous list here, so canScrollForward says where the user was.
-    LaunchedEffect(events.size) {
-        if (events.isNotEmpty() && !list.canScrollForward) list.scrollToItem(events.lastIndex)
     }
     val maximized = sheet.detent == Detent.Expanded
     val toggle = { sheet.onDetent(if (maximized) Detent.Partial else Detent.Expanded) }
@@ -97,12 +90,25 @@ internal fun ChatPanel(sheet: SheetArgs, onSettings: () -> Unit) {
             }
         } else {
             Column(Modifier.fillMaxSize()) {
-                LazyColumn(Modifier.weight(1f), list) {
-                    // Keyed rows stay put when the 200-message cap drops the oldest: positions don't resettle per message.
-                    items(events, key = { it.id }) { ChatRow(it, size) }
-                }
+                MessageList(size, Modifier.weight(1f))
                 ComposeBar(maximized) { sheet.onDetent(Detent.Expanded) }
             }
         }
+    }
+}
+
+/** The only composable that reads the message list, so a new message recomposes just this and not the panel around it. */
+@Composable
+private fun MessageList(size: Int, modifier: Modifier) {
+    val events by ChatFeed.chat.collectAsStateWithLifecycle()
+    val list = rememberLazyListState()
+    // Follow new messages only while the bottom is on screen; scrolled up to read history = stay put.
+    // The layout still reflects the previous list here, so canScrollForward says where the user was.
+    LaunchedEffect(events.size) {
+        if (events.isNotEmpty() && !list.canScrollForward) list.scrollToItem(events.lastIndex)
+    }
+    LazyColumn(modifier, list) {
+        // Keyed rows stay put when the 200-message cap drops the oldest: positions don't resettle per message.
+        items(events, key = { it.id }) { ChatRow(it, size) }
     }
 }

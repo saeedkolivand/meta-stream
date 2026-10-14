@@ -59,7 +59,8 @@ object ChatFeed {
         scope.launch { snapshotFlow { if (Twitch.connected) Twitch.userId else "" }.collect { Emotes.load(twitchId = it) } }
     }
 
-    private fun onChat(e: ChatEvent) {
+    /** The single entry point for every provider (and the Logs screen's flood test). */
+    fun onChat(e: ChatEvent) {
         _chat.update { (it + e.copy(id = seq.incrementAndGet())).takeLast(200) }
         when (e.kind) {
             Kind.Follow -> lastFollower = e.user

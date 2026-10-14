@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.saeedkolivand.metastream.chat.ChatFlood
 import com.saeedkolivand.metastream.core.AppSettings
 import com.saeedkolivand.metastream.core.LogBuffer
 import com.saeedkolivand.metastream.streaming.Engine
@@ -91,6 +92,7 @@ internal fun LogsPage() {
             val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
             context.startActivity(Intent.createChooser(send, "Share logs").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }) { Text("Share") }
+        OutlinedButton(ChatFlood::toggle) { Text(if (ChatFlood.running) "Stop flood" else "Chat flood test") }
     }
     // Newest first; the sheet already scrolls, so the list is height-capped and scrolls itself.
     LazyColumn(Modifier.fillMaxWidth().heightIn(max = 420.dp).padding(top = 8.dp)) {

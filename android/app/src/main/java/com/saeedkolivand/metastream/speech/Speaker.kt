@@ -114,7 +114,7 @@ object Speaker {
     // behind (Android TTS can't drop the oldest queued item). Upgrade path: own queue like Speaker.swift.
     /** Chat messages and alerts (tips/follows/subs/raids), gated by the read-aloud toggle and the per-kind settings. */
     fun speakChat(e: ChatEvent) {
-        if (!readAloud) return
+        if (!readAloud || e.platform == "test") return // the Logs screen's flood test is never spoken
         val text = spokenText(e, SpeechSettings.options()) ?: return
         val origin = if (showOrigin) "on ${e.platform.replaceFirstChar(Char::uppercase)}, " else ""
         if (pending.get() < 5) speak(origin + text, false)
