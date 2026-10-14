@@ -85,6 +85,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     /// Generic alert with no template, e.g. "ad break in 90 seconds".
     func speakAlert(_ text: String) {
         enqueue(String(text.prefix(200)), into: &alertQueue)
+        speakIfIdle()
     }
 
     // MARK: Chat lane + templated alerts (tip/follow/subscribe/raid)
@@ -96,6 +97,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         case .message: enqueue(text, into: &chatQueue)
         default: enqueue(text, into: &alertQueue)
         }
+        speakIfIdle()
     }
 
     private func sentence(for e: ChatEvent) -> String? {
@@ -126,6 +128,11 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     private func enqueue(_ text: String, into queue: inout [String]) {
         guard !muted else { return }
         pushBounded(text, into: &queue)
+    }
+
+    /// Kept out of enqueue: `queue` is under exclusive (inout) access for that whole call, and speakNext() reading the
+    /// same queue inside it is a runtime exclusivity violation -- the SIGABRT "crash after a few chats".
+    private func speakIfIdle() {
         if !synth.isSpeaking { speakNext() }
     }
 
