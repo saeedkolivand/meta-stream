@@ -10,14 +10,19 @@ final class LogStore: ObservableObject {
     private static let fmt: DateFormatter = { let f = DateFormatter(); f.dateFormat = "HH:mm:ss.SSS"; return f }()
     /// Documents/metastream.log -- os_log lines never reach Windows (see device-debugging notes), this file does:
     /// `pymobiledevice3 apps pull com.saeedkolivand.metastream Documents/metastream.log app.log`
-    /// ponytail: starts over at launch once past 2 MB instead of rotating.
+    /// Survives restarts; past 5 MB at launch it moves to metastream.1.log (one previous file kept, ~a shift each).
     private let file: FileHandle? = {
         let url = URL.documentsDirectory.appending(path: "metastream.log")
         let fm = FileManager.default
-        if let size = (try? fm.attributesOfItem(atPath: url.path))?[.size] as? Int, size > 2_000_000 { try? fm.removeItem(at: url) }
+        if let size = (try? fm.attributesOfItem(atPath: url.path))?[.size] as? Int, size > 5_000_000 {
+            let old = URL.documentsDirectory.appending(path: "metastream.1.log")
+            try? fm.removeItem(at: old)
+            try? fm.moveItem(at: url, to: old)
+        }
         if !fm.fileExists(atPath: url.path) { fm.createFile(atPath: url.path, contents: nil) }
         let h = try? FileHandle(forWritingTo: url)
         _ = try? h?.seekToEnd()
+        try? h?.write(contentsOf: Data("=== launch \(Date().formatted(.iso8601)) ===\n".utf8))   // lines carry only the time
         return h
     }()
 

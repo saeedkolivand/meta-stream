@@ -22,6 +22,7 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        LogFile.start(this)
         Prefs.init(this)
         WidgetFonts.init(this)
         AppSettings.init()
