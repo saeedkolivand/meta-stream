@@ -13,6 +13,11 @@ private const val MAX_FRAMES = 60
 private const val DEFAULT_DELAY_MS = 100
 private const val MIN_DELAY_MS = 20
 
+// Emote files come from third-party CDNs: bound everything a hostile file could inflate. Over a cap = a still.
+private const val MAX_RAW_FRAMES = 300 // decoded before sampling down to MAX_FRAMES
+private const val MAX_CANVAS = 512 // px per side; real emotes are <= 128
+internal const val MAX_EMOTE_BYTES = 2_000_000
+
 /** An emote: one bitmap, or a looping animation whose frame n shows until `ends[n]` ms into the loop. */
 internal class Emote(val frames: List<Bitmap>, private val ends: LongArray) {
     val animated get() = frames.size > 1
@@ -46,6 +51,7 @@ private fun ByteArray.tag(i: Int, s: String) = i + s.length <= size && s.indices
  * onto a full canvas; anything else, or any failure, is the first frame as a still. Null when it isn't an image at all.
  */
 internal fun decodeEmote(b: ByteArray, px: Int): Emote? {
+    if (b.size > MAX_EMOTE_BYTES) return null
     val gif = b.tag(0, "GIF8")
     val raws = if (gif || (b.tag(0, "RIFF") && b.tag(8, "WEBP"))) {
         runCatching { if (gif) gifFrames(b) else webpFrames(b) }.getOrNull()
@@ -54,6 +60,9 @@ internal fun decodeEmote(b: ByteArray, px: Int): Emote? {
     }
     val anim = raws?.takeIf { it.size > 1 }?.let { runCatching { composite(it, px) }.getOrNull() }
     if (anim != null) return anim
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(b, 0, b.size, bounds)
+    if (bounds.outWidth !in 1..MAX_CANVAS * 4 || bounds.outHeight !in 1..MAX_CANVAS * 4) return null
     val still = BitmapFactory.decodeByteArray(b, 0, b.size) ?: return null
     return Emote(listOf(fit(still, px)), longArrayOf(1))
 }
@@ -64,7 +73,10 @@ private fun fit(src: Bitmap, px: Int): Bitmap {
 }
 
 private fun composite(raws: List<Raw>, px: Int): Emote {
-    val canvasBmp = Bitmap.createBitmap(raws.maxOf { it.x + it.bmp.width }, raws.maxOf { it.y + it.bmp.height }, Bitmap.Config.ARGB_8888)
+    val cw = raws.maxOf { it.x + it.bmp.width }
+    val ch = raws.maxOf { it.y + it.bmp.height }
+    require(cw in 1..MAX_CANVAS && ch in 1..MAX_CANVAS) { "canvas" }
+    val canvasBmp = Bitmap.createBitmap(cw, ch, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(canvasBmp)
     val replace = Paint().apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC) }
     val wipe = Paint().apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR) }
@@ -116,6 +128,8 @@ private fun gifFrames(b: ByteArray): List<Raw> {
                 one.write(ByteArray(4))
                 one.write(b, i + 5, end - i - 5)
                 one.write(0x3B)
+                require(out.size < MAX_RAW_FRAMES) { "frames" }
+                require(u16(b, i + 5) <= MAX_CANVAS && u16(b, i + 7) <= MAX_CANVAS) { "frame size" }
                 val bmp = BitmapFactory.decodeByteArray(one.toByteArray(), 0, one.size()) ?: error("frame")
                 val flags = gce?.get(3)?.toInt() ?: 0
                 val ms = gce?.let { u16(it, 4) * 10 } ?: 0
@@ -135,10 +149,13 @@ private fun webpFrames(b: ByteArray): List<Raw> {
     var i = 12
     while (i + 8 <= b.size) {
         val size = u32(b, i + 4)
+        require(size >= 0 && i + 8 + size <= b.size) { "chunk" } // a negative size would loop forever
         if (b.tag(i, "ANMF")) {
+            require(out.size < MAX_RAW_FRAMES) { "frames" }
             val p = i + 8
             val w = u24(b, p + 6) + 1
             val h = u24(b, p + 9) + 1
+            require(w <= MAX_CANVAS && h <= MAX_CANVAS) { "frame size" }
             val flags = b[p + 15].toInt()
             val body = b.copyOfRange(p + 16, p + size)
             val one = ByteArrayOutputStream()

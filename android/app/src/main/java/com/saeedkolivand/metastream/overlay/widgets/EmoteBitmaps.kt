@@ -45,7 +45,7 @@ internal object EmoteBitmaps {
         scope.launch {
             // Decoded off-thread to software bitmaps (we draw into a plain Canvas); wide emotes keep their aspect inside 3x the height.
             val emote = withContext(Dispatchers.IO) {
-                runCatching { decodeEmote(URL(url).openStream().use { it.readBytes() }, px) }.getOrNull()
+                runCatching { decodeEmote(URL(url).openStream().use { it.readNBytes(MAX_EMOTE_BYTES + 1) }, px) }.getOrNull()
             }
             pending.remove(key)
             if (emote == null) {
