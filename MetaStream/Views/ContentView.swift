@@ -61,13 +61,9 @@ struct ContentView: View {
         }
     }
 
-    var body: some View {
+    /// HUD, bottom controls and (compact width) the left-edge mic/camera/blur rail; fades out as one.
+    private var controlsLayer: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
-            PreviewContainerView(levelMonitor: levelMonitor, focusTap: $focusTap, aeafLocked: $aeafLocked, pinchStartZoom: $pinchStartZoom)
-                .ignoresSafeArea()
-
-            ZStack {
             VStack {
                 HUDView(showStatus: $showStatus, showManager: $showManager, showChat: $showChat, showCameraControls: $showCameraControls)
                 Spacer()
@@ -82,9 +78,19 @@ struct ContentView: View {
                     Spacer()
                 }
             }
-            }
-            .opacity(controlsShown ? 1 : 0)
-            .allowsHitTesting(controlsShown)
+        }
+        .opacity(controlsShown ? 1 : 0)
+        .allowsHitTesting(controlsShown)
+    }
+
+    /// Preview, controls and the auto-hide behaviour; split from `body` so the type checker copes with the modifier chain.
+    private var stage: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            PreviewContainerView(levelMonitor: levelMonitor, focusTap: $focusTap, aeafLocked: $aeafLocked, pinchStartZoom: $pinchStartZoom)
+                .ignoresSafeArea()
+
+            controlsLayer
 
             // Only nag once the user actually picks glasses: phone/external-camera streaming never needs Meta.
             if Streamer.glassesConfigured, streamer.manualSource == "glasses", streamer.registration != "registered" { registerCard }
@@ -116,6 +122,10 @@ struct ContentView: View {
             controlsVisible = false
         }
         .onChange(of: controlsPinned) { _, _ in touch() }
+    }
+
+    var body: some View {
+        stage
         .preferredColorScheme(.dark)
         .statusBarHidden(false)
         .sheet(isPresented: $showSettings) { SettingsView() }
