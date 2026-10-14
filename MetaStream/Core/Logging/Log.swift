@@ -73,6 +73,7 @@ func redactedURL(_ url: URL) -> String { redactedURL(url.absoluteString) }
 
 struct LogView: View {
     @ObservedObject var store = LogStore.shared
+    @EnvironmentObject var chat: ChatFeed
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
@@ -89,6 +90,9 @@ struct LogView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) { ShareLink(item: store.text) { Image(systemName: "square.and.arrow.up") } }
             ToolbarItem(placement: .cancellationAction) { Button("Clear") { store.clear() } }
+            ToolbarItem(placement: .bottomBar) {
+                Button(chat.flooding ? "Stop chat flood" : "Chat flood test") { chat.toggleFlood() }
+            }
         }
     }
 }

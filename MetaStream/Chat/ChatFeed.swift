@@ -31,6 +31,8 @@ final class ChatFeed: ObservableObject {
     private(set) var serial = 0
     @Published private(set) var lastFollower = ""
     @Published private(set) var lastSubscriber = ""
+    @Published private(set) var flooding = false
+    private var floodTask: Task<Void, Never>?
 
     let events: AsyncStream<ChatEvent>
     private let emit: AsyncStream<ChatEvent>.Continuation
@@ -77,6 +79,22 @@ final class ChatFeed: ObservableObject {
     }
 
     func stopYouTube() { youtube?.stop() }
+
+    /// Logs-screen load test: ChatFlood.perSecond fake messages per second for ChatFlood.seconds; call again to stop.
+    func toggleFlood() {
+        if let t = floodTask { t.cancel(); floodTask = nil; flooding = false; return }
+        flooding = true
+        floodTask = Task { [weak self] in
+            for i in 0..<(ChatFlood.perSecond * ChatFlood.seconds) {
+                guard !Task.isCancelled, let self else { return }
+                yield(ChatFlood.event(i))
+                try? await Task.sleep(for: .milliseconds(1000 / ChatFlood.perSecond))
+            }
+            guard !Task.isCancelled, let self else { return }
+            floodTask = nil
+            flooding = false
+        }
+    }
 
     // MARK: - shared sink
 

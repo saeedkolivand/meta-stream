@@ -21,3 +21,14 @@ final class LiveWidgetsTests: XCTestCase {
         XCTAssertEqual(OverlayCompositor.rotatingLine("", seconds: 5, now: Date(timeIntervalSince1970: 5)), "")
     }
 }
+
+final class ChatBurstTests: XCTestCase {
+    func testIsBurst() {
+        let now = Date(timeIntervalSince1970: 100)
+        func at(_ ago: Double) -> Date { now.addingTimeInterval(-ago) }
+        XCTAssertFalse(ChatBurst.isBurst([], now: now))
+        XCTAssertFalse(ChatBurst.isBurst([at(0.1), at(0.5)], now: now))
+        XCTAssertTrue(ChatBurst.isBurst([at(0.1), at(0.5), at(0.9)], now: now))
+        XCTAssertFalse(ChatBurst.isBurst([at(0.1), at(0.5), at(1.5)], now: now))
+    }
+}

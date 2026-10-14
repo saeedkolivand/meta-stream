@@ -6,7 +6,9 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var streamer: Streamer
     @EnvironmentObject var speaker: Speaker
-    @EnvironmentObject var chat: ChatFeed
+    /// Plain reference, not observed: a chat message must not rebuild this screen. Child views that show chat observe
+    /// it through the environment.
+    let chat: ChatFeed
     @EnvironmentObject var platforms: Platforms
     @EnvironmentObject var privacy: Privacy
     @AppStorage("keepAwake") var keepAwake = true

@@ -35,6 +35,8 @@ struct StreamChatView: View {
     @ObservedObject var emotes: Emotes
     var channel: String = ""
     var now: Date = Date()
+    /// Chat burst (see ChatBurst): rows appear without the entry slide.
+    var burst = false
 
     /// Events that survive the filters and the fade, oldest first, at most maxMessages.
     static func rows(_ events: [ChatEvent], _ style: ChatWidgetStyle, now: Date) -> [ChatEvent] {
@@ -77,7 +79,7 @@ struct StreamChatView: View {
         let rows = Self.rows(events, style, now: now)
         VStack(alignment: .leading, spacing: size * 0.32) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, e in
-                let a = Self.appear(e, now: now)
+                let a = burst ? 1 : Self.appear(e, now: now)
                 row(e)
                     .opacity(Self.opacity(e, style, now: now) * a)
                     .offset(y: (1 - a) * size * 0.7)

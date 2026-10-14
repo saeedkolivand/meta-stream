@@ -91,7 +91,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     // MARK: Chat lane + templated alerts (tip/follow/subscribe/raid)
 
     func speak(_ event: ChatEvent) {
-        guard var text = sentence(for: event) else { return }   // mute is enforced in enqueue(_:into:)
+        guard event.origin != "test", var text = sentence(for: event) else { return }   // "test" = flood test   // mute is enforced in enqueue(_:into:)
         if showOrigin, !event.origin.isEmpty { text = "on \(event.origin), " + text }
         switch event.kind {
         case .message: enqueue(text, into: &chatQueue)
