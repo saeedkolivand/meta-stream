@@ -82,6 +82,7 @@ internal fun Hud() {
             Source.Phone
         ) {
             Pill(R.drawable.ic_camera, "cam", if (Cam.stripOpen) Green else Color.White) { Cam.toggleStrip() }
+            Pill(R.drawable.ic_flip_camera, "flip", Color.White, Engine::switchCamera)
         }
         if (Engine.source == Source.Glasses) {
             val g = Engine.glasses.status

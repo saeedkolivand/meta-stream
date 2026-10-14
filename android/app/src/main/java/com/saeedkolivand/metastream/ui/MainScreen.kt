@@ -8,7 +8,9 @@ import android.view.SurfaceView
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +19,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,12 +30,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.meta.wearable.dat.core.types.RegistrationState
@@ -39,6 +49,11 @@ import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 import com.saeedkolivand.metastream.streaming.StreamingService
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
 
 private val required = arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
 private val bluetooth = arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_CONNECT)
@@ -62,6 +77,20 @@ private fun GlassesPreview() = AndroidView(
     modifier = Modifier.fillMaxSize()
 )
 
+/** Hidden controls would hide a muted mic or blanked camera, so say so. */
+@Composable
+private fun HiddenWarning(modifier: Modifier) {
+    val text = listOfNotNull("Muted".takeIf { Engine.muted }, "Camera hidden".takeIf { Engine.cameraOff }).joinToString(" · ")
+    if (Engine.source == Source.Glasses || text.isEmpty()) return
+    Text(
+        text,
+        modifier.clip(CircleShape).background(Red).padding(horizontal = 10.dp, vertical = 4.dp),
+        color = Color.White,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold
+    )
+}
+
 @Composable
 internal fun MainScreen() {
     val activity = requireNotNull(LocalActivity.current)
@@ -79,8 +108,30 @@ internal fun MainScreen() {
     }
     LaunchedEffect(Unit) { ask.launch(everything) }
 
+    // Controls fade after 5 s without a touch; never while a panel is open.
+    val busy = detent != Detent.Hidden || settingsOpen || ManagerState.open || Cam.stripOpen
+    var visible by remember { mutableStateOf(true) }
+    val touch = remember { Channel<Unit>(Channel.CONFLATED) }
+    LaunchedEffect(busy) {
+        visible = true
+        if (!busy) {
+            touch.receiveAsFlow().onStart { emit(Unit) }.collectLatest {
+                visible = true
+                delay(5000)
+                visible = false
+            }
+        }
+    }
+    val fade by animateFloatAsState(if (visible) 1f else 0f)
     Box(
-        Modifier.fillMaxSize().background(Color.Black).onSizeChanged { totalPx = it.height.toFloat() }
+        Modifier.fillMaxSize().background(Color.Black).onSizeChanged { totalPx = it.height.toFloat() }.pointerInput(Unit) {
+            awaitPointerEventScope {
+                while (true) {
+                    awaitPointerEvent(PointerEventPass.Initial)
+                    touch.trySend(Unit)
+                }
+            }
+        }
     ) {
         if (Engine.source == Source.Glasses) {
             GlassesPreview()
@@ -112,12 +163,18 @@ internal fun MainScreen() {
             }
         }
         Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp)) {
-            Hud()
+            Box(Modifier.alpha(fade)) { Hud() }
             Spacer(Modifier.weight(1f))
-            Box(Modifier.onGloballyPositioned { restPx = totalPx - it.positionInRoot().y + 8 * density }) {
+            Box(Modifier.alpha(fade).onGloballyPositioned { restPx = totalPx - it.positionInRoot().y + 8 * density }) {
                 val open = detent != Detent.Hidden
                 Controls(granted, open, { detent = if (open) Detent.Hidden else Detent.Partial }, { settingsOpen = true })
             }
+        }
+        QuickRail(granted, Modifier.align(Alignment.CenterStart).safeDrawingPadding().padding(start = 16.dp).alpha(fade))
+        if (!visible) {
+            // Swallows the first tap so it only reveals the controls instead of reaching the preview or a button.
+            Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures() })
+            HiddenWarning(Modifier.align(Alignment.TopCenter).safeDrawingPadding().padding(top = 8.dp))
         }
         if (granted && Engine.source == Source.Phone && Cam.stripOpen) {
             Box(Modifier.fillMaxSize().safeDrawingPadding().padding(end = 10.dp, top = 56.dp, bottom = 190.dp)) {

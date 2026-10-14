@@ -97,13 +97,16 @@ struct StripStyles {
         .buttonStyle(.plain)
     }
 
-    static func roundButton(_ icon: String, filled: Bool, action: @escaping () -> Void) -> some View {
+    /// `tint` fills the circle with a colour (white glyph) and wins over `filled`; nil keeps the white/material look.
+    static func roundButton(_ icon: String, filled: Bool, tint: Color? = nil, size: CGFloat = 52,
+                            action: @escaping () -> Void) -> some View {
         stripButton(label: {
             Image(systemName: icon)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(filled ? .black : .white)
-                .frame(width: 52, height: 52)
-                .background(filled ? AnyShapeStyle(.white) : AnyShapeStyle(.ultraThinMaterial), in: Circle())
+                .font(.system(size: size * 0.38, weight: .semibold))
+                .foregroundStyle(filled && tint == nil ? .black : .white)
+                .frame(width: size, height: size)
+                .background(tint.map { AnyShapeStyle($0) } ?? (filled ? AnyShapeStyle(.white) : AnyShapeStyle(.ultraThinMaterial)),
+                            in: Circle())
         }, action: action)
     }
 }

@@ -24,8 +24,42 @@ struct ContentView: View {
     @State private var focusTap: CGPoint?
     @State private var aeafLocked = false
     @State private var pinchStartZoom: Double?
+    @Environment(\.horizontalSizeClass) private var hSize
+    @State private var controlsVisible = true
+    @State private var lastTouch = Date.now
 
     private var phoneCamControllable: Bool { streamer.source == "phone" && streamer.manualSource != "external" }
+
+    /// Anything presented keeps the controls up; otherwise they fade after 5 s without a touch.
+    private var controlsPinned: Bool { showSettings || showChat || showManager || showStatus || showCameraControls }
+    private var controlsShown: Bool { controlsVisible || controlsPinned }
+
+    private func touch() {
+        lastTouch = .now
+        if !controlsVisible { controlsVisible = true }
+    }
+
+    /// Red pill so a muted mic / hidden camera is not forgotten while the controls are faded out.
+    @ViewBuilder private var hiddenWarning: some View {
+        let parts: [(String, String)] = (streamer.muted ? [("mic.slash.fill", "Muted")] : [])
+            + (streamer.cameraOff ? [("video.slash.fill", "Camera hidden")] : [])
+        if !controlsShown, !parts.isEmpty {
+            VStack {
+                HStack(spacing: 6) {
+                    ForEach(parts, id: \.1) { Image(systemName: $0.0) }
+                    Text(parts.map(\.1).joined(separator: " · "))
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .background(Color.red, in: Capsule())
+                Spacer()
+            }
+            .padding(.top, 8)
+            .allowsHitTesting(false)
+            .transition(.opacity)
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -33,12 +67,24 @@ struct ContentView: View {
             PreviewContainerView(levelMonitor: levelMonitor, focusTap: $focusTap, aeafLocked: $aeafLocked, pinchStartZoom: $pinchStartZoom)
                 .ignoresSafeArea()
 
+            ZStack {
             VStack {
                 HUDView(showStatus: $showStatus, showManager: $showManager, showChat: $showChat, showCameraControls: $showCameraControls)
                 Spacer()
                 GoLiveControlsView(codec: vm.codec, showChat: $showChat, showSettings: $showSettings)
             }
             .padding(.horizontal)
+
+            // Compact width: mic/camera/blur live in a left-edge rail (right edge belongs to the camera strip).
+            if hSize == .compact {
+                HStack {
+                    VStack(spacing: 10) { QuickControls(size: 44) }.padding(.leading, 10)
+                    Spacer()
+                }
+            }
+            }
+            .opacity(controlsShown ? 1 : 0)
+            .allowsHitTesting(controlsShown)
 
             // Only nag once the user actually picks glasses: phone/external-camera streaming never needs Meta.
             if Streamer.glassesConfigured, streamer.manualSource == "glasses", streamer.registration != "registered" { registerCard }
@@ -56,7 +102,20 @@ struct ContentView: View {
                 }
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
+
+            // Swallows the first tap while hidden so it only reveals (no tap-to-focus, no stray button hits).
+            if !controlsShown {
+                Color.clear.contentShape(Rectangle()).ignoresSafeArea().onTapGesture { touch() }
+            }
+            hiddenWarning
         }
+        .animation(.easeInOut(duration: 0.3), value: controlsShown)
+        .simultaneousGesture(DragGesture(minimumDistance: 0).onChanged { _ in if controlsShown { touch() } })
+        .task(id: lastTouch) {
+            do { try await Task.sleep(for: .seconds(5)) } catch { return }
+            controlsVisible = false
+        }
+        .onChange(of: controlsPinned) { _, _ in touch() }
         .preferredColorScheme(.dark)
         .statusBarHidden(false)
         .sheet(isPresented: $showSettings) { SettingsView() }

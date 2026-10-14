@@ -1,18 +1,13 @@
 package com.saeedkolivand.metastream.ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
@@ -26,6 +21,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -74,40 +70,44 @@ internal fun Pill(icon: Int, text: String, color: Color, onClick: (() -> Unit)? 
     }
 }
 
-/** iOS StripStyles.roundButton: 52dp circle, white with a black icon when [filled]. */
+/** iOS StripStyles.roundButton: 52dp circle, white with a black icon when [filled]; [fill] paints it a status colour instead. */
 @Composable
-internal fun RoundButton(icon: Int, filled: Boolean, onClick: () -> Unit) {
+internal fun RoundButton(
+    icon: Int,
+    filled: Boolean,
+    size: Dp = 52.dp,
+    fill: Color? = null,
+    label: String? = null,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
     val haptic = rememberHaptic()
-    val base = Modifier.size(52.dp).clip(CircleShape)
+    val base = Modifier.size(size).alpha(if (enabled) 1f else 0.4f).clip(CircleShape)
     Row(
-        (if (filled) base.background(Color.White) else base.background(Scrim).border(1.dp, Hairline, CircleShape))
-            .clickable {
+        (
+            if (filled) {
+                base.background(Color.White)
+            } else {
+                base.background(fill ?: Scrim).border(
+                    1.dp,
+                    if (fill ==
+                        null
+                    ) {
+                        Hairline
+                    } else {
+                        Color.Transparent
+                    },
+                    CircleShape
+                )
+            }
+            )
+            .clickable(enabled) {
                 haptic(false)
                 onClick()
             },
         Arrangement.Center,
         Alignment.CenterVertically
     ) {
-        Icon(painterResource(icon), null, Modifier.size(24.dp), tint = if (filled) Color.Black else Color.White)
-    }
-}
-
-/** iOS quickButton: equal-width tile, icon over label; [tint] null = neutral. */
-@Composable
-internal fun RowScope.QuickTile(icon: Int, label: String, tint: Color?, enabled: Boolean = true, onClick: () -> Unit) {
-    val haptic = rememberHaptic()
-    val shape = RoundedCornerShape(14.dp)
-    Column(
-        Modifier.weight(1f).height(56.dp).alpha(if (enabled) 1f else 0.4f).clip(shape)
-            .background(tint ?: Scrim).border(BorderStroke(1.dp, if (tint == null) Hairline else Color.Transparent), shape)
-            .clickable(enabled) {
-                haptic(true)
-                onClick()
-            },
-        Arrangement.Center,
-        Alignment.CenterHorizontally
-    ) {
-        Icon(painterResource(icon), null, Modifier.size(22.dp), tint = Color.White)
-        Text(label, Modifier.padding(top = 2.dp), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+        Icon(painterResource(icon), label, Modifier.size(size * 0.46f), tint = if (filled) Color.Black else Color.White)
     }
 }
