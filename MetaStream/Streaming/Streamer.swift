@@ -149,7 +149,7 @@ final class Streamer: ObservableObject {
     let faceCamFrames = TrackCounter()
 
     /// Which way up a landscape capture goes, from the phone's physical orientation -- see deviceRotated().
-    var landscapeOrientation: AVCaptureVideoOrientation = .landscapeRight
+    var landscapeOrientation: CaptureOrientation = .landscapeRight
 
     var pip: PiPController?                        // owned here so it outlives SwiftUI view rebuilds
 

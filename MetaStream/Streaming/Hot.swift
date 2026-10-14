@@ -75,8 +75,8 @@ final class LayerSink: MediaMixerOutput, @unchecked Sendable {
     func mixer(_ mixer: MediaMixer, didOutput sampleBuffer: CMSampleBuffer) {
         hot.mixerOut += 1   // counted regardless of preview state -- this is the mixer's composited-output tap firing, full stop
         guard hot.showMixerVideo, let p = hot.preview else { return }
-        if p.status == .failed { p.flush() }
-        p.enqueue(sampleBuffer)
+        if p.sampleBufferRenderer.status == .failed { p.sampleBufferRenderer.flush() }
+        p.sampleBufferRenderer.enqueue(sampleBuffer)
     }
     func mixer(_ mixer: MediaMixer, didOutput buffer: AVAudioPCMBuffer, when: AVAudioTime) {}
     func selectTrack(_ id: UInt8?, mediaType: CMFormatDescription.MediaType) async {}
@@ -122,7 +122,7 @@ extension Streamer {
         // themselves being observed properties.
         let glassesBlurredLive = hot.forward && hot.transcoder != nil && (hot.live || hot.warm) && (privacy?.enabled == true || dualCamActive || overlaysWanted)
         let show = source == "phone" || cameraOff || glassesBlurredLive
-        if show != hot.showMixerVideo { hot.showMixerVideo = show; hot.preview?.flush() }   // format switches between sources
+        if show != hot.showMixerVideo { hot.showMixerVideo = show; hot.preview?.sampleBufferRenderer.flush() }   // format switches between sources
     }
 
     // ponytail: ContentView sets this directly instead of a delegate protocol.
@@ -260,8 +260,8 @@ extension Streamer {
                         else if hot.live { Task { await up.append(sb) } }     // HEVC mode: passthrough, no encode
                     }
                     if !hot.showMixerVideo, let preview = hot.preview {       // AVSampleBufferDisplayLayer is thread-safe
-                        if preview.status == .failed { preview.flush() }
-                        preview.enqueue(sb)                                   // layer decodes HEVC itself
+                        if preview.sampleBufferRenderer.status == .failed { preview.sampleBufferRenderer.flush() }
+                        preview.sampleBufferRenderer.enqueue(sb)                                   // layer decodes HEVC itself
                     }
                 })
                 tokens.append(camera.stream.photoDataPublisher.listen { [weak self] photo in

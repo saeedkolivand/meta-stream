@@ -212,7 +212,7 @@ final class OverlayCompositor {
 
     /// Muted clip; the task re-starts it when it ends if the OBS source loops.
     private func media(_ l: OverlayLayer, _ fit: Fit, _ canvas: CGSize) async -> (ScreenObject, Task<Void, Never>?)? {
-        guard let url = OverlayStore.shared.local(l.data["file"] ?? ""), let size = OverlayRaster.mediaSize(url),
+        guard let url = OverlayStore.shared.local(l.data["file"] ?? ""), let size = await OverlayRaster.mediaSize(url),
               let rect = OverlayRaster.visible(box(l, size, fit, canvas), in: canvas) else { return nil }
         let clip = await OverlayScreen.makeMedia(rect, url)
         let object: ScreenObject = clip

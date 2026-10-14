@@ -7,6 +7,12 @@ import HaishinKit
 
 extension Streamer {
 
+    // ponytail: HaishinKit's MediaMixer.setVideoOrientation still takes the deprecated AVCaptureVideoOrientation; the type is
+    // never named here (inferred). Switch to rotation angles if HaishinKit ever offers them.
+    private func setOrientation(_ o: CaptureOrientation) async {
+        await mixer.setVideoOrientation(.init(rawValue: o.rawValue) ?? .portrait)
+    }
+
     // MARK: fallback camera (StreamHand-style: glasses drop → phone camera, glasses back → glasses)
 
     /// "auto" = glasses with automatic phone fallback; "glasses" = force glasses; "back"/"front" = force a phone camera.
@@ -77,7 +83,7 @@ extension Streamer {
                     await wireMixer()
                     if await attachOverlayCamera(position: .front) {
                         try? await mixer.setFrameRate(30)
-                        await mixer.setVideoOrientation(.portrait)   // glasses canvas is 720x1280 portrait
+                        await setOrientation(.portrait)   // glasses canvas is 720x1280 portrait
                         dualCamActive = true
                         await syncBlurEffect()
                         logFaceCamHealth()
@@ -184,7 +190,7 @@ extension Streamer {
                 // UVC webcams can't rotate the connection, so external is always landscape; fps stays capped
                 // at 30 because an unsupported frame duration raises an ObjC exception.
                 try? await mixer.setFrameRate(Float64(isExt || multi ? mcFps : phoneQuality.fps))
-                await mixer.setVideoOrientation(isExt ? .landscapeRight : phoneQuality.landscape ? landscapeOrientation : .portrait)
+                await setOrientation(isExt ? .landscapeRight : phoneQuality.landscape ? landscapeOrientation : .portrait)
                 applog("stream", "camera attached \(phoneQuality.height)p @\(phoneQuality.fps) landscape=\(isExt || phoneQuality.landscape) multi=\(multi) overlay=\(overlayOK)")
                 source = "phone"
                 if overlayOK {
@@ -214,7 +220,7 @@ extension Streamer {
             try? await Task.sleep(for: .milliseconds(400))
             guard !Task.isCancelled, source == "phone", manualSource != "external", !cameraOff else { return }
             if !sessionGeometryFixed, phoneQuality.landscape != o.isLandscape { await switchTo(glasses: false) }
-            else if phoneQuality.landscape { await mixer.setVideoOrientation(landscapeOrientation) }
+            else if phoneQuality.landscape { await setOrientation(landscapeOrientation) }
         }
     }
 

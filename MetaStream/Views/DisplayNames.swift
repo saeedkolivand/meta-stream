@@ -80,6 +80,7 @@ enum ChatOriginKey {
 
 /// Shared button chrome for the live screen: one capsule pill and one round/strip button so HUD,
 /// quick controls and camera strip share sizing, fonts and haptics instead of three copies.
+@MainActor
 struct StripStyles {
     static func pill(_ icon: String, _ text: String, _ color: Color) -> some View {
         HStack(spacing: 6) {
@@ -112,6 +113,7 @@ struct StripStyles {
     }
 }
 
+@MainActor
 func hapticTap(strong: Bool = false) {
     UIImpactFeedbackGenerator(style: strong ? .heavy : .light).impactOccurred()
 }

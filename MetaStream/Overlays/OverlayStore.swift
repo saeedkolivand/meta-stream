@@ -185,6 +185,19 @@ final class OverlayStore: ObservableObject {
         }
     }
 
+    // mediaSize is async now: the first ask returns nil, loads in the background and redraws observers when it lands.
+    private var mediaSizes: [URL: CGSize] = [:]
+
+    private func mediaSize(_ url: URL) -> CGSize? {
+        if let s = mediaSizes[url] { return s }
+        Task {
+            guard mediaSizes[url] == nil, let s = await OverlayRaster.mediaSize(url) else { return }
+            mediaSizes[url] = s
+            objectWillChange.send()
+        }
+        return nil
+    }
+
     /// The layer's own size before its transform/layout: what `widgetRect` scales. nil when its file isn't there yet.
     func naturalSize(_ l: OverlayLayer) -> CGSize? {
         func dim(_ k: String, _ d: Double) -> CGFloat { CGFloat(Double(l.data[k] ?? "") ?? d) }
@@ -202,7 +215,7 @@ final class OverlayStore: ObservableObject {
         case .qr: return QRWidgetStyle(l.data).natural
         case .browser: return CGSize(width: dim("width", 800), height: dim("height", 600))
         case .color: return CGSize(width: dim("width", 1920), height: dim("height", 1080))
-        case .media: return local(l.data["file"] ?? "").flatMap { OverlayRaster.mediaSize($0) }
+        case .media: return local(l.data["file"] ?? "").flatMap { mediaSize($0) }
         case .slideshow:
             guard let f = l.files.first, let url = local(f), let img = OverlayRaster.load(url) else { return nil }
             return img.size

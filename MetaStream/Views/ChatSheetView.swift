@@ -137,10 +137,10 @@ struct ChatSheetView: View {
     private func messageText(_ event: ChatEvent) -> Text {
         Emotes.tokenize(event.text, byName: emotes.byName).reduce(Text("")) { partial, run in
             switch run {
-            case .text(let s): return partial + Text(s)
+            case .text(let s): return Text("\(partial)\(Text(s))")
             case .emote(let url):
-                if let img = emotes.image(for: url) { return partial + Text(img) }
-                return partial + Text("")
+                if let img = emotes.image(for: url) { return Text("\(partial)\(Text(img))") }
+                return partial
             }
         }
     }

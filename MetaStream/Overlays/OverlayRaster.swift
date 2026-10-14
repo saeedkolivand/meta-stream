@@ -150,10 +150,11 @@ enum OverlayRaster {
         return img.cgImage.map { OverlayBitmap(image: $0) }
     }
 
-    /// Pixel size of a clip's first video track, rotation applied. Synchronous on purpose (no AVAssetTrack across awaits).
-    nonisolated static func mediaSize(_ url: URL) -> CGSize? {
-        guard let t = AVURLAsset(url: url).tracks(withMediaType: .video).first else { return nil }
-        let s = t.naturalSize.applying(t.preferredTransform)
+    /// Pixel size of a clip's first video track, rotation applied.
+    nonisolated static func mediaSize(_ url: URL) async -> CGSize? {
+        guard let t = try? await AVURLAsset(url: url).loadTracks(withMediaType: .video).first,
+              let loaded = try? await t.load(.naturalSize, .preferredTransform) else { return nil }
+        let s = loaded.0.applying(loaded.1)
         return CGSize(width: abs(s.width), height: abs(s.height))
     }
 }

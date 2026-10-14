@@ -1,6 +1,9 @@
 import AVFoundation
 import Foundation
 
+/// Capture orientation without the deprecated AVCaptureVideoOrientation; raw values match its (1...4).
+enum CaptureOrientation: Int, Sendable { case portrait = 1, portraitUpsideDown = 2, landscapeRight = 3, landscapeLeft = 4 }
+
 /// Manual phone-camera controls layered on AVFoundation's automatic defaults. Every mode defaults to
 /// "let the system decide" -- manual ISO/shutter/white-balance/lens-position only take effect when their
 /// owning toggle is on. Not threaded through goLive()'s `quality:` parameter like PhoneQuality, because
@@ -90,14 +93,13 @@ extension CameraSettings {
     /// with the glasses' raw HEVC feed), not an AVCaptureVideoPreviewLayer, so that convenience API isn't
     /// reachable here -- these are the same four 90-degree-rotation cases it computes internally.
     /// mirrored flips the x axis afterward, for the front camera when Settings' "Mirror" output toggle is on.
-    static func devicePoint(forViewPoint p: CGPoint, orientation: AVCaptureVideoOrientation, mirrored: Bool) -> CGPoint {
+    static func devicePoint(forViewPoint p: CGPoint, orientation: CaptureOrientation, mirrored: Bool) -> CGPoint {
         var x: CGFloat, y: CGFloat
         switch orientation {
         case .portrait:           x = p.y;     y = 1 - p.x
         case .portraitUpsideDown: x = 1 - p.y; y = p.x
         case .landscapeRight:     x = p.x;     y = p.y
         case .landscapeLeft:      x = 1 - p.x; y = 1 - p.y
-        @unknown default:         x = p.x;     y = p.y
         }
         if mirrored { x = 1 - x }
         return CGPoint(x: Swift.min(Swift.max(x, 0), 1), y: Swift.min(Swift.max(y, 0), 1))

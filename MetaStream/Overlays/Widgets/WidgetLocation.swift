@@ -1,13 +1,13 @@
 // Speed, distance, city and weather for the {speed}/{distance}/{city}/{weather} tokens. Location runs only while a live text widget uses it
 // (retain/release), so a scene without those tokens never touches the GPS or asks for permission.
 import CoreLocation
+import MapKit
 
 @MainActor
 final class WidgetLocation: NSObject, CLLocationManagerDelegate {
     static let shared = WidgetLocation()
 
     private let manager = CLLocationManager()
-    private let geocoder = CLGeocoder()
     private var users = 0
     private var geocoded: (at: Date, loc: CLLocation)?
     private var geocoding = false
@@ -79,14 +79,15 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
                                  verticalAccuracy: -1, timestamp: time)
         }
         WidgetWeather.shared.update(lat: lat, lon: lon)
-        // At most one reverse geocode per 60 s and 500 m: CLGeocoder is rate limited and a city rarely changes.
+        // At most one reverse geocode per 60 s and 500 m: geocoding is rate limited and a city rarely changes.
         if let g = geocoded, Date().timeIntervalSince(g.at) < 60 || loc.distance(from: g.loc) < 500 { return }
         guard !geocoding else { return }
         geocoding = true
         geocoded = (Date(), loc)
+        guard let request = MKReverseGeocodingRequest(location: loc) else { geocoding = false; return }
         Task {
             defer { geocoding = false }
-            if let name = try? await geocoder.reverseGeocodeLocation(loc).first?.locality { city = name }
+            if let name = try? await request.mapItems.first?.addressRepresentations?.cityName { city = name }
         }
     }
 }

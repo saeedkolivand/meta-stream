@@ -149,7 +149,10 @@ final class AuthPresenter: NSObject {
 private final class AuthContextProvider: NSObject, ASWebAuthenticationPresentationContextProviding {
     nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         MainActor.assumeIsolated {
-            UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }.first ?? ASPresentationAnchor()
+            let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+            if let w = scenes.compactMap(\.keyWindow).first { return w }
+            guard let scene = scenes.first else { preconditionFailure("no window scene to present sign-in") }
+            return ASPresentationAnchor(windowScene: scene)
         }
     }
 }
