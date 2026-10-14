@@ -74,6 +74,8 @@ class EmoteSpeechTest {
         assertEquals("A followed", spokenText(ChatEvent("twitch", "A", "", kind = Kind.Follow), all))
         assertNull(spokenText(ChatEvent("twitch", "A", "", kind = Kind.Follow), all.copy(follows = false)))
         assertEquals("A subscribed", spokenText(ChatEvent("twitch", "A", "", kind = Kind.Subscribe), all))
+        assertEquals("A gifted a sub", spokenText(ChatEvent("twitch", "A", "", kind = Kind.Subscribe, count = 1), all))
+        assertEquals("A gifted 5 subs", eventSummary(ChatEvent("twitch", "A", "", kind = Kind.Subscribe, count = 5)))
         assertEquals("A raided with 9 viewers", spokenText(ChatEvent("twitch", "A", "", kind = Kind.Raid, count = 9), all))
         assertNull(spokenText(ChatEvent("twitch", "A", "", kind = Kind.Raid, count = 9), all.copy(raids = false)))
     }

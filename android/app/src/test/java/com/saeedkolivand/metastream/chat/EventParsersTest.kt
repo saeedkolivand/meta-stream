@@ -59,6 +59,26 @@ class EventParsersTest {
         assertEquals(42, raid.count)
     }
 
+    @Test fun twitchGiftAndResub() {
+        val gift = notification("channel.subscription.gift", """{"user_name":"G","total":5,"is_anonymous":false}""")
+        assertEquals("G", gift.user)
+        assertEquals(5, gift.count)
+        assertEquals("Anonymous", notification("channel.subscription.gift", """{"user_name":null,"total":1,"is_anonymous":true}""").user)
+        val resub = notification("channel.subscription.message", """{"user_name":"R","message":{"text":"hi"}}""")
+        assertEquals(0, resub.count)
+        assertEquals("hi", resub.text)
+    }
+
+    @Test fun youtubeMembershipEvents() {
+        fun item(type: String, count: String = "") = JSONObject(
+            """{"snippet":{"type":"$type","membershipGiftingDetails":{"giftMembershipsCount":$count}},"authorDetails":{"displayName":"M"}}"""
+        )
+        assertEquals(Kind.Subscribe, parseYouTubeItem(item("newSponsorEvent", "0"))!!.kind)
+        assertEquals(7, parseYouTubeItem(item("membershipGiftingEvent", "7"))!!.count)
+        assertEquals(3, parseYouTubeItem(item("membershipGiftingEvent", "\"3\""))!!.count)
+        assertNull(parseYouTubeItem(item("giftMembershipReceivedEvent", "0")))
+    }
+
     @Test fun cheerAndAnonymousCheer() {
         val c = notification("channel.cheer", """{"user_name":"Whale","message":"take my bits","bits":500}""")
         assertEquals(Kind.Cheer, c.kind)

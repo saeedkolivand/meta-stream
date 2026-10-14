@@ -37,8 +37,14 @@ internal fun spokenText(e: ChatEvent, o: SpeechOptions): String? = when (e.kind)
         }
     Kind.Cheer -> if (o.tips) note(e, "${e.user} cheered ${e.count} bits") else null // bits are money: same gate as tips
     Kind.Follow -> if (o.follows) "${e.user} followed" else null
-    Kind.Subscribe -> if (o.subs) "${e.user} subscribed" else null
+    Kind.Subscribe -> if (o.subs) subscribeText(e) else null
     Kind.Raid -> if (o.raids) "${e.user} raided with ${e.count} viewers" else null
+}
+
+private fun subscribeText(e: ChatEvent) = when {
+    e.count <= 0 -> "${e.user} subscribed"
+    e.count == 1 -> "${e.user} gifted a sub"
+    else -> "${e.user} gifted ${e.count} subs"
 }
 
 private fun note(e: ChatEvent, lead: String): String {
@@ -53,6 +59,6 @@ fun eventSummary(e: ChatEvent): String = when (e.kind) {
         if (e.text.isEmpty()) "" else " — ${e.text}"
     Kind.Cheer -> "${e.user} cheered ${e.count} bits" + if (e.text.isEmpty()) "" else " — ${e.text}"
     Kind.Follow -> "${e.user} followed"
-    Kind.Subscribe -> "${e.user} subscribed"
+    Kind.Subscribe -> subscribeText(e)
     Kind.Raid -> "${e.user} raided with ${e.count} viewers"
 }

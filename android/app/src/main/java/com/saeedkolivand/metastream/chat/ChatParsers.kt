@@ -8,6 +8,7 @@ enum class Kind { Message, Tip, Cheer, Follow, Subscribe, Raid }
 /**
  * [color] is the sender's own name color as hex; [badges] are normalized roles in [ROLES] order.
  * [amountCents] is money (tips), [count] countable things (raid viewers, cheered bits); cents as Int, never floating point.
+ * [Kind.Subscribe] with count > 0 is a GIFT of [count] subs by [user]; count 0 is a normal (re)sub.
  */
 data class ChatEvent(
     val platform: String,
@@ -33,9 +34,9 @@ internal fun normalizeRoles(raw: Sequence<String>): List<String> {
     return ROLES.filter { it in found }
 }
 
-private const val KICK_MESSAGE = """App\Events\ChatMessageEvent"""
+internal const val KICK_MESSAGE = """App\Events\ChatMessageEvent"""
 
-private fun kickEventName(frame: String): String? = runCatching { JSONObject(frame).optString("event") }.getOrNull()
+internal fun kickEventName(frame: String): String? = runCatching { JSONObject(frame).optString("event") }.getOrNull()
 
 internal fun isKickPing(frame: String) = kickEventName(frame) == "pusher:ping"
 

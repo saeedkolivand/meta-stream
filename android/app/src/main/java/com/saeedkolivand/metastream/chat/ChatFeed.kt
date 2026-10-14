@@ -56,7 +56,7 @@ object ChatFeed {
         scope.launch { snapshotFlow { Twitch.connected }.collect { restartTwitch(0) } }
         scope.launch { snapshotFlow { YouTube.connected }.collect { restartYouTube() } }
         // Channel emote sets need the Twitch user id, which arrives with the first refresh after sign-in.
-        scope.launch { snapshotFlow { if (Twitch.connected) Twitch.userId else "" }.collect { Emotes.load(it) } }
+        scope.launch { snapshotFlow { if (Twitch.connected) Twitch.userId else "" }.collect { Emotes.load(twitchId = it) } }
     }
 
     private fun onChat(e: ChatEvent) {
@@ -90,7 +90,14 @@ object ChatFeed {
     fun restartKick(wait: Long = 0) {
         kickJob?.cancel()
         val slug = kickSlug.trim()
-        kickJob = if (slug.isEmpty() || !SpeechSettings.kickChat.value) null else launchSource("kick", wait) { kickChat(slug, ::onChat) }
+        kickJob = if (slug.isEmpty() || !SpeechSettings.kickChat.value) {
+            null
+        } else {
+            launchSource("kick", wait) {
+                scope.launch { Emotes.load(kickSlug = slug) }
+                kickChat(slug, ::onChat)
+            }
+        }
         updateOrigins()
     }
 

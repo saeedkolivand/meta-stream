@@ -243,6 +243,10 @@ object Twitch : Account("Twitch", "twitch") {
                 add(Triple("channel.follow", "2", mapOf("broadcaster_user_id" to me, "moderator_user_id" to me)))
             }
             if (hasScopes(setOf("channel:read:subscriptions"))) add(Triple("channel.subscribe", "1", mapOf("broadcaster_user_id" to me)))
+            if (hasScopes(setOf("channel:read:subscriptions"))) {
+                add(Triple("channel.subscription.gift", "1", mapOf("broadcaster_user_id" to me)))
+                add(Triple("channel.subscription.message", "1", mapOf("broadcaster_user_id" to me)))
+            }
             if (hasScopes(setOf("bits:read"))) add(Triple("channel.cheer", "1", mapOf("broadcaster_user_id" to me)))
         }
         for ((type, version, condition) in subs) {

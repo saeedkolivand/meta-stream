@@ -46,6 +46,15 @@ internal fun parseEventSubEvent(type: String, event: JSONObject): ChatEvent? = w
     }
     "channel.follow" -> alert(event, "user_name", Kind.Follow)
     "channel.subscribe" -> alert(event, "user_name", Kind.Subscribe)
+    "channel.subscription.gift" -> ChatEvent(
+        "twitch",
+        if (event.optBoolean("is_anonymous")) "Anonymous" else event.optString("user_name").ifEmpty { "Anonymous" },
+        "",
+        kind = Kind.Subscribe,
+        count = event.optInt("total")
+    )
+    "channel.subscription.message" -> alert(event, "user_name", Kind.Subscribe)
+        ?.copy(text = event.optJSONObject("message")?.optString("text").orEmpty())
     "channel.raid" -> alert(event, "from_broadcaster_user_name", Kind.Raid, count = event.optInt("viewers"))
     "channel.cheer" -> ChatEvent(
         "twitch",
@@ -74,6 +83,17 @@ internal fun parseYouTubeItem(item: JSONObject): ChatEvent? {
             val d = snippet.optJSONObject(if (type == "superChatEvent") "superChatDetails" else "superStickerDetails") ?: JSONObject()
             val micros = d.optString("amountMicros").toLongOrNull() ?: d.optLong("amountMicros")
             ChatEvent("youtube", user, d.optString("userComment"), kind = Kind.Tip, amountCents = (micros / 10_000).toInt())
+        }
+        "newSponsorEvent" -> ChatEvent("youtube", user, "", kind = Kind.Subscribe)
+        "memberMilestoneChatEvent" -> ChatEvent(
+            "youtube",
+            user,
+            snippet.optJSONObject("memberMilestoneChatDetails")?.optString("userComment").orEmpty(),
+            kind = Kind.Subscribe
+        )
+        "membershipGiftingEvent" -> {
+            val n = snippet.optJSONObject("membershipGiftingDetails")?.opt("giftMembershipsCount")
+            ChatEvent("youtube", user, "", kind = Kind.Subscribe, count = (n as? Number)?.toInt() ?: n?.toString()?.toIntOrNull() ?: 1)
         }
         else -> null
     }

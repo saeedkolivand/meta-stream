@@ -10,6 +10,8 @@ import com.saeedkolivand.metastream.platforms.parseJson
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
@@ -21,12 +23,20 @@ import org.json.JSONObject
 object Emotes {
     var byName by mutableStateOf<Map<String, String>>(emptyMap())
         private set
-    private var loadedFor: String? = null // twitch user id the map was built for; "" = globals only
+    private var loadedFor: String? = null // "twitchId|kickSlug" the map was built for
+    private var twitch = ""
+    private var kick = ""
+    private val lock = Mutex()
 
-    /** Loads globals, plus the channel's sets when [twitchId] is given. No-ops if already loaded for that identity. */
-    suspend fun load(twitchId: String) {
-        if (twitchId == loadedFor) return
-        loadedFor = twitchId
+    /** Loads globals, plus the channel sets for whichever ids are known; a null argument keeps its last value. */
+    suspend fun load(twitchId: String? = null, kickSlug: String? = null) = lock.withLock {
+        twitchId?.let { twitch = it }
+        kickSlug?.let { kick = it }
+        val key = "$twitch|$kick"
+        if (key == loadedFor) return@withLock
+        loadedFor = key
+        val kickUser = if (kick.isEmpty()) 0 else runCatching { kickChannel(kick).optInt("user_id") }.getOrDefault(0)
+        val twitchId = twitch
         val map = coroutineScope {
             val sources = buildList {
                 add(async { sevenTv(null) })
@@ -37,18 +47,19 @@ object Emotes {
                     add(async { bttv(twitchId) })
                     add(async { ffz(twitchId) })
                 }
+                if (kickUser > 0) add(async { sevenTv("$kickUser", "kick") })
             }
             // Later (channel) sets override earlier (global) ones, as on iOS.
             sources.fold(emptyMap<String, String>()) { acc, d -> acc + d.await() }
         }
         byName = map
-        applog("chat", "emotes loaded: ${map.size} names (twitch=${twitchId.ifEmpty { "none" }})")
+        applog("chat", "emotes loaded: ${map.size} names (twitch=${twitchId.ifEmpty { "none" }}, kick=${kick.ifEmpty { "none" }})")
     }
 
-    private suspend fun sevenTv(id: String?): Map<String, String> = if (id == null) {
+    private suspend fun sevenTv(id: String?, platform: String = "twitch"): Map<String, String> = if (id == null) {
         (fetch("https://7tv.io/v3/emote-sets/global") as? JSONObject)?.let { sevenTvEmotes(it.optJSONArray("emotes")) }.orEmpty()
     } else {
-        (fetch("https://7tv.io/v3/users/twitch/$id") as? JSONObject)?.optJSONObject("emote_set")
+        (fetch("https://7tv.io/v3/users/$platform/$id") as? JSONObject)?.optJSONObject("emote_set")
             ?.let { sevenTvEmotes(it.optJSONArray("emotes")) }.orEmpty()
     }
 

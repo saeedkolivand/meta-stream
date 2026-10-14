@@ -1,5 +1,6 @@
 package com.saeedkolivand.metastream.chat
 
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -83,5 +84,43 @@ class ChatParsersTest {
         val e = parseKickFrame(kickFrame)!!
         assertEquals(emptyList<String>(), e.badges)
         assertNull(e.color)
+    }
+
+    private val rules = JSONObject(DEFAULT_KICK_RULES)
+
+    private fun kickAlert(name: String, data: String, r: JSONObject = rules) = parseKickRule(r, """App\Events\$name""", data)
+
+    @Test fun kickSubGiftHostFollowKicks() {
+        val sub = kickAlert("SubscriptionEvent", """{"username":"s","months":3}""")!!
+        assertEquals(Kind.Subscribe, sub.kind)
+        assertEquals(0, sub.count)
+        assertEquals(3, kickAlert("GiftedSubscriptionsEvent", """{"gifter_username":"g","gifted_usernames":["a","b","c"]}""")!!.count)
+        val q = kickAlert("GiftedSubscriptionsEvent", """{"username":"g","quantity":5}""")!!
+        assertEquals(5, q.count)
+        assertEquals("g", q.user)
+        assertEquals(1, kickAlert("GiftedSubscriptionsEvent", """{"username":"g"}""")!!.count)
+        val host = kickAlert("StreamHostEvent", """{"host_username":"h","number_viewers":12}""")!!
+        assertEquals(Kind.Raid, host.kind)
+        assertEquals(12, host.count)
+        assertEquals(Kind.Follow, kickAlert("FollowersUpdated", """{"followed":true,"username":"f"}""")!!.kind)
+        assertNull(kickAlert("FollowersUpdated", """{"followed":false,"username":"f"}"""))
+        val kicks = kickAlert("KicksGifted", """{"sender":{"username":"k"},"gift":{"amount":300},"message":"yo"}""")!!
+        assertEquals(Kind.Tip, kicks.kind)
+        assertEquals(300, kicks.amountCents)
+        assertEquals("yo", kicks.text)
+        assertNull(kickAlert("Other", """{"username":"x"}"""))
+    }
+
+    @Test fun modifiedKickRulesAreHonoured() {
+        val renamed = JSONObject(
+            """{"version":1,"events":{"App\\Events\\NewFollow":{"kind":"follow","user":["who.name"]}}}"""
+        )
+        assertEquals("zed", kickAlert("NewFollow", """{"who":{"name":"zed"}}""", renamed)!!.user)
+        assertNull(kickAlert("FollowersUpdated", """{"followed":true,"username":"f"}""", renamed))
+    }
+
+    @Test fun kickChannelsSkipUnknownPlaceholders() {
+        assertEquals(listOf("chatrooms.1.v2", "channel.2"), kickChannels(rules, 1, 2))
+        assertEquals(emptyList<String>(), kickChannels(JSONObject("""{"channels":["x.{nope}"]}"""), 1, 2))
     }
 }

@@ -68,33 +68,55 @@ internal suspend fun socket(url: String, onOpen: (WebSocket) -> Unit, onText: (W
 private val FALLBACK_PUSHER = "34bf7a0ff419a2a775b9" to "us2"
 private const val KICK_UA = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36"
 
-/** KickChatProvider: anonymous Pusher socket on chatrooms.<id>.v2. */
-suspend fun kickChat(slug: String, emit: (ChatEvent) -> Unit) {
-    val id = withContext(Dispatchers.IO) {
-        val c = URL("https://kick.com/api/v2/channels/$slug").openConnection() as HttpURLConnection
-        c.setRequestProperty("User-Agent", KICK_UA)
-        try {
-            check(c.responseCode == 200) { "Kick channel lookup failed for $slug (HTTP ${c.responseCode})" }
-            JSONObject(c.inputStream.bufferedReader().readText()).getJSONObject("chatroom").getInt("id")
-        } finally {
-            c.disconnect()
-        }
+/** kick.com's channel lookup (chatroom.id, id, user_id), with the User-Agent the site's own client sends. */
+internal suspend fun kickChannel(slug: String): JSONObject = withContext(Dispatchers.IO) {
+    val c = URL("https://kick.com/api/v2/channels/$slug").openConnection() as HttpURLConnection
+    c.setRequestProperty("User-Agent", KICK_UA)
+    try {
+        check(c.responseCode == 200) { "Kick channel lookup failed for $slug (HTTP ${c.responseCode})" }
+        JSONObject(c.inputStream.bufferedReader().readText())
+    } finally {
+        c.disconnect()
     }
+}
+
+/** KickChatProvider: anonymous Pusher socket on the channels from the Kick rules; alerts are parsed by those rules. */
+suspend fun kickChat(slug: String, emit: (ChatEvent) -> Unit) {
+    val j = kickChannel(slug)
+    val id = j.getJSONObject("chatroom").getInt("id")
+    val rules = loadKickRules()
     applog("chat", "kick chat connecting room=$id")
     socket(
         pusherUrl(),
-        {
-            it.send(
-                JSONObject().put(
-                    "event",
-                    "pusher:subscribe"
-                ).put("data", JSONObject().put("auth", "").put("channel", "chatrooms.$id.v2")).toString()
-            )
+        { ws ->
+            for (ch in kickChannels(rules, id, j.optInt("id"))) {
+                ws.send(
+                    JSONObject().put("event", "pusher:subscribe")
+                        .put("data", JSONObject().put("auth", "").put("channel", ch)).toString()
+                )
+            }
         },
         { ws, text ->
-            if (isKickPing(text)) ws.send("""{"event":"pusher:pong"}""") else parseKickFrame(text)?.let(emit)
+            if (isKickPing(text)) {
+                ws.send("""{"event":"pusher:pong"}""")
+            } else {
+                val name = kickEventName(text).orEmpty()
+                val o = JSONObject(text)
+                val e = if (name == KICK_MESSAGE) parseKickFrame(text) else parseKickRule(rules, name, o.optString("data"))
+                logKickEvent(name, o)
+                e?.let(emit)
+            }
         }
     )
+}
+
+private val loggedKick = mutableSetOf<String>()
+
+/** Logs the first occurrence of each non-chat Kick event name, so real payloads show up in device logs once. */
+private fun logKickEvent(name: String, frame: JSONObject) {
+    if (name.isEmpty() || name.startsWith("pusher:") || name.startsWith("pusher_internal:") || name == KICK_MESSAGE) return
+    if (!synchronized(loggedKick) { loggedKick.add(name) }) return
+    applog("chat", "kick event $name on ${frame.optString("channel")}: ${frame.optString("data").take(300)}")
 }
 
 /** Same anonymous call kick.com's own web client makes to learn which Pusher app/cluster is live. */
@@ -122,6 +144,8 @@ private suspend fun pusherUrl(): String {
             FALLBACK_PUSHER
         }
     }
+    val source = if (key to cluster == FALLBACK_PUSHER) "fallback" else "live"
+    applog("chat", "kick pusher key ${key.take(6)}… cluster $cluster ($source)")
     return "wss://ws-$cluster.pusher.com/app/$key?protocol=7&client=js&version=8.4.0-rc2&flash=false"
 }
 
