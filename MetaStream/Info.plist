@@ -92,6 +92,7 @@
 	<array>
 		<string>audio</string>
 		<string>bluetooth-central</string>
+		<string>location</string>
 	</array>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
@@ -100,7 +101,7 @@
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>Connects to your Meta glasses</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Streams video from your Meta glasses over Wi-Fi</string>
+	<string>Streams video from your Meta glasses over Wi-Fi, and shares GPS between an iPhone and an iPad on its hotspot</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_bonjour._tcp</string>

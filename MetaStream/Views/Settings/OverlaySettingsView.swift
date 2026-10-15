@@ -10,6 +10,7 @@ struct OverlaySettingsView: View {
     @State private var renameText = ""
     @State private var pickJSON = false
     @State private var pickFolder = false
+    @AppStorage("gpsShare") private var shareGPS = false
 
     var body: some View {
         Form {
@@ -23,6 +24,15 @@ struct OverlaySettingsView: View {
                 .pickerStyle(.segmented)
             } header: { Text("Transition") } footer: {
                 Text("Fade dims the old widgets out and the new ones in. The camera itself switches instantly.")
+            }
+            if UIDevice.current.userInterfaceIdiom == .phone {
+                Section {
+                    Toggle("Share GPS with iPad", isOn: $shareGPS)
+                } footer: {
+                    Text("For a Wi-Fi-only iPad on this iPhone's Personal Hotspot: it has no GPS, so its speed and distance "
+                         + "come from here. Keeps location on in the background while on; anyone on your hotspot can read it.")
+                }
+                .onChange(of: shareGPS) { GPSShare.shared.setEnabled(shareGPS) }
             }
             importSection
         }

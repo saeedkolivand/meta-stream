@@ -27,7 +27,10 @@ struct MetaStreamApp: App {
                     .environmentObject(chat)
                     .environmentObject(privacy)
                     // Streamer speaks connection changes on Speaker's System lane (never muted).
-                    .onAppear { streamer.speaker = speaker; streamer.privacy = privacy }
+                    .onAppear {
+                        streamer.speaker = speaker; streamer.privacy = privacy
+                        if UserDefaults.standard.bool(forKey: "gpsShare") { GPSShare.shared.setEnabled(true) }
+                    }
                     .onOpenURL { url in
                         Task {
                             do { _ = try await Wearables.shared.handleUrl(url) }

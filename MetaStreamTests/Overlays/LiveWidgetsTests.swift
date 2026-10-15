@@ -22,6 +22,16 @@ final class LiveWidgetsTests: XCTestCase {
     }
 }
 
+final class SharedFixTests: XCTestCase {
+    func testWireRoundTripAndRejectsJunk() {
+        let f = SharedFix(lat: 35.7, lon: 51.4, speed: 12.5, accuracy: 5, time: Date(timeIntervalSince1970: 1_800_000_000))
+        XCTAssertEqual(SharedFix(wire: f.wire), f)
+        for bad in ["", "?", "1,2,3,4", "91,0,0,5,1", "0,0,nan,5,1", "0,0,0,5,1,6", "0,0,999,5,1"] {
+            XCTAssertNil(SharedFix(wire: bad), bad)
+        }
+    }
+}
+
 final class ChatBurstTests: XCTestCase {
     func testIsBurst() {
         let now = Date(timeIntervalSince1970: 100)
