@@ -135,6 +135,7 @@ extension Streamer {
                         CameraSettings.apply(camSettings, to: device)
                     }
                 }
+                await enableSplitViewCamera()
                 try await mixer.attachVideo(cam, track: 0, configuration: configureMain)
                 if isExt {
                     let dims = { (f: AVCaptureDevice.Format) in CMVideoFormatDescriptionGetDimensions(f.formatDescription) }
@@ -268,6 +269,17 @@ extension Streamer {
         let w = Double(want)
         let ok = externalCamera()?.activeFormat.videoSupportedFrameRateRanges.contains { $0.minFrameRate <= w && w <= $0.maxFrameRate }
         return ok == true ? want : min(want, 30)
+    }
+
+    /// Keeps the camera running when MetaStream shares the iPad screen (Split View, Slide Over, Stage Manager), e.g. next
+    /// to a navigation app. Since iPadOS 16 no entitlement is needed; HaishinKit then also stops pausing video on background.
+    /// Per attach, not per mixer: rebuildMixerIfNeeded swaps the MediaMixer (and its session) for .single/.multi.
+    func enableSplitViewCamera() async {
+        await mixer.configuration { (session: AVCaptureSession) in
+            guard session.isMultitaskingCameraAccessSupported, !session.isMultitaskingCameraAccessEnabled else { return }
+            session.isMultitaskingCameraAccessEnabled = true
+            applog("stream", "split view camera access enabled")
+        }
     }
 
     nonisolated static var centerStageWanted: Bool { UserDefaults.standard.object(forKey: "centerStage") as? Bool ?? true }
