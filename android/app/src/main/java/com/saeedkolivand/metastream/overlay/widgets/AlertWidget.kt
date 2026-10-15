@@ -9,6 +9,7 @@ import com.pedro.encoder.input.gl.render.filters.`object`.ImageFilterRender
 import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.speech.offensive
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -94,7 +95,7 @@ internal fun alertWidget(l: Layer, box: Box, outW: Int, outH: Int, scope: Corout
         while (isActive) {
             val fresh = ChatFeed.chat.value.filter { it.id > seen }
             if (fresh.isNotEmpty()) seen = fresh.last().id
-            queue += fresh.filter { style.shows(it.kind) }
+            queue += fresh.filter { style.shows(it.kind) && !it.offensive }
             while (queue.size > QUEUE_CAP) queue.removeFirst() // a raid train shouldn't queue minutes of banners
             val next = queue.removeFirstOrNull()
             if (next == null) {

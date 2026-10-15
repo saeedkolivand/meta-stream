@@ -10,7 +10,9 @@ data class SpeechOptions(
     val follows: Boolean = true,
     val subs: Boolean = true,
     val raids: Boolean = true,
-    val minTipCents: Int = 0
+    val minTipCents: Int = 0,
+    val ignored: String = "",
+    val blocked: String = ""
 )
 
 /** Whole dollars read as a number ("5 dollars"); anything with cents stays "12.50 dollars"; unknown amounts are just "money". */
@@ -26,31 +28,33 @@ internal fun spokenAmount(cents: Int): String {
     }
 }
 
-/** The sentence for [e] (iOS Speaker.sentence), or null when its kind is switched off / empty. */
-internal fun spokenText(e: ChatEvent, o: SpeechOptions): String? = when (e.kind) {
-    Kind.Message -> sanitizeSpeech(e.text).takeIf { o.messages && it.isNotEmpty() }?.let { "${e.user} says $it" }
-    Kind.Tip ->
-        if (!o.tips || e.amountCents < o.minTipCents) {
-            null
-        } else {
-            note(e, "${e.user} tipped ${spokenAmount(e.amountCents)}")
-        }
-    Kind.Cheer -> if (o.tips) note(e, "${e.user} cheered ${e.count} bits") else null // bits are money: same gate as tips
-    Kind.Follow -> if (o.follows) "${e.user} followed" else null
-    Kind.Subscribe -> if (o.subs) subscribeText(e) else null
-    Kind.Raid -> if (o.raids) "${e.user} raided with ${e.count} viewers" else null
+/**
+ * The sentence for [e] (iOS Speaker.sentence), or null when its kind is switched off / empty / noise. [sameSpeaker]: the
+ * previous spoken message was theirs too, so the name isn't repeated.
+ */
+internal fun spokenText(e: ChatEvent, o: SpeechOptions, sameSpeaker: Boolean = false): String? {
+    // Reading a slur aloud on stream can get the streamer banned, even when a viewer typed it.
+    val user = if (isBlocked(e.user, o.blocked)) "someone" else e.user
+    val n = if (isBlocked(e.text, o.blocked)) "" else sanitizeSpeech(e.text)
+    return when (e.kind) {
+        Kind.Message ->
+            n.takeIf { o.messages && it.isNotEmpty() && !isNoise(e.user, e.text, o.ignored) }
+                ?.let { if (sameSpeaker) it else "$user says $it" }
+        Kind.Tip -> if (!o.tips || e.amountCents < o.minTipCents) null else note(n, "$user tipped ${spokenAmount(e.amountCents)}")
+        Kind.Cheer -> if (o.tips) note(n, "$user cheered ${e.count} bits") else null // bits are money: same gate as tips
+        Kind.Follow -> if (o.follows) "$user followed" else null
+        Kind.Subscribe -> if (o.subs) subscribeText(user, e.count) else null
+        Kind.Raid -> if (o.raids) "$user raided with ${e.count} viewers" else null
+    }
 }
 
-private fun subscribeText(e: ChatEvent) = when {
-    e.count <= 0 -> "${e.user} subscribed"
-    e.count == 1 -> "${e.user} gifted a sub"
-    else -> "${e.user} gifted ${e.count} subs"
+private fun subscribeText(user: String, count: Int) = when {
+    count <= 0 -> "$user subscribed"
+    count == 1 -> "$user gifted a sub"
+    else -> "$user gifted $count subs"
 }
 
-private fun note(e: ChatEvent, lead: String): String {
-    val n = sanitizeSpeech(e.text)
-    return if (n.isEmpty()) lead else "$lead: $n"
-}
+private fun note(n: String, lead: String) = if (n.isEmpty()) lead else "$lead: $n"
 
 /** Compact one-line text for the chat list (iOS DisplayNames.eventSummary). */
 fun eventSummary(e: ChatEvent): String = when (e.kind) {
@@ -59,6 +63,6 @@ fun eventSummary(e: ChatEvent): String = when (e.kind) {
         if (e.text.isEmpty()) "" else " — ${e.text}"
     Kind.Cheer -> "${e.user} cheered ${e.count} bits" + if (e.text.isEmpty()) "" else " — ${e.text}"
     Kind.Follow -> "${e.user} followed"
-    Kind.Subscribe -> subscribeText(e)
+    Kind.Subscribe -> subscribeText(e.user, e.count)
     Kind.Raid -> "${e.user} raided with ${e.count} viewers"
 }

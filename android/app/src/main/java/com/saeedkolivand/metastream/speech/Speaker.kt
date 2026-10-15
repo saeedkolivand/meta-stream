@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.saeedkolivand.metastream.chat.ChatEvent
+import com.saeedkolivand.metastream.chat.Kind
 import com.saeedkolivand.metastream.core.Prefs
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -30,6 +31,8 @@ object Speaker {
     @Volatile private var ready = false
     private val pending = AtomicInteger() // utterances queued or playing
     private var appContext: Context? = null
+
+    @Volatile private var lastChatter = "" // a run of messages from one person names them once
 
     @Volatile private var early: Pair<String, Boolean>? = null // the latest line asked for before the engine was ready
 
@@ -77,18 +80,31 @@ object Speaker {
             early = null
             voices =
                 runCatching {
-                    tts?.voices.orEmpty().sortedWith(compareBy({ it.locale.displayName }, { it.name }))
+                    tts?.voices.orEmpty().sortedWith(compareBy({ it.locale.displayName }, { -it.quality }, { it.name }))
                 }.getOrDefault(emptyList())
             applyVoice()
         }
     }
 
-    /** Applies the saved voice and speed; the engine default stays when the saved voice is no longer installed. */
+    /** Applies the saved voice and speed; with none saved (or it was uninstalled) the best installed one. */
     fun applyVoice() {
         prepare()
         tts?.setSpeechRate(SpeechSettings.rate / SpeechSettings.DEFAULT_RATE)
-        voices.firstOrNull { it.name == SpeechSettings.voice }?.let { tts?.voice = it }
+        (voices.firstOrNull { it.name == SpeechSettings.voice } ?: bestVoice())?.let { tts?.voice = it }
     }
+
+    /**
+     * The highest-quality installed voice for the phone's language. Network voices are skipped: they go silent when the
+     * signal drops mid-drive. Null (engine default) when nothing beats normal quality.
+     */
+    private fun bestVoice(): Voice? = voices
+        .filter {
+            it.locale.language == java.util.Locale.getDefault().language &&
+                !it.isNetworkConnectionRequired &&
+                TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED !in it.features.orEmpty()
+        }
+        .maxByOrNull { it.quality }
+        ?.takeIf { it.quality > Voice.QUALITY_NORMAL }
 
     /** Plays [text] in the selected voice so the picker can be auditioned. */
     fun preview(text: String) = speak(text, true)
@@ -115,9 +131,12 @@ object Speaker {
     /** Chat messages and alerts (tips/follows/subs/raids), gated by the read-aloud toggle and the per-kind settings. */
     fun speakChat(e: ChatEvent) {
         if (!readAloud || e.platform == "test") return // the Logs screen's flood test is never spoken
-        val text = spokenText(e, SpeechSettings.options()) ?: return
+        val message = e.kind == Kind.Message
+        val text = spokenText(e, SpeechSettings.options(), sameSpeaker = message && e.user == lastChatter) ?: return
         val origin = if (showOrigin) "on ${e.platform.replaceFirstChar(Char::uppercase)}, " else ""
-        if (pending.get() < 5) speak(origin + text, false)
+        if (pending.get() >= 5) return
+        if (message) lastChatter = e.user
+        speak(origin + text, false)
     }
 
     /** System alerts interrupt and ignore the read-aloud toggle, like iOS speakSystem. */

@@ -89,7 +89,7 @@ internal object WidgetLocation {
     }
 
     private fun handle(loc: Location) {
-        mps = if (loc.hasSpeed()) loc.speed.coerceAtLeast(0f) else 0f
+        mps = if (loc.hasSpeed()) loc.speed.coerceAtLeast(0f) else null // no GPS speed shows "--", not a fake 0
         if (loc.hasAccuracy() && loc.accuracy <= 30f) {
             val prev = lastFix
             if (prev != null) {

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,7 +26,11 @@ import com.saeedkolivand.metastream.speech.BoolPref
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.speech.SpeechSettings
 
-private fun Voice.label() = locale.displayName + " · " + name
+private fun Voice.label() = locale.displayName + " · " + name + when {
+    quality >= Voice.QUALITY_VERY_HIGH -> " (very high)"
+    quality >= Voice.QUALITY_HIGH -> " (high)"
+    else -> ""
+}
 
 @Composable
 private fun VoicePicker() {
@@ -33,10 +38,11 @@ private fun VoicePicker() {
     val current = Speaker.voices.firstOrNull { it.name == SpeechSettings.voice }
     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
         Text("Voice")
-        OutlinedButton({ open = true }) { Text(current?.label() ?: "System default") }
+        OutlinedButton({ open = true }) { Text(current?.label() ?: "Best installed") }
         DropdownMenu(open, { open = false }) {
-            DropdownMenuItem({ Text("System default") }, {
+            DropdownMenuItem({ Text("Best installed") }, {
                 SpeechSettings.pickVoice("")
+                Speaker.applyVoice()
                 open = false
             })
             for (v in Speaker.voices) {
@@ -64,7 +70,29 @@ internal fun ReadAloudSettings() {
     LaunchedEffect(Unit) { Speaker.prepare() }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         VoicePicker()
-        Note("Voices installed on this phone (system Settings > Text-to-speech output adds more).")
+        Note(
+            "The highest-quality voices sound the most human. Add one in system Settings > Text-to-speech output > " +
+                "engine settings > Install voice data; Best installed picks it automatically."
+        )
+        OutlinedTextField(
+            SpeechSettings.ignored,
+            SpeechSettings::pickIgnored,
+            Modifier.fillMaxWidth(),
+            label = { Text("Don't read these names") },
+            singleLine = true
+        )
+        OutlinedTextField(
+            SpeechSettings.blocked,
+            SpeechSettings::pickBlocked,
+            Modifier.fillMaxWidth(),
+            label = { Text("Blocked words, comma separated") },
+            singleLine = true
+        )
+        Note(
+            "Bots (names ending in bot, StreamElements, BotRix, Kicklet...) and !commands are skipped. Messages with a slur, " +
+                "\"kys\" or a blocked word aren't read, even disguised as n1gg3r or n i g g e r, and never show in on-stream " +
+                "chat, alert or event widgets; a name containing one is read as \"someone\". Any language, Persian included."
+        )
         PrefSwitch("Chat messages", SpeechSettings.messages)
         PrefSwitch("Tips and bits", SpeechSettings.tips)
         PrefSwitch("Follows", SpeechSettings.follows)

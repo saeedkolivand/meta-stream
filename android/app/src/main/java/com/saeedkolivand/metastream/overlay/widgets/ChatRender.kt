@@ -13,6 +13,7 @@ import androidx.core.graphics.ColorUtils
 import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.Kind
 import com.saeedkolivand.metastream.speech.eventSummary
+import com.saeedkolivand.metastream.speech.offensive
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.pow
@@ -28,6 +29,7 @@ internal fun chatRows(events: List<ChatEvent>, style: ChatStyle, now: Long): Lis
     return events.filter { e ->
         when {
             fadeMs > 0 && now - e.time > fadeMs -> false
+            e.offensive -> false // on stream a slur can get the channel banned
             e.kind != Kind.Message -> style.showEvents
             style.hideCommands && e.text.startsWith("!") -> false
             else -> !(style.hideBots && e.user.lowercase() in bots)

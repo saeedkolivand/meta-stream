@@ -5,6 +5,8 @@ import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.platforms.Kick
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.platforms.YouTube
+import com.saeedkolivand.metastream.speech.SpeechSettings
+import com.saeedkolivand.metastream.speech.isBlocked
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Health
 import java.text.DateFormat
@@ -50,8 +52,8 @@ internal object WidgetVariables {
         "{distance}" -> WidgetLocation.distanceText(Engine.liveSince)
         "{city}" -> WidgetLocation.cityText
         "{weather}" -> WidgetWeather.text
-        "{follower}" -> ChatFeed.lastFollower
-        "{sub}" -> ChatFeed.lastSubscriber
+        "{follower}" -> ChatFeed.lastFollower.takeUnless { isBlocked(it, SpeechSettings.blocked) }.orEmpty()
+        "{sub}" -> ChatFeed.lastSubscriber.takeUnless { isBlocked(it, SpeechSettings.blocked) }.orEmpty()
         else -> token
     }
 

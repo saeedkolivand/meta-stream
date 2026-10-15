@@ -8,6 +8,7 @@ import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.chat.Kind
 import com.saeedkolivand.metastream.speech.eventSummary
+import com.saeedkolivand.metastream.speech.offensive
 import kotlin.math.max
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -16,7 +17,7 @@ import kotlinx.coroutines.launch
 
 /** Newest first, only the kinds the style shows. */
 internal fun eventRows(events: List<ChatEvent>, style: EventListStyle): List<ChatEvent> =
-    events.filter { it.kind != Kind.Message && style.shows(it.kind) }.takeLast(style.maxEvents).asReversed()
+    events.filter { it.kind != Kind.Message && style.shows(it.kind) && !it.offensive }.takeLast(style.maxEvents).asReversed()
 
 /** Recent follows/subs/tips/raids, newest on top, each a flat rounded row. Null when there are none. */
 internal fun renderEventList(events: List<ChatEvent>, style: EventListStyle, scale: Float): Bitmap? {

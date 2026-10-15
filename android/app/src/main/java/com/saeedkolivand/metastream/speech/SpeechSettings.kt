@@ -41,6 +41,24 @@ object SpeechSettings {
     var minTipCents by mutableStateOf(Prefs.string("ttsMinTipCents").toIntOrNull() ?: 0)
         private set
 
+    /** Names never read, comma or space separated (iOS ttsIgnore). */
+    var ignored by mutableStateOf(Prefs.string("ttsIgnore"))
+        private set
+
+    /** Extra words that keep a message from being read or shown on stream, comma separated (iOS ttsBlocked). */
+    var blocked by mutableStateOf(Prefs.string("ttsBlocked"))
+        private set
+
+    fun pickIgnored(s: String) {
+        ignored = s
+        Prefs.put("ttsIgnore", s)
+    }
+
+    fun pickBlocked(s: String) {
+        blocked = s
+        Prefs.put("ttsBlocked", s)
+    }
+
     fun pickVoice(name: String) {
         voice = name
         Prefs.put("ttsVoiceID", name)
@@ -56,7 +74,7 @@ object SpeechSettings {
         Prefs.put("ttsMinTipCents", c.toString())
     }
 
-    fun options() = SpeechOptions(messages.value, tips.value, follows.value, subs.value, raids.value, minTipCents)
+    fun options() = SpeechOptions(messages.value, tips.value, follows.value, subs.value, raids.value, minTipCents, ignored, blocked)
 
     const val DEFAULT_RATE = 0.5f
 }
