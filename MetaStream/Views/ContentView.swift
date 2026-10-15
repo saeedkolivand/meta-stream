@@ -126,6 +126,20 @@ struct ContentView: View {
             controlsVisible = false
         }
         .onChange(of: controlsPinned) { _, _ in touch() }
+        .onChange(of: phase) { _, p in gpsOnlyBackground(p) }   // here, not in body: body's chain is at the type-checker's limit
+    }
+
+    /// Background location keeps the app alive only to share GPS with the iPad (GPSShare): chat, its read-aloud and the
+    /// level sensor stop until the app is back, so the phone isn't reading chat and iOS has less reason to close it.
+    private func gpsOnlyBackground(_ p: ScenePhase) {
+        guard gpsShare, !streamer.live else { return }
+        if p == .background {
+            chat.stop(); levelMonitor.stop()
+            applog("location", "background: sharing GPS only, chat stopped")
+        } else if p == .active {
+            vm.startChat(chat: chat, platforms: platforms, emotes: emotes, speaker: speaker)
+            if camLevelOn { levelMonitor.start() }
+        }
     }
 
     var body: some View {
@@ -164,18 +178,6 @@ struct ContentView: View {
         .onChange(of: streamer.source) { _, s in if s != "phone" { showCameraControls = false; aeafLocked = false } }
         .onChange(of: streamer.manualSource) { _, s in if s == "external" { showCameraControls = false; aeafLocked = false } }
         .onChange(of: camLevelOn) { _, on in on ? levelMonitor.start() : levelMonitor.stop() }
-        // Background location keeps the app alive only to share GPS with the iPad (GPSShare): chat, its read-aloud and the
-        // level sensor stop until the app is back, so the phone isn't reading chat and iOS has less reason to close it.
-        .onChange(of: phase) { _, p in
-            guard gpsShare, !streamer.live else { return }
-            if p == .background {
-                chat.stop(); levelMonitor.stop()
-                applog("location", "background: sharing GPS only, chat stopped")
-            } else if p == .active {
-                vm.startChat(chat: chat, platforms: platforms, emotes: emotes, speaker: speaker)
-                if camLevelOn { levelMonitor.start() }
-            }
-        }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = keepAwake }
         .onAppear {
             let c = streamer.overlays.context
