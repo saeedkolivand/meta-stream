@@ -158,17 +158,33 @@ behind a custom domain (add a `CNAME` record → `<you>.github.io`, **DNS only**
 
 ### 7. Build and install (from Windows, Linux or macOS)
 
-Push to `main` or run the *build-ipa* workflow. Then:
+Push to `main` or run the *build-ipa* workflow. Once (Windows: run these in Git Bash, which ships `openssl`; the
+*Apple Devices* app or iTunes provides the USB driver):
 
 ```bash
-pip install pymobiledevice3                      # once
-gh run download -n MetaStream-ipa -D build       # latest artifact
-openssl enc -d -aes-256-cbc -pbkdf2 -in build/MetaStream.ipa.enc -out build/MetaStream.ipa -pass pass:'<IPA_PASSWORD>'
-pymobiledevice3 apps install build/MetaStream.ipa   # phone unlocked, on USB
+pip install pymobiledevice3
+gh auth login
 ```
 
+Then, every time, from the repo root with every phone/iPad unlocked and on USB:
+
+```bash
+gh run list -w build-ipa -L 1                    # wait until the newest run says "completed success"
+rm -f build/MetaStream.ipa.enc build/MetaStream.ipa
+gh run download -n MetaStream-ipa -D build       # newest artifact
+openssl enc -d -aes-256-cbc -pbkdf2 -in build/MetaStream.ipa.enc -out build/MetaStream.ipa -pass file:signing/ipa-password.txt
+for udid in $(pymobiledevice3 usbmux list --usb --simple | grep -oE '[0-9A-F]{8}-[0-9A-F]{16}'); do
+  pymobiledevice3 apps install --udid "$udid" build/MetaStream.ipa && echo "OK $udid" || echo "FAILED $udid"
+done
+```
+
+`signing/ipa-password.txt` holds the `IPA_PASSWORD` secret (or use `-pass pass:'<IPA_PASSWORD>'`). Each device must
+print `OK`; `pymobiledevice3` reports errors on stderr, so don't pipe it into `tail`. If a device fails: unlock it,
+tap *Trust* on it, replug, and rerun only the loop. `bad decrypt` means the wrong password file.
+
 First launch: *Settings → General → VPN & Device Management → trust the developer*. The development profile is valid
-for a year; rebuilds install over the previous version and keep your settings.
+for a year; rebuilds install over the previous version and keep your settings. A device must be in the profile
+(step 3) or the install fails with a provisioning error.
 
 ---
 
