@@ -18,6 +18,8 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     @AppStorage("ttsFollowsOn") var followsOn = true
     @AppStorage("ttsSubsOn") var subsOn = true
     @AppStorage("ttsRaidsOn") var raidsOn = true
+    @AppStorage("ttsIgnore") var ignored = ""             // names never read, comma or space separated
+    @AppStorage("ttsBlocked") var blocked = ""            // extra words that stop a message being read, comma separated
 
     @Published var muted = false
     // ponytail: intentional and not to be "simplified" away — mute only silences Alert/Chat below.
@@ -32,6 +34,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     private let laneCap = 5
     private let chatPerMinuteCap = 20
     private var repeating: [String: Task<Void, Never>] = [:]
+    private var lastChatter = ""            // a run of messages from one person names them once
 
     override init() {
         super.init()
@@ -101,27 +104,27 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     }
 
     private func sentence(for e: ChatEvent) -> String? {
+        // Reading a slur aloud on stream can get the streamer banned, even when a viewer typed it.
+        let user = Self.isBlocked(e.user, extra: blocked) ? "someone" : e.user
+        let note = Self.isBlocked(e.text, extra: blocked) ? "" : Self.sanitize(e.text)
         switch e.kind {
         case .message:
-            guard messagesOn else { return nil }
-            let text = Self.sanitize(e.text)
-            guard !text.isEmpty else { return nil }
-            return "\(e.user) says \(text)"
+            guard messagesOn, !Self.isNoise(user: e.user, text: e.text, ignored: ignored), !note.isEmpty else { return nil }
+            defer { lastChatter = e.user }
+            return e.user == lastChatter ? note : "\(user) says \(note)"
         case .tip:
             guard tipsOn, e.amountCents >= minTipCents else { return nil }
             let amount = Self.spokenAmount(cents: e.amountCents)
-            let note = Self.sanitize(e.text)
-            return note.isEmpty ? "\(e.user) tipped \(amount)" : "\(e.user) tipped \(amount): \(note)"
+            return note.isEmpty ? "\(user) tipped \(amount)" : "\(user) tipped \(amount): \(note)"
         case .follow:
-            return followsOn ? "\(e.user) followed" : nil
+            return followsOn ? "\(user) followed" : nil
         case .subscribe:
-            return subsOn ? "\(e.user) subscribed" : nil
+            return subsOn ? "\(user) subscribed" : nil
         case .cheer:
             guard tipsOn else { return nil }   // bits are money; same gate as tips
-            let note = Self.sanitize(e.text)
-            return note.isEmpty ? "\(e.user) cheered \(e.count) bits" : "\(e.user) cheered \(e.count) bits: \(note)"
+            return note.isEmpty ? "\(user) cheered \(e.count) bits" : "\(user) cheered \(e.count) bits: \(note)"
         case .raid:
-            return raidsOn ? "\(e.user) raided with \(e.count) viewers" : nil
+            return raidsOn ? "\(user) raided with \(e.count) viewers" : nil
         }
     }
 
@@ -163,7 +166,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
 
     private func speakNow(_ text: String) {
         let u = AVSpeechUtterance(string: text)
-        if !voiceID.isEmpty { u.voice = AVSpeechSynthesisVoice(identifier: voiceID) }
+        u.voice = voiceID.isEmpty ? Self.bestVoice : AVSpeechSynthesisVoice(identifier: voiceID) ?? Self.bestVoice
         u.rate = Float(rate)
         synth.speak(u)
     }
@@ -176,6 +179,54 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     }
 
     // MARK: text shaping
+
+    /// The best installed voice for the system language (Premium > Enhanced), nil = iOS default. iOS's own default is the
+    /// robotic compact voice even when a Premium one is downloaded. Once per launch: speechVoices() is slow.
+    static let bestVoice: AVSpeechSynthesisVoice? = {
+        let lang = AVSpeechSynthesisVoice.currentLanguageCode()
+        let best = AVSpeechSynthesisVoice.speechVoices()
+            .filter { $0.language == lang && !$0.voiceTraits.contains(.isNoveltyVoice) }
+            .max { $0.quality.rawValue < $1.quality.rawValue }
+        return best?.quality == .default ? nil : best
+    }()
+
+    // ponytail: name heuristics, since no platform flags bots in chat; the ignore list covers the rest.
+    static let knownBots: Set<String> = ["streamelements", "streamlabs", "botrix", "kicklet", "soundalerts"]
+
+    // ponytail: the slurs and self-harm phrases most often behind hateful-conduct bans; `blocked` adds any language.
+    nonisolated static let bannedTerms = ["nigger", "nigga", "faggot", "fag", "retard", "tranny", "kike", "chink", "spic",
+                              "wetback", "gook", "kys", "kill yourself", "heil hitler"]
+    private nonisolated static let squashedBanned = bannedTerms.map(squash)   // the widgets check every row many times a second
+    private nonisolated static let leet: [Character: Character] = ["0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t",
+                                                       "@": "a", "$": "s", "!": "i", "|": "i"]
+
+    /// Lowercased letters only, leetspeak undone and repeats collapsed: "N1iiGG3R" -> "niger".
+    nonisolated static func squash(_ s: String) -> String {
+        var out = ""
+        for raw in s.lowercased().folding(options: .diacriticInsensitive, locale: nil) {
+            let c = leet[raw] ?? raw
+            if c.isLetter, out.last != c { out.append(c) }
+        }
+        return out
+    }
+
+    /// True if `text` holds a banned term or one of `extra` (comma separated), through leetspeak and stretched letters;
+    /// terms of 5+ letters also through spacing ("n i g g e r"). Shorter ones match whole words only, so "spicy" passes.
+    /// ponytail: errs toward silence; a skipped harmless message costs nothing, a spoken slur can cost the channel.
+    nonisolated static func isBlocked(_ text: String, extra: String) -> Bool {
+        let terms = squashedBanned + extra.split(separator: ",").map { squash(String($0)) }.filter { !$0.isEmpty }
+        let words = text.split { !$0.isLetter && leet[$0] == nil }.map { squash(String($0)) }
+        let joined = squash(text)
+        return terms.contains { t in t.count >= 5 ? joined.contains(t) : words.contains { $0 == t || $0 == t + "s" } }
+    }
+
+    /// Bots (names ending in "bot" plus the big ones that don't), !commands, and names in `ignored`.
+    static func isNoise(user: String, text: String, ignored: String) -> Bool {
+        let u = user.lowercased()
+        let names = ignored.lowercased().split { $0 == "," || $0.isWhitespace }.map { $0.hasPrefix("@") ? String($0.dropFirst()) : String($0) }
+        return u.hasSuffix("bot") || knownBots.contains(u) || names.contains(u)
+            || text.trimmingCharacters(in: .whitespaces).hasPrefix("!")
+    }
 
     /// Strips URLs/emotes/@ (keeping the name), collapses whitespace, caps length so one troll can't hog the queue.
     static func sanitize(_ raw: String, maxLength: Int = 200) -> String {
@@ -199,3 +250,10 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     }
 }
 
+extension ChatEvent {
+    /// A slur or blocked word (Settings → Read aloud) in the name or text: never read aloud and kept off the stream widgets.
+    var offensive: Bool {
+        let extra = UserDefaults.standard.string(forKey: "ttsBlocked") ?? ""
+        return Speaker.isBlocked(user, extra: extra) || Speaker.isBlocked(text, extra: extra)
+    }
+}

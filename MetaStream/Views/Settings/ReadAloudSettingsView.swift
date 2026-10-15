@@ -11,6 +11,8 @@ struct ReadAloudSettingsView: View {
     @AppStorage("ttsRaidsOn") var ttsRaidsOn = true
     @AppStorage("ttsRate") var ttsRate = 0.5
     @AppStorage("ttsMinTipCents") var ttsMinTipCents = 0
+    @AppStorage("ttsIgnore") var ttsIgnore = ""
+    @AppStorage("ttsBlocked") var ttsBlocked = ""
     @AppStorage("voiceKick") var voiceKick = true
     @AppStorage("voiceTwitch") var voiceTwitch = true
     @AppStorage("voiceYouTube") var voiceYouTube = true
@@ -21,8 +23,18 @@ struct ReadAloudSettingsView: View {
     /// mid-session and speechVoices() isn't cheap enough to call on every body evaluation.
     private static let voiceGroups: [(language: String, voices: [AVSpeechSynthesisVoice])] = {
         let grouped = Dictionary(grouping: AVSpeechSynthesisVoice.speechVoices(), by: \.language)
-        return grouped.keys.sorted().map { lang in (lang, grouped[lang]!.sorted { $0.name < $1.name }) }
+        return grouped.keys.sorted().map { lang in
+            (lang, grouped[lang]!.sorted { ($0.quality.rawValue, $1.name) > ($1.quality.rawValue, $0.name) })   // best first
+        }
     }()
+
+    private static func qualityLabel(_ q: AVSpeechSynthesisVoiceQuality) -> String {
+        switch q {
+        case .premium: return " (Premium)"
+        case .enhanced: return " (Enhanced)"
+        default: return ""
+        }
+    }
 
     private static func languageLabel(_ code: String) -> String {
         Locale.current.localizedString(forIdentifier: code) ?? code
@@ -32,17 +44,30 @@ struct ReadAloudSettingsView: View {
         Form {
             Section {
                 Picker("Voice", selection: $ttsVoiceID) {
-                    Text("System default").tag("")
+                    Text("Best installed").tag("")
                     ForEach(Self.voiceGroups, id: \.language) { group in
                         Section(Self.languageLabel(group.language)) {
                             ForEach(group.voices, id: \.identifier) { voice in
-                                Text(voice.name).tag(voice.identifier)
+                                Text(voice.name + Self.qualityLabel(voice.quality)).tag(voice.identifier)
                             }
                         }
                     }
                 }
             } footer: {
-                Text("Voices installed on this iPhone (Settings → Accessibility → Spoken Content → Voices adds more).")
+                Text("Premium voices sound the most human. Download one (e.g. Ava or Zoe, Premium) in Settings → Accessibility → "
+                     + "Read & Speak (Spoken Content) → Voices, then reopen this app. Best installed picks it automatically.")
+            }
+
+            Section {
+                TextField("Names, e.g. nightbot, spammer123", text: $ttsIgnore)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled()
+                TextField("Blocked words, comma separated", text: $ttsBlocked)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled()
+            } header: { Text("Don't read") } footer: {
+                Text("Bots (names ending in bot, StreamElements, BotRix, Kicklet...) and !commands are skipped automatically. "
+                     + "Messages with a slur, \"kys\" or a blocked word aren't read, even disguised as n1gg3r or n i g g e r; "
+                     + "a name containing one is read as \"someone\". The same messages and names never show in on-stream chat, "
+                     + "alert or event widgets. Add words in any language, Persian included.")
             }
 
             Section {

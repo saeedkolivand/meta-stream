@@ -44,6 +44,7 @@ struct StreamChatView: View {
         let fade = Double(style.fadeSeconds)
         let kept = events.filter { e in
             if fade > 0, now.timeIntervalSince(e.at) > fade { return false }
+            if e.offensive { return false }   // on stream a slur can get the channel banned
             if e.kind != .message { return style.showEvents }
             if style.hideCommands, e.text.hasPrefix("!") { return false }
             return !(style.hideBots && bots.contains(e.user.lowercased()))
@@ -257,7 +258,7 @@ struct EventListView: View {
 
     /// Newest first, only the kinds the style shows.
     static func rows(_ events: [ChatEvent], _ style: EventListStyle) -> [ChatEvent] {
-        Array(events.filter { $0.kind != .message && style.shows($0.kind) }.suffix(Int(style.maxEvents)).reversed())
+        Array(events.filter { $0.kind != .message && style.shows($0.kind) && !$0.offensive }.suffix(Int(style.maxEvents)).reversed())
     }
 
     var body: some View {

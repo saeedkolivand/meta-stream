@@ -41,10 +41,15 @@ enum WidgetVariables {
         case "{distance}": return WidgetLocation.shared.distanceText(since: ctx.streamer?.liveSince)
         case "{city}": return WidgetLocation.shared.cityText
         case "{weather}": return WidgetWeather.shared.text
-        case "{follower}": return ctx.chat?.lastFollower ?? ""
-        case "{sub}": return ctx.chat?.lastSubscriber ?? ""
+        case "{follower}": return clean(ctx.chat?.lastFollower ?? "")
+        case "{sub}": return clean(ctx.chat?.lastSubscriber ?? "")
         default: return token
         }
+    }
+
+    /// A name with a slur or blocked word never goes on stream.
+    private static func clean(_ name: String) -> String {
+        Speaker.isBlocked(name, extra: UserDefaults.standard.string(forKey: "ttsBlocked") ?? "") ? "" : name
     }
 
     private static func uptime(_ since: Date?) -> String {

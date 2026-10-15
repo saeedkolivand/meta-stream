@@ -17,7 +17,7 @@ extension OverlayCompositor {
             var queue: [ChatEvent] = []
             while !Task.isCancelled {
                 if let chat = ctx.chat {
-                    queue += chat.events(since: seen).filter { style.shows($0.kind) }
+                    queue += chat.events(since: seen).filter { style.shows($0.kind) && !$0.offensive }
                     seen = chat.serial
                     if queue.count > 20 { queue.removeFirst(queue.count - 20) }   // a raid train shouldn't queue minutes of banners
                 }
