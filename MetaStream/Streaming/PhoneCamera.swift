@@ -122,7 +122,7 @@ extension Streamer {
                 if !multi, !isExt { await mixer.setSessionPreset(phoneQuality.sessionPreset) }
                 let mode = Self.stabilizationMode(phoneQuality.stabilization)
                 let mainMaxHeight = min(phoneQuality.height, 1080)
-                let mcFps = min(phoneQuality.fps, 30)
+                let mcFps = min(phoneQuality.fps, Self.multiFpsCap)
                 let configureMain: @Sendable (VideoDeviceUnit) throws -> Void = { unit in
                     // UVC devices expose no stabilisation, mirroring or camera controls. ponytail: their format is
                     // left alone too -- the Osmo vanished from iPadOS (even FaceTime) until a restart, and we're
@@ -141,7 +141,8 @@ extension Streamer {
                     let ext = Self.externalCamera()   // not `cam`: it was sent to the mixer actor above (Swift 6 region isolation)
                     let offered = Set((ext?.formats ?? []).map { "\(dims($0).width)x\(dims($0).height)" }).sorted()
                     let active = ext.map { "\(dims($0.activeFormat).width)x\(dims($0.activeFormat).height)" } ?? "?"
-                    applog("stream", "external camera attached: \(externalCameraName ?? "unknown") active=\(active) offered=\(offered)")
+                    let maxFps = ext?.activeFormat.videoSupportedFrameRateRanges.map(\.maxFrameRate).max() ?? 0
+                    applog("stream", "external camera attached: \(externalCameraName ?? "unknown") active=\(active) maxFps=\(Int(maxFps)) offered=\(offered)")
                 } else {
                     if mode != .off { applog("stream", "stabilization requested: \(phoneQuality.stabilization)") }
                     applog("stream", "camera zoom=\(String(format: "%.2f", camSettings.zoom))x position=\(fallbackPosition == .front ? "front" : "back")")
@@ -188,9 +189,9 @@ extension Streamer {
                     cameraCapabilities = CameraCapabilities.probe(position: fallbackPosition)
                     cameraPosition = fallbackPosition
                 }
-                // UVC webcams can't rotate the connection, so external is always landscape; fps stays capped
-                // at 30 because an unsupported frame duration raises an ObjC exception.
-                try? await mixer.setFrameRate(Float64(isExt || multi ? mcFps : phoneQuality.fps))
+                // UVC webcams can't rotate the connection, so external is always landscape; their rate is checked against
+                // the webcam's current format because an unsupported frame duration raises an ObjC exception.
+                try? await mixer.setFrameRate(Float64(isExt ? Self.externalFps(want: mcFps) : multi ? mcFps : phoneQuality.fps))
                 await setOrientation(isExt ? .landscapeRight : phoneQuality.landscape ? landscapeOrientation : .portrait)
                 applog("stream", "camera attached \(phoneQuality.height)p @\(phoneQuality.fps) landscape=\(isExt || phoneQuality.landscape) multi=\(multi) overlay=\(overlayOK)")
                 source = "phone"
@@ -258,6 +259,17 @@ extension Streamer {
         device.unlockForConfiguration()
     }
 
+    /// Dual camera and UVC webcams: 60 fps on iPad (M-series headroom), 30 on iPhone, where two captures + a composite +
+    /// an encode is what the phone sustains.
+    static var multiFpsCap: Int { UIDevice.current.userInterfaceIdiom == .pad ? 60 : 30 }
+
+    /// `want` if the webcam's current format can run at it, else 30 (what UVC webcams always offered so far).
+    static func externalFps(want: Int) -> Int {
+        let w = Double(want)
+        let ok = externalCamera()?.activeFormat.videoSupportedFrameRateRanges.contains { $0.minFrameRate <= w && w <= $0.maxFrameRate }
+        return ok == true ? want : min(want, 30)
+    }
+
     nonisolated static var centerStageWanted: Bool { UserDefaults.standard.object(forKey: "centerStage") as? Bool ?? true }
 
     /// Center Stage is a request: .cooperative also lets the user flip it in Control Center. The switch is global
@@ -281,7 +293,7 @@ extension Streamer {
         }
         let multi = mixerIsMulti
         let mirror = position == .front
-        let fps = min(phoneQuality.fps, 30)
+        let fps = min(phoneQuality.fps, Self.multiFpsCap)
         if !multi { await mixer.setSessionPreset(.hd1280x720) }   // single-session overlay (glasses mode) has no format picker
         do {
             try await mixer.attachVideo(cam, track: 1) { unit in

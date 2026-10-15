@@ -378,13 +378,13 @@ extension Streamer {
     /// before GO LIVE.
     var blurCanvasSize: CGSize { sessionGeometryFixed ? sessionVideoSize : phoneQuality.size }
 
-    /// Dual camera caps at 1080p30: two captures + a composite + an encode is what a phone sustains, not 4K/60.
-    /// UVC webcams can't rotate the connection (portrait would squash/letterbox them) and stay at 30 fps;
+    /// Dual camera caps at 1080p and multiFpsCap (60 on iPad, 30 on iPhone): two captures + a composite + an encode.
+    /// UVC webcams can't rotate the connection (portrait would squash/letterbox them) and get the same fps cap;
     /// resolution follows the setting, since e.g. the Osmo Action 6 offers 4K as a webcam.
     func capped(_ q: PhoneQuality) -> PhoneQuality {
         var q = q
         if dualWanted { q.height = min(q.height, 1080) }
-        if dualWanted || manualSource == "external" { q.fps = min(q.fps, 30) }
+        if dualWanted || manualSource == "external" { q.fps = min(q.fps, Self.multiFpsCap) }
         if manualSource == "external" { q.landscape = true }
         return q
     }

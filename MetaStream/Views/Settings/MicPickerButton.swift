@@ -26,7 +26,7 @@ struct MicPickerButton: UIViewRepresentable {
 
     func updateUIView(_ uiView: UIButton, context: Context) {}
 
-    final class Coordinator: NSObject, AVInputPickerInteractionDelegate {
+    final class Coordinator: NSObject, AVInputPickerInteraction.Delegate {
         var picker: AVInputPickerInteraction?
 
         // iOS 26 can revert the choice; log what actually stuck.

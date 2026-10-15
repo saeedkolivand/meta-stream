@@ -208,7 +208,7 @@ struct CameraSettingsView: View {
                         ForEach(modes, id: \.self) { Text(DisplayNames.stabilizationLabel($0)).tag($0) }
                     }
                 } header: { Text("Resolution & stabilisation") } footer: {
-                    Text("Resolution and frame rate come straight off this camera's supported capture formats, so they change per device and per resolution — nothing here is offered unless this camera can actually do it. Stabilisation crops the picture and the stronger modes add capture latency, so Standard is the safe pick for a live stream and Action is for rough movement you would otherwise not be able to watch. Fixed for the whole stream — set it before going live.")
+                    Text("Resolution and frame rate come straight off this camera's supported capture formats, so they change per device and per resolution — nothing here is offered unless this camera can actually do it. Stabilisation crops the picture and the stronger modes add capture latency, so Standard is the safe pick for a live stream and Action is for rough movement you would otherwise not be able to watch. Fixed for the whole stream — set it before going live. With the dual camera or a USB webcam the frame rate is capped at 60 on iPad and 30 on iPhone, and a webcam only gets 60 when its current mode offers it.")
                 }
             }
         }
