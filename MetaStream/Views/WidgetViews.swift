@@ -204,50 +204,65 @@ struct StreamChatView: View {
 
 // MARK: alerts
 
+/// "Island" alert: a near-black capsule that drops in as a dot, opens, shows the event and closes again. All motion
+/// comes from `pose` (see AlertIsland), so a frame is a pure function of its inputs; the default pose is the settled card.
 struct AlertBannerView: View {
     let event: ChatEvent
     let style: AlertWidgetStyle
+    var pose = AlertPose.settled
 
     private var size: CGFloat { CGFloat(style.fontSize) }
-
-    private var label: String {
-        switch event.kind {
-        case .message: return ""
-        case .follow: return "NEW FOLLOWER"
-        case .subscribe: return "NEW SUBSCRIBER"
-        case .tip: return String(format: "TIPPED $%.2f", Double(event.amountCents) / 100)
-        case .cheer: return "CHEERED \(event.count) BITS"
-        case .raid: return "RAID · \(event.count) VIEWERS"
-        }
-    }
+    private var big: Bool { AlertIsland.isBig(event) }
+    private var height: CGFloat { AlertIsland.height(event) }
+    private var fullWidth: CGFloat { big ? 800 : 740 }
+    private func font(_ k: CGFloat, _ w: UIFont.Weight) -> Font { WidgetFonts.font(face: style.face, size: size * k, weight: w) }
 
     var body: some View {
-        let accent = argbColor(style.accentColor), text = argbColor(style.textColor)
+        let tint = argbColor(AlertIsland.color(event.kind, accent: style.accentColor))
+        let open = max(0, pose.open)
         ZStack {
-            RoundedRectangle(cornerRadius: 30).fill(Color.black.opacity(0.78))
-            RoundedRectangle(cornerRadius: 30).stroke(accent, lineWidth: 4)
-            HStack(spacing: 28) {
-                Image(systemName: eventSymbol(event.kind).name)
-                    .font(.system(size: 56, weight: .bold)).foregroundColor(.white)
-                    .frame(width: 118, height: 118).background(accent, in: Circle())
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(label).font(WidgetFonts.font(face: style.face, size: size * 0.5, weight: .bold)).foregroundColor(accent)
-                    Text(event.user).font(WidgetFonts.font(face: style.face, size: size, weight: .bold)).foregroundColor(text)
-                        .lineLimit(1).minimumScaleFactor(0.5)
-                    if !event.text.isEmpty {
-                        Text(event.text).font(WidgetFonts.font(face: style.face, size: size * 0.55, weight: .regular))
-                            .foregroundColor(text.opacity(0.85)).lineLimit(2).multilineTextAlignment(.leading)
-                            .rowDirection(WidgetFonts.isRTL(event.text))
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.horizontal, 36)
+            Capsule().fill(Color(red: 13 / 255, green: 13 / 255, blue: 16 / 255))
+            content(tint)
+                .frame(width: fullWidth, height: height)
+                .opacity(pose.contentAlpha).offset(y: pose.contentRise)
+            Capsule().fill(tint).opacity(pose.flash)   // big-tier flash: colour over the whole capsule, fading out
         }
-        .frame(width: 900, height: 240)
+        .frame(width: height + (fullWidth - height) * open, height: height)
+        .clipShape(Capsule())
+        .offset(y: pose.lift * height).opacity(pose.alpha)
+        .padding(.top, 56)   // room above the rest position for the dot to drop in
+        .frame(width: 900, height: 240, alignment: .top)
     }
 
-    static var sample: ChatEvent { ChatEvent(kind: .follow, user: "ninja_fox", text: "", origin: "twitch") }
+    /// Left-anchored in LTR and RTL alike; only the name/message text runs flow right-to-left.
+    private func content(_ tint: Color) -> some View {
+        let d: CGFloat = big ? 120 : 84
+        let text = argbColor(style.textColor)
+        return HStack(spacing: 24) {
+            Image(systemName: eventSymbol(event.kind).name)
+                .font(.system(size: d * 0.46, weight: .bold))
+                .foregroundColor(event.kind == .follow ? Color(white: 17.0 / 255) : .white)   // follow's colour is light
+                .frame(width: d, height: d).background(tint, in: Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                Text(AlertIsland.label(event.kind)).font(font(0.45, .semibold)).kerning(size * 0.45 * 0.16)
+                    .foregroundColor(.white.opacity(0.74)).lineLimit(1)
+                Text(event.user).font(font(1, .bold)).foregroundColor(text)
+                    .lineLimit(1).minimumScaleFactor(0.5).rowDirection(WidgetFonts.isRTL(event.user))
+                if !event.text.isEmpty {
+                    Text(event.text).font(font(0.55, .regular)).foregroundColor(.white.opacity(0.74))
+                        .lineLimit(1).truncationMode(.tail).rowDirection(WidgetFonts.isRTL(event.text))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if let amount = AlertIsland.amountText(event, progress: pose.progress) {
+                Text(amount).font(font(big ? 1.8 : 1.3, .bold)).monospacedDigit()
+                    .foregroundColor(tint).lineLimit(1).fixedSize()
+            }
+        }
+        .padding(.leading, (height - d) / 2).padding(.trailing, 44)
+    }
+
+    static var sample: ChatEvent { ChatEvent(kind: .raid, user: "ninja_fox", text: "", count: 120, origin: "twitch") }
 }
 
 // MARK: event list

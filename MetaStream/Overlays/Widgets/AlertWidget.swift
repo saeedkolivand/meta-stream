@@ -1,6 +1,5 @@
 // Native alert banner: queues follow/sub/raid/tip/cheer events from the chat feed and shows each one in turn.
-// The banner is rendered once per alert; the fade is three pre-multiplied alpha copies, so a whole alert costs one
-// SwiftUI render plus a handful of cheap CGContext redraws.
+// The "Island" capsule animates as ~24 fps re-renders of AlertBannerView (see AlertIsland.swift); the hold is one static frame.
 import HaishinKit
 import SwiftUI
 import UIKit
@@ -26,20 +25,8 @@ extension OverlayCompositor {
                     continue
                 }
                 let e = queue.removeFirst()
-                guard let full = WidgetRaster.piece(AlertBannerView(event: e, style: style), natural: natural, box: box, canvas: canvas) else { continue }
-                let steps: [CGFloat] = [0.33, 0.66]
-                for a in steps {
-                    await OverlayScreen.setImage(o, OverlayRaster.withAlpha(full.bitmap, a))
-                    try? await Task.sleep(for: WidgetRaster.pause(80))
-                }
-                await OverlayScreen.setImage(o, full.bitmap)
-                try? await Task.sleep(for: .seconds(Double(style.holdSeconds)))
-                for a in steps.reversed() {
-                    await OverlayScreen.setImage(o, OverlayRaster.withAlpha(full.bitmap, a))
-                    try? await Task.sleep(for: WidgetRaster.pause(80))
-                }
-                await OverlayScreen.setImage(o, nil)
-                try? await Task.sleep(for: .milliseconds(300))
+                await AlertPlayer.play(e, style: style, on: o, natural: natural, box: box, canvas: canvas)
+                try? await Task.sleep(for: .seconds(AlertIsland.gap))
             }
         }
         let object: ScreenObject = o

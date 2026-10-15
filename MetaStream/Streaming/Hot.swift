@@ -25,6 +25,13 @@ final class Hot: @unchecked Sendable {
                                          // (this is the diagnostic that would have caught the offscreen-mode freeze without a device).
     var showMixerVideo = true           // preview shows mixer output (phone camera / black) instead of glasses frames
     weak var preview: AVSampleBufferDisplayLayer?
+    /// Feeds the on-device preview and, when plugged in, the external display's layer (ExternalDisplay.swift).
+    func enqueue(_ sb: CMSampleBuffer) {
+        for case let p? in [preview, ExternalDisplay.layer] {       // AVSampleBufferDisplayLayer is thread-safe
+            if p.sampleBufferRenderer.status == .failed { p.sampleBufferRenderer.flush() }
+            p.sampleBufferRenderer.enqueue(sb)
+        }
+    }
     // Outbound-pressure telemetry for the bitrate controller (acted on only while Streamer.phoneEncodes is
     // true). Written by QueueWatcher below (HaishinKit's own NetworkMonitor callback), read once a second by
     // Streamer's existing stats loop. Same race tolerance as frames/bytes above: worst case a stale tick.
@@ -74,9 +81,8 @@ final class LayerSink: MediaMixerOutput, @unchecked Sendable {
     var audioTrackId: UInt8? { nil }
     func mixer(_ mixer: MediaMixer, didOutput sampleBuffer: CMSampleBuffer) {
         hot.mixerOut += 1   // counted regardless of preview state -- this is the mixer's composited-output tap firing, full stop
-        guard hot.showMixerVideo, let p = hot.preview else { return }
-        if p.sampleBufferRenderer.status == .failed { p.sampleBufferRenderer.flush() }
-        p.sampleBufferRenderer.enqueue(sampleBuffer)
+        guard hot.showMixerVideo else { return }
+        hot.enqueue(sampleBuffer)
     }
     func mixer(_ mixer: MediaMixer, didOutput buffer: AVAudioPCMBuffer, when: AVAudioTime) {}
     func selectTrack(_ id: UInt8?, mediaType: CMFormatDescription.MediaType) async {}
@@ -122,7 +128,7 @@ extension Streamer {
         // themselves being observed properties.
         let glassesBlurredLive = hot.forward && hot.transcoder != nil && (hot.live || hot.warm) && (privacy?.enabled == true || dualCamActive || overlaysWanted)
         let show = source == "phone" || cameraOff || glassesBlurredLive
-        if show != hot.showMixerVideo { hot.showMixerVideo = show; hot.preview?.sampleBufferRenderer.flush() }   // format switches between sources
+        if show != hot.showMixerVideo { hot.showMixerVideo = show; hot.preview?.sampleBufferRenderer.flush(); ExternalDisplay.layer?.sampleBufferRenderer.flush() }   // format switches between sources
     }
 
     // ponytail: ContentView sets this directly instead of a delegate protocol.
@@ -259,10 +265,7 @@ extension Streamer {
                         if let t = hot.transcoder { t.decode(sb) }            // H.264 mode: decode → mixer → encoder
                         else if hot.live { Task { await up.append(sb) } }     // HEVC mode: passthrough, no encode
                     }
-                    if !hot.showMixerVideo, let preview = hot.preview {       // AVSampleBufferDisplayLayer is thread-safe
-                        if preview.sampleBufferRenderer.status == .failed { preview.sampleBufferRenderer.flush() }
-                        preview.sampleBufferRenderer.enqueue(sb)                                   // layer decodes HEVC itself
-                    }
+                    if !hot.showMixerVideo { hot.enqueue(sb) }                // layer decodes HEVC itself
                 })
                 tokens.append(camera.stream.photoDataPublisher.listen { [weak self] photo in
                     Task { @MainActor in

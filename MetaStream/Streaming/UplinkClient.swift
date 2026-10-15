@@ -225,9 +225,11 @@ extension Streamer {
                 // Meta docs: audio route must be settled before frames flow; do this before connect.
                 let audioSession = AVAudioSession.sharedInstance()
                 try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP, .allowBluetoothA2DP, .mixWithOthers])
-                if let port = audioSession.availableInputs?.first(where: { $0.uid == micUID }) {
-                    try audioSession.setPreferredInput(port)
-                }
+                let port = audioSession.availableInputs?.first(where: { $0.uid == micUID })
+                if let port { try audioSession.setPreferredInput(port) }
+                // Built-in mic: Apple's camera-recording tuning (fuller, uses the iPad Pro's mic array) instead of the
+                // generic one. Glasses (HFP) and USB mics keep .default, which leaves their own processing alone.
+                if port == nil || port?.portType == .builtInMic { try? audioSession.setMode(.videoRecording) }
                 try audioSession.setActive(true)
 
                 if !muted { try await mixer.attachAudio(AVCaptureDevice.default(for: .audio)) }
@@ -290,7 +292,7 @@ extension Streamer {
                         applog("stream", "decoder warm after \(waited * 100) ms, decoded=\(hot.transcoder?.decoded ?? 0)")
                     }
                 }
-                await uplink.setAudioSettings(AudioCodecSettings(bitRate: 96_000))
+                await uplink.setAudioSettings(AudioCodecSettings(bitRate: 160_000))   // AAC 160k: Kick/Twitch accept it, costs ~64 kbps more
 
                 applog("stream", "connecting to \(Self.redactedURL(url)) key=\(key.count) chars, mic=\(micUID.isEmpty ? "default" : micUID), bitrate=\(bitrateKbps), codec=\(codec)")
                 Task { await Self.netProbe(url) }        // logs which interface iOS picks and whether the host answers on it

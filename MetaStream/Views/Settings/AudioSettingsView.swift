@@ -13,6 +13,11 @@ struct AudioSettingsView: View {
                 }
                 Toggle("Mute microphone", isOn: Binding(get: { streamer.muted }, set: { streamer.setMuted($0) }))
             }
+            Section {
+                MicPickerButton().frame(height: 44)
+            } footer: {
+                Text("Voice Isolation cuts road and wind noise.")
+            }
         }
         .navigationTitle("Audio")
         .navigationBarTitleDisplayMode(.inline)

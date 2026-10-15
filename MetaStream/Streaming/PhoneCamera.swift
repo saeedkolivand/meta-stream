@@ -145,6 +145,7 @@ extension Streamer {
                 } else {
                     if mode != .off { applog("stream", "stabilization requested: \(phoneQuality.stabilization)") }
                     applog("stream", "camera zoom=\(String(format: "%.2f", camSettings.zoom))x position=\(fallbackPosition == .front ? "front" : "back")")
+                    if fallbackPosition == .front { applyCenterStage() }
                 }
 
                 // Face-cam overlay: the OTHER position on track 1. Main always stays on track 0; swapping is
@@ -241,7 +242,12 @@ extension Streamer {
             let d = CMVideoFormatDescriptionGetDimensions(f.formatDescription)
             return f.isMultiCamSupported && Int(d.width) * 9 == Int(d.height) * 16 && Int(d.height) <= maxHeight
         }
-        let pool = fits.filter(supports).isEmpty ? fits : fits.filter(supports)
+        var pool = fits.filter(supports).isEmpty ? fits : fits.filter(supports)
+        // Center Stage only runs on some formats: prefer those for the front camera, but never at the cost of an empty pool.
+        if device.position == .front, centerStageWanted {
+            let cs = pool.filter(\.isCenterStageSupported)
+            if !cs.isEmpty { pool = cs }
+        }
         guard let best = pool.max(by: { key($0) < key($1) }), (try? device.lockForConfiguration()) != nil else { return }
         device.activeFormat = best
         if supports(best) {   // an out-of-range duration raises an ObjC exception, so only set it when the format allows it
@@ -250,6 +256,19 @@ extension Streamer {
             device.activeVideoMaxFrameDuration = d
         }
         device.unlockForConfiguration()
+    }
+
+    nonisolated static var centerStageWanted: Bool { UserDefaults.standard.object(forKey: "centerStage") as? Bool ?? true }
+
+    /// Center Stage is a request: .cooperative also lets the user flip it in Control Center. The switch is global
+    /// (class property) and only takes effect while the front camera's activeFormat supports it, so call this after
+    /// the front camera is (re)attached and when the setting changes. Never throws; unsupported just logs.
+    func applyCenterStage() {
+        guard let front = CameraSettings.device(lens: "wide", position: .front) else { return }
+        let supported = front.activeFormat.isCenterStageSupported
+        AVCaptureDevice.centerStageControlMode = .cooperative
+        AVCaptureDevice.isCenterStageEnabled = Self.centerStageWanted && supported
+        applog("stream", "center stage: wanted=\(Self.centerStageWanted) formatSupported=\(supported) enabled=\(AVCaptureDevice.isCenterStageEnabled)")
     }
 
     /// Attaches `position`'s camera on track 1 as the face-cam overlay. Never throws -- a failed overlay must
@@ -271,6 +290,7 @@ extension Streamer {
                 if multi, let device = unit.device { Streamer.applyFormat(device, maxHeight: 720, fps: fps) }
             }
             applog("stream", "dual camera: overlay attached (\(mirror ? "front" : "back"))")
+            if mirror { applyCenterStage() }
             return true
         } catch {
             applog("stream", "dual camera: overlay attach failed: \(error.localizedDescription)", error: true)

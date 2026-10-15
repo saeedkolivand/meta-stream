@@ -40,5 +40,6 @@ struct MetaStreamApp: App {
                 if showSplash { SplashView { showSplash = false } }
             }
         }
+        .commands { StreamCommands(streamer: streamer, speaker: speaker) }
     }
 }

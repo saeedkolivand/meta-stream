@@ -18,6 +18,8 @@ struct ChatEvent: Sendable {
     var badges: [String] = []
     var color: String? = nil
     var at: Date = Date()
+    /// Set by ChatModerator when the on-device model judged the message unsafe: kept in the in-app chat, nowhere else.
+    var flagged = false
 }
 
 /// Live chat as one AsyncStream<ChatEvent> (text-to-speech drives off it) plus a recent-messages buffer
@@ -40,6 +42,7 @@ final class ChatFeed: ObservableObject {
     private var kick: KickChatProvider?
     private var twitch: TwitchEventSubProvider?
     private var youtube: YouTubePollProvider?
+    private let moderator = ChatModerator()
 
     init() {
         // ponytail: bufferingNewest caps memory if TTS ever falls behind a chat flood; unbounded isn't needed.
@@ -98,7 +101,12 @@ final class ChatFeed: ObservableObject {
 
     // MARK: - shared sink
 
+    /// Every provider lands here; messages may wait up to 1.5 s for AI review before `publish`.
     func yield(_ e: ChatEvent) {
+        moderator.review(e) { [weak self] in self?.publish($0) }
+    }
+
+    private func publish(_ e: ChatEvent) {
         serial += 1
         if e.kind == .follow { lastFollower = e.user }
         if e.kind == .subscribe { lastSubscriber = e.user }

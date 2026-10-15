@@ -13,6 +13,7 @@ struct ReadAloudSettingsView: View {
     @AppStorage("ttsMinTipCents") var ttsMinTipCents = 0
     @AppStorage("ttsIgnore") var ttsIgnore = ""
     @AppStorage("ttsBlocked") var ttsBlocked = ""
+    @AppStorage("aiModeration") var aiModeration = true
     @AppStorage("voiceKick") var voiceKick = true
     @AppStorage("voiceTwitch") var voiceTwitch = true
     @AppStorage("voiceYouTube") var voiceYouTube = true
@@ -56,6 +57,13 @@ struct ReadAloudSettingsView: View {
             } footer: {
                 Text("Premium voices sound the most human. Download one (e.g. Ava or Zoe, Premium) in Settings → Accessibility → "
                      + "Read & Speak (Spoken Content) → Voices, then reopen this app. Best installed picks it automatically.")
+            }
+
+            Section {
+                Toggle("AI moderation (English)", isOn: $aiModeration).disabled(!ChatModerator.available)
+            } footer: {
+                Text("Uses Apple Intelligence on this device to hide hateful or harassing English messages from stream and speech. "
+                     + "Held up to 1.5 s for review." + (ChatModerator.available ? "" : " Not available on this device."))
             }
 
             Section {

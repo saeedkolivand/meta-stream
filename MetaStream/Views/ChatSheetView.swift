@@ -18,6 +18,10 @@ struct ChatSheetView: View {
 
     @State private var chatText = ""
     @State private var atBottom = true
+    @EnvironmentObject var speaker: Speaker   // injected app-wide in App.swift; sheets inherit it
+    @State private var summary: String?
+    @State private var summaryError: String?
+    @State private var summarizing = false
 
     /// True once at least one origin is set up to produce chat - Kick needs only a channel name, Twitch/
     /// YouTube need a connected account. Drives the sheet's "no chat source" empty state.
@@ -56,6 +60,7 @@ struct ChatSheetView: View {
     /// needed. Once the user scrolls up to read history, new messages stop yanking them back down.
     private var chatList: some View {
         VStack(spacing: 0) {
+            if ChatModerator.available { catchUpBar }
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
@@ -92,6 +97,9 @@ struct ChatSheetView: View {
                         ForEach(event.badges, id: \.self) { badgeChip($0) }
                         Text(event.user).font(.subheadline.weight(.bold))
                             .foregroundStyle(DisplayNames.nameColor(event))
+                        if event.flagged {
+                            Text("hidden from stream").font(.caption2.weight(.semibold)).foregroundStyle(.orange)
+                        }
                     }
                     if animate, emotes.animates(event.text) {
                         // ponytail: 10 fps; only rows holding an animated emote tick, and LazyVStack only builds visible ones.
@@ -104,6 +112,7 @@ struct ChatSheetView: View {
             }
             .padding(.horizontal, 10).padding(.vertical, 8)
             .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+            .opacity(event.flagged ? 0.55 : 1)   // AI-flagged: still shown here so the streamer can ban the sender
             .padding(.vertical, 3)
         } else {
             HStack(spacing: 8) {
@@ -112,6 +121,40 @@ struct ChatSheetView: View {
             }
             .foregroundStyle(.secondary)
             .padding(.horizontal, 10).padding(.vertical, 4)
+        }
+    }
+
+    /// "Catch me up": on-device summary of the last ~60 messages, shown here and optionally read aloud.
+    private var catchUpBar: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button(action: catchUp) {
+                Label(summarizing ? "Summarizing…" : "Catch me up", systemImage: "sparkles")
+            }
+            .disabled(summarizing)
+            if let summary {
+                Text(summary).font(.footnote)
+                HStack {
+                    Button("Read it") { speaker.speakSystem(summary) }
+                    Button("Dismiss") { self.summary = nil }
+                }
+                .font(.footnote)
+            }
+            if let summaryError { Text(summaryError).font(.footnote).foregroundStyle(.secondary) }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal).padding(.bottom, 6)
+    }
+
+    private func catchUp() {
+        summarizing = true
+        summary = nil
+        summaryError = nil
+        let events = chat.recent
+        Task {
+            do { summary = try await ChatSummary.summarize(events) }
+            catch let f as ChatSummary.Failure { summaryError = f.message }
+            catch { summaryError = "Couldn't summarize right now." }
+            summarizing = false
         }
     }
 

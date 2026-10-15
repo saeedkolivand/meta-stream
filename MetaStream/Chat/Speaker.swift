@@ -94,7 +94,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     // MARK: Chat lane + templated alerts (tip/follow/subscribe/raid)
 
     func speak(_ event: ChatEvent) {
-        guard event.origin != "test", var text = sentence(for: event) else { return }   // "test" = flood test   // mute is enforced in enqueue(_:into:)
+        guard event.origin != "test", !event.flagged, var text = sentence(for: event) else { return }   // "test" = flood test   // mute is enforced in enqueue(_:into:)
         if showOrigin, !event.origin.isEmpty { text = "on \(event.origin), " + text }
         switch event.kind {
         case .message: enqueue(text, into: &chatQueue)
@@ -253,8 +253,10 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
 }
 
 extension ChatEvent {
-    /// A slur or blocked word (Settings → Read aloud) in the name or text: never read aloud and kept off the stream widgets.
+    /// A slur or blocked word (Settings → Read aloud) in the name or text, or flagged by AI moderation:
+    /// never read aloud and kept off the stream widgets.
     var offensive: Bool {
+        if flagged { return true }
         let extra = UserDefaults.standard.string(forKey: "ttsBlocked") ?? ""
         return Speaker.isBlocked(user, extra: extra) || Speaker.isBlocked(text, extra: extra)
     }

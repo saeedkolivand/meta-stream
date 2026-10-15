@@ -14,6 +14,7 @@ struct ContentView: View {
     @AppStorage("keepAwake") var keepAwake = true
     @AppStorage("camLevelOn") var camLevelOn = false
     @AppStorage("gpsShare") private var gpsShare = false
+    @AppStorage("dockChat") private var dockChat = true
     @Environment(\.scenePhase) private var phase
 
     @StateObject private var vm = StreamViewModel()
@@ -31,8 +32,17 @@ struct ContentView: View {
     @Environment(\.horizontalSizeClass) private var hSize
     @State private var controlsVisible = true
     @State private var lastTouch = Date.now
+    @State private var landscape = false
 
     private var phoneCamControllable: Bool { streamer.source == "phone" && streamer.manualSource != "external" }
+
+    /// iPad landscape: chat is docked beside the preview instead of a sheet (portrait / iPhone keep the sheet).
+    private var useDock: Bool { hSize == .regular && landscape }
+
+    /// What the chat buttons flip: the dock on iPad landscape, the sheet otherwise.
+    private var chatToggle: Binding<Bool> {
+        useDock ? $dockChat : $showChat
+    }
 
     /// Anything presented keeps the controls up; otherwise they fade after 5 s without a touch.
     private var controlsPinned: Bool { showSettings || showChat || showManager || showStatus || showCameraControls }
@@ -69,9 +79,9 @@ struct ContentView: View {
     private var controlsLayer: some View {
         ZStack {
             VStack {
-                HUDView(showStatus: $showStatus, showManager: $showManager, showChat: $showChat, showCameraControls: $showCameraControls)
+                HUDView(showStatus: $showStatus, showManager: $showManager, showChat: chatToggle, showCameraControls: $showCameraControls)
                 Spacer()
-                GoLiveControlsView(codec: vm.codec, showChat: $showChat, showSettings: $showSettings)
+                GoLiveControlsView(codec: vm.codec, showChat: chatToggle, showSettings: $showSettings)
             }
             .padding(.horizontal)
 
@@ -87,8 +97,23 @@ struct ContentView: View {
         .allowsHitTesting(controlsShown)
     }
 
-    /// Preview, controls and the auto-hide behaviour; split from `body` so the type checker copes with the modifier chain.
+    /// Stage plus the docked chat; the dock sits beside the stage so HUD and controls never go under it.
     private var stage: some View {
+        HStack(spacing: 0) {
+            stageCore
+            if useDock, dockChat {
+                // .constant: the dock's own Settings/Manager buttons must not hide it; the chat button does.
+                ChatSheetView(vm: vm, emotes: emotes, showChat: .constant(true), showSettings: $showSettings, showManager: $showManager)
+                    .frame(width: 360)
+                    .background(Color.black)
+            }
+        }
+        .background(Color.black.ignoresSafeArea())
+        .onGeometryChange(for: Bool.self) { $0.size.width > $0.size.height } action: { landscape = $0 }
+    }
+
+    /// Preview, controls and the auto-hide behaviour; split from `body` so the type checker copes with the modifier chain.
+    private var stageCore: some View {
         ZStack {
             Color.black.ignoresSafeArea()
             PreviewContainerView(levelMonitor: levelMonitor, focusTap: $focusTap, aeafLocked: $aeafLocked, pinchStartZoom: $pinchStartZoom)

@@ -151,7 +151,7 @@ object Engine {
         val ok = try {
             s.setVideoCodec(if (h265) VideoCodec.H265 else VideoCodec.H264)
             s.prepareVideo(p.width, p.height, p.bitrate, fps = p.fps, rotation = p.rotation) &&
-                s.prepareAudio(44100, true, 128_000)
+                s.prepareAudio(44100, true, 160_000) // stereo AAC 160k, same as iOS
         } catch (e: IllegalArgumentException) {
             false
         }
