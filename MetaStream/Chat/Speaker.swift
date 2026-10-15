@@ -183,10 +183,12 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     /// The best installed voice for the system language (Premium > Enhanced), nil = iOS default. iOS's own default is the
     /// robotic compact voice even when a Premium one is downloaded. Once per launch: speechVoices() is slow.
     static let bestVoice: AVSpeechSynthesisVoice? = {
+        // Any region of the language: "en-DE" has no voices of its own, so it must match en-US/en-GB; the exact one wins ties.
         let lang = AVSpeechSynthesisVoice.currentLanguageCode()
+        let prefix = lang.prefix { $0 != "-" } + "-"
         let best = AVSpeechSynthesisVoice.speechVoices()
-            .filter { $0.language == lang && !$0.voiceTraits.contains(.isNoveltyVoice) }
-            .max { $0.quality.rawValue < $1.quality.rawValue }
+            .filter { $0.language.hasPrefix(prefix) && !$0.voiceTraits.contains(.isNoveltyVoice) }
+            .max { ($0.quality.rawValue, $0.language == lang ? 1 : 0) < ($1.quality.rawValue, $1.language == lang ? 1 : 0) }
         return best?.quality == .default ? nil : best
     }()
 
