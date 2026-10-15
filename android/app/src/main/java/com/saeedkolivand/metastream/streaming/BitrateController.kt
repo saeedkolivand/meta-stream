@@ -10,12 +10,24 @@ fun steppedBitrate(current: Int, up: Boolean, ceilingKbps: Int, floorKbps: Int):
     return next.coerceIn(floorKbps, ceilingKbps.coerceAtLeast(floorKbps))
 }
 
+/** Why the controller moved the bitrate, in the words the NETWORK panel shows. */
+enum class Why(val text: String) {
+    Congested("network backed up"),
+    Slow("upload slower than target"),
+    Stable("$CLEAN_TICKS_FOR_UP s stable, raising"),
+    Hot("phone hot")
+}
+
 /**
  * Port of iOS adaptBitrate/stepBitrate: an AIMD loop ticked once a second. No I/O; [tick] and [thermal] return the new
  * bitrate to apply, or null when nothing changes. [ceilingKbps] is the configured bitrate.
  */
 class BitrateController(private val ceilingKbps: Int, private val floorKbps: Int = BITRATE_FLOOR_KBPS) {
     var currentKbps = ceilingKbps
+        private set
+
+    /** Reason for the most recent non-null result of [tick] or [thermal]. */
+    var why = Why.Congested
         private set
     private var cleanTicks = 0
     private var lastAdjustMs: Long? = null
@@ -24,15 +36,18 @@ class BitrateController(private val ceilingKbps: Int, private val floorKbps: Int
     fun tick(nowMs: Long, congested: Boolean, throughputKbps: Long): Int? {
         if (congested) {
             cleanTicks = 0
+            why = Why.Congested
             return step(nowMs, false)
         }
         // Short of target by 30%+ (iOS rule); 0 means no sample yet, not a stall.
         if (throughputKbps in 1 until currentKbps * 7L / 10) {
             cleanTicks = 0
+            why = Why.Slow
             return step(nowMs, false)
         }
         if (++cleanTicks >= CLEAN_TICKS_FOR_UP) {
             cleanTicks = 0
+            why = Why.Stable
             return step(nowMs, true)
         }
         return null
@@ -46,6 +61,7 @@ class BitrateController(private val ceilingKbps: Int, private val floorKbps: Int
         }
         if (thermalCeiling != null) return null
         thermalCeiling = currentKbps
+        why = Why.Hot
         val next = step(nowMs, false)
         thermalCeiling = currentKbps
         return next

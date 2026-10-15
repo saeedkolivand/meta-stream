@@ -85,6 +85,7 @@ object Health {
         this.scope = scope
         this.speak = speak
         this.alert = alert
+        NetStats.init(application)
     }
 
     /** Feeds the loop from RootEncoder's stats callback (its own thread). */
@@ -104,6 +105,7 @@ object Health {
         thermal = power.currentThermalStatus
         power.addThermalStatusListener(ContextCompat.getMainExecutor(app), thermalListener)
         listening = true
+        NetStats.begin()
         job = scope.launch {
             var lastFrames = client?.getSentVideoFrames() ?: 0
             var lastBattery = 0L
@@ -120,15 +122,18 @@ object Health {
                     lastBattery = now
                     updateBattery()
                 }
+                val congested = client?.hasCongestion() == true
                 if (controller != null && client != null) {
                     val change = controller.thermal(now, thermalSerious(thermal))
-                        ?: if (downSince == null) controller.tick(now, client.hasCongestion(), outKbps) else null
+                        ?: if (downSince == null) controller.tick(now, congested, outKbps) else null
                     if (change != null) {
+                        NetStats.change(now, change, change > capKbps, controller.why)
                         apply(change)
                         capKbps = change
                         applog("stream", "bitrate -> $change kbps")
                     }
                 }
+                NetStats.record(Sample(outKbps.toInt(), capKbps, congested, downSince != null))
                 if (thermalSerious(thermal) && !warnedThermal) {
                     warnedThermal = true
                     speak("phone getting hot")
@@ -141,6 +146,7 @@ object Health {
     fun stop() {
         job?.cancel()
         job = null
+        NetStats.end()
         // remove throws when the listener was never added (first start() calls stop() too)
         if (listening) app.getSystemService(PowerManager::class.java).removeThermalStatusListener(thermalListener)
         listening = false
@@ -167,6 +173,7 @@ object Health {
     fun markDown() {
         if (downSince != null) return
         downSince = System.currentTimeMillis()
+        NetStats.drop(downSince!!)
         lastEscalation = 0
         applog("stream", "connection dropped, retrying")
         speak("connection lost, retrying")
@@ -174,6 +181,7 @@ object Health {
     }
 
     fun markUp() {
+        NetStats.up(System.currentTimeMillis())
         downSince = null
         lastEscalation = 0
     }

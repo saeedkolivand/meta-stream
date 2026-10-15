@@ -109,7 +109,7 @@ internal fun MainScreen() {
     LaunchedEffect(Unit) { ask.launch(everything) }
 
     // Controls fade after 5 s without a touch; never while a panel is open.
-    val busy = detent != Detent.Hidden || settingsOpen || ManagerState.open || Cam.stripOpen
+    val busy = detent != Detent.Hidden || settingsOpen || ManagerState.open || NetworkState.open || Cam.stripOpen
     var visible by remember { mutableStateOf(true) }
     val touch = remember { Channel<Unit>(Channel.CONFLATED) }
     LaunchedEffect(busy) {
@@ -193,4 +193,5 @@ internal fun MainScreen() {
     }
     if (settingsOpen) SettingsSheet { settingsOpen = false }
     StreamManager()
+    NetworkSheet()
 }

@@ -20,7 +20,10 @@ import com.saeedkolivand.metastream.privacy.Privacy
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Health
+import com.saeedkolivand.metastream.streaming.Level
+import com.saeedkolivand.metastream.streaming.NetStats
 import com.saeedkolivand.metastream.streaming.Source
+import com.saeedkolivand.metastream.streaming.level
 import com.saeedkolivand.metastream.streaming.thermalLabel
 import kotlinx.coroutines.delay
 
@@ -49,6 +52,8 @@ private fun glassesColor(status: String) = when {
     else -> Orange
 }
 
+private val openNetwork = { NetworkState.open = true }
+
 /** Top status strip; scrolls sideways so a long run of pills never wraps over the preview. */
 @Composable
 internal fun Hud() {
@@ -56,10 +61,18 @@ internal fun Hud() {
         if (Engine.live) {
             TimerPill()
             val rate = if (Health.fps > 0) "${Health.fps} fps · ${Health.kbps} kbps" else "${Health.kbps} kbps"
-            Pill(R.drawable.ic_waveform, rate, Color.White)
+            val tint = when (level(NetStats.samples)) {
+                Level.Ok -> Color.White
+                Level.Warn -> Orange
+                Level.Bad -> Red
+            }
+            Pill(R.drawable.ic_waveform, rate, tint, openNetwork)
+            if (NetStats.drops > 0) {
+                Pill(R.drawable.ic_warning, "${NetStats.drops} ${if (NetStats.drops == 1) "drop" else "drops"}", Orange, openNetwork)
+            }
             if (Health.capKbps in 1 until Health.ceilingKbps) Pill(R.drawable.ic_cap, "${Health.capKbps}k cap", Orange)
         } else {
-            Pill(R.drawable.ic_antenna, Engine.status, Color.Gray)
+            Pill(R.drawable.ic_antenna, Engine.status, Color.Gray, openNetwork)
         }
         Health.battery?.takeIf { it < 30 }?.let { Pill(R.drawable.ic_battery, "phone $it%", if (it < 15) Orange else Color.White) }
         thermalLabel(Health.thermal)?.let { Pill(R.drawable.ic_thermo, it, if (it == "warm") Color.White else Orange) }
