@@ -46,6 +46,12 @@ final class Streamer: ObservableObject {
 
     @Published var sessionSummary: String?      // set by stopLive(), e.g. "session 42:10, 1:48 down across 3 drops"
 
+    @Published var net = NetworkStats()         // NETWORK panel data, see NetworkStats.swift
+
+    @Published var netPath = NetPathInfo()
+
+    var pathMonitor: NWPathMonitor?
+
     @Published var devices = "none seen yet"
 
     @Published var source = "phone" { didSet { syncHot(); applog("stream", "source=\(source) manual=\(manualSource)") } }   // what is going out right now
@@ -292,6 +298,7 @@ final class Streamer: ObservableObject {
         _ = NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.deviceRotated() }
         }
+        startNetPathMonitor()
         evaluateSource()                                // glasses off at launch → phone camera after 2 s
         Task { [weak self] in                           // 1 s stats tick for the HUD, logged every 5 s while live
             var tick = 0
@@ -304,6 +311,8 @@ final class Streamer: ObservableObject {
                 self.frames = f
                 self.lastFrames = f; self.lastBytes = b
                 tick += 1
+                // Sample BEFORE adaptBitrate(): it consumes (resets) hot.congested.
+                self.recordNetSample(congested: self.hot.congested)
                 await self.adaptBitrate()
                 await self.syncBlurEffect()
                 self.checkBlurStall()

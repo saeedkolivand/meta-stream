@@ -49,6 +49,7 @@ extension Streamer {
         guard downSince == nil else { return }
         downSince = Date()
         drops += 1
+        net.lastDropAt = downSince
         rtmpState = "reconnecting"
         applog("stream", "connection dropped, retrying", error: true)
         speaker?.startRepeating(id: "rtmp", text: "stream dropped")   // re-speaks itself at 30s/60s/2min

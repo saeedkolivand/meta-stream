@@ -43,6 +43,7 @@ extension Streamer {
         await uplink.setVideoSettings(vs)
         currentBitrateKbps = next
         lastBitrateAdjustAt = Date()
+        recordBitrateChange(up: up, kbps: next, reason: reason)
         applog("stream", "bitrate \(up ? "up" : "down") -> \(next) kbps (\(reason))")
     }
 

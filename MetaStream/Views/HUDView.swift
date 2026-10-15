@@ -14,6 +14,8 @@ struct HUDView: View {
     @Binding var showChat: Bool
     @Binding var showCameraControls: Bool
 
+    @State var showNetwork = false   // not private, same memberwise-init reason as overlays below
+
     @ObservedObject var overlays = OverlayStore.shared   // not private: it would make HUDView's memberwise init private
 
     /// Active scene; tap for the list. Glasses HEVC passthrough can't be drawn on, so it says so there.
@@ -57,12 +59,21 @@ struct HUDView: View {
                              down ? "down " + elapsed(ctx.date) : elapsed(ctx.date),
                              down ? .orange : .red)
                     }
-                    StripStyles.pill("waveform", "\(streamer.fps) fps · \(streamer.kbps) kbps", .white)
+                    StripStyles.stripButton(label: {
+                        StripStyles.pill("waveform", "\(streamer.fps) fps · \(streamer.kbps) kbps", kbpsColor)
+                    }, action: { hapticTap(); showNetwork = true })
+                    if streamer.drops > 0 {
+                        StripStyles.stripButton(label: {
+                            StripStyles.pill("exclamationmark.arrow.triangle.2.circlepath", "\(streamer.drops) drops", .orange)
+                        }, action: { hapticTap(); showNetwork = true })
+                    }
                     if streamer.currentBitrateKbps > 0, streamer.currentBitrateKbps < bitrateKbps {
                         StripStyles.pill("arrow.down.right.circle", "\(streamer.currentBitrateKbps)k cap", .orange)
                     }
                 } else {
-                    StripStyles.pill("antenna.radiowaves.left.and.right", streamer.rtmpState, .gray)
+                    StripStyles.stripButton(label: {
+                        StripStyles.pill("antenna.radiowaves.left.and.right", streamer.rtmpState, .gray)
+                    }, action: { hapticTap(); showNetwork = true })
                 }
                 if let pb = streamer.phoneBattery, pb < 30 {
                     StripStyles.pill("battery.25", "phone \(pb)%", pb < 15 ? .orange : .white)
@@ -102,6 +113,15 @@ struct HUDView: View {
             }
         }
         .padding(.top, 4)
+        .sheet(isPresented: $showNetwork) { NetworkPanelView().environmentObject(streamer) }
+    }
+
+    /// White normally; orange when sending well under target or the queue backed up in the last 5 s; red while down.
+    private var kbpsColor: Color {
+        if streamer.connectedSince == nil { return .red }
+        let target = streamer.currentBitrateKbps
+        let slow = target > 0 && streamer.kbps < target * 7 / 10
+        return slow || streamer.net.recentlyCongested() ? .orange : .white
     }
 
     /// nil below moderate — a pill that never clears is noise on a screen you glance at mid-walk.
