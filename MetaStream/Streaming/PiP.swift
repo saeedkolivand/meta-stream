@@ -6,6 +6,7 @@ import CoreMedia
 /// which is what lets media pipelines (the H.264 transcoder included) survive backgrounding.
 final class PiPController: NSObject, AVPictureInPictureSampleBufferPlaybackDelegate, AVPictureInPictureControllerDelegate {
     private var controller: AVPictureInPictureController?
+    private var armed = false
 
     init(layer: AVSampleBufferDisplayLayer) {
         super.init()
@@ -23,20 +24,26 @@ final class PiPController: NSObject, AVPictureInPictureSampleBufferPlaybackDeleg
 
     /// Arms/disarms background auto-start. Called once per session from Streamer.goLive/stopLive.
     func setArmed(_ on: Bool) {
+        armed = on
         controller?.canStartPictureInPictureAutomaticallyFromInline = on
+        controller?.invalidatePlaybackState()
         applog("ui", "PiP armed=\(on)")
     }
 
-    // Live stream: no seeking, never paused.
+    // Live stream: no seeking. Idle reports "paused": iOS auto-started PiP for an idle "playing" layer even with
+    // canStartPictureInPictureAutomaticallyFromInline false (seen with GPS sharing keeping the iPhone alive in the background).
     func pictureInPictureController(_ c: AVPictureInPictureController, setPlaying playing: Bool) {}
     func pictureInPictureControllerTimeRangeForPlayback(_ c: AVPictureInPictureController) -> CMTimeRange {
         CMTimeRange(start: .negativeInfinity, duration: .positiveInfinity)
     }
-    func pictureInPictureControllerIsPlaybackPaused(_ c: AVPictureInPictureController) -> Bool { false }
+    func pictureInPictureControllerIsPlaybackPaused(_ c: AVPictureInPictureController) -> Bool { !armed }
     func pictureInPictureController(_ c: AVPictureInPictureController, didTransitionToRenderSize newRenderSize: CMVideoDimensions) {}
     func pictureInPictureController(_ c: AVPictureInPictureController, skipByInterval skipInterval: CMTime) async {}
 
-    func pictureInPictureControllerDidStartPictureInPicture(_ c: AVPictureInPictureController) { applog("ui", "PiP started") }
+    func pictureInPictureControllerDidStartPictureInPicture(_ c: AVPictureInPictureController) {
+        applog("ui", "PiP started armed=\(armed)")
+        if !armed { c.stopPictureInPicture() }   // backstop if iOS still starts it while idle
+    }
     func pictureInPictureControllerDidStopPictureInPicture(_ c: AVPictureInPictureController) { applog("ui", "PiP stopped") }
     func pictureInPictureController(_ c: AVPictureInPictureController, failedToStartPictureInPictureWithError error: Error) {
         applog("ui", "PiP failed: \(error.localizedDescription)", error: true)
