@@ -13,8 +13,8 @@ struct SharedFix: Equatable {
     var time: Date
 
     var wire: String { "\(lat),\(lon),\(speed),\(accuracy),\(time.timeIntervalSince1970)" }
-    /// One log line per exchange, same text on both devices so the two logs line up.
-    var summary: String { String(format: "%.5f,%.5f ±%.0f m, speed %.1f m/s, fix %.1f s old", lat, lon, accuracy, speed, -time.timeIntervalSinceNow) }
+    /// One log line per exchange, same text on both devices so the two logs line up. No coordinates: the log file persists.
+    var summary: String { String(format: "±%.0f m, speed %.1f m/s, fix %.1f s old", accuracy, speed, -time.timeIntervalSinceNow) }
 
     init(lat: Double, lon: Double, speed: Double, accuracy: Double, time: Date) {
         (self.lat, self.lon, self.speed, self.accuracy, self.time) = (lat, lon, speed, accuracy, time)
