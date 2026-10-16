@@ -13,7 +13,8 @@ struct PreviewView: UIViewRepresentable {
         let view = PreviewUIView()
         view.displayLayer.videoGravity = .resizeAspect
         streamer.preview = view.displayLayer
-        if streamer.pip == nil { streamer.pip = PiPController(layer: view.displayLayer) }
+        // Re-made while idle: leaving GPS-only mode builds a new layer, and a PiP on the old one would show nothing.
+        if streamer.pip == nil || !streamer.live { streamer.pip = PiPController(layer: view.displayLayer) }
         return view
     }
     func updateUIView(_ uiView: PreviewUIView, context: Context) {}

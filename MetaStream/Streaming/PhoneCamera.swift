@@ -66,7 +66,30 @@ extension Streamer {
         }
     }
 
+    /// "Share GPS with iPad" on an iPhone that isn't live: the app shows GPSOnlyView instead of the camera screen.
+    static func gpsOnlyWanted(live: Bool) -> Bool {
+        UIDevice.current.userInterfaceIdiom == .phone && UserDefaults.standard.bool(forKey: "gpsShare") && !live
+    }
+
+    /// GPS-only: camera, face cam and the offscreen render loop off until the camera screen is back.
+    func setGPSOnly(_ on: Bool) {
+        guard on != gpsOnly else { return }
+        gpsOnly = on
+        applog("location", "GPS-only screen \(on ? "on" : "off")")
+        guard on else { evaluateSource(); return }
+        fallbackTask?.cancel()
+        cameraDevice = nil
+        cameraCapabilities = nil
+        Task {
+            await setOffscreenMode(false)
+            try? await mixer.attachVideo(nil)
+            await detachOverlay()
+        }
+        source = "glasses"   // evaluateSource's "nothing attached" state, so turning GPS-only off re-attaches
+    }
+
     func switchTo(glasses: Bool) async {
+        guard !gpsOnly else { return }
         do {
             // A swap is only meaningful against the camera pair it was made on; every re-attach starts unswapped
             // (else mainTrack could be left pointing at a track the new attach never fills).

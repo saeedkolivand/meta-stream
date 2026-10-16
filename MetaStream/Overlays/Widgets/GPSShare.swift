@@ -28,12 +28,13 @@ struct SharedFix: Equatable {
 
 /// The iPhone side. Runs location in the background while on (needs UIBackgroundModes "location").
 @MainActor
-final class GPSShare: NSObject, CLLocationManagerDelegate {
+final class GPSShare: NSObject, ObservableObject, CLLocationManagerDelegate {
     static let shared = GPSShare()
 
     private let manager = CLLocationManager()
     private var listener: NWListener?
-    private var latest: SharedFix?
+    @Published private(set) var latest: SharedFix?
+    @Published private(set) var lastAsked: Date?   // last iPad ping answered, for GPSOnlyView
     private var loggedReject = false
 
     func setEnabled(_ on: Bool) {
@@ -62,6 +63,7 @@ final class GPSShare: NSObject, CLLocationManagerDelegate {
                             c.cancel(); return
                         }
                         guard let fix = self.latest else { c.cancel(); return }
+                        self.lastAsked = .now
                         c.send(content: Data(fix.wire.utf8), completion: .contentProcessed { _ in c.cancel() })
                     }
                 }

@@ -183,6 +183,7 @@ final class Streamer: ObservableObject {
     var glassesStreaming = false
 
     var fallbackTask: Task<Void, Never>?
+    var gpsOnly = false                      // iPhone only sharing GPS with the iPad: no camera or mixer, see setGPSOnly
 
     var fallbackPosition: AVCaptureDevice.Position = .back
 
@@ -299,6 +300,7 @@ final class Streamer: ObservableObject {
             Task { @MainActor in self?.deviceRotated() }
         }
         startNetPathMonitor()
+        gpsOnly = Self.gpsOnlyWanted(live: false)       // before evaluateSource: a GPS-only launch never opens the camera
         evaluateSource()                                // glasses off at launch → phone camera after 2 s
         Task { [weak self] in                           // 1 s stats tick for the HUD, logged every 5 s while live
             var tick = 0
@@ -314,7 +316,7 @@ final class Streamer: ObservableObject {
                 // Sample BEFORE adaptBitrate(): it consumes (resets) hot.congested.
                 self.recordNetSample(congested: self.hot.congested)
                 await self.adaptBitrate()
-                await self.syncBlurEffect()
+                if !self.gpsOnly { await self.syncBlurEffect() }   // it would restart the offscreen render loop for the overlays
                 self.checkBlurStall()
                 self.liveActivity.sync(self)
                 if self.live, tick % 5 == 0 {

@@ -13,9 +13,7 @@ struct ContentView: View {
     @EnvironmentObject var privacy: Privacy
     @AppStorage("keepAwake") var keepAwake = true
     @AppStorage("camLevelOn") var camLevelOn = false
-    @AppStorage("gpsShare") private var gpsShare = false
     @AppStorage("dockChat") private var dockChat = true
-    @Environment(\.scenePhase) private var phase
 
     @StateObject private var vm = StreamViewModel()
     @StateObject private var emotes = Emotes()
@@ -151,20 +149,8 @@ struct ContentView: View {
             controlsVisible = false
         }
         .onChange(of: controlsPinned) { _, _ in touch() }
-        .onChange(of: phase) { _, p in gpsOnlyBackground(p) }   // here, not in body: body's chain is at the type-checker's limit
-    }
-
-    /// Background location keeps the app alive only to share GPS with the iPad (GPSShare): chat, its read-aloud and the
-    /// level sensor stop until the app is back, so the phone isn't reading chat and iOS has less reason to close it.
-    private func gpsOnlyBackground(_ p: ScenePhase) {
-        guard gpsShare, !streamer.live else { return }
-        if p == .background {
-            chat.stop(); levelMonitor.stop()
-            applog("location", "background: sharing GPS only, chat stopped")
-        } else if p == .active {
-            vm.startChat(chat: chat, platforms: platforms, emotes: emotes, speaker: speaker)
-            if camLevelOn { levelMonitor.start() }
-        }
+        // GPS-only mode (App) replaces this screen: chat, its read-aloud and the level sensor stop with it.
+        .onDisappear { chat.stop(); levelMonitor.stop() }   // here, not in body: body's chain is at the type-checker's limit
     }
 
     var body: some View {
@@ -182,11 +168,6 @@ struct ContentView: View {
         }
         .alert("Status", isPresented: $showStatus) { Button("OK") {} } message: {
             Text("Meta: \(streamer.registration)\nGlasses: \(streamer.glassesState)\nDevices: \(streamer.devices)\nRTMP: \(streamer.rtmpState)\nDrops: \(streamer.drops)\nFrames: \(streamer.frames)\nTeam ID: \(streamer.teamID)" + (streamer.sessionSummary.map { "\nLast: \($0)" } ?? ""))
-        }
-        .task {
-            // ponytail: one consumer for the app's lifetime. ChatFeed buffers, Speaker bounds its own lanes,
-            // so nothing here needs backpressure handling.
-            for await e in chat.events { speaker.speak(e) }
         }
         .onAppear { vm.startChat(chat: chat, platforms: platforms, emotes: emotes, speaker: speaker); vm.applyBlur(privacy: privacy, streamer: streamer); if camLevelOn { levelMonitor.start() } }
         .onChange(of: vm.chatChannel) { _, _ in vm.startChat(chat: chat, platforms: platforms, emotes: emotes, speaker: speaker) }
