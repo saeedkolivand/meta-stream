@@ -22,6 +22,7 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
     private var phonePoll: Task<Void, Never>?   // iPad only: asks the hotspot iPhone for its GPS (see GPSShare)
     private var phoneFixAt = Date.distantPast
     private var phoneTime: Date?
+    private var phoneSilent = false   // logs "no reply" once per outage, not every second
 
     /// "42 km/h" (mph in non-metric locales), "--" until the first fix.
     var speedText: String {
@@ -92,6 +93,8 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
                 c.send(content: Data("?".utf8), completion: .idempotent)
                 try? await Task.sleep(for: .seconds(1))
                 c.cancel()
+                let silent = Date().timeIntervalSince(phoneFixAt) > 2
+                if silent != phoneSilent { phoneSilent = silent; if silent { applog("location", "iPhone GPS: no reply") } }
             }
         }
     }
@@ -99,6 +102,7 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
     private func phoneFix(_ f: SharedFix) {
         guard phonePoll != nil else { return }
         phoneFixAt = Date()
+        applog("location", "iPhone GPS reply: \(f.summary)\(f.time == phoneTime ? " (repeat)" : "")")
         guard f.time != phoneTime else { return }   // the phone repeats its latest fix until a new one arrives
         if phoneTime == nil { applog("location", "using iPhone GPS: accuracy \(Int(f.accuracy)) m, speed \(f.speed)") }
         phoneTime = f.time
