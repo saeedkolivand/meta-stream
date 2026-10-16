@@ -102,7 +102,6 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
     private func phoneFix(_ f: SharedFix) {
         guard phonePoll != nil else { return }
         phoneFixAt = Date()
-        applog("location", "iPhone GPS reply: \(f.summary)\(f.time == phoneTime ? " (repeat)" : "")")
         guard f.time != phoneTime else { return }   // the phone repeats its latest fix until a new one arrives
         if phoneTime == nil { applog("location", "using iPhone GPS: accuracy \(Int(f.accuracy)) m, speed \(f.speed)") }
         phoneTime = f.time

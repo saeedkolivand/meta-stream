@@ -13,8 +13,6 @@ struct SharedFix: Equatable {
     var time: Date
 
     var wire: String { "\(lat),\(lon),\(speed),\(accuracy),\(time.timeIntervalSince1970)" }
-    /// One log line per exchange, same text on both devices so the two logs line up. No coordinates: the log file persists.
-    var summary: String { String(format: "±%.0f m, speed %.1f m/s, fix %.1f s old", accuracy, speed, -time.timeIntervalSinceNow) }
 
     init(lat: Double, lon: Double, speed: Double, accuracy: Double, time: Date) {
         (self.lat, self.lon, self.speed, self.accuracy, self.time) = (lat, lon, speed, accuracy, time)
@@ -64,9 +62,8 @@ final class GPSShare: NSObject, ObservableObject, CLLocationManagerDelegate {
                             if !self.loggedReject { self.loggedReject = true; applog("location", "GPS share: ignored ping to \(String(describing: c.currentPath?.localEndpoint))") }
                             c.cancel(); return
                         }
-                        guard let fix = self.latest else { applog("location", "GPS share: iPad asked, no fix yet"); c.cancel(); return }
+                        guard let fix = self.latest else { c.cancel(); return }
                         self.lastAsked = .now
-                        applog("location", "GPS share: answered iPad \(fix.summary)")
                         c.send(content: Data(fix.wire.utf8), completion: .contentProcessed { _ in c.cancel() })
                     }
                 }
