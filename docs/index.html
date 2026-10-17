@@ -3,458 +3,472 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>MetaStream: IRL streaming from Ray-Ban Meta glasses</title>
-<meta name="description" content="Stream your Ray-Ban Meta glasses to Kick, Twitch, YouTube, Restream or any RTMP server. Chat, stream manager, phone-camera fallback, background streaming. Open source, built without a Mac.">
-<meta property="og:title" content="MetaStream: your eyes, live.">
-<meta property="og:description" content="Stream Ray-Ban Meta glasses to Kick, Twitch, YouTube or Restream, with chat, a stream manager and a fallback camera. Open source.">
-<meta property="og:image" content="https://metastream.iamsaeed.dev/screenshots/live.png">
+<meta name="description" content="Scenes and widgets, a full audio mix, bonded SRTLA uplinks, recording, chat moderation with a bot, and Stream Deck control, on an iPhone or iPad. Open source.">
+<meta property="og:title" content="MetaStream: a pocket OBS for IRL streamers">
+<meta property="og:description" content="Scenes, audio mix, SRTLA bonding, recording, chat moderation and Stream Deck control on an iPhone or iPad. Open source.">
+<meta property="og:image" content="https://metastream.iamsaeed.dev/icon.png">
 <meta property="og:url" content="https://metastream.iamsaeed.dev/">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#0B0B0D">
 <link rel="icon" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
-<!-- Inter is the documented off-platform substitute for SF Pro; Apple devices resolve -apple-system first. -->
+<title>MetaStream: a pocket OBS for IRL streamers</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* ═══════════════════════════════════════════════════════════════════
-   DESIGN.md tokens, 1:1
-   ═══════════════════════════════════════════════════════════════════ */
+/* Layout: a broadcast control room on one page. The program monitor opens it (live demo with a Lens stinger), then
+   one panel per OBS dock (Scenes, Audio, Uplink, Chat, Control), each showing its instrument with real units. */
 :root{
-  /* colors */
-  --primary:#0066cc; --primary-focus:#0071e3; --primary-on-dark:#2997ff;
-  --ink:#1d1d1f; --body:#1d1d1f; --body-on-dark:#ffffff; --body-muted:#cccccc;
-  --ink-muted-80:#333333; --ink-muted-48:#7a7a7a; --divider-soft:#f0f0f0; --hairline:#e0e0e0;
-  --canvas:#ffffff; --canvas-parchment:#f5f5f7; --surface-pearl:#fafafc;
-  --surface-tile-1:#272729; --surface-tile-2:#2a2a2c; --surface-tile-3:#252527; --surface-black:#000000;
-  --surface-chip-translucent:rgba(210,210,215,.64); --on-primary:#ffffff; --on-dark:#ffffff;
-  /* typography families */
-  --ff-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter",system-ui,sans-serif;
-  --ff-text:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;
-  /* radii */
-  --r-none:0; --r-xs:5px; --r-sm:8px; --r-md:11px; --r-lg:18px; --r-pill:9999px; --r-full:9999px;
-  /* spacing */
-  --sp-xxs:4px; --sp-xs:8px; --sp-sm:12px; --sp-md:17px; --sp-lg:24px; --sp-xl:32px; --sp-xxl:48px; --sp-section:80px;
-  /* elevation */
-  --shadow-product:rgba(0,0,0,.22) 3px 5px 30px 0;
-  --hairline-soft:1px solid rgba(0,0,0,.08);
-  --blur:saturate(180%) blur(20px);
+  --bg:#0B0B0D;          /* graphite, the splash's ground */
+  --panel:#141417;       /* a dock */
+  --raised:#1D1D21;      /* a control inside a dock */
+  --line:rgba(200,200,206,.13);
+  --ti:#D3D3D8;          /* titanium: headings, rims */
+  --fg:#E9E9EC;          /* running text */
+  --muted:#8F8F98;       /* captions, units */
+  --tally:#FF3B2F;       /* on-air red, used only for live signals */
+  --ok:#46CF7E; --warn:#F2C246;   /* meter states */
+  --display:"Archivo",ui-sans-serif,system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --body:"Archivo",ui-sans-serif,system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:14px;
+  color-scheme:dark;
 }
-/* typography tokens */
-.t-hero-display{font:600 56px/1.07 var(--ff-display);letter-spacing:-.28px}
-.t-display-lg{font:600 40px/1.1 var(--ff-display);letter-spacing:0}
-.t-display-md{font:600 34px/1.47 var(--ff-text);letter-spacing:-.374px}
-.t-lead{font:400 28px/1.14 var(--ff-display);letter-spacing:.196px}
-.t-lead-airy{font:300 24px/1.5 var(--ff-text);letter-spacing:0}
-.t-tagline{font:600 21px/1.19 var(--ff-display);letter-spacing:.231px}
-.t-body-strong{font:600 17px/1.24 var(--ff-text);letter-spacing:-.374px}
-.t-body{font:400 17px/1.47 var(--ff-text);letter-spacing:-.374px}
-.t-dense-link{font:400 17px/2.41 var(--ff-text);letter-spacing:0}
-.t-caption{font:400 14px/1.43 var(--ff-text);letter-spacing:-.224px}
-.t-caption-strong{font:600 14px/1.29 var(--ff-text);letter-spacing:-.224px}
-.t-button-large{font:300 18px/1 var(--ff-text);letter-spacing:0}
-.t-button-utility{font:400 14px/1.29 var(--ff-text);letter-spacing:-.224px}
-.t-fine-print{font:400 12px/1 var(--ff-text);letter-spacing:-.12px}
-.t-micro-legal{font:400 10px/1.3 var(--ff-text);letter-spacing:-.08px}
-.t-nav-link{font:400 12px/1 var(--ff-text);letter-spacing:-.12px}
-
-/* ── base ─────────────────────────────────────────────────────────── */
 *{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:96px}
-body{margin:0;background:var(--canvas);color:var(--body);font:400 17px/1.47 var(--ff-text);letter-spacing:-.374px;
-  -webkit-font-smoothing:antialiased;font-feature-settings:"ss03";padding-bottom:64px}
-/* Inter substitute nudges (DESIGN: tighten display tracking by -0.01em, body leading 1.47 → 1.44) */
-@supports not (font:-apple-system-body){
-  .t-hero-display,.t-display-lg,h1,h2{letter-spacing:calc(-.28px - .01em)}
-  body,.t-body{line-height:1.44}
-}
-img{max-width:100%;height:auto;display:block}
-a{color:var(--primary);text-decoration:none}
-a:hover{text-decoration:underline}
-h1,h2,h3,h4,p{margin:0}
-button{font:inherit;cursor:pointer}
-.num{font-variant-numeric:tabular-nums}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 17px/1.55 var(--body);font-stretch:100%;-webkit-font-smoothing:antialiased}
+a{color:var(--ti)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--tally);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{margin:0;color:var(--ti);font-family:var(--display);text-wrap:balance}
+p{margin:0}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.label{font:500 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 
-/* ── buttons (components.button-*) ────────────────────────────────── */
-.btn-primary{display:inline-block;background:var(--primary);color:var(--on-primary);font:400 17px/1.47 var(--ff-text);letter-spacing:-.374px;
-  border-radius:var(--r-pill);padding:11px 22px;border:0;transition:transform .12s}
-.btn-secondary-pill{display:inline-block;background:transparent;color:var(--primary);font:400 17px/1.47 var(--ff-text);letter-spacing:-.374px;
-  border-radius:var(--r-pill);padding:10px 21px;border:1px solid var(--primary);transition:transform .12s}
-.btn-store-hero{display:inline-block;background:var(--primary);color:var(--on-primary);font:300 18px/1 var(--ff-text);letter-spacing:0;
-  border-radius:var(--r-pill);padding:14px 28px;border:0;transition:transform .12s}
-.btn-dark-utility{display:inline-block;background:var(--ink);color:var(--on-dark);font:400 14px/1.29 var(--ff-text);letter-spacing:-.224px;
-  border-radius:var(--r-sm);padding:8px 15px;border:0;transition:transform .12s}
-.btn-pearl-capsule{display:inline-block;background:var(--surface-pearl);color:var(--ink-muted-80);font:400 14px/1.43 var(--ff-text);letter-spacing:-.224px;
-  border-radius:var(--r-md);padding:8px 14px;border:3px solid var(--divider-soft);transition:transform .12s}
-.btn-icon-circular{width:44px;height:44px;border-radius:var(--r-full);background:var(--surface-chip-translucent);color:var(--ink);border:0;
-  display:grid;place-items:center;transition:transform .12s}
-.btn-primary:hover,.btn-secondary-pill:hover,.btn-store-hero:hover,.btn-dark-utility:hover,.btn-pearl-capsule:hover{text-decoration:none}
-.btn-primary:active,.btn-secondary-pill:active,.btn-store-hero:active,.btn-dark-utility:active,.btn-pearl-capsule:active,.btn-icon-circular:active{transform:scale(.95)}
-.btn-primary:focus-visible,.btn-secondary-pill:focus-visible,.btn-store-hero:focus-visible,.btn-dark-utility:focus-visible,.btn-icon-circular:focus-visible{outline:2px solid var(--primary-focus);outline-offset:2px}
-.on-dark .btn-secondary-pill{color:var(--primary-on-dark);border-color:var(--primary-on-dark)}
-.on-dark .text-link,.on-dark a:not([class]){color:var(--primary-on-dark)}
-.ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:var(--sp-lg)}
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--bg)}
+.top .wrap{display:flex;align-items:center;gap:20px;padding-block:14px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ti);font:700 17px/1 var(--display);font-stretch:112%;letter-spacing:.01em}
+.lens{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle,#16181E,#020203 70%);box-shadow:inset 0 0 0 2.5px #9a9aa2;display:grid;place-items:center}
+.lens::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--tally);box-shadow:0 0 8px var(--tally)}
+.top nav{margin-left:auto;display:flex;gap:22px;flex-wrap:wrap}
+.top nav a{color:var(--muted);text-decoration:none;font-size:14px}
+.top nav a:hover{color:var(--ti)}
+@media (max-width:720px){.top nav a.opt{display:none}}
 
-/* ── global-nav (44px, black, 12px links) ─────────────────────────── */
-.global-nav{position:sticky;top:0;z-index:20;height:44px;background:var(--surface-black);color:var(--on-dark)}
-.global-nav .in{max-width:1024px;margin:0 auto;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;gap:20px}
-.global-nav .brand{display:flex;align-items:center;gap:8px;color:#fff;font:600 14px/1 var(--ff-text);letter-spacing:-.224px}
-.global-nav .brand img{width:20px;height:20px;border-radius:var(--r-xs)}
-.global-nav ul{list-style:none;margin:0;padding:0;display:flex;gap:20px;flex:1;justify-content:center}
-.global-nav ul a{color:#fff;font:400 12px/1 var(--ff-text);letter-spacing:-.12px;opacity:.88;padding:10px 0;display:inline-block}
-.global-nav ul a:hover{opacity:1;text-decoration:none}
-.global-nav .utility{display:flex;align-items:center;gap:10px}
-.global-nav .search{width:32px;height:32px;display:grid;place-items:center;color:#fff;opacity:.88}
-#navtoggle{position:absolute;opacity:0;pointer-events:none}
-.hamburger{display:none;width:44px;height:44px;place-items:center;color:#fff;cursor:pointer}
-@media (max-width:833px){
-  .global-nav .in{justify-content:space-between}
-  .global-nav .brand{position:absolute;left:50%;transform:translateX(-50%)}
-  .hamburger{display:grid}
-  .global-nav ul{display:none;position:absolute;left:0;right:0;top:44px;background:var(--surface-black);flex-direction:column;gap:0;padding:8px 22px 16px}
-  .global-nav ul a{padding:12px 0;font-size:17px;letter-spacing:-.374px}
-  #navtoggle:checked ~ .in ul{display:flex}
-  .global-nav .utility .btn-dark-utility{display:none}
-}
+/* hero */
+.hero .wrap{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:56px;align-items:center;padding-block:72px 40px}
+@media (max-width:960px){.hero .wrap{grid-template-columns:minmax(0,1fr);gap:36px;padding-block:44px 28px}}
+.hero h1{font-weight:800;font-stretch:125%;font-size:clamp(38px,5.2vw,62px);line-height:.98;letter-spacing:-.02em;text-transform:uppercase}
+.hero h1 em{font-style:normal;color:var(--tally)}
+.hero .lede{margin-top:22px;max-width:34em;color:var(--fg);font-size:18px}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:13px 20px;border-radius:999px;font:600 15px/1 var(--body);text-decoration:none;border:1px solid var(--line);color:var(--ti);background:var(--panel)}
+.btn.primary{background:var(--ti);color:var(--bg);border-color:var(--ti)}
+.btn:hover{filter:brightness(1.08)}
+.specs{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:30px;color:var(--muted);font:500 12.5px/1.4 var(--mono)}
+.specs b{color:var(--ti);font-weight:500}
 
-/* ── sub-nav-frosted (52px, parchment 80% + blur) ─────────────────── */
-.sub-nav{position:sticky;top:44px;z-index:19;height:52px;background:rgba(245,245,247,.8);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-bottom:var(--hairline-soft)}
-.sub-nav .in{max-width:1024px;margin:0 auto;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 22px}
-.sub-nav .name{color:var(--ink);font:600 21px/1.19 var(--ff-display);letter-spacing:.231px}
-.sub-nav nav{display:flex;align-items:center;gap:24px}
-.sub-nav nav a{color:var(--ink);font:400 14px/1.29 var(--ff-text);letter-spacing:-.224px}
-.sub-nav nav .btn-primary{padding:6px 14px;font-size:14px;line-height:1.29;letter-spacing:-.224px;color:#fff}
-@media (max-width:833px){.sub-nav nav a:not(.btn-primary){display:none}}
+/* program monitor */
+.monitor{position:relative;border-radius:18px;padding:10px;background:linear-gradient(145deg,#2a2a2f,#121215);box-shadow:0 30px 80px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.06)}
+.monitor .bar{display:flex;align-items:center;gap:10px;padding:2px 6px 10px;color:var(--muted);font:500 11px/1 var(--mono);letter-spacing:.08em}
+.monitor .bar .on{color:var(--tally);display:flex;align-items:center;gap:6px}
+.monitor .bar .on i{width:7px;height:7px;border-radius:50%;background:var(--tally);box-shadow:0 0 8px var(--tally);animation:blink 1.6s steps(1) infinite}
+@keyframes blink{50%{opacity:.25}}
+.monitor .bar span:last-child{margin-left:auto}
+.screen{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:10px;overflow:hidden;background:#0d1016;container-type:inline-size}
+.cam{position:absolute;inset:0;background:
+  radial-gradient(40% 30% at 22% 72%,rgba(255,170,90,.55),transparent 70%),
+  radial-gradient(18% 14% at 64% 66%,rgba(255,214,140,.5),transparent 70%),
+  radial-gradient(10% 9% at 82% 58%,rgba(120,180,255,.45),transparent 70%),
+  radial-gradient(9% 8% at 44% 60%,rgba(255,120,160,.35),transparent 70%),
+  linear-gradient(180deg,#1b2440 0%,#2b2a46 45%,#4a3340 62%,#141418 63%,#0c0c0f 100%);filter:saturate(1.1)}
+.cam::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 6.5%,rgba(0,0,0,.35) 6.5% 7%);mask:linear-gradient(180deg,transparent 40%,#000 63%,transparent 64%)}
+.ov{position:absolute;font-family:var(--body)}
+.ov.pill{top:4.5cqw;left:4cqw;display:flex;gap:1.2cqw;align-items:center;padding:.9cqw 1.6cqw;border-radius:99px;background:rgba(10,10,12,.82);color:#fff;font:600 1.7cqw/1 var(--mono)}
+.ov.pill i{width:1.2cqw;height:1.2cqw;border-radius:50%;background:var(--tally)}
+.ov.rate{top:4.5cqw;right:4cqw;padding:.9cqw 1.6cqw;border-radius:99px;background:rgba(10,10,12,.82);color:#cfd0d6;font:500 1.6cqw/1 var(--mono)}
+.ov.chat{right:4cqw;bottom:16cqw;width:31cqw;display:flex;flex-direction:column;gap:1cqw;align-items:flex-start}
+.msg{padding:1cqw 1.5cqw;border-radius:1.6cqw;background:rgba(14,14,17,.9);color:#eee;font-size:1.65cqw;line-height:1.3;animation:msgin .35s ease-out}
+.msg b{display:block;font-size:1.45cqw;margin-bottom:.2cqw}
+@keyframes msgin{from{transform:translateY(1.5cqw);opacity:0}}
+.ov.ticker{left:0;right:0;bottom:0;height:11cqw;display:flex;align-items:stretch;background:#0B0B0C}
+.ticker .tag{display:flex;align-items:center;padding:0 3cqw;background:var(--tally);color:#fff;font:800 2.3cqw/1 var(--display);font-stretch:118%;letter-spacing:.06em}
+.ticker .txt{display:flex;flex-direction:column;justify-content:center;padding:0 3cqw;gap:.6cqw}
+.ticker .txt b{color:#fff;font:700 2.9cqw/1 var(--display);font-stretch:110%}
+.ticker .txt span{color:#a3a3ab;font:500 1.5cqw/1 var(--mono)}
+.ticker .clock{margin-left:auto;display:flex;align-items:center;padding:0 3.5cqw;color:#fff;font:500 4.2cqw/1 var(--mono)}
+.brb{position:absolute;inset:0;background:#0B0B0C;display:flex;flex-direction:column;justify-content:center;padding:0 7cqw;color:#fff;opacity:0}
+.brb small{color:var(--muted);font:500 1.7cqw/1 var(--mono);letter-spacing:.14em;text-transform:uppercase}
+.brb b{font:800 11cqw/.92 var(--display);font-stretch:118%;text-transform:uppercase;margin-top:2cqw}
+.screen.is-brb .brb{opacity:1}
+/* the Lens stinger, from the app's splash */
+@property --hole{syntax:'<length>';inherits:true;initial-value:120cqw}
+.sting{position:absolute;inset:0;pointer-events:none;--hole:120cqw;opacity:0}
+.sting .plate{position:absolute;inset:0;background:linear-gradient(#1C1C1F,#0A0A0C);-webkit-mask:radial-gradient(circle at 50% 50%,transparent calc(var(--hole) - 1cqw),#000 calc(var(--hole) - .9cqw));mask:radial-gradient(circle at 50% 50%,transparent calc(var(--hole) - 1cqw),#000 calc(var(--hole) - .9cqw))}
+.sting .rim{position:absolute;left:50%;top:50%;width:calc(var(--hole)*2 + 2cqw);height:calc(var(--hole)*2 + 2cqw);transform:translate(-50%,-50%);border-radius:50%;background:linear-gradient(135deg,#C8C8CE,#3A3A3E);-webkit-mask:radial-gradient(closest-side,transparent calc(100% - 2cqw),#000 calc(100% - 1.9cqw));mask:radial-gradient(closest-side,transparent calc(100% - 2cqw),#000 calc(100% - 1.9cqw))}
+.sting .glass{position:absolute;left:50%;top:50%;width:34cqw;height:34cqw;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#16181E,#020203 70%);opacity:0;display:grid;place-items:center}
+.sting .glass::after{content:"";width:7cqw;height:7cqw;border-radius:50%;background:linear-gradient(#FF5A3C,#E8101E);box-shadow:0 0 6cqw rgba(255,40,20,.55)}
+.screen.sting-on .sting{opacity:1;animation:hole 2.6s cubic-bezier(.65,0,.35,1) forwards}
+.screen.sting-on .sting .glass{animation:glass 2.6s ease-in-out forwards}
+@keyframes hole{0%{--hole:120cqw}38%,62%{--hole:18cqw}100%{--hole:120cqw}}
+@keyframes glass{0%,30%{opacity:0}40%,58%{opacity:1}66%,100%{opacity:0}}
+.cap{margin-top:12px;color:var(--muted);font:500 12px/1.5 var(--mono)}
 
-/* ── product tiles (full-bleed, rounded.none, padding section) ────── */
-.tile{padding:var(--sp-section) 22px;text-align:center;border-radius:var(--r-none)}
-.tile-light{background:var(--canvas);color:var(--ink)}
-.tile-parchment{background:var(--canvas-parchment);color:var(--ink)}
-.tile-dark{background:var(--surface-tile-1);color:var(--on-dark)}
-.tile-dark-2{background:var(--surface-tile-2);color:var(--on-dark)}
-.tile-dark-3{background:var(--surface-tile-3);color:var(--on-dark)}
-.tile .in{max-width:980px;margin:0 auto}
-.tile h2{font:600 40px/1.1 var(--ff-display);letter-spacing:0}
-.tile .lead{font:400 28px/1.14 var(--ff-display);letter-spacing:.196px;margin-top:var(--sp-sm)}
-.on-dark .lead{color:var(--body-muted)}
-.tile .copy{max-width:640px;margin:var(--sp-lg) auto 0}
-.on-dark .copy{color:var(--body-muted)}
-.render{margin:56px auto 0;width:min(380px,82vw)}
-.render img{box-shadow:var(--shadow-product);margin:0 auto;border-radius:var(--r-none)}
-.render-pair{display:grid;grid-template-columns:repeat(2,minmax(0,300px));gap:var(--sp-lg);justify-content:center;margin-top:var(--sp-xxl)}
-.render-pair figure{margin:0}
-.render-pair img{box-shadow:var(--shadow-product)}
-.render-pair figcaption{margin-top:var(--sp-sm);color:var(--body-muted);font:400 14px/1.43 var(--ff-text);letter-spacing:-.224px}
+/* sections */
+section.dock{padding-block:56px}
+.dock-head{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,7fr);gap:40px;align-items:end;margin-bottom:28px}
+@media (max-width:860px){.dock-head{grid-template-columns:minmax(0,1fr);gap:14px}}
+.dock-head h2{font-weight:800;font-stretch:118%;font-size:clamp(28px,3.4vw,40px);line-height:1.02;letter-spacing:-.01em;text-transform:uppercase;margin-top:12px}
+.dock-head p{color:var(--fg);max-width:40em}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:22px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.list{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.list li{display:grid;grid-template-columns:minmax(0,9em) minmax(0,1fr);gap:14px;padding-block:10px;border-top:1px solid var(--line);font-size:15.5px}
+.list li:first-child{border-top:0}
+.list li b{color:var(--ti);font-weight:600}
+@media (max-width:520px){.list li{grid-template-columns:minmax(0,1fr);gap:2px}}
 
-/* hero (tile-light, hero-display) */
-.hero{padding-top:64px}
-.hero h1{font:600 56px/1.07 var(--ff-display);letter-spacing:-.28px}
-.hero .lead{margin-top:10px}
+/* scenes */
+.scenes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.scenes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.thumb{border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--raised)}
+.thumb .pic{aspect-ratio:16/9;max-width:100%;position:relative;display:flex;align-items:flex-end;padding:8%;color:#fff;font:800 clamp(11px,1.4vw,15px)/1 var(--display);font-stretch:118%;text-transform:uppercase}
+.thumb .meta{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 11px;font-size:13px;color:var(--ti)}
+.role{font:500 10.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);padding:4px 6px;border-radius:5px}
+.role.on{color:var(--tally);border-color:color-mix(in srgb,var(--tally) 50%,transparent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font:500 13px/1 var(--body);color:var(--ti);background:var(--raised);border:1px solid var(--line);padding:9px 12px;border-radius:999px}
 
-/* two-up tiles */
-.two-up{display:grid;grid-template-columns:1fr 1fr;gap:0}
-.two-up .tile{padding:var(--sp-section) 32px}
-.two-up .render{width:min(300px,70vw)}
-@media (max-width:833px){.two-up{grid-template-columns:1fr}}
+/* audio */
+.mixer{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.strip{background:var(--raised);border-radius:10px;padding:14px 12px;display:grid;gap:10px;justify-items:center}
+.meter{position:relative;width:16px;height:150px;border-radius:4px;background:#0c0c0e;overflow:hidden}
+.meter i{position:absolute;left:0;right:0;bottom:0;height:40%;background:linear-gradient(0deg,var(--ok) 0 70%,var(--warn) 70% 88%,var(--tally) 88%);background-size:100% 150px;background-position:bottom;transition:height .12s linear}
+.strip .name{font:600 13px/1 var(--body);color:var(--ti)}
+.strip .db{font:500 11px/1 var(--mono);color:var(--muted)}
+.limiter{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font:500 12px/1 var(--mono);color:var(--muted)}
 
-/* ── store-utility-card grid ──────────────────────────────────────── */
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:var(--sp-xxl);text-align:left}
-.card{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r-lg);padding:var(--sp-lg);color:var(--ink)}
-.card .img{aspect-ratio:1;border-radius:var(--r-sm);overflow:hidden;background:var(--canvas-parchment);display:grid;place-items:center;padding:20px}
-.card .img img{width:100%;height:100%;object-fit:cover;border-radius:var(--r-sm)}
-.card .img.icon img{width:56%;height:auto;object-fit:contain;border-radius:22%}
-.card h3{font:600 17px/1.24 var(--ff-text);letter-spacing:-.374px;margin-top:var(--sp-md)}
-.card .price{font:400 17px/1.47 var(--ff-text);letter-spacing:-.374px;color:var(--ink-muted-80);margin-top:2px}
-.card .text-link{display:inline-block;margin-top:var(--sp-xs)}
-@media (max-width:1068px){.grid{grid-template-columns:repeat(3,1fr)}}
-@media (max-width:833px){.grid{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:640px){.grid{grid-template-columns:1fr}}
+/* uplink */
+.link{display:grid;grid-template-columns:minmax(0,8em) minmax(0,1fr) minmax(0,6em);gap:14px;align-items:center;padding-block:12px;border-top:1px solid var(--line);font:500 13px/1 var(--mono)}
+.link:first-child{border-top:0}
+.link .nm{color:var(--ti);font-family:var(--body);font-weight:600;font-size:14px}
+.link .bar{height:8px;border-radius:4px;background:#0c0c0e;overflow:hidden}
+.link .bar i{display:block;height:100%;width:50%;background:var(--ti);transition:width .6s ease}
+.link .v{text-align:right;color:var(--fg)}
+.total{display:flex;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font:500 13px/1 var(--mono);color:var(--muted)}
+.total b{color:var(--ti);font-weight:500}
 
-/* ── carousel with button-icon-circular controls ──────────────────── */
-.carousel{position:relative;margin-top:var(--sp-xxl)}
-.track{display:flex;gap:var(--sp-lg);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:8px 0 24px;justify-content:safe center}
-.track::-webkit-scrollbar{display:none}
-.track figure{flex:0 0 min(300px,72vw);scroll-snap-align:center;margin:0}
-.track img{box-shadow:var(--shadow-product)}
-.track figcaption{margin-top:var(--sp-sm);color:var(--body-muted);font:400 14px/1.43 var(--ff-text);letter-spacing:-.224px}
-.carousel .ctrl{position:absolute;top:45%;transform:translateY(-50%);z-index:2}
-.carousel .prev{left:0}.carousel .next{right:0}
-.carousel .ctrl:active{transform:translateY(-50%) scale(.95)}
+/* chat */
+.chatbox{display:grid;gap:10px}
+.line{font-size:15px;line-height:1.4}
+.line b{font-weight:600;margin-right:6px}
+.line.bot{color:var(--fg)}
+.line .who-bot{color:var(--ok)}
+.chiprow{display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--line)}
+.chiprow span{font:500 12.5px/1 var(--mono);color:var(--ti);background:var(--raised);border:1px solid var(--line);padding:8px 10px;border-radius:8px}
+.chiprow span.slash{color:var(--tally);border-color:color-mix(in srgb,var(--tally) 45%,transparent)}
 
-/* ── configurator-option-chips (spec chips) ───────────────────────── */
-.chips{display:flex;flex-wrap:wrap;gap:var(--sp-sm);justify-content:center;margin-top:var(--sp-xl)}
-.chip{display:inline-flex;align-items:center;gap:10px;background:var(--canvas);color:var(--ink);font:400 14px/1.43 var(--ff-text);letter-spacing:-.224px;
-  border-radius:var(--r-pill);padding:12px 16px;border:1px solid var(--hairline)}
-.chip.selected{border:2px solid var(--primary-focus);padding:11px 15px}
-.chip b{font:600 14px/1.29 var(--ff-text);letter-spacing:-.224px}
-.chip .delta{color:var(--ink-muted-48)}
+/* control */
+.deck{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;max-width:560px}
+.key{aspect-ratio:1;max-width:100%;border-radius:12px;background:linear-gradient(160deg,#26262b,#151518);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),0 6px 14px rgba(0,0,0,.4);display:flex;align-items:flex-end;padding:9px;color:var(--ti);font:600 clamp(9px,1.2vw,12px)/1.15 var(--body)}
+.key.live{background:linear-gradient(160deg,#ff5a46,#c3150c);color:#fff}
 
-/* ── environment-quote-card (photographic hero) ───────────────────── */
-.quote-card{position:relative;background:var(--surface-tile-1) url(screenshots/backdrop.jpg) center/cover no-repeat;color:var(--on-dark);padding:var(--sp-section) 22px;text-align:center}
-.quote-card .in{max-width:760px;margin:0 auto}
-.quote-card .picto{width:44px;height:44px;margin:0 auto var(--sp-md);display:block}
-.quote-card h2{font:600 40px/1.1 var(--ff-display);letter-spacing:0;color:#fff}
-.quote-card .airy{font:300 24px/1.5 var(--ff-text);letter-spacing:0;color:#fff;margin-top:var(--sp-md)}
+/* build */
+.build{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:20px}
+@media (max-width:860px){.build{grid-template-columns:minmax(0,1fr)}}
+.steps{margin:0;padding:0;list-style:none;display:grid;gap:12px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:10px;counter-increment:s}
+.steps li::before{content:counter(s);font:500 13px/1.6 var(--mono);color:var(--tally)}
+pre{margin:0;overflow-x:auto;background:#0c0c0e;border:1px solid var(--line);border-radius:10px;padding:16px;font:400 12.5px/1.6 var(--mono);color:#cfd0d6}
+footer{border-top:1px solid var(--line);margin-top:40px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between;padding-block:28px;color:var(--muted);font-size:14px}
+footer a{color:var(--muted)}
 
-/* ── steps ────────────────────────────────────────────────────────── */
-.steps{counter-reset:s;list-style:none;padding:0;margin:var(--sp-xl) auto 0;max-width:720px;text-align:left}
-.steps li{counter-increment:s;display:grid;grid-template-columns:44px 1fr;column-gap:16px;padding:16px 0;border-top:1px solid rgba(255,255,255,.08)}
-.steps li::before{content:counter(s);grid-row:1/3;width:44px;height:44px;border-radius:var(--r-full);background:var(--surface-chip-translucent);color:var(--ink);display:grid;place-items:center;font:600 17px/1 var(--ff-text)}
-.steps b{display:block;font:600 17px/1.24 var(--ff-text);letter-spacing:-.374px;color:#fff}
-.steps span{grid-column:2;color:var(--body-muted);font:400 14px/1.43 var(--ff-text);letter-spacing:-.224px}
-
-/* ── search-input ─────────────────────────────────────────────────── */
-.search-input{display:flex;align-items:center;gap:10px;max-width:420px;margin:var(--sp-lg) auto 0;height:44px;padding:12px 20px;background:var(--canvas);
-  border:var(--hairline-soft);border-radius:var(--r-pill);color:var(--ink);font:400 17px/1.47 var(--ff-text);letter-spacing:-.374px}
-.search-input svg{color:var(--ink-muted-48);flex:none}
-.search-input input{border:0;outline:0;background:transparent;flex:1;font:inherit;color:inherit;min-width:0}
-
-/* ── floating-sticky-bar (64px, parchment 80% + blur) ─────────────── */
-.sticky-bar{position:fixed;left:0;right:0;bottom:0;z-index:18;height:calc(64px + env(safe-area-inset-bottom,0px));padding:12px 32px env(safe-area-inset-bottom,0px);
-  background:rgba(245,245,247,.8);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-top:var(--hairline-soft);
-  display:flex;align-items:center;justify-content:space-between;gap:16px}
-.sticky-bar .in{max-width:980px;margin:0 auto;width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.sticky-bar .price{color:var(--ink);font:400 17px/1.47 var(--ff-text);letter-spacing:-.374px}
-.sticky-bar .price small{color:var(--ink-muted-48);font:400 14px/1.43 var(--ff-text);letter-spacing:-.224px}
-@media (max-width:640px){.sticky-bar{padding-left:18px;padding-right:18px}.sticky-bar .price small{display:none}}
-
-/* ── footer (parchment, dense links, fine print) ──────────────────── */
-footer{background:var(--canvas-parchment);color:var(--ink-muted-80);padding:64px 22px}
-footer .in{max-width:980px;margin:0 auto}
-footer .cols{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-lg);text-align:left}
-footer h4{font:600 14px/1.29 var(--ff-text);letter-spacing:-.224px;color:var(--ink);margin-bottom:var(--sp-xxs)}
-footer .cols a{display:block;color:var(--ink-muted-80);font:400 17px/2.41 var(--ff-text);letter-spacing:0}
-footer .legal{margin-top:40px;padding-top:20px;border-top:1px solid var(--hairline);color:var(--ink-muted-48);font:400 12px/1.5 var(--ff-text);letter-spacing:-.12px}
-footer .micro{margin-top:var(--sp-sm);color:var(--ink-muted-48);font:400 10px/1.3 var(--ff-text);letter-spacing:-.08px}
-@media (max-width:833px){footer .cols{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:640px){footer .cols{grid-template-columns:1fr}}
-
-/* ── breakpoints (DESIGN table) ───────────────────────────────────── */
-@media (max-width:1068px){.hero h1{font-size:40px}}
-@media (max-width:735px){.tile,.two-up .tile,.quote-card{padding-top:48px;padding-bottom:48px}}
-@media (max-width:640px){
-  .hero h1{font-size:34px}.tile h2,.quote-card h2{font-size:30px}.tile .lead{font-size:21px}.quote-card .airy{font-size:19px}
-  .render-pair{grid-template-columns:1fr;justify-items:center}.render-pair figure{max-width:300px}
-  .tile{padding-left:18px;padding-right:18px}
-  .steps li{grid-template-columns:36px 1fr}.steps li::before{width:36px;height:36px}
-}
-@media (max-width:419px){.hero h1{font-size:28px}}
-
-/* ── scroll-driven entry (decorative; progressive enhancement) ────── */
-@media (prefers-reduced-motion: no-preference){
-  @supports ((animation-timeline: view()) and (animation-range: entry)){
-    @keyframes rise{from{opacity:0;transform:translateY(24px)}}
-    .tile .in > *,.quote-card .in > *{animation:rise auto linear backwards;animation-timeline:view();animation-range:entry 0% entry 40%}
-  }
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
 }
 </style>
 </head>
 <body>
 
-<!-- global-nav -->
-<header class="global-nav">
-  <input type="checkbox" id="navtoggle" aria-hidden="true">
-  <div class="in">
-    <label for="navtoggle" class="hamburger" aria-label="Menu">
-      <svg width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1h16M1 6h16M1 11h16"/></svg>
-    </label>
-    <a class="brand" href="#top"><img src="icon.png" alt="" width="20" height="20">MetaStream</a>
-    <ul>
-      <li><a href="#overview">Overview</a></li>
-      <li><a href="#background">Background</a></li>
-      <li><a href="#chat">Chat</a></li>
-      <li><a href="#manager">Stream Manager</a></li>
-      <li><a href="#specs">Tech Specs</a></li>
-      <li><a href="#build">Build</a></li>
-      <li><a href="https://github.com/saeedkolivand/meta-stream">GitHub</a></li>
-    </ul>
-    <div class="utility">
-      <a class="search" href="#specs" aria-label="Search specs"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5"/><path d="m10.5 10.5 3.5 3.5"/></svg></a>
-      <a class="btn-dark-utility" href="https://github.com/saeedkolivand/meta-stream">Star on GitHub</a>
-    </div>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="lens" aria-hidden="true"></span>MetaStream</a>
+    <nav aria-label="Sections">
+      <a class="opt" href="#scenes">Scenes</a>
+      <a class="opt" href="#audio">Audio</a>
+      <a class="opt" href="#uplink">Uplink</a>
+      <a class="opt" href="#chat">Chat</a>
+      <a href="#build">Build</a>
+      <a href="https://github.com/saeedkolivand/meta-stream">GitHub</a>
+    </nav>
   </div>
 </header>
 
-<!-- sub-nav-frosted -->
-<div class="sub-nav">
-  <div class="in">
-    <span class="name">MetaStream</span>
-    <nav>
-      <a href="#overview">Overview</a>
-      <a href="#specs">Tech Specs</a>
-      <a href="#build">Guide</a>
-      <a class="btn-primary" href="#build">Build it</a>
-    </nav>
-  </div>
-</div>
-
-<!-- hero: product-tile-light -->
-<section id="top" class="tile tile-light hero">
-  <div class="in" id="overview">
-    <h1>Your eyes, live.</h1>
-    <p class="lead">Ray-Ban Meta glasses to Kick, Twitch, YouTube and Restream.</p>
-    <div class="ctas">
-      <a class="btn-store-hero" href="#build">Build it yourself</a>
-      <a class="btn-secondary-pill" href="https://github.com/saeedkolivand/meta-stream">View on GitHub</a>
-    </div>
-    <figure class="render">
-      <img src="screenshots/live.png" alt="MetaStream live screen: the glasses' point of view with status pills and a Go Live button" width="640" height="1387" fetchpriority="high">
-    </figure>
-  </div>
-</section>
-
-<!-- product-tile-dark -->
-<section id="background" class="tile tile-dark on-dark">
-  <div class="in">
-    <h2>Keeps streaming when you leave.</h2>
-    <p class="lead">Check chat or answer a text. The glasses never notice.</p>
-    <div class="ctas">
-      <a class="btn-primary" href="#specs">Learn more</a>
-      <a class="btn-secondary-pill" href="#build">Build</a>
-    </div>
-    <p class="copy">Video leaves the glasses as compressed HEVC and goes straight to your RTMP server without touching an encoder, so the phone stays cool and the battery lasts. The stream survives every app switch, which is where the other glasses apps fail.</p>
-  </div>
-</section>
-
-<!-- two-up: parchment + light -->
-<div class="two-up">
-  <section id="chat" class="tile tile-parchment">
-    <div class="in">
-      <h2>Chat where you can see it.</h2>
-      <p class="lead">Slides up over your own feed.</p>
-      <div class="ctas"><a class="btn-primary" href="#manager">Learn more</a></div>
-      <figure class="render"><img src="screenshots/manager.png" alt="Stream Manager with a connected Kick account" width="640" height="1387" loading="lazy"></figure>
-    </div>
-  </section>
-  <section id="fallback" class="tile tile-light">
-    <div class="in">
-      <h2>Never a black stream.</h2>
-      <p class="lead">Glasses drop, phone camera takes over in 2 s.</p>
-      <div class="ctas"><a class="btn-primary" href="#specs">Learn more</a></div>
-      <figure class="render"><img src="screenshots/settings.png" alt="Settings sheet with destination, bitrate, chat and video options" width="640" height="1387" loading="lazy"></figure>
-    </div>
-  </section>
-</div>
-
-<!-- product-tile-dark-2 with carousel + button-icon-circular controls -->
-<section id="manager" class="tile tile-dark-2 on-dark">
-  <div class="in">
-    <h2>Run the broadcast from your pocket.</h2>
-    <p class="lead">Title, category, viewers, chat and stream key. One tap away.</p>
-    <p class="copy">Connect Kick, Twitch, Restream and YouTube inside the app, so you stop copying keys between apps and don't need OBS or a server in between. Restream also re-encodes for platforms that refuse HEVC. <a href="https://github.com/saeedkolivand/meta-stream#using-it">How it works</a></p>
-    <div class="carousel">
-      <button class="btn-icon-circular ctrl prev" aria-label="Previous" data-dir="-1"><svg width="10" height="16" viewBox="0 0 10 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 1.5 2 8l6.5 6.5"/></svg></button>
-      <div class="track" id="track">
-        <figure><img src="screenshots/manager.png" alt="Stream Manager" width="640" height="1387" loading="lazy"><figcaption>Stream Manager · Kick connected</figcaption></figure>
-        <figure><img src="screenshots/live.png" alt="Live screen" width="640" height="1387" loading="lazy"><figcaption>Live · glasses streaming</figcaption></figure>
-        <figure><img src="screenshots/settings.png" alt="Settings" width="640" height="1387" loading="lazy"><figcaption>Settings · destination and quality</figcaption></figure>
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <div class="label">Open source · iPhone &amp; iPad · iOS 26</div>
+        <h1 style="margin-top:18px">A pocket OBS for <em>IRL</em> streamers.</h1>
+        <p class="lede">Scenes and widgets, a full audio mix, bonded uplinks, recording, chat with moderator commands and a bot, and Stream Deck control. Everything a laptop in a backpack used to do, on the phone you are already holding.</p>
+        <div class="cta">
+          <a class="btn primary" href="https://github.com/saeedkolivand/meta-stream/blob/main/guide/build.md">Build your own copy</a>
+          <a class="btn" href="https://github.com/saeedkolivand/meta-stream">View on GitHub</a>
+        </div>
+        <div class="specs mono" aria-label="Specifications">
+          <span><b>1080p</b> · 60 fps</span><span><b>HEVC</b> / H.264</span><span><b>RTMP</b> · SRT · SRTLA</span><span><b>obs-websocket</b> v5</span>
+        </div>
       </div>
-      <button class="btn-icon-circular ctrl next" aria-label="Next" data-dir="1"><svg width="10" height="16" viewBox="0 0 10 16" fill="none" stroke="currentColor" stroke-width="2"><path d="m1.5 1.5 6.5 6.5-6.5 6.5"/></svg></button>
+
+      <figure style="margin:0">
+        <div class="monitor">
+          <div class="bar"><span class="on"><i></i>PROGRAM</span><span id="scene-name">Live</span><span class="mono" id="tc">00:42:17:08</span></div>
+          <div class="screen" id="screen" aria-hidden="true">
+            <div class="cam"></div>
+            <div class="ov pill"><i></i><span id="uptime">LIVE 42:17</span></div>
+            <div class="ov rate">6.4 Mb/s · SRTLA ×3</div>
+            <div class="ov chat" id="chat"></div>
+            <div class="ov ticker">
+              <div class="tag">LIVE</div>
+              <div class="txt"><b>Night walk, old town</b><span>14° clear · kick.com/yourchannel</span></div>
+              <div class="clock mono" id="clock">21:48</div>
+            </div>
+            <div class="brb"><small>Signal's weak</small><b>Be right<br>back</b></div>
+            <div class="sting"><div class="plate"></div><div class="glass"></div><div class="rim"></div></div>
+          </div>
+        </div>
+        <figcaption class="cap">The program output as viewers see it. Every few seconds the scene changes behind the Lens stinger, one of eight built in.</figcaption>
+      </figure>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- store-utility-card grid on parchment -->
-<section id="features" class="tile tile-parchment">
-  <div class="in">
-    <h2>Everything a streamer packs.</h2>
-    <p class="lead">Free, in one app.</p>
-    <div class="grid">
-      <div class="card"><div class="img"><img src="screenshots/live-sq.png" alt="" width="480" height="480" loading="lazy"></div><h3>Glasses camera</h3><p class="price">720 × 1280 · 30 fps · HEVC</p><a class="text-link" href="#specs">Learn more</a></div>
-      <div class="card"><div class="img"><img src="screenshots/manager-sq.png" alt="" width="480" height="480" loading="lazy"></div><h3>Stream Manager</h3><p class="price">Kick · Twitch · Restream · YouTube</p><a class="text-link" href="#manager">Learn more</a></div>
-      <div class="card"><div class="img"><img src="screenshots/settings-sq.png" alt="" width="480" height="480" loading="lazy"></div><h3>Fallback camera</h3><p class="price">Back or front, 2 s handover</p><a class="text-link" href="#fallback">Learn more</a></div>
-      <div class="card"><div class="img icon"><img src="icon.png" alt="" width="256" height="256" loading="lazy"></div><h3>Open source</h3><p class="price">Free · your own build</p><a class="text-link" href="#build">Build</a></div>
+  <section class="dock" id="scenes">
+    <div class="wrap">
+      <div class="dock-head">
+        <div><div class="label">Dock · Scenes</div><h2>Scenes that switch themselves</h2></div>
+        <p>Build scenes from chat, alerts, live text, QR codes, images, video and web widgets. Give one the Starting, BRB or Ending role and the app switches to it on its own: a countdown after you go live, BRB while the uplink is weak, Ending when you stop.</p>
+      </div>
+      <div class="panel">
+        <div class="scenes">
+          <div class="thumb"><div class="pic" style="background:linear-gradient(135deg,#1b1b20,#0b0b0d)">Starting<br>soon</div><div class="meta">Starting <span class="role">countdown</span></div></div>
+          <div class="thumb"><div class="pic" style="background:linear-gradient(180deg,#2b2a46,#4a3340 60%,#0c0c0f 61%)">IRL</div><div class="meta">Live <span class="role on">on air</span></div></div>
+          <div class="thumb"><div class="pic" style="background:#0b0b0c">Be right<br>back</div><div class="meta">BRB <span class="role">weak uplink</span></div></div>
+          <div class="thumb"><div class="pic" style="background:linear-gradient(135deg,#202026,#0b0b0d)">Thanks for<br>watching</div><div class="meta">Ending <span class="role">on stop</span></div></div>
+        </div>
+        <div class="chips" aria-label="Built-in stingers">
+          <span class="chip">Lens</span><span class="chip">Aperture</span><span class="chip">Route &amp; pin</span><span class="chip">Viewfinder</span><span class="chip">Liquid</span><span class="chip">Ripple</span><span class="chip">Tunnel</span><span class="chip">Film burn</span>
+        </div>
+        <p style="margin-top:14px;color:var(--muted);font-size:14.5px">Eight stingers drawn live on the GPU, in your colours and channel name, with the next scene built while the stinger covers the frame. Your own video stinger works too.</p>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- specs: configurator-option-chips + search-input on light -->
-<section id="specs" class="tile tile-light">
-  <div class="in">
-    <h2>Tech specs.</h2>
-    <p class="lead">Made for long IRL streams over cellular.</p>
-    <div class="chips">
-      <span class="chip selected"><b>Video</b> 720 × 1280 <span class="delta">HEVC, not re-encoded</span></span>
-      <span class="chip"><b>Frame rate</b> 15 · 24 · 30 fps</span>
-      <span class="chip"><b>Audio</b> AAC 96 kbps <span class="delta">phone · glasses · headset</span></span>
-      <span class="chip"><b>Transport</b> RTMPS · Enhanced RTMP</span>
-      <span class="chip"><b>Destinations</b> Kick · Twitch · YouTube · Restream · custom</span>
-      <span class="chip"><b>Chat</b> Kick · Twitch · YouTube · Restream</span>
-      <span class="chip"><b>Fallback</b> phone camera in 2 s</span>
-      <span class="chip"><b>Background</b> keeps streaming</span>
-      <span class="chip"><b>Photo</b> to Photos, mid-stream</span>
-      <span class="chip"><b>Requires</b> iOS 17.2 · Meta AI app · paid Apple team</span>
+  <section class="dock" id="audio">
+    <div class="wrap">
+      <div class="dock-head">
+        <div><div class="label">Dock · Audio mixer</div><h2>A mix, not just a mic</h2></div>
+        <p>Mic, alert sounds, soundboard and clip audio run as separate tracks with their own faders and a limiter on the bus. A level meter sits on screen, and the app speaks up when the mic goes silent while you are live.</p>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <div class="mixer" id="mixer">
+            <div class="strip"><div class="meter"><i></i></div><div class="name">Mic</div><div class="db mono">−12 dB</div></div>
+            <div class="strip"><div class="meter"><i></i></div><div class="name">Alerts</div><div class="db mono">−18 dB</div></div>
+            <div class="strip"><div class="meter"><i></i></div><div class="name">Soundboard</div><div class="db mono">−20 dB</div></div>
+            <div class="strip"><div class="meter"><i></i></div><div class="name">Clips</div><div class="db mono">−24 dB</div></div>
+          </div>
+          <div class="limiter"><span>Bus limiter · −1.0 dBTP</span><span>48 kHz · AAC</span></div>
+        </div>
+        <div class="panel">
+          <ul class="list">
+            <li><b>Soundboard</b><span>Your own files, one tap each, straight into the stream.</span></li>
+            <li><b>Read aloud</b><span>Chat and alerts in your ear, with stream warnings jumping the queue.</span></li>
+            <li><b>Dead air</b><span>A spoken warning when the mic falls silent on stream.</span></li>
+            <li><b>Recording</b><span>To Photos, with or without going live, saved in fragments so a crash keeps what was recorded.</span></li>
+          </ul>
+        </div>
+      </div>
     </div>
-    <label class="search-input">
-      <svg width="14" height="14" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5"/><path d="m10.5 10.5 3.5 3.5"/></svg>
-      <input type="search" placeholder="Search specs" id="specsearch" autocomplete="off">
-    </label>
-  </div>
-</section>
+  </section>
 
-<!-- environment-quote-card -->
-<section class="quote-card on-dark">
-  <div class="in">
-    <svg class="picto" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="21" fill="none" stroke="#34c759" stroke-width="2"/><path d="M13 23l6 6 12-13" fill="none" stroke="#34c759" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <h2>Open source. Your glasses, your accounts, your copy.</h2>
-    <p class="airy">There is no backend and no subscription. Platform tokens never leave your phone.</p>
-    <div class="ctas"><a class="btn-primary" href="https://github.com/saeedkolivand/meta-stream">Source on GitHub</a></div>
-  </div>
-</section>
-
-<!-- product-tile-dark-3: build steps -->
-<section id="build" class="tile tile-dark-3 on-dark">
-  <div class="in">
-    <h2>Build your own.</h2>
-    <p class="lead">Four steps. No Mac at any point.</p>
-    <ol class="steps">
-      <li><b>Fork the repo</b><span>Pick a bundle ID. Everything else is a secret you add to the fork.</span></li>
-      <li><b>Register with Meta</b><span>Free Wearables Developer Center project. Turn on Developer Mode in the Meta AI app.</span></li>
-      <li><b>Sign with a paid Apple team</b><span>Yours or a friend's. The glasses' Wi-Fi link needs two entitlements only paid teams get.</span></li>
-      <li><b>Push</b><span>GitHub Actions builds and signs an encrypted IPA. Decrypt it and install over USB.</span></li>
-    </ol>
-    <div class="ctas">
-      <a class="btn-primary" href="https://github.com/saeedkolivand/meta-stream#build-your-own-copy">Read the guide</a>
-      <a class="btn-secondary-pill" href="https://github.com/saeedkolivand/meta-stream">Source on GitHub</a>
+  <section class="dock" id="uplink">
+    <div class="wrap">
+      <div class="dock-head">
+        <div><div class="label">Dock · Uplink</div><h2>Bonded, so one bad link doesn't end the stream</h2></div>
+        <p>Point it at an <span class="mono">srtla://</span> ingest and the stream is split across Wi-Fi, Ethernet and cellular at once. Adaptive bitrate backs off when the network struggles and climbs back as soon as it clears.</p>
+      </div>
+      <div class="grid2">
+        <div class="panel" aria-label="Example uplink links">
+          <div class="link"><span class="nm">Wi-Fi</span><span class="bar"><i id="l1" style="width:46%"></i></span><span class="v" id="v1">2.9 Mb/s</span></div>
+          <div class="link"><span class="nm">Cellular</span><span class="bar"><i id="l2" style="width:38%"></i></span><span class="v" id="v2">2.4 Mb/s</span></div>
+          <div class="link"><span class="nm">Ethernet</span><span class="bar"><i id="l3" style="width:18%"></i></span><span class="v" id="v3">1.1 Mb/s</span></div>
+          <div class="total"><span>SRTLA · 3 links · example</span><b id="vt">6.4 Mb/s</b></div>
+        </div>
+        <div class="panel">
+          <ul class="list">
+            <li><b>Destinations</b><span>Kick, Twitch, YouTube and Restream presets, plus any RTMP, RTMPS, SRT or SRTLA server.</span></li>
+            <li><b>Codecs</b><span>HEVC where the ingest takes it, H.264 where it doesn't, chosen per destination.</span></li>
+            <li><b>Reconnects</b><span>Retries with backoff and tells you out loud when the stream drops and comes back.</span></li>
+            <li><b>Background</b><span>Keeps streaming while you check a message or open Maps.</span></li>
+          </ul>
+        </div>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- footer -->
+  <section class="dock" id="chat">
+    <div class="wrap">
+      <div class="dock-head">
+        <div><div class="label">Dock · Chat</div><h2>Moderate like you're at the desk</h2></div>
+        <p>Kick, Twitch, YouTube and Restream chat in one sheet, with 7TV, BTTV and FFZ emotes. Type <span class="mono">/clear</span>, <span class="mono">/timeout</span>, <span class="mono">/slow</span>, <span class="mono">/raid</span> or <span class="mono">/poll</span> as you would in the platform's own chat. The app's own bot answers viewers and runs your timers.</p>
+      </div>
+      <div class="grid2">
+        <div class="panel chatbox" aria-label="Example chat">
+          <div class="line"><b style="color:#7cc4ff">nightowl</b>which city is this?</div>
+          <div class="line"><b style="color:#ffb347">mapsguy</b>!location</div>
+          <div class="line bot"><b class="who-bot">MetaStream bot</b>yourchannel is in Lisbon, Portugal</div>
+          <div class="line"><b style="color:#ff7ab6">k_rider</b>!weather</div>
+          <div class="line bot"><b class="who-bot">MetaStream bot</b>It's 14° and clear where yourchannel is</div>
+          <div class="chiprow" aria-label="Saved command chips"><span class="slash">/clear</span><span>!giveaway start</span><span>!giveaway end</span><span>!socials</span></div>
+        </div>
+        <div class="panel">
+          <ul class="list">
+            <li><b>Bot replies</b><span class="mono" style="font-size:14px">!location !speed !distance !weather !battery !uptime !commands</span></li>
+            <li><b>Timers</b><span>Repeating messages while you're live, paused during BRB.</span></li>
+            <li><b>Thank-yous</b><span>Follows, subs, gifts and raids answered by the bot, never as you.</span></li>
+            <li><b>Stream manager</b><span>Title, category, viewers and stream key for Kick, Twitch, YouTube and Restream.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dock" id="control">
+    <div class="wrap">
+      <div class="dock-head">
+        <div><div class="label">Dock · Control</div><h2>Your Stream Deck already speaks it</h2></div>
+        <p>The app talks obs-websocket v5 on your local network, so Stream Deck, Touch Portal and Streamer.bot control it as if it were OBS. Switch scenes, go live, record and mute, behind a password, never over cellular.</p>
+      </div>
+      <div class="panel" style="display:grid;grid-template-columns:minmax(0,1fr);gap:18px">
+        <div class="deck" aria-label="Example Stream Deck layout">
+          <div class="key live">Go live</div><div class="key">Record</div><div class="key">Mute mic</div><div class="key">Starting</div><div class="key">Live scene</div>
+          <div class="key">BRB</div><div class="key">Ending</div><div class="key">Clear chat</div><div class="key">Blur</div><div class="key">Soundboard</div>
+        </div>
+        <ul class="list">
+          <li><b>Cameras</b><span>Back, front, USB-C cameras like a DJI Osmo, dual camera, and optional Ray-Ban Meta glasses.</span></li>
+          <li><b>Looks</b><span>Brightness, contrast, saturation, warmth and your own <span class="mono">.cube</span> LUTs per camera.</span></li>
+          <li><b>Privacy blur</b><span>Faces, text and barcodes blurred on demand before the frame is encoded.</span></li>
+          <li><b>Live Activity</b><span>Stream state on the Lock Screen and Dynamic Island, with your bot commands one tap away.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="dock" id="build">
+    <div class="wrap">
+      <div class="dock-head">
+        <div><div class="label">Open source</div><h2>Build your own copy, from Windows</h2></div>
+        <p>MetaStream isn't on the App Store. You build it from the source with your own Apple Developer team: GitHub's macOS runners compile it, and you install it over USB from Windows, Linux or a Mac. No Mac needed at any point.</p>
+      </div>
+      <div class="build">
+        <div class="panel">
+          <ol class="steps">
+            <li><span>Fork the repo and pick your bundle ID.</span></li>
+            <li><span>Add your Apple signing and the platform apps you want as GitHub secrets.</span></li>
+            <li><span>Push to <span class="mono">main</span>. The build-ipa workflow signs an encrypted IPA.</span></li>
+            <li><span>Download it, decrypt it and install it over USB with <span class="mono">pymobiledevice3</span>.</span></li>
+          </ol>
+          <div class="cta" style="margin-top:22px"><a class="btn primary" href="https://github.com/saeedkolivand/meta-stream/blob/main/guide/build.md">Read the build guide</a><a class="btn" href="https://github.com/saeedkolivand/meta-stream/blob/main/guide/features.md">All features</a></div>
+        </div>
+        <pre aria-label="Install commands"><span style="color:var(--muted)"># every build, from the repo root</span>
+gh run download -n MetaStream-ipa -D build
+openssl enc -d -aes-256-cbc -pbkdf2 \
+  -in build/MetaStream.ipa.enc -out build/MetaStream.ipa \
+  -pass file:signing/ipa-password.txt
+pymobiledevice3 apps install build/MetaStream.ipa</pre>
+      </div>
+    </div>
+  </section>
+</main>
+
 <footer>
-  <div class="in">
-    <div class="cols">
-      <div><h4>Project</h4><a href="https://github.com/saeedkolivand/meta-stream">GitHub</a><a href="https://github.com/saeedkolivand/meta-stream#build-your-own-copy">Build guide</a><a href="https://github.com/saeedkolivand/meta-stream#troubleshooting">Troubleshooting</a><a href="https://github.com/saeedkolivand/meta-stream#roadmap">Roadmap</a></div>
-      <div><h4>Platforms</h4><a href="https://kick.com/saeedified">Kick</a><a href="https://dev.twitch.tv">Twitch developers</a><a href="https://developers.restream.io">Restream developers</a><a href="https://developers.google.com/youtube">YouTube Data API</a></div>
-      <div><h4>Built on</h4><a href="https://github.com/facebook/meta-wearables-dat-ios">Meta Wearables DAT</a><a href="https://github.com/HaishinKit/HaishinKit.swift">HaishinKit</a><a href="https://github.com/yonaskolb/XcodeGen">XcodeGen</a><a href="https://github.com/doronz88/pymobiledevice3">pymobiledevice3</a></div>
-      <div><h4>Author</h4><a href="https://iamsaeed.dev">Saeed Kolivand</a><a href="https://github.com/saeedkolivand">GitHub profile</a></div>
-    </div>
-    <p class="legal">MetaStream is an independent open-source project and is not affiliated with, endorsed by or sponsored by Meta, EssilorLuxottica, Kick, Twitch, Google or Restream. Ray-Ban and Meta are trademarks of their respective owners.</p>
-    <p class="micro">Glasses video is limited to 1280 × 720 at 30 fps by the Meta Wearables Device Access Toolkit. HEVC delivery to Twitch requires Affiliate or Partner status. A paid Apple Developer team is required to sign the build.</p>
+  <div class="wrap">
+    <span>MetaStream · built by <a href="https://iamsaeed.dev">Saeed Kolivand</a> with Claude Code</span>
+    <span><a href="https://github.com/saeedkolivand/meta-stream">GitHub</a> · <a href="https://github.com/saeedkolivand/meta-stream/blob/main/guide/troubleshooting.md">Troubleshooting</a> · Powered by HaishinKit</span>
   </div>
 </footer>
 
-<!-- floating-sticky-bar -->
-<div class="sticky-bar" role="complementary">
-  <div class="in">
-    <span class="price">MetaStream <small>· free · open source · your own build</small></span>
-    <a class="btn-primary" href="#build">Build it</a>
-  </div>
-</div>
-
 <script>
-  // Carousel controls (button-icon-circular): scroll one card per tap.
-  const track = document.getElementById('track');
-  document.querySelectorAll('.carousel .ctrl').forEach(b => b.addEventListener('click', () => {
-    const w = track.querySelector('figure').getBoundingClientRect().width + 24;
-    track.scrollBy({ left: Number(b.dataset.dir) * w, behavior: 'smooth' });
-  }));
-  // Spec search: filter chips.
-  const q = document.getElementById('specsearch');
-  q.addEventListener('input', () => {
-    const s = q.value.trim().toLowerCase();
-    document.querySelectorAll('.chip').forEach(c => c.style.display = !s || c.textContent.toLowerCase().includes(s) ? '' : 'none');
-  });
+(() => {
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const chatEl = document.getElementById('chat');
+  const lines = [
+    ['nightowl', '#7cc4ff', 'which city is this?'], ['mapsguy', '#ffb347', 'the lights here are unreal'],
+    ['k_rider', '#ff7ab6', 'audio is crisp tonight'], ['سارا', '#9be38a', 'سلام! چه شب قشنگی'],
+    ['dusk_runner', '#c9a3ff', 'turn left at the bridge'], ['nightowl', '#7cc4ff', 'that stinger is clean'],
+  ];
+  let n = 0;
+  function addMsg() {
+    const [who, col, text] = lines[n++ % lines.length];
+    const m = document.createElement('div');
+    m.className = 'msg';
+    const b = document.createElement('b'); b.style.color = col; b.textContent = who;
+    const t = document.createElement('span'); t.textContent = text; t.dir = 'auto';
+    m.append(b, t);
+    chatEl.append(m);
+    while (chatEl.children.length > 3) chatEl.firstElementChild.remove();
+  }
+  for (let i = 0; i < 3; i++) addMsg();
+
+  // timecode HH:MM:SS:FF at 30 fps, uptime and clock, from a fixed starting point
+  const t0 = performance.now(), base = 42 * 60 + 17;
+  const pad = v => String(v).padStart(2, '0');
+  function tick() {
+    const s = base + (performance.now() - t0) / 1000;
+    const f = Math.floor((s % 1) * 30), S = Math.floor(s);
+    document.getElementById('tc').textContent = `00:${pad(Math.floor(S / 60) % 60)}:${pad(S % 60)}:${pad(f)}`;
+    document.getElementById('uptime').textContent = `LIVE ${pad(Math.floor(S / 60))}:${pad(S % 60)}`;
+    const d = new Date();
+    document.getElementById('clock').textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    if (!still) requestAnimationFrame(tick);
+  }
+  tick();
+  if (still) return;
+
+  setInterval(addMsg, 2600);
+
+  // Lens stinger: the scene swaps underneath at the covered moment (half way through)
+  const screen = document.getElementById('screen'), sceneName = document.getElementById('scene-name');
+  let brb = false;
+  setInterval(() => {
+    screen.classList.remove('sting-on'); void screen.offsetWidth; screen.classList.add('sting-on');
+    setTimeout(() => { brb = !brb; screen.classList.toggle('is-brb', brb); sceneName.textContent = brb ? 'BRB' : 'Live'; }, 1300);
+    setTimeout(() => screen.classList.remove('sting-on'), 2700);
+  }, 7000);
+
+  // meters and uplink bars: gentle example motion
+  const meters = [...document.querySelectorAll('.meter i')], levels = [0.62, 0.35, 0.22, 0.3];
+  setInterval(() => meters.forEach((m, i) => {
+    const v = Math.max(0.05, Math.min(0.97, levels[i] + (Math.random() - 0.5) * (i ? 0.25 : 0.4)));
+    m.style.height = (v * 100).toFixed(0) + '%';
+  }), 140);
+  const links = [[2.9, 'l1', 'v1'], [2.4, 'l2', 'v2'], [1.1, 'l3', 'v3']];
+  setInterval(() => {
+    let total = 0;
+    links.forEach(([b, bar, val]) => {
+      const v = Math.max(0.2, b + (Math.random() - 0.5) * 1.2); total += v;
+      document.getElementById(bar).style.width = (v / 6.5 * 100).toFixed(0) + '%';
+      document.getElementById(val).textContent = v.toFixed(1) + ' Mb/s';
+    });
+    document.getElementById('vt').textContent = total.toFixed(1) + ' Mb/s';
+  }, 1400);
+})();
 </script>
+
 </body>
 </html>

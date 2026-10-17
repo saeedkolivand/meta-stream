@@ -1,25 +1,26 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
+# One grouped pull request per ecosystem per week, instead of one per package.
+# The iOS packages are declared in XcodeGen's project.yml, which Dependabot can't read. HaishinKit is a range
+# ("from: 2.1.0"), so each CI build already takes its newest 2.x; the Meta DAT SDK is pinned exactly and bumped by hand.
 version: 2
 updates:
-  # Keep GitHub Actions dependencies up to date
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 1
     groups:
       github-actions:
         patterns:
           - "*"
-  # Keep Swift Package Manager dependencies up to date
-  - package-ecosystem: "swift"
-    directory: "/"
+
+  - package-ecosystem: "gradle"
+    directory: "/android"
     schedule:
       interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 1
     groups:
-      swift-packages:
+      android:
         patterns:
           - "*"
