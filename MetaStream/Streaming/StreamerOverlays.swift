@@ -96,6 +96,8 @@ extension Streamer {
         if (target?.name ?? "") != store.scene {
             pendingSceneFade = store.transition == "fade"
             store.select(target?.name ?? "")
+            // Now, not on the next 1 s tick: under a stinger the swap has to land while the frame is covered.
+            Task { await syncBlurEffect() }
         }
         // "external" only with a camera plugged in, "glasses" only in a build that can talk to them; anything else is
         // left alone rather than switching to a dead feed.
