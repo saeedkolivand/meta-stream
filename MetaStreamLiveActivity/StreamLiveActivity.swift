@@ -118,15 +118,25 @@ private struct StatsLine: View {
 private struct Controls: View {
     let state: StreamState
     var body: some View {
-        HStack(spacing: 12) {
-            Button(intent: ToggleMuteIntent()) {
-                Label(state.muted ? "Unmute" : "Mute", systemImage: state.muted ? "mic.slash.fill" : "mic.fill")
-                    .frame(maxWidth: .infinity)
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                Button(intent: ToggleMuteIntent()) {
+                    Label(state.muted ? "Unmute" : "Mute", systemImage: state.muted ? "mic.slash.fill" : "mic.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                Button(intent: StopStreamIntent()) {
+                    Label("Stop", systemImage: "stop.fill").frame(maxWidth: .infinity)
+                }
+                .tint(.red)
             }
-            Button(intent: StopStreamIntent()) {
-                Label("Stop", systemImage: "stop.fill").frame(maxWidth: .infinity)
+            if !state.commands.isEmpty {
+                HStack(spacing: 8) {
+                    ForEach(state.commands, id: \.id) { c in
+                        Button(intent: SendCommandIntent(commandID: c.id)) { Text(c.text).lineLimit(1).frame(maxWidth: .infinity) }
+                    }
+                }
+                .font(.subheadline)
             }
-            .tint(.red)
         }
         .font(.headline)
     }

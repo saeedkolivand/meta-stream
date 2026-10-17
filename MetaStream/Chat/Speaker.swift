@@ -109,7 +109,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         let note = Self.isBlocked(e.text, extra: blocked) ? "" : Self.sanitize(e.text)
         switch e.kind {
         case .message:
-            guard messagesOn, !Self.isNoise(user: e.user, text: e.text, ignored: ignored), !note.isEmpty else { return nil }
+            guard messagesOn, !Self.isNoise(user: e.user, text: e.text, ignored: ignored), !note.isEmpty, BotList.reads(e.user, e.text) else { return nil }
             defer { lastChatter = e.user }
             return e.user == lastChatter ? note : "\(user) says \(note)"
         case .tip:
@@ -192,9 +192,6 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         return best?.quality == .default ? nil : best
     }()
 
-    // ponytail: name heuristics, since no platform flags bots in chat; the ignore list covers the rest.
-    static let knownBots: Set<String> = ["streamelements", "streamlabs", "botrix", "kicklet", "soundalerts"]
-
     // ponytail: the slurs and self-harm phrases most often behind hateful-conduct bans; `blocked` adds any language.
     nonisolated static let bannedTerms = ["nigger", "nigga", "faggot", "fag", "retard", "tranny", "kike", "chink", "spic",
                               "wetback", "gook", "kys", "kill yourself", "heil hitler"]
@@ -222,11 +219,11 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         return terms.contains { t in t.count >= 5 ? joined.contains(t) : words.contains { $0 == t || $0 == t + "s" } }
     }
 
-    /// Bots (names ending in "bot" plus the big ones that don't), !commands, and names in `ignored`.
+    /// !commands and names in `ignored`. Bots are decided separately (BotList + botReadMode).
     static func isNoise(user: String, text: String, ignored: String) -> Bool {
         let u = user.lowercased()
         let names = ignored.lowercased().split { $0 == "," || $0.isWhitespace }.map { $0.hasPrefix("@") ? String($0.dropFirst()) : String($0) }
-        return u.hasSuffix("bot") || knownBots.contains(u) || names.contains(u)
+        return names.contains(u)
             || text.trimmingCharacters(in: .whitespaces).hasPrefix("!")
     }
 

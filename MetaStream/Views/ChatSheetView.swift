@@ -17,6 +17,7 @@ struct ChatSheetView: View {
     private static let chatSizes: [DynamicTypeSize] = [.large, .xxLarge, .accessibility2, .accessibility4]
 
     @State private var chatText = ""
+    @AppStorage("botCommands") var commandsRaw = BotCommand.seed
     @State private var atBottom = true
     @EnvironmentObject var speaker: Speaker   // injected app-wide in App.swift; sheets inherit it
     @State private var summary: String?
@@ -111,7 +112,8 @@ struct ChatSheetView: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 10).padding(.vertical, 8)
-            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+            .background(BotList.isAnnouncement(user: event.user, text: event.text) ? Color.yellow.opacity(0.28) : Color.primary.opacity(0.07),
+                        in: RoundedRectangle(cornerRadius: 12))
             .opacity(event.flagged ? 0.55 : 1)   // AI-flagged: still shown here so the streamer can ban the sender
             .padding(.vertical, 3)
         } else {
@@ -196,6 +198,7 @@ struct ChatSheetView: View {
     private var composeBar: some View {
         VStack(spacing: 8) {
             if !vm.slashNote.isEmpty { Text(vm.slashNote).font(.footnote).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading) }
+            commandPicker
             if sendOrigins.count > 1 {
                 Picker("Send to", selection: $vm.chatOrigin) {
                     ForEach(sendOrigins, id: \.self) { Text(DisplayNames.platformName($0)).tag($0) }
@@ -215,6 +218,29 @@ struct ChatSheetView: View {
         }
         .padding()
         .background(.ultraThinMaterial)
+    }
+
+    /// Typing "!" lists the saved commands with that prefix; otherwise a row of chips. Both send straight away.
+    @ViewBuilder private var commandPicker: some View {
+        let all = BotCommand.decode(commandsRaw)
+        let typed = chatText.lowercased()
+        let matches = typed.hasPrefix("!") ? all.filter { $0.text.lowercased().hasPrefix(typed) } : []
+        if !matches.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(matches) { c in
+                    Button { chatText = ""; run(c) } label: { Text(c.text).frame(maxWidth: .infinity, alignment: .leading) }
+                }
+            }
+        } else if !all.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack { ForEach(all) { c in Button(c.text) { run(c) }.buttonStyle(.bordered) } }
+            }
+        }
+    }
+
+    private func run(_ c: BotCommand) {
+        hapticTap()
+        Task { await c.send(platforms) }
     }
 
     private func sendChat() {

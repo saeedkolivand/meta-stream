@@ -14,7 +14,13 @@ struct StreamActivityAttributes: ActivityAttributes {
         var drops: Int
         var muted: Bool
         var endedAt: Date?       // set only with phase "ended", so the lingering card shows the final duration
+        var commands: [LockCommand] = []   // up to 3 saved chat commands shown as buttons (Settings > Chat commands)
     }
+}
+
+struct LockCommand: Codable, Hashable {
+    var id: String           // BotCommand.id.uuidString
+    var text: String
 }
 
 /// What the Lock Screen / Dynamic Island buttons trigger. LiveActivityIntent.perform() runs in the APP
@@ -25,6 +31,7 @@ enum StreamActivityActions {
     // ponytail: shared statics instead of dependency injection; one Streamer per process, set once in attach().
     static var stop: (@MainActor () -> Void)?
     static var toggleMute: (@MainActor () -> Void)?
+    static var sendCommand: (@MainActor (String) -> Void)?   // set in App.swift (needs Platforms)
 }
 
 struct StopStreamIntent: LiveActivityIntent {
@@ -39,6 +46,17 @@ struct ToggleMuteIntent: LiveActivityIntent {
     static let title: LocalizedStringResource = "Mute or unmute mic"
     func perform() async throws -> some IntentResult {
         await MainActor.run { StreamActivityActions.toggleMute?() }
+        return .result()
+    }
+}
+
+struct SendCommandIntent: LiveActivityIntent {
+    static let title: LocalizedStringResource = "Send chat command"
+    @Parameter(title: "Command ID") var commandID: String
+    init() {}
+    init(commandID: String) { self.commandID = commandID }
+    func perform() async throws -> some IntentResult {
+        await MainActor.run { StreamActivityActions.sendCommand?(commandID) }
         return .result()
     }
 }

@@ -42,7 +42,6 @@ struct ChatWidgetStyle: Equatable, Sendable {
     var platform = true
     var hideCommands = true
     var hideBots = true
-    var botNames = "nightbot,streamelements,streamlabs,moobot,fossabot,botrix,botrixoficial,kicklet,sery_bot,wizebot"
     var highlight = ""
     var highlightColor: UInt32 = 0xFFFF_C83D
     var showEvents = true
@@ -57,7 +56,7 @@ struct ChatWidgetStyle: Equatable, Sendable {
         textColor = d.argb("textColor", o.textColor); senderColors = d.flag("senderColors", o.senderColors)
         shadow = d.flag("shadow", o.shadow); bold = d.flag("bold", o.bold); badges = d.flag("badges", o.badges)
         platform = d.flag("platform", o.platform); hideCommands = d.flag("hideCommands", o.hideCommands)
-        hideBots = d.flag("hideBots", o.hideBots); botNames = d.str("botNames", o.botNames)
+        hideBots = d.flag("hideBots", o.hideBots)
         highlight = d.str("highlight", o.highlight); highlightColor = d.argb("highlightColor", o.highlightColor)
         showEvents = d.flag("showEvents", o.showEvents); face = d.str("face", o.face)
     }
@@ -69,7 +68,7 @@ struct ChatWidgetStyle: Equatable, Sendable {
          "maxMessages": "\(maxMessages)", "fadeSeconds": "\(fadeSeconds)", "background": flagText(background),
          "backgroundColor": "\(backgroundColor)", "textColor": "\(textColor)", "senderColors": flagText(senderColors),
          "shadow": flagText(shadow), "bold": flagText(bold), "badges": flagText(badges), "platform": flagText(platform),
-         "hideCommands": flagText(hideCommands), "hideBots": flagText(hideBots), "botNames": botNames,
+         "hideCommands": flagText(hideCommands), "hideBots": flagText(hideBots),
          "highlight": highlight, "highlightColor": "\(highlightColor)", "showEvents": flagText(showEvents), "face": face]
     }
 }

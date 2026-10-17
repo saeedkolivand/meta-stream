@@ -41,13 +41,23 @@ struct MetaStreamApp: App {
                 streamer.speaker = speaker; streamer.privacy = privacy
                 if gpsShare { GPSShare.shared.setEnabled(true) }
                 ObsServer.shared.sync(streamer)
+                StreamActivityActions.sendCommand = { id in
+                    guard UserDefaults.standard.bool(forKey: "lockScreenCommands"),
+                          let c = BotCommand.stored().first(where: { $0.id.uuidString == id }) else { return }
+                    Task { await c.send(platforms) }
+                }
             }
             .onChange(of: gpsOnly) { _, on in streamer.setGPSOnly(on) }
             .task {
                 // Here, not in ContentView: GPS-only mode unmounts ContentView, and cancelling this loop would end
                 // chat.events for good. ponytail: one consumer for the app's lifetime. ChatFeed buffers, Speaker
                 // bounds its own lanes, so nothing here needs backpressure handling.
-                for await e in chat.events { speaker.speak(e) }
+                for await e in chat.events {
+                    speaker.speak(e)
+                    if e.kind == .message, !e.flagged, BotList.isAnnouncement(user: e.user, text: e.text) {
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    }
+                }
             }
             .onOpenURL { url in
                 Task {

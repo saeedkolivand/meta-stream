@@ -40,14 +40,13 @@ struct StreamChatView: View {
 
     /// Events that survive the filters and the fade, oldest first, at most maxMessages.
     static func rows(_ events: [ChatEvent], _ style: ChatWidgetStyle, now: Date) -> [ChatEvent] {
-        let bots = Set(style.botNames.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces).lowercased() })
         let fade = Double(style.fadeSeconds)
         let kept = events.filter { e in
             if fade > 0, now.timeIntervalSince(e.at) > fade { return false }
             if e.offensive { return false }   // on stream a slur can get the channel banned
             if e.kind != .message { return style.showEvents }
             if style.hideCommands, e.text.hasPrefix("!") { return false }
-            return !(style.hideBots && bots.contains(e.user.lowercased()))
+            return !(style.hideBots && BotList.isBot(e.user))
         }
         return Array(kept.suffix(Int(style.maxMessages)))
     }

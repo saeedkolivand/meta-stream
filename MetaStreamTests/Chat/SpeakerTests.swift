@@ -19,8 +19,8 @@ final class SpeakerTests: XCTestCase {
     }
 
     func testIsNoise() {
-        XCTAssertTrue(Speaker.isNoise(user: "Nightbot", text: "hi", ignored: ""))
-        XCTAssertTrue(Speaker.isNoise(user: "BotRix", text: "hi", ignored: ""))
+        XCTAssertTrue(BotList.isBot("Nightbot"))
+        XCTAssertTrue(BotList.isBot("BotRix"))
         XCTAssertTrue(Speaker.isNoise(user: "bob", text: " !discord", ignored: ""))
         XCTAssertTrue(Speaker.isNoise(user: "Spammer", text: "hi", ignored: "alice, @spammer"))
         XCTAssertFalse(Speaker.isNoise(user: "bob", text: "nice drive!", ignored: "alice"))

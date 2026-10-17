@@ -19,6 +19,8 @@ struct SettingsView: View {
                     NavigationLink("Scenes & widgets") { OverlaySettingsView() }
                     NavigationLink("Audio") { AudioSettingsView() }
                     NavigationLink("Read aloud") { ReadAloudSettingsView() }
+                    NavigationLink("Chat commands") { CommandsSettingsView() }
+                    NavigationLink("Chat bots") { BotsSettingsView() }
                     NavigationLink("Privacy") { PrivacySettingsView() }
                     NavigationLink("Remote control") { RemoteSettingsView() }
                 }

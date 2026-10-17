@@ -45,7 +45,13 @@ final class LiveActivityController {
         guard let since = streamer.liveSince else { return nil }
         let phase = streamer.connectedSince == nil ? "reconnecting" : "live"
         return StreamActivityAttributes.ContentState(phase: phase, liveSince: since, kbps: streamer.kbps,
-                                                     source: streamer.source, drops: streamer.drops, muted: streamer.muted)
+                                                     source: streamer.source, drops: streamer.drops, muted: streamer.muted,
+                                                     commands: lockCommands())
+    }
+
+    private func lockCommands() -> [LockCommand] {
+        guard UserDefaults.standard.bool(forKey: "lockScreenCommands") else { return [] }
+        return BotCommand.stored().filter(\.lockScreen).prefix(3).map { LockCommand(id: $0.id.uuidString, text: $0.text) }
     }
 
     func sync(_ streamer: Streamer) {

@@ -73,11 +73,10 @@ struct WidgetInspectorView: View {
             Toggle("Hide !commands", isOn: flag("hideCommands"))
             Toggle("Hide bots", isOn: flag("hideBots"))
             Toggle("Show follows, subs and tips", isOn: flag("showEvents"))
-            TextField("Bot names", text: str("botNames"), axis: .vertical).autocorrectionDisabled().textInputAutocapitalization(.never)
             TextField("Highlight words", text: str("highlight")).autocorrectionDisabled().textInputAutocapitalization(.never)
             ColorPicker("Highlight color", selection: color("highlightColor"))
         } header: { Text("Filters") } footer: {
-            Text("Bot names and highlight words are comma-separated. A message with a highlight word, or your channel name, gets a border.")
+            Text("Highlight words are comma-separated; the bot list is in Settings → Chat bots. A message with a highlight word, or your channel name, gets a border.")
         }
     }
 
