@@ -52,7 +52,7 @@ extension Streamer {
                 try? await Task.sleep(for: .seconds(kind.cutSeconds(style)))
                 switchScene(stingerTarget ?? name)
                 stingerTarget = nil
-                try? await Task.sleep(for: .seconds(kind.seconds(style) - kind.cutSeconds(style)))
+                try? await Task.sleep(for: .seconds(kind.seconds(style) - kind.cutSeconds(style) + 0.15))   // a beat past the end, so it logs and clears itself
                 await overlays.removeStinger()
             }
             return

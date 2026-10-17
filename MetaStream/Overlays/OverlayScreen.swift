@@ -84,6 +84,11 @@ final class StingerScreenObject: ScreenObject {
     private let kind: StingerKind
     private let style: StingerStyle
     private var start: CMTime?
+    // perf: frames drawn, draw time, and the longest gap between video frames, logged once when it ends
+    private var frames = 0
+    private var drawTotal = 0.0, drawMax = 0.0, gapMax = 0.0
+    private var last = 0.0
+    private var logged = false
 
     init(kind: StingerKind, style: StingerStyle) {
         self.kind = kind
@@ -97,7 +102,24 @@ final class StingerScreenObject: ScreenObject {
         start = first
         let t = (now - first).seconds
         // An empty image (not nil) once it's over: nil would leave the renderer's last frame on screen.
-        guard t.isFinite, t >= 0, t <= kind.seconds(style) else { return CIImage.empty() }
-        return kind.ciFrame(size: bounds.size, t: t, style: style)
+        guard t.isFinite, t >= 0, t <= kind.seconds(style) else {
+            if !logged, frames > 0 {
+                logged = true
+                applog("perf", "stinger \(kind.rawValue): \(frames) frames in \(String(format: "%.2f", last)) s "
+                       + "(\(String(format: "%.0f", Double(frames) / max(last, 0.01))) fps), draw avg \(String(format: "%.1f", drawTotal / Double(frames))) ms "
+                       + "max \(String(format: "%.1f", drawMax)) ms, longest gap \(String(format: "%.0f", gapMax * 1000)) ms, "
+                       + "canvas \(Int(bounds.width))x\(Int(bounds.height)), renderer \(type(of: renderer))")
+            }
+            return CIImage.empty()
+        }
+        let began = CACurrentMediaTime()
+        let image = kind.ciFrame(size: bounds.size, t: t, style: style)
+        let ms = (CACurrentMediaTime() - began) * 1000
+        frames += 1
+        drawTotal += ms
+        drawMax = max(drawMax, ms)
+        if frames > 1 { gapMax = max(gapMax, t - last) }
+        last = t
+        return image
     }
 }
