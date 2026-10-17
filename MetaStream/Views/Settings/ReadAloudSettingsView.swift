@@ -54,6 +54,9 @@ struct ReadAloudSettingsView: View {
                         }
                     }
                 }
+                // Its own page, not a pop-up menu: a menu of hundreds of voices is re-presented (scroll lost) each time
+                // the screen refreshes for platform updates.
+                .pickerStyle(.navigationLink)
             } footer: {
                 Text("Premium voices sound the most human. Download one (e.g. Ava or Zoe, Premium) in Settings → Accessibility → "
                      + "Read & Speak (Spoken Content) → Voices, then reopen this app. Best installed picks it automatically.")
