@@ -8,6 +8,8 @@ struct SharedFix: Equatable {
     static let hotspotIP = IPv4Address("172.20.10.1")!
     static let host = NWEndpoint.Host.ipv4(hotspotIP)
     static let port: NWEndpoint.Port = 47123
+    /// Voice priority (Wi-Fi WMM): the stream's video fills the hotspot link, and a best-effort ping queued behind it misses its window.
+    static var params: NWParameters { let p = NWParameters.udp; p.serviceClass = .interactiveVoice; return p }
 
     var lat, lon, speed, accuracy: Double
     var time: Date
@@ -49,7 +51,7 @@ final class GPSShare: NSObject, ObservableObject, CLLocationManagerDelegate {
         if manager.authorizationStatus == .notDetermined { manager.requestWhenInUseAuthorization() }
         manager.startUpdatingLocation()
         do {
-            let l = try NWListener(using: .udp, on: SharedFix.port)
+            let l = try NWListener(using: SharedFix.params, on: SharedFix.port)
             // The iPad opens a fresh connection per ping, so each one gets a single reply and is closed.
             l.newConnectionHandler = { c in
                 c.start(queue: .main)

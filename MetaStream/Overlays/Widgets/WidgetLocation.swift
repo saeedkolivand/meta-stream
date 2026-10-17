@@ -81,26 +81,30 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
     }
 
     /// Pings the iPhone once a second on a fresh UDP connection, so a phone that starts sharing later is still found.
+    /// Each connection waits 3 s for its reply: on a congested hotspot a reply can arrive after the next ping went out.
     private func pollPhone() -> Task<Void, Never> {
         Task {
             while !Task.isCancelled {
-                let c = NWConnection(host: SharedFix.host, port: SharedFix.port, using: .udp)
+                let c = NWConnection(host: SharedFix.host, port: SharedFix.port, using: SharedFix.params)
                 c.start(queue: .global())
                 c.receiveMessage { data, _, _, _ in
                     guard let data, let fix = SharedFix(wire: String(decoding: data, as: UTF8.self)) else { return }
                     Task { @MainActor in self.phoneFix(fix) }
                 }
                 c.send(content: Data("?".utf8), completion: .idempotent)
+                DispatchQueue.global().asyncAfter(deadline: .now() + 3) { c.cancel() }
                 try? await Task.sleep(for: .seconds(1))
-                c.cancel()
-                let silent = Date().timeIntervalSince(phoneFixAt) > 2
-                if silent != phoneSilent { phoneSilent = silent; if silent { applog("location", "iPhone GPS: no reply") } }
+                if !phoneSilent, Date().timeIntervalSince(phoneFixAt) > 4 { phoneSilent = true; applog("location", "iPhone GPS: no reply") }
             }
         }
     }
 
     private func phoneFix(_ f: SharedFix) {
         guard phonePoll != nil else { return }
+        if phoneSilent {
+            phoneSilent = false
+            if phoneFixAt != .distantPast { applog("location", "iPhone GPS: replies again after \(Int(Date().timeIntervalSince(phoneFixAt))) s") }
+        }
         phoneFixAt = Date()
         guard f.time != phoneTime else { return }   // the phone repeats its latest fix until a new one arrives
         if phoneTime == nil { applog("location", "using iPhone GPS: accuracy \(Int(f.accuracy)) m, speed \(f.speed)") }

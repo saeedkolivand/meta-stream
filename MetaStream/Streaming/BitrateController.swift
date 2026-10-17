@@ -15,20 +15,35 @@ extension Streamer {
         if hot.congested {
             hot.congested = false
             cleanTicks = 0
+            markFalling()
             await stepBitrate(up: false, reason: "queue backlog")
             return
         }
         let throughputKbps = hot.bytesOutPerSecond * 8 / 1000
         if throughputKbps < currentBitrateKbps * 7 / 10 {   // short of target by 30%+
             cleanTicks = 0
+            markFalling()
             await stepBitrate(up: false, reason: "throughput \(throughputKbps)kbps < target \(currentBitrateKbps)kbps")
             return
         }
         cleanTicks += 1
-        if cleanTicks >= 15 {
+        let wait = Self.cleanSecondsBeforeUp(current: currentBitrateKbps, failedAt: failedAtKbps)
+        if cleanTicks >= wait {
             cleanTicks = 0
-            await stepBitrate(up: true, reason: "15s clean")
+            falling = false
+            await stepBitrate(up: true, reason: "\(wait)s clean")
         }
+    }
+
+    /// The first down-step of a run remembers where the link gave out; the rest of the run keeps it.
+    private func markFalling() {
+        if !falling { falling = true; failedAtKbps = currentBitrateKbps }
+    }
+
+    /// Climbs back fast (5 s steps) while well below where the link last failed: a stall that collapses the
+    /// bitrate otherwise takes minutes of 15 s steps to undo. Near or above that level, probe slowly again.
+    static func cleanSecondsBeforeUp(current: Int, failedAt: Int) -> Int {
+        current < failedAt * 4 / 5 ? 5 : 15
     }
 
     /// Applies one AIMD step and logs the ladder (Settings → Logs shows it after a walk). Rate-limited so

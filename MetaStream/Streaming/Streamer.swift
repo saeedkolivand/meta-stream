@@ -107,7 +107,11 @@ final class Streamer: ObservableObject {
 
     var thermalCeilingKbps: Int?      // set while thermal >= .serious; caps the ceiling until it clears
 
-    var cleanTicks = 0                // consecutive good 1s ticks; 15 triggers an up-step
+    var cleanTicks = 0                // consecutive good 1s ticks; 15 (5 well below failedAtKbps) trigger an up-step
+
+    var failedAtKbps = 0              // bitrate the latest run of down-steps started from
+
+    var falling = false               // true from a down-step until the next up-step
 
     var lastBitrateAdjustAt: Date?    // rate limit: one adjustment per bitrateAdjustCooldown
 

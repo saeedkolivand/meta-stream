@@ -13,6 +13,12 @@ final class StreamerTests: XCTestCase {
         XCTAssertEqual(Streamer.steppedBitrate(current: 4000, up: true, ceilingKbps: 4000, floorKbps: 500), 4000, "ceiling is a ceiling")
     }
 
+    func testDemoCleanSecondsBeforeUp() {
+        XCTAssertEqual(Streamer.cleanSecondsBeforeUp(current: 1229, failedAt: 3000), 5, "far below the failure: climb fast")
+        XCTAssertEqual(Streamer.cleanSecondsBeforeUp(current: 2400, failedAt: 3000), 15, "near the failure: probe slowly")
+        XCTAssertEqual(Streamer.cleanSecondsBeforeUp(current: 3000, failedAt: 0), 15, "no failure yet: probe slowly")
+    }
+
     func testDemoPipRect() {
         func near(_ a: CGFloat, _ b: CGFloat) -> Bool { abs(a - b) < 0.01 }
         let p = Streamer.pipRect(canvas: CGSize(width: 1080, height: 1920), corner: "topRight", size: "m", shape: "rounded")

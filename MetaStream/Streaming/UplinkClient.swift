@@ -187,7 +187,7 @@ extension Streamer {
         currentBitrateKbps = bitrateKbps          // HUD baseline; moves once phoneEncodes goes true
         bitrateCeilingKbps = bitrateKbps
         thermalCeilingKbps = nil
-        cleanTicks = 0
+        cleanTicks = 0; failedAtKbps = 0; falling = false
         lastBitrateAdjustAt = nil
         hot.congested = false; hot.queueBytesOut = 0; hot.bytesOutPerSecond = 0
         // Installed regardless of codec: harmless telemetry-only capture (see QueueWatcher) even on a
