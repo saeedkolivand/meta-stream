@@ -16,6 +16,7 @@ struct RemoteSettingsView: View {
                 Section("Password") {
                     TextField("Password", text: $password).autocorrectionDisabled().textInputAutocapitalization(.never)
                     Button("Regenerate") { password = ObsServer.randomPassword() }
+                    if password.count < 8 { Text("Use at least 8 characters: shorter passwords are refused.").foregroundStyle(.orange) }
                 }
                 Section("Address (port \(String(ObsServer.port)))") {
                     let ips = ObsServer.addresses()

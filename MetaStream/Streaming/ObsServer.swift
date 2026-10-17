@@ -31,6 +31,7 @@ final class ObsServer {
     private let q = DispatchQueue(label: "obs-ws")
     private var listener: NWListener?
     private var clients: [Client] = []
+    private var lastFail = Date.distantPast   // one failed login locks new connections out for 2 s (no fast guessing)
     private var bag = Set<AnyCancellable>()
     private var streamer: Streamer?
     private var password: String { UserDefaults.standard.string(forKey: "obsPassword") ?? "" }
@@ -88,10 +89,12 @@ final class ObsServer {
         let p = NWParameters.tcp
         let ws = NWProtocolWebSocket.Options()
         ws.autoReplyPing = true
+        ws.maximumMessageSize = 64 * 1024   // obs-websocket requests are small; a bigger frame is an attack, not a client
         ws.setClientRequestHandler(q) { subprotocols, _ in
             NWProtocolWebSocket.Response(status: .accept, subprotocol: subprotocols.contains("obswebsocket.json") ? "obswebsocket.json" : nil)
         }
         p.defaultProtocolStack.applicationProtocols.insert(ws, at: 0)
+        p.prohibitedInterfaceTypes = [.cellular]   // a carrier IPv6 address can be public; local network only (adr/0004)
         guard let l = try? NWListener(using: p, on: NWEndpoint.Port(integerLiteral: Self.port)) else {
             applog("remote", "listener could not be created", error: true); return
         }
@@ -128,8 +131,28 @@ final class ObsServer {
 
     // MARK: transport
 
+    /// Private IPv4 ranges, link-local and unique-local IPv6, loopback: the hotspot and home Wi-Fi, never the internet.
+    nonisolated static func isLocal(_ e: NWEndpoint) -> Bool {
+        guard case .hostPort(let host, _) = e else { return false }
+        switch host {
+        case .ipv4(let a):
+            let b = [UInt8](a.rawValue)
+            return b[0] == 10 || b[0] == 127 || (b[0] == 172 && b[1] & 0xF0 == 16) || (b[0] == 192 && b[1] == 168) || (b[0] == 169 && b[1] == 254)
+        case .ipv6(let a):
+            if let v4 = a.asIPv4 { return isLocal(.hostPort(host: .ipv4(v4), port: 0)) }
+            return a.isLoopback || a.isLinkLocal || [UInt8](a.rawValue)[0] & 0xFE == 0xFC
+        default: return false
+        }
+    }
+
     private func accept(_ c: NWConnection) {
+        guard Self.isLocal(c.endpoint), clients.count < 8, Date().timeIntervalSince(lastFail) > 2 else {
+            applog("remote", "connection refused (not local, too many clients, or right after a failed login)")
+            return c.cancel()
+        }
         let cl = Client(c)
+        // An unidentified client gets 10 s to log in, so idle sockets can't pile up.
+        Task { try? await Task.sleep(for: .seconds(10)); if cl.alive, !cl.ok { self.close(cl, 4009) } }
         clients.append(cl)
         c.stateUpdateHandler = { st in
             switch st {
@@ -191,7 +214,8 @@ final class ObsServer {
         let d = m["d"] as? [String: Any] ?? [:]
         switch op {
         case 1:
-            guard d["authentication"] as? String == Self.auth(password, salt: cl.salt, challenge: cl.challenge) else {
+            guard password.count >= 8, d["authentication"] as? String == Self.auth(password, salt: cl.salt, challenge: cl.challenge) else {
+                lastFail = Date()
                 applog("remote", "authentication failed", error: true)
                 return close(cl, 4009)
             }
