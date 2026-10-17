@@ -11,7 +11,6 @@ struct OverlaySettingsView: View {
     @State private var renameText = ""
     @State private var pickJSON = false
     @State private var pickFolder = false
-    @State private var pickStinger = false
     @AppStorage("gpsShare") private var shareGPS = false
     @AppStorage("startCountdown") private var startCountdown = 60
     @AppStorage("endingHold") private var endingHold = 10
@@ -28,17 +27,14 @@ struct OverlaySettingsView: View {
                 }
                 .pickerStyle(.segmented)
                 if store.transition == "stinger" {
-                    Button(store.stingerFile.isEmpty ? "Choose stinger video…" : "Change stinger video…") { pickStinger = true }
-                        .fileImporter(isPresented: $pickStinger, allowedContentTypes: [.movie, .mpeg4Movie, .quickTimeMovie]) { result in
-                            if case .success(let url) = result { store.setStinger(from: url) }
-                        }
-                    VStack(alignment: .leading) {
-                        Text("Cut point: \(Int(store.stingerCut * 100))% of the clip")
-                        Slider(value: $store.stingerCut, in: 0.1...0.9)
+                    NavigationLink {
+                        StingerSettingsView()
+                    } label: {
+                        LabeledContent("Stinger", value: StingerKind(rawValue: store.stingerKind)?.title ?? "Your video")
                     }
                 }
             } header: { Text("Transition") } footer: {
-                Text("Fade dims the old widgets out and the new ones in. A stinger plays your clip over the change, which happens underneath it at the cut point. The camera itself switches instantly.")
+                Text("Fade dims the old widgets out and the new ones in. A stinger plays over the change, which happens underneath it once the screen is covered. The camera itself switches instantly.")
             }
             Section {
                 Stepper("Starting countdown: \(startCountdown == 0 ? "off" : "\(startCountdown) s")", value: $startCountdown, in: 0...300, step: 5)

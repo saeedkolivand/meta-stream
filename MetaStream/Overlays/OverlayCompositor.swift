@@ -23,8 +23,9 @@ final class OverlayCompositor {
     private var tasks: [Task<Void, Never>] = []
     private var stills: [(object: ImageScreenObject, piece: OverlayPiece)] = []   // full-opacity bitmaps, for fades
 
-    private var stinger: AssetScreenObject?   // the stinger clip on screen, kept above the scene
+    private var stinger: ScreenObject?   // the stinger (clip or drawn) on screen, kept above the scene
     private var stingerMixer: MediaMixer?
+    private var stingerTask: Task<Void, Never>?   // redraws a built-in stinger's frames
 
     private static let fadeSteps: [CGFloat] = [0.33, 0.66, 1]
 
@@ -125,7 +126,35 @@ final class OverlayCompositor {
         await OverlayScreen.add([o], to: mixer)
     }
 
+    /// Draws a built-in stinger over the whole canvas at ~30 fps until it ends. Frames render off the main actor.
+    /// ponytail: one CPU-drawn full-canvas bitmap per frame; move the art to Metal/CIImage if encode load shows it.
+    func playStinger(_ kind: StingerKind, style: StingerStyle, canvas: CGSize, mixer: MediaMixer) async {
+        await removeStinger()
+        let o = await OverlayScreen.makeImage(CGRect(origin: .zero, size: canvas), nil)
+        stinger = o
+        stingerMixer = mixer
+        await OverlayScreen.add([o], to: mixer)
+        let total = kind.seconds(style)
+        stingerTask = Task {
+            let start = Date()
+            var n = 0
+            while !Task.isCancelled {
+                let t = Date().timeIntervalSince(start)
+                guard t <= total else { break }
+                let bitmap = await Task.detached(priority: .userInitiated) { kind.frame(size: canvas, t: t, style: style) }.value
+                guard !Task.isCancelled else { return }
+                await OverlayScreen.setImage(o, bitmap)
+                n += 1
+                let wait = start.addingTimeInterval(Double(n) / 30).timeIntervalSinceNow
+                if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
+            }
+            await OverlayScreen.setImage(o, nil)
+        }
+    }
+
     func removeStinger() async {
+        stingerTask?.cancel()
+        stingerTask = nil
         guard let o = stinger, let m = stingerMixer else { return }
         stinger = nil
         stingerMixer = nil

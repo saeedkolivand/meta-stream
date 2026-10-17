@@ -22,6 +22,8 @@ final class OverlayStore: ObservableObject {
     /// The stinger clip (a name under files/, "" = none) and where in it the scene changes, 0.1...0.9 of its length.
     @Published var stingerFile: String { didSet { UserDefaults.standard.set(stingerFile, forKey: "stingerFile") } }
     @Published var stingerCut: Double { didSet { UserDefaults.standard.set(stingerCut, forKey: "stingerCut") } }
+    /// A built-in StingerKind raw value, or "" to play `stingerFile` instead.
+    @Published var stingerKind: String { didSet { UserDefaults.standard.set(stingerKind, forKey: "stingerKind") } }
     @Published var rotateOn: Bool { didSet { UserDefaults.standard.set(rotateOn, forKey: "sceneRotateOn") } }
     @Published var rotateScenes: [String] { didSet { UserDefaults.standard.set(rotateScenes, forKey: "sceneRotateScenes") } }
     @Published var rotateSeconds: Int { didSet { UserDefaults.standard.set(rotateSeconds, forKey: "sceneRotateSeconds") } }
@@ -35,6 +37,7 @@ final class OverlayStore: ObservableObject {
         transition = d.string(forKey: "sceneTransition") ?? "fade"
         stingerFile = d.string(forKey: "stingerFile") ?? ""
         stingerCut = d.object(forKey: "stingerCut") as? Double ?? 0.5
+        stingerKind = d.string(forKey: "stingerKind") ?? StingerKind.lens.rawValue
         rotateOn = d.bool(forKey: "sceneRotateOn")
         rotateScenes = d.stringArray(forKey: "sceneRotateScenes") ?? []
         rotateSeconds = d.object(forKey: "sceneRotateSeconds") as? Int ?? 60

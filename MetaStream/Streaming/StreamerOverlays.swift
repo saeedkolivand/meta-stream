@@ -40,7 +40,24 @@ extension Streamer {
     func applyScene(_ name: String) {
         let store = OverlayStore.shared
         if stingerTarget != nil { stingerTarget = name; return }   // a stinger is mid-flight: it cuts to the latest pick
-        guard store.transition == "stinger", overlaysWanted, name != store.scene, let url = store.stingerURL else {
+        guard store.transition == "stinger", overlaysWanted, name != store.scene else {
+            switchScene(name)
+            return
+        }
+        if let kind = StingerKind(rawValue: store.stingerKind) {   // built-in: drawn live, cut where it fully covers
+            stingerTarget = name
+            let style = StingerStyle.load()
+            Task {
+                await overlays.playStinger(kind, style: style, canvas: blurCanvasSize, mixer: mixer)
+                try? await Task.sleep(for: .seconds(kind.cutSeconds(style)))
+                switchScene(stingerTarget ?? name)
+                stingerTarget = nil
+                try? await Task.sleep(for: .seconds(kind.seconds(style) - kind.cutSeconds(style)))
+                await overlays.removeStinger()
+            }
+            return
+        }
+        guard let url = store.stingerURL else {
             switchScene(name)
             return
         }
