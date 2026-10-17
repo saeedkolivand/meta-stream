@@ -189,17 +189,19 @@ struct KickSessionSection: View {
     var body: some View {
         Section {
             Text(kick.signedIn ? "Signed in as \(kick.user)" : "Not signed in")
+                .task { await kick.refresh() }
+            // On the row, not the Section: a Section hands its modifiers to every row, and two sheets on one binding
+            // dismissed each other the moment the login page opened.
             Button("Sign in to kick.com") { signingIn = true }
+                .sheet(isPresented: $signingIn, onDismiss: { Task { await kick.refresh() } }) {
+                    NavigationStack {
+                        LoginWeb().ignoresSafeArea().navigationTitle("kick.com").navigationBarTitleDisplayMode(.inline)
+                            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { signingIn = false } } }
+                    }
+                }
             if kick.signedIn { Button("Sign out", role: .destructive) { Task { await kick.signOut() } } }
         } header: { Text("kick.com session (unofficial)") } footer: {
             Text("Used for /poll, /raid, /clear, /clip and chat modes, which Kick's API doesn't offer. Unofficial: Kick can change it any time.")
-        }
-        .task { await kick.refresh() }
-        .sheet(isPresented: $signingIn, onDismiss: { Task { await kick.refresh() } }) {
-            NavigationStack {
-                LoginWeb().ignoresSafeArea().navigationTitle("kick.com").navigationBarTitleDisplayMode(.inline)
-                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { signingIn = false } } }
-            }
         }
     }
 }
