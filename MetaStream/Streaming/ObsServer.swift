@@ -146,7 +146,9 @@ final class ObsServer {
     }
 
     private func accept(_ c: NWConnection) {
-        guard Self.isLocal(c.endpoint), clients.count < 8, Date().timeIntervalSince(lastFail) > 2 else {
+        // At most 2 clients mid-login at once, so guesses can't run in parallel; logged-in controllers don't count.
+        guard Self.isLocal(c.endpoint), clients.count < 8, clients.filter({ !$0.ok }).count < 2,
+              Date().timeIntervalSince(lastFail) > 2 else {
             applog("remote", "connection refused (not local, too many clients, or right after a failed login)")
             return c.cancel()
         }
@@ -217,6 +219,9 @@ final class ObsServer {
             guard password.count >= 8, d["authentication"] as? String == Self.auth(password, salt: cl.salt, challenge: cl.challenge) else {
                 lastFail = Date()
                 applog("remote", "authentication failed", error: true)
+                // ponytail: one guess per 2 s for everyone pending. A device on the same network can still keep new
+                // logins out by failing on purpose; logged-in controllers stay connected. Fine for a hotspot/home LAN.
+                for other in clients where !other.ok && other !== cl { close(other, 4009) }
                 return close(cl, 4009)
             }
             fallthrough
