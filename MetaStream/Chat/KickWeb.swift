@@ -85,7 +85,9 @@ final class KickWeb: ObservableObject {
         case "slow", "emoteonly", "followonly":
             guard let id = await channel(w), let body = Self.modeBody(name, a) else { return "Couldn't find your kick.com channel" }
             req = ("PATCH", "https://web.kick.com/api/v1/channels/\(id)/chat/settings", body)
-        default:   // clear, raid, clip, mod, unmod, vip, unvip: no known endpoint, type it like a person
+        case "clear":   // captured from kick.com's chat box on 2026-10-17 (HTTP 200); Kick then sends ChatroomClearEvent
+            req = ("POST", "https://kick.com/api/v2/channels/\(slug)/chat-commands", #"{"command":"clear"}"#)
+        default:   // raid, clip, mod, unmod, vip, unvip: no known endpoint, type it like a person (unverified)
             return await type(w, typed)
         }
         let r = await fetch(w, req.method, req.url, req.body)
