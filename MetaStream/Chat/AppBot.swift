@@ -45,6 +45,9 @@ final class AppBot: ObservableObject {
     private static let commands = ["!location", "!speed", "!distance", "!weather", "!battery", "!uptime"]
 
     private func flag(_ key: String, _ fallback: Bool = true) -> Bool { UserDefaults.standard.object(forKey: key) as? Bool ?? fallback }
+
+    /// Live, or test mode (Settings › App bot): answers, notices and thank-yous work offline too. Timers stay live-only.
+    private var active: Bool { streamer?.live == true || flag("botTestMode", false) }
     private func tpl(_ key: String) -> String { UserDefaults.standard.string(forKey: key) ?? Self.defaults[key] ?? "" }
 
     // MARK: pure decisions -- see demo()
@@ -75,7 +78,7 @@ final class AppBot: ObservableObject {
 
     /// Queues `text` for `origin`: one message per 1.5 s per platform (Twitch allows 20 per 30 s to a non-mod), delayed, never dropped.
     private func say(_ origin: String, _ text: String) {
-        guard streamer?.live == true, platformOn(origin), !text.isEmpty else { return }
+        guard active, platformOn(origin), !text.isEmpty else { return }
         queue[origin, default: []].append(String(text.prefix(500)))   // Kick's limit
         guard draining.insert(origin).inserted else { return }
         Task {
@@ -166,7 +169,7 @@ final class AppBot: ObservableObject {
 
     /// From the chat.events loop: viewer commands, the timers' message count and thank-yous.
     func handle(_ e: ChatEvent) {
-        guard !e.flagged, streamer?.live == true, e.origin == "kick" || e.origin == "twitch" else { return }
+        guard !e.flagged, active, e.origin == "kick" || e.origin == "twitch" else { return }
         switch e.kind {
         case .message: message(e)
         case .follow: thank(e, "botTplFollow")
@@ -217,7 +220,7 @@ final class AppBot: ObservableObject {
     /// From Streamer's 1 s tick: keeps the GPS on while location commands are possible, runs the timers.
     func tick() {
         let live = streamer?.live == true
-        let wantGPS = live && (platformOn("kick") || platformOn("twitch"))
+        let wantGPS = active && (platformOn("kick") || platformOn("twitch"))
             && ["botCmdLocation", "botCmdSpeed", "botCmdDistance", "botCmdWeather"].contains { flag($0) }
         if wantGPS != holdingGPS {
             holdingGPS = wantGPS

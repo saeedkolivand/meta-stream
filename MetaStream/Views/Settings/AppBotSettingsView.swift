@@ -5,6 +5,7 @@ struct AppBotSettingsView: View {
     @ObservedObject var bot = AppBot.shared
     @AppStorage("botKick") var kick = false
     @AppStorage("botTwitch") var twitch = false
+    @AppStorage("botTestMode") var testMode = false
     @AppStorage("botNotices") var notices = true
     @AppStorage("botThanks") var thanks = true
     @AppStorage("botHideLocation") var hideLocation = false
@@ -17,9 +18,10 @@ struct AppBotSettingsView: View {
             Section {
                 Toggle("App bot on Kick", isOn: $kick)
                 Toggle("App bot on Twitch", isOn: $twitch)
+                Toggle("Test mode", isOn: $testMode)
                 if !bot.status.isEmpty { Text(bot.status).font(.footnote).foregroundStyle(.secondary) }
             } footer: {
-                Text("Posts only while you are live, never as you. Kick: create the bot once in your Kick developer app settings. Twitch: connect a second account below (make it a mod of your channel).")
+                Text("Posts only while you are live, never as you. Test mode lets it answer commands and post notices while offline too, so you can try it from your own chat (timers still wait for live); turn it off when done. Kick: create the bot once in your Kick developer app settings. Twitch: connect a second account below (make it a mod of your channel).")
             }
             Section("Twitch bot account") {
                 if bot.twitchBotName.isEmpty {
