@@ -18,6 +18,7 @@ struct NetworkPanelView: View {
                     Text("Go live to see bitrate and drops.").font(.footnote).foregroundStyle(.gray)
                 }
                 network
+                if streamer.live, !streamer.srtlaLinks.isEmpty { links }
                 if streamer.live { changes }
             }
             .padding(20)
@@ -93,6 +94,14 @@ struct NetworkPanelView: View {
             row("Status", streamer.netPath.status)
             if streamer.netPath.constrained { row("Low Data Mode", "on", .orange) }
             if streamer.netPath.expensive { row("Metered", "yes", .orange) }
+        }
+    }
+
+    private var links: some View {
+        section("Bonding links · last 10 s") {
+            ForEach(streamer.srtlaLinks) { l in
+                row(l.label + (l.backup ? " (backup)" : ""), l.up ? "\(l.share)%" : "down", l.up ? .white : .orange)
+            }
         }
     }
 

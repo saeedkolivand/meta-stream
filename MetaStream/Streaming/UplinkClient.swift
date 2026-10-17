@@ -18,7 +18,7 @@ extension Streamer {
         case srt(SRTConnection, SRTStream)
 
         static func make(for url: String) -> Uplink {
-            if url.lowercased().hasPrefix("srt://") {
+            if url.lowercased().hasPrefix("srt") {   // srt:// and srtla:// (bonded, see Srtla.swift)
                 let c = SRTConnection()
                 return .srt(c, SRTStream(connection: c))
             }
@@ -121,7 +121,7 @@ extension Streamer {
     /// libsrt defaults latency to ~120 ms, tuned for clean links; a phone walking through a city needs
     /// far more buffer. Applied only if the user hasn't set it themselves in the URL.
     static func withSRTLatency(_ url: String, ms: Int) -> String {
-        guard url.lowercased().hasPrefix("srt://"), !url.lowercased().contains("latency=") else { return url }
+        guard url.lowercased().hasPrefix("srt"), !url.lowercased().contains("latency=") else { return url }
         return url + (url.contains("?") ? "&" : "?") + "latency=\(ms)"
     }
 
@@ -298,17 +298,34 @@ extension Streamer {
                 }
                 await uplink.setAudioSettings(AudioCodecSettings(bitRate: 160_000))   // AAC 160k: Kick/Twitch accept it, costs ~64 kbps more
 
+                // srtla://host:port?q -> libsrt talks to the bonding proxy on loopback, which fans out over every link.
+                var target = url
+                if url.lowercased().hasPrefix("srtla://") { target = try await startBonding(url) }
                 applog("stream", "connecting to \(Self.redactedURL(url)) key=\(key.count) chars, mic=\(micUID.isEmpty ? "default" : micUID), bitrate=\(bitrateKbps), codec=\(codec)")
                 Task { await Self.netProbe(url) }        // logs which interface iOS picks and whether the host answers on it
                 Task { [up = uplink] in await up.logStatus() }   // RTMP server status lines; no-op on SRT
 
-                await superviseConnection(url: url, key: key)
+                await superviseConnection(url: target, key: key)
             } catch {
                 applog("stream", "goLive setup failed: \(String(describing: error))", error: true)
                 rtmpState = error.localizedDescription
                 Task { [up = uplink] in await up.close() }   // drop a half-open socket so the next attempt starts clean
             }
         }
+    }
+
+    func startBonding(_ url: String) async throws -> String {
+        srtla?.stop()
+        guard let s = Srtla(url: url, onStats: { [weak self] st in Task { @MainActor in self?.srtlaLinks = st } }) else {
+            throw NSError(domain: "MetaStream", code: 2, userInfo: [NSLocalizedDescriptionKey: "Bad srtla:// URL"])
+        }
+        srtla = s
+        let port = try await s.start()
+        // Swap only scheme/host/port as text: a streamid like "#!::r=live/x" would be split off as a URL fragment
+        // (or re-encoded) by URLComponents.
+        let query = url.firstIndex(of: "?").map { String(url[$0...]) } ?? ""
+        applog("stream", "bonding proxy on 127.0.0.1:\(port)")
+        return "srt://127.0.0.1:\(port)" + query
     }
 
     /// Connects + publishes, retrying with exponential backoff (1, 2, 4, 8 s, capped at 15 s) on any failure.

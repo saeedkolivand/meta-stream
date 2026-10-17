@@ -234,6 +234,8 @@ final class Streamer: ObservableObject {
 
     /// Rebuilt per goLive() from the ingest URL's scheme.
     var uplink = Uplink.make(for: "rtmp://")
+    var srtla: Srtla?                                  // bonding proxy, only for srtla:// ingests
+    @Published var srtlaLinks: [Srtla.Stat] = []       // per-link state and 10 s share for the network panel
 
     /// A var because MediaMixer.captureSessionMode is a `let`: two cameras at once need an
     /// AVCaptureMultiCamSession (.multi), the only way to change mode is a fresh instance -- see
@@ -338,6 +340,7 @@ final class Streamer: ObservableObject {
                 // Sample BEFORE adaptBitrate(): it consumes (resets) hot.congested.
                 self.recordNetSample(congested: self.hot.congested)
                 await self.adaptBitrate()
+                self.srtla?.setCut(self.currentBitrateKbps > 0 && self.currentBitrateKbps * 10 < self.bitrateCeilingKbps * 7)
                 if !self.gpsOnly { await self.syncBlurEffect() }   // it would restart the offscreen render loop for the overlays
                 self.checkBlurStall()
                 self.checkDeadAir()
@@ -359,6 +362,7 @@ final class Streamer: ObservableObject {
     func stopLive() {
         reconnectTask?.cancel()
         reconnectTask = nil
+        srtla?.stop(); srtla = nil; srtlaLinks = []
         sessionGeometryFixed = false   // idle previews size from the phone camera again, not the ended session
         if let since = downSince, live { downtime += Date().timeIntervalSince(since) }
         downSince = nil

@@ -9,6 +9,9 @@ struct IngestSettingsView: View {
     @AppStorage("srtLatencyMs") var srtLatencyMs = 2000
     @AppStorage("chatOrigin") var chatOrigin = "kick"
     @AppStorage("chatChannel") var chatChannel = ""
+    @AppStorage("srtlaWifi") var srtlaWifi = "main"
+    @AppStorage("srtlaEthernet") var srtlaEthernet = "main"
+    @AppStorage("srtlaCellular") var srtlaCellular = "backup"
     @State private var showKey = false
 
     init() { ChatOriginKey.migrate() }
@@ -39,6 +42,10 @@ struct IngestSettingsView: View {
         "tiktok": "Get the server URL and key from TikTok LIVE Studio and paste both here. H.264 only.",
         "custom": "Any RTMP, RTMPS or SRT server, such as your own relay. Paste an srt:// URL to publish over SRT, which survives packet loss far better on cellular — put the stream key in its streamid query item, since SRT has no separate publish name. Auto sends HEVC untouched; switch to H.264 if your server refuses it.",
     ]
+
+    private func rolePicker(_ title: String, _ sel: Binding<String>) -> some View {
+        Picker(title, selection: sel) { Text("Main").tag("main"); Text("Backup").tag("backup"); Text("Off").tag("off") }
+    }
 
     var body: some View {
         Form {
@@ -72,11 +79,19 @@ struct IngestSettingsView: View {
                     Slider(value: Binding(get: { Double(bitrateKbps) }, set: { bitrateKbps = Int($0 / 250) * 250 }),
                            in: 1000...Double(Self.bitrateCeiling(for: platform)), step: 250)
                 }
-                if ingestURL.lowercased().hasPrefix("srt://") {
+                if ingestURL.lowercased().hasPrefix("srt") {
                     Stepper("SRT buffer \(srtLatencyMs) ms", value: $srtLatencyMs, in: 200...8000, step: 200)
                 }
             } header: { Text("Ingest") } footer: {
                 Text((Self.hints[platform] ?? "") + "\nAuto picks H.264 for Kick and Twitch (they don't take HEVC) and passthrough elsewhere. H.264 re-encodes on the phone at the bitrate below; HEVC passthrough keeps the glasses' own bitrate.")
+            }
+
+            if ingestURL.lowercased().hasPrefix("srtla://") {
+                Section {
+                    rolePicker("Wi-Fi", $srtlaWifi); rolePicker("Ethernet", $srtlaEthernet); rolePicker("Cellular", $srtlaCellular)
+                } header: { Text("Bonding") } footer: {
+                    Text("Bonding sends one stream over several connections to an SRTLA receiver (BELABOX Cloud, IRLHosting, your own srtla_rec). Cellular as backup only carries video when Wi-Fi can't keep up.")
+                }
             }
 
             Section("Chat") {

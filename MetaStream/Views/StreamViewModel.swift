@@ -38,7 +38,7 @@ final class StreamViewModel: ObservableObject {
         guard codecPref == "auto" else { return codecPref }
         // SRT carries whatever the server decodes, and passthrough is the entire reason to use it:
         // no transcode means no PiP window needed to keep streaming in the background.
-        if ingestURL.lowercased().hasPrefix("srt://") { return "hevc" }
+        if ingestURL.lowercased().hasPrefix("srt") { return "hevc" }
         return ["youtube", "custom"].contains(platformPref) ? "hevc" : "h264"
     }
 
