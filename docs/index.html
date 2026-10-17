@@ -76,7 +76,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .monitor .bar .on{color:var(--tally);display:flex;align-items:center;gap:6px}
 .monitor .bar .on i{width:7px;height:7px;border-radius:50%;background:var(--tally);box-shadow:0 0 8px var(--tally);animation:blink 1.6s steps(1) infinite}
 @keyframes blink{50%{opacity:.25}}
-.monitor .bar span:last-child{margin-left:auto}
+.monitor .bar>span:last-child{margin-left:auto}
 .screen{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:10px;overflow:hidden;background:#0d1016;container-type:inline-size}
 .cam{position:absolute;inset:0;background:
   radial-gradient(40% 30% at 22% 72%,rgba(255,170,90,.55),transparent 70%),
@@ -99,21 +99,45 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .ticker .txt b{color:#fff;font:700 2.9cqw/1 var(--display);font-stretch:110%}
 .ticker .txt span{color:#a3a3ab;font:500 1.5cqw/1 var(--mono)}
 .ticker .clock{margin-left:auto;display:flex;align-items:center;padding:0 3.5cqw;color:#fff;font:500 4.2cqw/1 var(--mono)}
-.brb{position:absolute;inset:0;background:#0B0B0C;display:flex;flex-direction:column;justify-content:center;padding:0 7cqw;color:#fff;opacity:0}
+.brb{position:absolute;inset:0;background:#0B0B0C;display:flex;flex-direction:column;justify-content:center;padding:0 7cqw;color:#fff;opacity:0;animation:lnScene 12s linear infinite}
 .brb small{color:var(--muted);font:500 1.7cqw/1 var(--mono);letter-spacing:.14em;text-transform:uppercase}
 .brb b{font:800 11cqw/.92 var(--display);font-stretch:118%;text-transform:uppercase;margin-top:2cqw}
-.screen.is-brb .brb{opacity:1}
-/* the Lens stinger, from the app's splash */
-@property --hole{syntax:'<length>';inherits:true;initial-value:120cqw}
-.sting{position:absolute;inset:0;pointer-events:none;--hole:120cqw;opacity:0}
-.sting .plate{position:absolute;inset:0;background:linear-gradient(#1C1C1F,#0A0A0C);-webkit-mask:radial-gradient(circle at 50% 50%,transparent calc(var(--hole) - 1cqw),#000 calc(var(--hole) - .9cqw));mask:radial-gradient(circle at 50% 50%,transparent calc(var(--hole) - 1cqw),#000 calc(var(--hole) - .9cqw))}
-.sting .rim{position:absolute;left:50%;top:50%;width:calc(var(--hole)*2 + 2cqw);height:calc(var(--hole)*2 + 2cqw);transform:translate(-50%,-50%);border-radius:50%;background:linear-gradient(135deg,#C8C8CE,#3A3A3E);-webkit-mask:radial-gradient(closest-side,transparent calc(100% - 2cqw),#000 calc(100% - 1.9cqw));mask:radial-gradient(closest-side,transparent calc(100% - 2cqw),#000 calc(100% - 1.9cqw))}
-.sting .glass{position:absolute;left:50%;top:50%;width:34cqw;height:34cqw;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#16181E,#020203 70%);opacity:0;display:grid;place-items:center}
-.sting .glass::after{content:"";width:7cqw;height:7cqw;border-radius:50%;background:linear-gradient(#FF5A3C,#E8101E);box-shadow:0 0 6cqw rgba(255,40,20,.55)}
-.screen.sting-on .sting{opacity:1;animation:hole 2.6s cubic-bezier(.65,0,.35,1) forwards}
-.screen.sting-on .sting .glass{animation:glass 2.6s ease-in-out forwards}
-@keyframes hole{0%{--hole:120cqw}38%,62%{--hole:18cqw}100%{--hole:120cqw}}
-@keyframes glass{0%,30%{opacity:0}40%,58%{opacity:1}66%,100%{opacity:0}}
+/* The Lens stinger, exactly as the app draws it: the board's keyframes on its 6 s loop, board px x --u. The scene
+   underneath swaps at 23% / 73% of a 12 s cycle, the moment the lens covers the frame. */
+@property --hole{syntax:'<number>';inherits:true;initial-value:1250}
+.sting{position:absolute;inset:0;pointer-events:none;--u:calc(100cqw / 1920);animation:lnHole 6s cubic-bezier(.65,0,.35,1) infinite}
+.sting>*{position:absolute}
+.sting .plate{inset:0;background:linear-gradient(#1C1C1F,#0A0A0C);
+  -webkit-mask:radial-gradient(circle at 50% 50%,transparent calc((var(--hole) - 12) * var(--u)),#000 calc((var(--hole) - 11) * var(--u)));
+  mask:radial-gradient(circle at 50% 50%,transparent calc((var(--hole) - 12) * var(--u)),#000 calc((var(--hole) - 11) * var(--u)))}
+.sting .inner{left:calc(744 * var(--u));top:calc(324 * var(--u));width:calc(432 * var(--u));height:calc(432 * var(--u));border-radius:50%;background:linear-gradient(#1C1C1F,#0A0A0C);opacity:0;animation:lnInner 6s ease-in-out infinite}
+.sting .glass{left:calc(757 * var(--u));top:calc(337 * var(--u));width:calc(406 * var(--u));height:calc(406 * var(--u));border-radius:50%;overflow:hidden;background:radial-gradient(circle,#16181E,#020203 70%);opacity:0;animation:lnGlass 6s ease-in-out infinite}
+.sting .glass .hair{position:absolute;left:calc(64 * var(--u));top:calc(64 * var(--u));width:calc(278 * var(--u));height:calc(278 * var(--u));border-radius:50%;box-shadow:inset 0 0 0 calc(3 * var(--u)) rgba(255,255,255,.07)}
+.sting .glass .cres{position:absolute;left:0;top:0;width:calc(364 * var(--u));height:calc(364 * var(--u));border-radius:50%;background:rgba(255,255,255,.16);filter:blur(calc(6 * var(--u)));
+  -webkit-mask:radial-gradient(circle at calc(202 * var(--u)) calc(216 * var(--u)),transparent calc(182 * var(--u)),#000 calc(183 * var(--u)));
+  mask:radial-gradient(circle at calc(202 * var(--u)) calc(216 * var(--u)),transparent calc(182 * var(--u)),#000 calc(183 * var(--u)))}
+.sting .bloom,.sting .tally{left:calc(918 * var(--u));top:calc(498 * var(--u));width:calc(84 * var(--u));height:calc(84 * var(--u));border-radius:50%;opacity:0}
+.sting .bloom{background:radial-gradient(circle,#E8101E,transparent 70%);animation:lnBloom 6s cubic-bezier(.33,1,.68,1) infinite}
+.sting .tally{overflow:hidden;background:linear-gradient(#FF5A3C,#E8101E);animation:lnTally 6s cubic-bezier(.33,1,.68,1) infinite}
+.sting .tally::after{content:"";position:absolute;left:calc(12 * var(--u));top:calc(2 * var(--u));width:calc(60 * var(--u));height:calc(60 * var(--u));border-radius:50%;background:rgba(255,255,255,.28);filter:blur(calc(5 * var(--u)))}
+.sting .rim{left:50%;top:50%;width:calc((var(--hole) * 2 + 24) * var(--u));height:calc((var(--hole) * 2 + 24) * var(--u));transform:translate(-50%,-50%);border-radius:50%;background:linear-gradient(135deg,#C8C8CE,#3A3A3E);opacity:0;animation:lnRim 6s linear infinite;
+  -webkit-mask:radial-gradient(closest-side,transparent calc(100% - 24 * var(--u)),#000 calc(100% - 23 * var(--u)));
+  mask:radial-gradient(closest-side,transparent calc(100% - 24 * var(--u)),#000 calc(100% - 23 * var(--u)))}
+.sting .word{left:0;right:0;top:calc(880 * var(--u));text-align:center;color:#fff;font:400 calc(52 * var(--u))/1.2 var(--body);opacity:0;animation:lnWord 6s cubic-bezier(.33,1,.68,1) infinite}
+@keyframes lnHole{0%,25%{--hole:1250}38%,55%{--hole:215}64%,100%{--hole:1250}}
+@keyframes lnRim{0%,24.5%{opacity:0}27%,62%{opacity:1}65%,100%{opacity:0}}
+@keyframes lnInner{0%,36%{opacity:0}40%,52%{opacity:1}55%,100%{opacity:0}}
+@keyframes lnGlass{0%,37%{opacity:0}42%,52%{opacity:1}55%,100%{opacity:0}}
+@keyframes lnTally{0%,39%{opacity:0;transform:scale(.9)}44%,52%{opacity:1;transform:scale(1)}53.5%,100%{opacity:0;transform:scale(1)}}
+@keyframes lnBloom{0%,39%{opacity:0;transform:scale(1.4)}42%{opacity:.9;transform:scale(1.9)}46%,52%{opacity:.65;transform:scale(2.2)}53.5%,100%{opacity:0;transform:scale(2.2)}}
+@keyframes lnWord{0%,41%{opacity:0;letter-spacing:.32em;transform:translateY(calc(16 * var(--u)))}47%,52%{opacity:.92;letter-spacing:.2em;transform:translateY(0)}54%,100%{opacity:0;letter-spacing:.2em;transform:translateY(0)}}
+@keyframes lnScene{0%,22.9%{opacity:0}23%,72.9%{opacity:1}73%,100%{opacity:0}}
+@keyframes lnSceneOff{0%,22.9%{opacity:1}23%,72.9%{opacity:0}73%,100%{opacity:1}}
+.scene-on{animation:lnScene 12s linear infinite}
+.scene-off{animation:lnSceneOff 12s linear infinite}
+.monitor .bar .names{position:relative;display:inline-grid}
+.monitor .bar .names>span{grid-area:1/1}
+.monitor .bar .names .scene-on{opacity:0}
 .cap{margin-top:12px;color:var(--muted);font:500 12px/1.5 var(--mono)}
 
 /* sections */
@@ -227,7 +251,7 @@ footer a{color:var(--muted)}
 
       <figure style="margin:0">
         <div class="monitor">
-          <div class="bar"><span class="on"><i></i>PROGRAM</span><span id="scene-name">Live</span><span class="mono" id="tc">00:42:17:08</span></div>
+          <div class="bar"><span class="on"><i></i>PROGRAM</span><span class="names"><span class="scene-off">Live</span><span class="scene-on">BRB</span></span><span class="mono" id="tc">00:42:17:08</span></div>
           <div class="screen" id="screen" aria-hidden="true">
             <div class="cam"></div>
             <div class="ov pill"><i></i><span id="uptime">LIVE 42:17</span></div>
@@ -239,10 +263,10 @@ footer a{color:var(--muted)}
               <div class="clock mono" id="clock">21:48</div>
             </div>
             <div class="brb"><small>Signal's weak</small><b>Be right<br>back</b></div>
-            <div class="sting"><div class="plate"></div><div class="glass"></div><div class="rim"></div></div>
+            <div class="sting"><div class="plate"></div><div class="inner"></div><div class="glass"><div class="hair"></div><div class="cres"></div></div><div class="bloom"></div><div class="tally"></div><div class="rim"></div><div class="word">yourchannel</div></div>
           </div>
         </div>
-        <figcaption class="cap">The program output as viewers see it. Every few seconds the scene changes behind the Lens stinger, one of eight built in.</figcaption>
+        <figcaption class="cap">The program output as viewers see it. Every six seconds the scene changes behind the Lens stinger, drawn exactly as the app draws it.</figcaption>
       </figure>
     </div>
   </section>
@@ -442,14 +466,6 @@ pymobiledevice3 apps install build/MetaStream.ipa</pre>
 
   setInterval(addMsg, 2600);
 
-  // Lens stinger: the scene swaps underneath at the covered moment (half way through)
-  const screen = document.getElementById('screen'), sceneName = document.getElementById('scene-name');
-  let brb = false;
-  setInterval(() => {
-    screen.classList.remove('sting-on'); void screen.offsetWidth; screen.classList.add('sting-on');
-    setTimeout(() => { brb = !brb; screen.classList.toggle('is-brb', brb); sceneName.textContent = brb ? 'BRB' : 'Live'; }, 1300);
-    setTimeout(() => screen.classList.remove('sting-on'), 2700);
-  }, 7000);
 
   // meters and uplink bars: gentle example motion
   const meters = [...document.querySelectorAll('.meter i')], levels = [0.62, 0.35, 0.22, 0.3];
