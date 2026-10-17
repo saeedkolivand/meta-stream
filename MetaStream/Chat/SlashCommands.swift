@@ -109,7 +109,15 @@ struct SlashRunner {
             default:   // "clip"
                 return "Clip: \(try await p.twitchCreateClip().url)"
             }
-        } catch { return error.localizedDescription }
+        } catch { return Self.explain(error, isKick: isKick) }
+    }
+
+    /// A 401 that survives the token refresh means the login lacks the permission (Kick keeps the scopes a login was
+    /// first granted), so say how to fix it instead of the raw HTTP error.
+    private static func explain(_ error: Error, isKick: Bool) -> String {
+        let text = error.localizedDescription
+        guard text.contains("HTTP 401") || text.contains("HTTP 403") else { return text }
+        return isKick ? "Kick refused: reconnect Kick in Manage to grant moderation" : "Twitch refused: reconnect Twitch in Manage"
     }
 
     /// Twitch scope feature (TwitchService.actionScopes key) each command needs.
@@ -192,6 +200,9 @@ struct SlashRunner {
         for id in ids {
             do { try await deleteMessage(id); n += 1 }
             catch where error.localizedDescription.contains("HTTP 429") { return "Rate limited: deleted \(n) of \(ids.count) messages" }
+            catch where error.localizedDescription.contains("HTTP 401") || error.localizedDescription.contains("HTTP 403") {
+                return Self.explain(error, isKick: true) + ", or sign in to kick.com in Settings › Chat commands for a full /clear"
+            }
             catch { continue }   // already gone
         }
         return "Deleted \(n) recent messages"

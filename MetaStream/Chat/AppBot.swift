@@ -42,7 +42,7 @@ final class AppBot: ObservableObject {
         "botTplFollow": "{user}, thanks for the follow!", "botTplSub": "{user}, thanks for subscribing!",
         "botTplGift": "{user}, thanks for the {count} gifted subs!", "botTplRaid": "{user}, thanks for the raid with {count} viewers!",
     ]
-    private static let commands = ["!location", "!speed", "!distance", "!weather", "!battery", "!uptime"]
+    private static let commands = ["!location", "!speed", "!distance", "!weather", "!battery", "!uptime", "!commands"]
 
     private func flag(_ key: String, _ fallback: Bool = true) -> Bool { UserDefaults.standard.object(forKey: key) as? Bool ?? fallback }
 
@@ -189,15 +189,27 @@ final class AppBot: ObservableObject {
         if !BotList.isBot(e.user) { msgs[e.origin, default: 0] += 1 }
         let cmd = e.text.split(whereSeparator: \.isWhitespace).first?.lowercased() ?? ""
         let key = e.origin + "|" + cmd
-        guard Self.commands.contains(cmd), platformOn(e.origin), flag("botCmd" + cmd.dropFirst().capitalized) else { return }
+        guard Self.commands.contains(cmd) else { return }
+        guard platformOn(e.origin), flag("botCmd" + cmd.dropFirst().capitalized) else {
+            applog("bot", "\(cmd) on \(e.origin) ignored: \(platformOn(e.origin) ? "command switched off" : "app bot off or not connected there")")
+            return
+        }
         let now = Date()
         let privileged = !Set(e.badges).isDisjoint(with: ["broadcaster", "moderator"])
         // Offline (test mode) only the streamer and mods get answers: !location to anyone off-stream would say where you are.
-        guard streamer?.live == true || privileged else { return }
-        guard Self.cooldownOK(last: answered[key], now: now, privileged: privileged) else { return }
+        guard streamer?.live == true || privileged else { applog("bot", "\(cmd) from \(e.user) ignored: offline, not you or a mod"); return }
+        guard Self.cooldownOK(last: answered[key], now: now, privileged: privileged) else { applog("bot", "\(cmd) ignored: cooldown"); return }
         answered[key] = now
         let name = (e.origin == "kick" ? platforms?.kickUser : platforms?.twitchUser) ?? ""
-        if let a = answer(cmd, name.isEmpty ? "The streamer" : name) { say(e.origin, a) }
+        if let a = answer(cmd, name.isEmpty ? "The streamer" : name) { say(e.origin, a) } else { applog("bot", "\(cmd): value not known yet, staying silent") }
+    }
+
+    /// Offline (test mode) the health monitor isn't tracking the battery: read it directly. Monitoring stays on until the
+    /// health monitor next turns it off at the end of a live session.
+    private static func batteryNow() -> Int? {
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        let level = UIDevice.current.batteryLevel
+        return level < 0 ? nil : Int(level * 100)
     }
 
     /// nil (stay silent) when the value is not known yet.
@@ -211,7 +223,10 @@ final class AppBot: ObservableObject {
         case "!speed": return known(loc.speedText).map { "\(name) is going \($0)" }
         case "!distance": return "\(name) has travelled \(loc.distanceText(since: streamer?.liveSince)) this stream"
         case "!weather": return known(WidgetWeather.shared.plainText).map { "It's \($0) where \(name) is" }
-        case "!battery": return streamer?.phoneBattery.map { "\(name)'s phone is at \($0)%" }
+        case "!commands":   // whichever commands are switched on right now
+            let on = Self.commands.filter { $0 != "!commands" && flag("botCmd" + $0.dropFirst().capitalized) }
+            return on.isEmpty ? nil : "Commands: " + on.joined(separator: " ")
+        case "!battery": return (streamer?.phoneBattery ?? Self.batteryNow()).map { "\(name)'s phone is at \($0)%" }
         case "!uptime":
             guard let since = streamer?.liveSince else { return nil }
             let m = max(0, Int(Date().timeIntervalSince(since))) / 60

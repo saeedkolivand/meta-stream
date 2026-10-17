@@ -39,12 +39,12 @@ struct AppBotSettingsView: View {
                 template("Ending scene", "botTplEndingOn")
             } footer: { Text("Empty = don't post.") }
             Section {
-                ForEach(["Location", "Speed", "Distance", "Weather", "Battery", "Uptime"], id: \.self) { c in
+                ForEach(["Location", "Speed", "Distance", "Weather", "Battery", "Uptime", "Commands"], id: \.self) { c in
                     CommandToggle(name: c)
                 }
                 Toggle("Hide location", isOn: $hideLocation)
             } header: { Text("Viewer commands") } footer: {
-                Text("Once per 30 s per command and platform; mods and you skip that. !location says region and country only.")
+                Text("Once per 30 s per command and platform; mods and you skip that. !location says region and country only. !commands lists the ones switched on.")
             }
             Section {
                 Toggle("Thank-yous", isOn: $thanks)
