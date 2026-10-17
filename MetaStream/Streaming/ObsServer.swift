@@ -12,13 +12,13 @@ import Network
 final class ObsServer {
     static let shared = ObsServer()
     static let port: UInt16 = 4455
-    private static let chars = Array("abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789")
+    nonisolated private static let chars = Array("abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789")
     private static let supported = ["GetVersion", "GetSceneList", "GetCurrentProgramScene", "SetCurrentProgramScene",
         "GetStudioModeEnabled", "GetStreamStatus", "StartStream", "StopStream", "ToggleStream", "GetRecordStatus",
         "StartRecord", "StopRecord", "ToggleRecord", "GetInputList", "GetInputMute", "SetInputMute", "ToggleInputMute",
         "TriggerMediaInputAction", "GetHotkeyList"]
 
-    private final class Client {
+    private final class Client: @unchecked Sendable {   // only touched on the main actor; NW callbacks just carry it back there
         let conn: NWConnection
         let challenge = ObsServer.random()
         let salt = ObsServer.random()
