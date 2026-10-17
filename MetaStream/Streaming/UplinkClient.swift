@@ -129,6 +129,8 @@ extension Streamer {
     /// wired once, on first need (HaishinKit's own startRunning() no-ops on a repeat call regardless -- checked
     /// both tags); the uplink's own stream is re-registered every call whenever `uplink` itself has changed.
     func wireMixer() async {
+        SoundMix.shared.mixer = mixer
+        await applyAudioMix()
         if wiredUplinkOutput !== uplink.output {
             if let old = wiredUplinkOutput { await mixer.removeOutput(old) }
             await mixer.addOutput(uplink.output)
@@ -142,6 +144,7 @@ extension Streamer {
         mixerWired = true
         await mixer.addOutput(sink)
         await mixer.addOutput(faceCamFrames)
+        await mixer.addOutput(levelTap)
         await mixer.startRunning()
     }
 

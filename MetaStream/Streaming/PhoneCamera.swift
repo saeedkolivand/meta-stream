@@ -446,9 +446,10 @@ extension Streamer {
         try? await old.attachVideo(nil, track: 1)
         try? await old.attachAudio(nil)
         await old.removeOutput(sink)
+        await old.removeOutput(levelTap)
         if let o = wiredUplinkOutput { await old.removeOutput(o) }
         await old.stopRunning()
-        mixer = MediaMixer(captureSessionMode: multi ? .multi : .single)
+        mixer = MediaMixer(captureSessionMode: multi ? .multi : .single, multiTrackAudioMixingEnabled: true)
         mixerIsMulti = multi
         mixerWired = false; wiredUplinkOutput = nil
         blurEffectActive = false; offscreenOn = false

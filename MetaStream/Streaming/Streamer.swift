@@ -34,7 +34,7 @@ final class Streamer: ObservableObject {
 
     @Published var teamID = "unknown (not sideloaded yet)"
 
-    @Published var live = false { didSet { hot.live = live } }
+    @Published var live = false { didSet { hot.live = live; SoundMix.shared.enabled = live && !muted } }
 
     @Published var liveSince: Date?
 
@@ -64,7 +64,7 @@ final class Streamer: ObservableObject {
 
     @Published var mics: [Mic] = []
 
-    @Published var muted = false
+    @Published var muted = false { didSet { SoundMix.shared.enabled = live && !muted } }
 
     @Published var cameraOff = false { didSet { syncHot() } }   // black frames go out instead
 
@@ -158,6 +158,10 @@ final class Streamer: ObservableObject {
 
     let faceCamFrames = TrackCounter()
 
+    let audioLevel = AudioLevel()   // HUD meter + dead-air state, see AudioLevel.swift
+
+    lazy var levelTap = LevelOutput { [weak self] db in Task { @MainActor in self?.audioLevel.set(db) } }
+
     /// Which way up a landscape capture goes, from the phone's physical orientation -- see deviceRotated().
     var landscapeOrientation: CaptureOrientation = .landscapeRight
 
@@ -228,7 +232,7 @@ final class Streamer: ObservableObject {
     /// A var because MediaMixer.captureSessionMode is a `let`: two cameras at once need an
     /// AVCaptureMultiCamSession (.multi), the only way to change mode is a fresh instance -- see
     /// rebuildMixerIfNeeded(). Rebuilt only while idle, so nothing live ever holds a stale instance.
-    var mixer = MediaMixer(captureSessionMode: Streamer.wantsMultiCam ? .multi : .single)
+    var mixer = MediaMixer(captureSessionMode: Streamer.wantsMultiCam ? .multi : .single, multiTrackAudioMixingEnabled: true)
 
     var mixerIsMulti = Streamer.wantsMultiCam
 
@@ -322,6 +326,7 @@ final class Streamer: ObservableObject {
                 await self.adaptBitrate()
                 if !self.gpsOnly { await self.syncBlurEffect() }   // it would restart the offscreen render loop for the overlays
                 self.checkBlurStall()
+                self.checkDeadAir()
                 self.liveActivity.sync(self)
                 if self.live, tick % 5 == 0 {
                     let mode = self.hot.transcoder == nil ? "hevc-passthrough" : "h264-transcode"
@@ -341,6 +346,7 @@ final class Streamer: ObservableObject {
         if let since = downSince, live { downtime += Date().timeIntervalSince(since) }
         downSince = nil
         speaker?.stopRepeating(id: "rtmp")
+        stopDeadAir(recovered: false)
         if let start = liveSince {
             let summary = "session \(Self.fmtClock(Date().timeIntervalSince(start))), \(Self.fmtClock(downtime)) down across \(drops) drops"
             sessionSummary = summary

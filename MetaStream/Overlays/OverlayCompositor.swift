@@ -111,6 +111,7 @@ final class OverlayCompositor {
     }
 
     private func teardown() async {
+        SoundMix.shared.stopClips()
         tasks.forEach { $0.cancel() }
         tasks = []
         feeds.forEach { $0.close() }
@@ -215,6 +216,7 @@ final class OverlayCompositor {
         guard let url = OverlayStore.shared.local(l.data["file"] ?? ""), let size = await OverlayRaster.mediaSize(url),
               let rect = OverlayRaster.visible(box(l, size, fit, canvas), in: canvas) else { return nil }
         let clip = await OverlayScreen.makeMedia(rect, url)
+        SoundMix.shared.playClip(url, loop: l.data["loop"] == "true")   // the clip's audio into the mix; AssetScreenObject is video only
         let object: ScreenObject = clip
         guard l.data["loop"] == "true" else { return (object, nil) }
         let loop: Task<Void, Never> = Task {

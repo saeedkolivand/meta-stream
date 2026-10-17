@@ -56,6 +56,28 @@ extension Streamer {
         haptic(.error)
     }
 
+    /// Called from the 1 s tick: speaks "no audio" (repeating, like a drop) once the mix has been under -50 dBFS for 20 s.
+    /// The tick drives it, not the level reports, so a mic that delivers no buffers at all still counts as silence.
+    func checkDeadAir() {
+        let m = audioLevel
+        let level = Date().timeIntervalSince(m.at) > 2 ? -120 : m.db
+        let r = AudioMath.deadAir(quietSince: m.quietSince, level: level, now: Date(), live: live, muted: muted)
+        m.quietSince = r.quietSince
+        if r.alert, !m.alerting {
+            m.alerting = true
+            applog("stream", "dead air: mix silent for \(Int(AudioMath.deadAirSeconds)) s")
+            speaker?.startRepeating(id: "deadAir", text: "No audio on stream")
+        } else if !r.alert { stopDeadAir(recovered: live && !muted) }
+    }
+
+    /// Clears the dead-air alert; `recovered` also announces that audio is back (not on stop live or mute).
+    func stopDeadAir(recovered: Bool) {
+        guard audioLevel.alerting else { return }
+        audioLevel.alerting = false
+        applog("stream", "dead air cleared")
+        speaker?.stopRepeating(id: "deadAir", recovered: recovered ? "Audio is back" : nil)
+    }
+
     /// Beyond Speaker's own 30s/60s/2min repeat cycle: one more nudge at 2 min down, another at 5 — so silence
     /// never stretches on forever. Covers a drop AND a stream that never connected in the first place.
     func checkEscalation() {

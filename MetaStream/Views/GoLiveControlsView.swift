@@ -122,10 +122,26 @@ struct GoLiveControlsView: View {
 struct QuickControls: View {
     @EnvironmentObject var streamer: Streamer
     @AppStorage("blurOn") var blurOn = false
+    @AppStorage("sounds") var soundsRaw = "[]"
     var size: CGFloat
+    private var sounds: [Sound] { Sound.decode(soundsRaw) }
 
     var body: some View {
         Group {
+            // Soundboard: only while live, since sounds exist only in the mix.
+            if streamer.live, !sounds.isEmpty {
+                Menu {
+                    ForEach(sounds) { s in Button(s.name) { hapticTap(); SoundMix.shared.playSound(s) } }
+                } label: {
+                    Image(systemName: "music.note")
+                        .font(.system(size: size * 0.38, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: size, height: size)
+                        .background(.ultraThinMaterial, in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Soundboard")
+            }
             button(streamer.muted ? "mic.slash.fill" : "mic.fill",
                    streamer.muted ? "Muted" : "Mic",
                    style: streamer.muted ? .stopped : .live) {

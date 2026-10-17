@@ -350,7 +350,9 @@ extension Streamer {
     func setMuted(_ on: Bool) {
         muted = on
         applog("stream", "muted=\(on)")
-        Task {   // ponytail: mute = detach the mic; AudioMixerSettings per-track flags avoided
+        // ponytail: mute = detach the mic; AudioMixerSettings per-track flags avoided. HaishinKit's mix is clocked by the
+        // mic track, so a muted stream carries no sounds either (SoundMix.enabled goes false with it).
+        Task {
             try? await mixer.attachAudio(on ? nil : AVCaptureDevice.default(for: .audio))
         }
     }

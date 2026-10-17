@@ -25,6 +25,7 @@ extension OverlayCompositor {
                     continue
                 }
                 let e = queue.removeFirst()
+                SoundMix.shared.playAlert()   // into the mix with the banner; ignored unless live
                 await AlertPlayer.play(e, style: style, on: o, natural: natural, box: box, canvas: canvas)
                 try? await Task.sleep(for: .seconds(AlertIsland.gap))
             }

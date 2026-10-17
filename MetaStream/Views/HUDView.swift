@@ -59,6 +59,7 @@ struct HUDView: View {
                              down ? "down " + elapsed(ctx.date) : elapsed(ctx.date),
                              down ? .orange : .red)
                     }
+                    LevelBar(meter: streamer.audioLevel)
                     StripStyles.stripButton(label: {
                         StripStyles.pill("waveform", "\(streamer.fps) fps · \(streamer.kbps) kbps", kbpsColor)
                     }, action: { hapticTap(); showNetwork = true })
@@ -156,5 +157,20 @@ struct HUDView: View {
         let s = Int(now.timeIntervalSince(since))
         return s >= 3600 ? String(format: "%d:%02d:%02d", s / 3600, s / 60 % 60, s % 60)
                          : String(format: "%02d:%02d", s / 60, s % 60)
+    }
+}
+
+/// Thin flat level bar for the mix (-60...0 dBFS); orange when near silent, red near clipping. Own view so the 8 Hz updates stay local.
+struct LevelBar: View {
+    @ObservedObject var meter: AudioLevel
+
+    var body: some View {
+        let fill = CGFloat(min(1, max(0, (meter.db + 60) / 60)))
+        let color: Color = meter.db > -6 ? .red : meter.db < AudioMath.deadAirDB ? .orange : .green
+        Capsule().fill(.white.opacity(0.2)).frame(width: 40, height: 4)
+            .overlay(alignment: .leading) { Capsule().fill(color).frame(width: 40 * fill, height: 4) }
+            .padding(.horizontal, 12).padding(.vertical, 14)
+            .background(.ultraThinMaterial, in: Capsule())
+            .accessibilityLabel("Audio level")
     }
 }
