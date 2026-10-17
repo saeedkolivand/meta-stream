@@ -17,6 +17,9 @@ struct ChatEvent: Sendable {
     /// Normalized role badges (see ChatBadges) and the sender's "#RRGGBB" name color; messages only.
     var badges: [String] = []
     var color: String? = nil
+    /// Platform message id and sender user id (Kick/Twitch chat messages only): what moderation slash commands act on.
+    var id = ""
+    var userId = ""
     var at: Date = Date()
     /// Set by ChatModerator when the on-device model judged the message unsafe: kept in the in-app chat, nowhere else.
     var flagged = false

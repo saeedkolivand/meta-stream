@@ -20,6 +20,9 @@ final class StreamViewModel: ObservableObject {
     @AppStorage("codec") var codecPref = "auto"
     @AppStorage("platform") var platformPref = "kick"
 
+    /// One-line result of the last slash command, shown above the compose bar.
+    @Published var slashNote = ""
+
     init() { ChatOriginKey.migrate() }
 
     /// auto: only YouTube (enhanced RTMP) and custom servers take the glasses' HEVC untouched. Kick, Restream,
@@ -51,11 +54,16 @@ final class StreamViewModel: ObservableObject {
 
     /// Targets whichever platform `chatOrigin` names, falling back to the first available one if it points
     /// at something not currently configured/connected. Send methods are Platforms' own — this only routes.
-    func sendChat(_ text: String, platforms: Platforms) async {
+    func sendChat(_ text: String, platforms: Platforms, chat: ChatFeed) async {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let origins = sendOrigins(twitchConnected: platforms.twitchConnected, ytConnected: platforms.ytConnected)
         let target = origins.contains(chatOrigin) ? chatOrigin : (origins.first ?? chatOrigin)
+        slashNote = ""
+        if let c = SlashCommand.parse(trimmed) {   // never posted, whatever the outcome
+            slashNote = target == "youtube" ? "Slash commands aren't supported on YouTube" : await SlashRunner(p: platforms, chat: chat, origin: target).run(c.name, c.args)
+            return
+        }
         switch target {
         case "twitch": await platforms.twitchSend(trimmed)
         case "youtube": await platforms.ytSend(trimmed)

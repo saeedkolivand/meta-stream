@@ -54,7 +54,7 @@ final class TwitchService: ObservableObject {
     }
     #endif
 
-    private func api() -> PlatformEndpoint {
+    func api() -> PlatformEndpoint {
         PlatformEndpoint(base: "https://api.twitch.tv/helix", tokenKey: "twitchAccess",
             headers: ["Client-Id": PlatformConfig.twitchID], store: p.store) {
             let json = try await PlatformNet.form("https://id.twitch.tv/oauth2/token", [
@@ -260,7 +260,7 @@ final class TwitchService: ObservableObject {
     func lockdownChat(on: Bool) async {
         guard !p.twitchUserID.isEmpty else { return }
         let body: [String: Any] = on
-            ? ["follower_mode": true, "follower_mode_duration_minutes": 10, "slow_mode": true, "slow_mode_wait_seconds": 10]
+            ? ["follower_mode": true, "follower_mode_duration": 10, "slow_mode": true, "slow_mode_wait_time": 10]
             : ["follower_mode": false, "slow_mode": false]
         await PlatformFlow.attempt(status: { self.p.status = $0 }) {
             _ = try await self.api().call("PATCH", "/chat/settings", query: self.modQuery, body: body)

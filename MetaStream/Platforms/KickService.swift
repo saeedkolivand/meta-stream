@@ -7,7 +7,7 @@ final class KickService: ObservableObject {
     unowned let p: Platforms
     init(owner: Platforms) { p = owner }
 
-    private func api() -> PlatformEndpoint {
+    func api() -> PlatformEndpoint {
         PlatformEndpoint(base: "https://api.kick.com", tokenKey: "kickAccess", headers: [:], store: p.store) {
             let json = try await PlatformNet.form("https://id.kick.com/oauth/token", [
                 "grant_type": "refresh_token", "client_id": PlatformConfig.kickID, "client_secret": PlatformConfig.kickSecret,

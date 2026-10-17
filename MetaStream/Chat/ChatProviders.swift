@@ -166,7 +166,8 @@ final class KickChatProvider: ChatProvider {
         else { return nil }
         let identity = sender["identity"] as? [String: Any]
         return ChatEvent(kind: .message, user: username, text: content, origin: "kick",
-                         badges: ChatBadges.kick(identity), color: ChatBadges.color(identity?["color"]))
+                         badges: ChatBadges.kick(identity), color: ChatBadges.color(identity?["color"]),
+                         id: inner["id"] as? String ?? "", userId: chatInt(sender["id"]).map(String.init) ?? "")
     }
 }
 
@@ -264,7 +265,8 @@ final class TwitchEventSubProvider: ChatProvider {
                   let text = (event["message"] as? [String: Any])?["text"] as? String
             else { return nil }
             return ChatEvent(kind: .message, user: user, text: text, origin: "twitch",
-                             badges: ChatBadges.twitch(event["badges"]), color: ChatBadges.color(event["color"]))
+                             badges: ChatBadges.twitch(event["badges"]), color: ChatBadges.color(event["color"]),
+                             id: event["message_id"] as? String ?? "", userId: event["chatter_user_id"] as? String ?? "")
         case "channel.follow":
             guard let user = event["user_name"] as? String else { return nil }
             return ChatEvent(kind: .follow, user: user, origin: "twitch")

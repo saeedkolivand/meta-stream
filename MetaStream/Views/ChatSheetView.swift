@@ -195,6 +195,7 @@ struct ChatSheetView: View {
 
     private var composeBar: some View {
         VStack(spacing: 8) {
+            if !vm.slashNote.isEmpty { Text(vm.slashNote).font(.footnote).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading) }
             if sendOrigins.count > 1 {
                 Picker("Send to", selection: $vm.chatOrigin) {
                     ForEach(sendOrigins, id: \.self) { Text(DisplayNames.platformName($0)).tag($0) }
@@ -220,6 +221,6 @@ struct ChatSheetView: View {
         let text = chatText
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         chatText = ""
-        Task { await vm.sendChat(text, platforms: platforms) }
+        Task { await vm.sendChat(text, platforms: platforms, chat: chat) }
     }
 }
