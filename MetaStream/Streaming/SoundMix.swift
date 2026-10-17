@@ -92,6 +92,8 @@ final class SoundMix {
         playFile(Sound.url(file), seconds: 10, on: alerts)
     }
 
+    func playStinger(_ url: URL) { playFile(url, seconds: 15, on: alerts) }
+
     func playSound(_ s: Sound) { playFile(Sound.url(s.file), seconds: 20, on: board) }
 
     /// Starts a media layer's audio; a later clip replaces the earlier one (one clip audio at a time).

@@ -53,6 +53,12 @@ enum OverlayScreen {
         for o in objects { try? mixer.screen.addChild(o) }
     }
 
+    /// Moves an object to the top of the z-order again (a rebuilt scene is added after the stinger and would cover it).
+    @ScreenActor static func raise(_ o: ScreenObject, on mixer: MediaMixer) {
+        mixer.screen.removeChild(o)
+        try? mixer.screen.addChild(o)
+    }
+
     @ScreenActor static func remove(_ objects: [ScreenObject], from mixer: MediaMixer) {
         for o in objects {
             if let m = o as? AssetScreenObject { m.cancelReading() }

@@ -1,4 +1,5 @@
 // Scene overlays on the stream: when they can be drawn, and keeping the mixer's Screen in line with the chosen scene.
+import AVFoundation
 import Foundation
 
 extension Streamer {
@@ -23,17 +24,45 @@ extension Streamer {
 
     /// The one way to change scene (HUD, settings, rotation, editor): selects it, switches the camera if the scene names
     /// one that is available, and fades overlays when the store's transition is "fade". "" (or an unknown name) clears.
-    /// A manual pick of a scene outside the rotation list stops auto-rotate.
+    /// A manual pick of a scene outside the rotation list stops auto-rotate. A manual pick also ends any scene role
+    /// (Starting / BRB / Ending) with no return to the old scene: the streamer's choice always wins.
     func selectScene(_ name: String) {
         let store = OverlayStore.shared
         applyScene(name)
-        if store.rotateOn, !store.rotateScenes.contains(store.scene) {
+        clearRole()
+        if store.rotateOn, !store.rotateScenes.contains(name) {
             store.rotateOn = false
             updateSceneRotation()
         }
     }
 
-    private func applyScene(_ name: String) {
+    /// Scene change with the store's transition: a stinger covers it when overlays are usable, otherwise it is a cut.
+    func applyScene(_ name: String) {
+        let store = OverlayStore.shared
+        if stingerTarget != nil { stingerTarget = name; return }   // a stinger is mid-flight: it cuts to the latest pick
+        guard store.transition == "stinger", overlaysWanted, name != store.scene, let url = store.stingerURL else {
+            switchScene(name)
+            return
+        }
+        stingerTarget = name
+        Task {
+            let secs = (try? await AVURLAsset(url: url).load(.duration).seconds) ?? 0
+            guard secs > 0, secs.isFinite else {
+                switchScene(stingerTarget ?? name)
+                stingerTarget = nil
+                return
+            }
+            await overlays.playStinger(url, canvas: blurCanvasSize, mixer: mixer)
+            SoundMix.shared.playStinger(url)
+            try? await Task.sleep(for: .seconds(secs * store.stingerCut))
+            switchScene(stingerTarget ?? name)
+            stingerTarget = nil
+            try? await Task.sleep(for: .seconds(secs * (1 - store.stingerCut)))
+            await overlays.removeStinger()
+        }
+    }
+
+    private func switchScene(_ name: String) {
         let store = OverlayStore.shared
         let target = store.scenes.first { $0.name == name }
         if (target?.name ?? "") != store.scene {
@@ -56,7 +85,7 @@ extension Streamer {
     func updateSceneRotation() {
         sceneRotationTask?.cancel()
         sceneRotationTask = nil
-        guard OverlayStore.shared.rotateOn, rotationScenes().count >= 2 else { return }
+        guard roleActive == nil, OverlayStore.shared.rotateOn, rotationScenes().count >= 2 else { return }
         sceneRotationTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(max(5, OverlayStore.shared.rotateSeconds)))

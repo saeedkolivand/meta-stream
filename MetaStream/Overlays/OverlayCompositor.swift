@@ -23,6 +23,9 @@ final class OverlayCompositor {
     private var tasks: [Task<Void, Never>] = []
     private var stills: [(object: ImageScreenObject, piece: OverlayPiece)] = []   // full-opacity bitmaps, for fades
 
+    private var stinger: AssetScreenObject?   // the stinger clip on screen, kept above the scene
+    private var stingerMixer: MediaMixer?
+
     private static let fadeSteps: [CGFloat] = [0.33, 0.66, 1]
 
     /// Idempotent: does nothing while scene, canvas, mixer and the store's files are unchanged. A nil scene clears the screen.
@@ -97,6 +100,7 @@ final class OverlayCompositor {
         tasks = newTasks
         stills = newStills
         await OverlayScreen.add(objs, to: mixer)
+        if let s = stinger { await OverlayScreen.raise(s, on: mixer) }
         if doFade {
             for a in Self.fadeSteps.dropFirst() {
                 try? await Task.sleep(for: .milliseconds(60))
@@ -108,6 +112,24 @@ final class OverlayCompositor {
         if failed > 0, !BrowserFeed.hostAvailable { key = "" }
         let summary = counts.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }.joined(separator: " ")
         applog("overlay", "scene built: \(summary) failed=\(failed)")
+    }
+
+    /// Plays the stinger clip once over the whole canvas, above every layer (apply() keeps it on top while a scene is
+    /// rebuilt underneath). Its audio is the caller's job. ponytail: a stinger with alpha (HEVC with alpha) only
+    /// composites if AssetScreenObject already handles it; nothing here special-cases it.
+    func playStinger(_ url: URL, canvas: CGSize, mixer: MediaMixer) async {
+        await removeStinger()
+        let o = await OverlayScreen.makeMedia(CGRect(origin: .zero, size: canvas), url)
+        stinger = o
+        stingerMixer = mixer
+        await OverlayScreen.add([o], to: mixer)
+    }
+
+    func removeStinger() async {
+        guard let o = stinger, let m = stingerMixer else { return }
+        stinger = nil
+        stingerMixer = nil
+        await OverlayScreen.remove([o], from: m)
     }
 
     private func teardown() async {

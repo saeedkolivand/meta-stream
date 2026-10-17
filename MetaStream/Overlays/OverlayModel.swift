@@ -59,6 +59,8 @@ struct OverlayScene: Codable, Sendable, Equatable {
     var layers: [OverlayLayer]
     /// "back" | "front" | "external" | "glasses" | "auto"; nil leaves the camera alone when the scene is selected.
     var camera: String? = nil
+    /// "starting" | "brb" | "ending": a job the app switches to this scene for on its own; nil = none. One scene per role.
+    var role: String? = nil
 }
 
 /// `skipped` maps a PC-only category ("cameras", "game/window/monitor capture"...) to how many sources were left out.
@@ -103,7 +105,7 @@ enum OverlayChecks {
         }
         let old = #"{"name":"S","layers":[{"type":"color","name":"c","visible":true,"x":0,"y":0,"sx":1,"sy":1,"align":5,"boundsType":0,"bw":0,"bh":0,"boundsAlign":0,"rotation":0,"crop":[0,0,0,0],"data":{},"files":[]}]}"#
         let scene = try? JSONDecoder().decode(OverlayScene.self, from: Data(old.utf8))
-        assert(scene?.camera == nil && scene?.layers.first?.layout == nil, "old scene JSON decodes")
+        assert(scene?.camera == nil && scene?.role == nil && scene?.layers.first?.layout == nil, "old scene JSON decodes")
         let layer = OverlayLayer.widget(.chat, name: "Chat", layout: .inset(6), data: ChatWidgetStyle().data)
         assert((try? JSONDecoder().decode(OverlayLayer.self, from: JSONEncoder().encode(layer))) == layer, "layer round trip")
         assert(ChatWidgetStyle(ChatWidgetStyle().data) == ChatWidgetStyle() && ChatWidgetStyle([:]) == ChatWidgetStyle())

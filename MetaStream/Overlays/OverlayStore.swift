@@ -17,8 +17,11 @@ final class OverlayStore: ObservableObject {
     /// Bumped whenever the pack or the files behind it change, so the compositor rebuilds.
     @Published private(set) var revision = 0
 
-    /// "fade" | "cut": how overlays change when the scene does. Defaults-backed, not part of pack.json.
+    /// "fade" | "cut" | "stinger": how overlays change when the scene does. Defaults-backed, not part of pack.json.
     @Published var transition: String { didSet { UserDefaults.standard.set(transition, forKey: "sceneTransition") } }
+    /// The stinger clip (a name under files/, "" = none) and where in it the scene changes, 0.1...0.9 of its length.
+    @Published var stingerFile: String { didSet { UserDefaults.standard.set(stingerFile, forKey: "stingerFile") } }
+    @Published var stingerCut: Double { didSet { UserDefaults.standard.set(stingerCut, forKey: "stingerCut") } }
     @Published var rotateOn: Bool { didSet { UserDefaults.standard.set(rotateOn, forKey: "sceneRotateOn") } }
     @Published var rotateScenes: [String] { didSet { UserDefaults.standard.set(rotateScenes, forKey: "sceneRotateScenes") } }
     @Published var rotateSeconds: Int { didSet { UserDefaults.standard.set(rotateSeconds, forKey: "sceneRotateSeconds") } }
@@ -30,6 +33,8 @@ final class OverlayStore: ObservableObject {
     private init() {
         let d = UserDefaults.standard
         transition = d.string(forKey: "sceneTransition") ?? "fade"
+        stingerFile = d.string(forKey: "stingerFile") ?? ""
+        stingerCut = d.object(forKey: "stingerCut") as? Double ?? 0.5
         rotateOn = d.bool(forKey: "sceneRotateOn")
         rotateScenes = d.stringArray(forKey: "sceneRotateScenes") ?? []
         rotateSeconds = d.object(forKey: "sceneRotateSeconds") as? Int ?? 60
@@ -164,6 +169,33 @@ final class OverlayStore: ObservableObject {
         guard let i = scenes.firstIndex(where: { $0.name == scene }) else { return }
         pack?.scenes[i].camera = camera
         _ = persist()
+    }
+
+    /// Giving a scene a role takes it off whichever scene had it (one scene per role); nil clears it.
+    func setRole(_ role: String?, in scene: String) {
+        guard scenes.contains(where: { $0.name == scene }) else { return }
+        for i in scenes.indices {
+            if pack?.scenes[i].name == scene { pack?.scenes[i].role = role }
+            else if role != nil, pack?.scenes[i].role == role { pack?.scenes[i].role = nil }
+        }
+        _ = persist()
+    }
+
+    var stingerURL: URL? { stingerFile.isEmpty ? nil : local(stingerFile) }
+
+    /// Copies a picked clip next to the imported media under a fresh name and makes it the stinger.
+    func setStinger(from src: URL) {
+        let scoped = src.startAccessingSecurityScopedResource()
+        defer { if scoped { src.stopAccessingSecurityScopedResource() } }
+        let name = "stinger-\(UUID().uuidString.prefix(8)).\(src.pathExtension)"
+        do {
+            try FileManager.default.createDirectory(at: filesDir, withIntermediateDirectories: true)
+            try FileManager.default.copyItem(at: src, to: filesDir.appending(path: name))
+            if let old = stingerURL { try? FileManager.default.removeItem(at: old) }
+            stingerFile = name
+        } catch {
+            applog("overlay", "stinger copy failed: \(error.localizedDescription)", error: true)
+        }
     }
 
     /// Stores picked image bytes untouched (a GIF must stay animated) and returns the name for `data["file"]`.

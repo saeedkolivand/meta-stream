@@ -338,6 +338,7 @@ extension Streamer {
                     live = true
                     liveSince = now
                     evaluateSource()
+                    startRole()
                 }
             } catch {
                 if Task.isCancelled { return }

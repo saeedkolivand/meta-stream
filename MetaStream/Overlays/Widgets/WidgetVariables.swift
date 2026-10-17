@@ -7,7 +7,7 @@ enum WidgetVariables {
     static let tokens: [(token: String, label: String)] = [
         ("{time}", "Time"), ("{date}", "Date"), ("{uptime}", "Live time"), ("{viewers}", "Viewers"), ("{bitrate}", "Bitrate"),
         ("{battery}", "Battery"), ("{speed}", "Speed"), ("{distance}", "Distance"), ("{city}", "City"), ("{weather}", "Weather"),
-        ("{follower}", "Latest follower"), ("{sub}", "Latest sub"),
+        ("{follower}", "Latest follower"), ("{sub}", "Latest sub"), ("{countdown}", "Starting countdown"),
     ]
 
     static func needsLocation(_ template: String) -> Bool {
@@ -43,6 +43,7 @@ enum WidgetVariables {
         case "{weather}": return WidgetWeather.shared.text
         case "{follower}": return clean(ctx.chat?.lastFollower ?? "")
         case "{sub}": return clean(ctx.chat?.lastSubscriber ?? "")
+        case "{countdown}": return ctx.streamer?.countdownText ?? ""
         default: return token
         }
     }

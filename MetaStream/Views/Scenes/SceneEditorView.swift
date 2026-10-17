@@ -36,6 +36,9 @@ struct SceneEditorView: View {
     private var stored: [OverlayLayer] { store.scenes.first { $0.name == name }?.layers ?? [] }
     private var wantsLocation: Bool { layers.contains { $0.type == .text && WidgetVariables.needsLocation($0.data["text"] ?? "") } }
     private var camera: String { store.scenes.first { $0.name == name }?.camera ?? "" }
+    private var role: String { store.scenes.first { $0.name == name }?.role ?? "" }
+    /// On stream right now: edits wait as a draft until applied, so viewers never see a half-built scene.
+    private var liveLocked: Bool { streamer.live && store.scene == name }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -84,13 +87,21 @@ struct SceneEditorView: View {
             WidgetLocation.shared.release()
         }
         .onChange(of: layers) { scheduleSave() }
-        .onDisappear { renameIfNeeded(); saveNow() }
+        .onDisappear { renameIfNeeded(); applyNow() }   // leaving is done: an unapplied live draft goes out too
     }
 
     // MARK: form
 
     private var form: some View {
         Form {
+            if liveLocked, layers != stored {
+                Section {
+                    Button("Apply to stream") { hapticTap(); applyNow() }
+                    Button("Discard", role: .destructive) { selected = nil; layers = stored }
+                } footer: {
+                    Text("This scene is on stream, so your changes wait here until you apply them.")
+                }
+            }
             Section {
                 TextField("Name", text: $draftName).onSubmit(renameIfNeeded)
                 Toggle("Show on stream", isOn: Binding(
@@ -99,8 +110,14 @@ struct SceneEditorView: View {
                 Picker("Camera", selection: Binding(get: { camera }, set: { store.setCamera($0.isEmpty ? nil : $0, in: name) })) {
                     ForEach(cameraOptions, id: \.0) { Text($0.1).tag($0.0) }
                 }
+                Picker("Role", selection: Binding(get: { role }, set: { store.setRole($0.isEmpty ? nil : $0, in: name) })) {
+                    Text("None").tag("")
+                    Text("Starting").tag("starting")
+                    Text("BRB").tag("brb")
+                    Text("Ending").tag("ending")
+                }
             } footer: {
-                Text("Switching to this scene also switches the camera, so one tap can go from the glasses to the back camera.")
+                Text("Switching to this scene also switches the camera, so one tap can go from the glasses to the back camera. A role lets the app pick this scene itself: Starting after going live, BRB when the connection is weak, Ending when you stop. One scene per role.")
             }
             Section("Layers") {
                 if layers.isEmpty {
@@ -210,7 +227,13 @@ struct SceneEditorView: View {
         }
     }
 
+    /// Autosave path: skipped while this scene is on stream (the draft waits for "Apply to stream").
     private func saveNow() {
+        saveTask?.cancel()
+        if !liveLocked { applyNow() }
+    }
+
+    private func applyNow() {
         saveTask?.cancel()
         if layers != stored { store.setLayers(layers, in: name) }
     }

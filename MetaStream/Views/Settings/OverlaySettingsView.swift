@@ -10,7 +10,10 @@ struct OverlaySettingsView: View {
     @State private var renameText = ""
     @State private var pickJSON = false
     @State private var pickFolder = false
+    @State private var pickStinger = false
     @AppStorage("gpsShare") private var shareGPS = false
+    @AppStorage("startCountdown") private var startCountdown = 60
+    @AppStorage("endingHold") private var endingHold = 10
 
     var body: some View {
         Form {
@@ -20,10 +23,27 @@ struct OverlaySettingsView: View {
                 Picker("Between scenes", selection: $store.transition) {
                     Text("Cut").tag("cut")
                     Text("Fade").tag("fade")
+                    Text("Stinger").tag("stinger")
                 }
                 .pickerStyle(.segmented)
+                if store.transition == "stinger" {
+                    Button(store.stingerFile.isEmpty ? "Choose stinger video…" : "Change stinger video…") { pickStinger = true }
+                        .fileImporter(isPresented: $pickStinger, allowedContentTypes: [.movie, .mpeg4Movie, .quickTimeMovie]) { result in
+                            if case .success(let url) = result { store.setStinger(from: url) }
+                        }
+                    VStack(alignment: .leading) {
+                        Text("Cut point: \(Int(store.stingerCut * 100))% of the clip")
+                        Slider(value: $store.stingerCut, in: 0.1...0.9)
+                    }
+                }
             } header: { Text("Transition") } footer: {
-                Text("Fade dims the old widgets out and the new ones in. The camera itself switches instantly.")
+                Text("Fade dims the old widgets out and the new ones in. A stinger plays your clip over the change, which happens underneath it at the cut point. The camera itself switches instantly.")
+            }
+            Section {
+                Stepper("Starting countdown: \(startCountdown == 0 ? "off" : "\(startCountdown) s")", value: $startCountdown, in: 0...300, step: 5)
+                Stepper("Ending hold: \(endingHold == 0 ? "off" : "\(endingHold) s")", value: $endingHold, in: 0...60)
+            } header: { Text("Scene roles") } footer: {
+                Text("Give a scene a role in its editor. Starting shows after going live for the countdown (use {countdown} in a text widget), BRB while the connection is too weak, Ending for the hold after you tap END (tap again to stop at once). Picking a scene by hand cancels the role.")
             }
             if UIDevice.current.userInterfaceIdiom == .phone {
                 Section {

@@ -70,7 +70,7 @@ struct GoLiveControlsView: View {
             Button {
                 hapticTap(strong: true)
                 if streamer.live {
-                    streamer.stopLive()
+                    streamer.requestStop()
                 } else {
                     streamer.goLive(url: ingestURL, key: streamKey, micUID: micUID,
                                     fallbackPosition: fallbackCamera == "front" ? .front : .back,
@@ -83,7 +83,7 @@ struct GoLiveControlsView: View {
                     Circle().fill(streamer.live ? Color.red : Color.green)
                         .frame(width: goSize, height: goSize)
                         .shadow(color: (streamer.live ? Color.red : Color.green).opacity(0.5), radius: 12)
-                    Text(streamer.live ? "END" : "GO\nLIVE")
+                    Text(streamer.live ? (streamer.endingIn.map { "Ending\n\($0)s" } ?? "END") : "GO\nLIVE")   // a second tap during the hold stops now
                         .font(.system(size: compact ? 13 : 15, weight: .heavy)).multilineTextAlignment(.center)
                         .foregroundStyle(.white)
                 }

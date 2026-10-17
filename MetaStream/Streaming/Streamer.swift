@@ -253,6 +253,14 @@ final class Streamer: ObservableObject {
     let overlays = OverlayCompositor()           // scene layers on the mixer's Screen, see StreamerOverlays.swift
     var sceneRotationTask: Task<Void, Never>?    // auto-rotate loop, see updateSceneRotation()
     var pendingSceneFade = false                 // set by a scene change, consumed by the next syncOverlays
+    // Scene roles (starting / brb / ending), see SceneRoles.swift
+    var roleActive: String?                      // the role whose scene is up, nil = none
+    var roleBack: String?                        // scene to return to when the role ends
+    var roleTask: Task<Void, Never>?             // Starting countdown / Ending hold
+    var countdownEnd: Date?                      // Starting countdown, for {countdown}
+    var weakTicks = 0, goodTicks = 0             // consecutive seconds of weak / healthy throughput
+    @Published var endingIn: Int?                // seconds left of the Ending hold, for the Go Live button
+    var stingerTarget: String?                   // scene the running stinger will cut to
 
     var makingOverlay = false                // guards the await in syncBlurEffect against the 1 s tick re-entering
 
@@ -330,6 +338,7 @@ final class Streamer: ObservableObject {
                 if !self.gpsOnly { await self.syncBlurEffect() }   // it would restart the offscreen render loop for the overlays
                 self.checkBlurStall()
                 self.checkDeadAir()
+                self.checkBRB()
                 self.checkRecordingSource()
                 self.liveActivity.sync(self)
                 if self.live, tick % 5 == 0 {
@@ -388,6 +397,7 @@ final class Streamer: ObservableObject {
             await uplink.close()
             if dualLocked == nil { _ = await rebuildMixerIfNeeded() }   // a dual-camera toggle flipped mid-stream takes effect now (skipped if GO LIVE was already pressed again)
         }
+        roleEnd()   // a Starting countdown or BRB still running: back to the scene before it
         source = "glasses"
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])   // mic off; the playback session stays so the next goLive can arm PiP
     }
