@@ -160,6 +160,9 @@ final class Streamer: ObservableObject {
 
     let audioLevel = AudioLevel()   // HUD meter + dead-air state, see AudioLevel.swift
 
+    let recorder = StreamRecorder()               // permanent mixer output; appends are ignored while not recording (Recording.swift)
+    @Published var recordingSince: Date?          // nil = not recording
+
     lazy var levelTap = LevelOutput { [weak self] db in Task { @MainActor in self?.audioLevel.set(db) } }
 
     /// Which way up a landscape capture goes, from the phone's physical orientation -- see deviceRotated().
@@ -327,6 +330,7 @@ final class Streamer: ObservableObject {
                 if !self.gpsOnly { await self.syncBlurEffect() }   // it would restart the offscreen render loop for the overlays
                 self.checkBlurStall()
                 self.checkDeadAir()
+                self.checkRecordingSource()
                 self.liveActivity.sync(self)
                 if self.live, tick % 5 == 0 {
                     let mode = self.hot.transcoder == nil ? "hevc-passthrough" : "h264-transcode"

@@ -145,6 +145,7 @@ extension Streamer {
         await mixer.addOutput(sink)
         await mixer.addOutput(faceCamFrames)
         await mixer.addOutput(levelTap)
+        await mixer.addOutput(recorder)
         await mixer.startRunning()
     }
 

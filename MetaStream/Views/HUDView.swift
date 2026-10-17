@@ -50,6 +50,12 @@ struct HUDView: View {
                     }, action: { showStatus = true })
                 }
 
+                if let since = streamer.recordingSince {
+                    TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                        let s = Int(ctx.date.timeIntervalSince(since))
+                        StripStyles.pill("circle.fill", String(format: "REC %02d:%02d", s / 60, s % 60), .red)
+                    }
+                }
                 if streamer.live {
                     TimelineView(.periodic(from: .now, by: 1)) { ctx in
                         // Amber while down: the timer measures the session, never the connection, so it
