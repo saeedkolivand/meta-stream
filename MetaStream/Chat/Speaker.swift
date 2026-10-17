@@ -109,7 +109,8 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         let note = Self.isBlocked(e.text, extra: blocked) ? "" : Self.sanitize(e.text)
         switch e.kind {
         case .message:
-            guard messagesOn, !Self.isNoise(user: e.user, text: e.text, ignored: ignored), !note.isEmpty, BotList.reads(e.user, e.text) else { return nil }
+            guard messagesOn, !Self.isNoise(user: e.user, text: e.text, ignored: ignored), !note.isEmpty, BotList.reads(e.user, e.text),
+                  !AppBot.shared.isOwn(e) else { return nil }
             defer { lastChatter = e.user }
             return e.user == lastChatter ? note : "\(user) says \(note)"
         case .tip:
@@ -223,8 +224,9 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     static func isNoise(user: String, text: String, ignored: String) -> Bool {
         let u = user.lowercased()
         let names = ignored.lowercased().split { $0 == "," || $0.isWhitespace }.map { $0.hasPrefix("@") ? String($0.dropFirst()) : String($0) }
-        return names.contains(u)
-            || text.trimmingCharacters(in: .whitespaces).hasPrefix("!")
+        // Skip spaces, line breaks and invisible format characters (zero-width space, BOM) before the "!".
+        let start = text.unicodeScalars.drop { $0.properties.isWhitespace || $0.properties.generalCategory == .format }
+        return names.contains(u) || start.first == "!"
     }
 
     /// Strips URLs/emotes/@ (keeping the name), collapses whitespace, caps length so one troll can't hog the queue.

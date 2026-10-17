@@ -196,6 +196,8 @@ struct SlashRunner {
         }
         // ponytail: signed out of kick.com there is no clear, so delete the Kick messages still in the feed buffer one by one.
         let ids = chat.recent.filter { $0.origin == "kick" && $0.kind == .message && !$0.id.isEmpty }.map(\.id)
+        let fullClear = "for a full /clear, sign in to kick.com in Settings › Chat commands"   // Kick's API has no clear-all
+        if ids.isEmpty { return "Nothing the app can delete yet: " + fullClear }
         var n = 0
         for id in ids {
             do { try await deleteMessage(id); n += 1 }
@@ -205,7 +207,7 @@ struct SlashRunner {
             }
             catch { continue }   // already gone
         }
-        return "Deleted \(n) recent messages"
+        return "Deleted \(n) recent messages; " + fullClear
     }
 
     private func chatMode(_ name: String, _ a: [String]) async throws -> String {

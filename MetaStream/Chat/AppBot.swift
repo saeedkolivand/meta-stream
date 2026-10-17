@@ -30,6 +30,7 @@ final class AppBot: ObservableObject {
     private var queue: [String: [String]] = [:]       // origin -> messages waiting for their turn
     private var draining: Set<String> = []
     private var sent: [String] = []                   // our last texts: chat echoes them back, they are not viewers
+    private var ownNames: Set<String> = []            // "origin|name" of the bot accounts, learned from those echoes
     private var answered: [String: Date] = [:]        // "origin|!cmd" -> last answer
     private var msgs: [String: Int] = [:]             // origin -> viewer messages so far this stream
     private var marks: [String: (at: Date, msgs: Int)] = [:]   // "timer|origin" -> state at its last post
@@ -184,8 +185,20 @@ final class AppBot: ObservableObject {
         say(e.origin, Self.fill(tpl(key), user: e.user, count: e.count))
     }
 
+    /// One of the app bot's own lines (read aloud and the counters skip them). Kick doesn't say what the bot account is
+    /// called, so its name is learned from the first echo of something the app posted; the streamer's own name never is.
+    func isOwn(_ e: ChatEvent) -> Bool {
+        let key = e.origin + "|" + e.user.lowercased()
+        if ownNames.contains(key) { return true }
+        if e.origin == "twitch", !twitchBotName.isEmpty, e.user.caseInsensitiveCompare(twitchBotName) == .orderedSame { return true }
+        guard sent.contains(e.text) else { return false }
+        let me = (e.origin == "kick" ? platforms?.kickUser : platforms?.twitchUser)?.lowercased() ?? ""
+        if e.user.lowercased() != me { ownNames.insert(key) }
+        return true
+    }
+
     private func message(_ e: ChatEvent) {
-        if sent.contains(e.text) || (e.origin == "twitch" && !twitchBotName.isEmpty && e.user.caseInsensitiveCompare(twitchBotName) == .orderedSame) { return }
+        if isOwn(e) { return }
         if !BotList.isBot(e.user) { msgs[e.origin, default: 0] += 1 }
         let cmd = e.text.split(whereSeparator: \.isWhitespace).first?.lowercased() ?? ""
         let key = e.origin + "|" + cmd
