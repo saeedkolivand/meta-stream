@@ -59,6 +59,10 @@ extension Streamer {
         return !((mwdat?["MetaAppID"] as? String ?? "").isEmpty)
     }()
 
+    /// The build can talk to glasses AND the user switched them on (Settings > Glasses). Views read the same key via
+    /// @AppStorage("glassesEnabled") so they update the moment it flips.
+    static var glassesEnabled: Bool { glassesConfigured && UserDefaults.standard.bool(forKey: "glassesEnabled") }
+
     /// Apple's "Action mode" is Camera-app branding for the extended cinematic algorithm; AVFoundation
     /// exposes it as a stabilisation mode on the capture connection. `.cinematicExtendedEnhanced` is the
     /// strongest one (iOS 18+, always available at our iOS 26 minimum).

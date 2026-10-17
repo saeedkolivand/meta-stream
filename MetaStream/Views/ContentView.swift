@@ -120,7 +120,7 @@ struct ContentView: View {
             controlsLayer
 
             // Only nag once the user actually picks glasses: phone/external-camera streaming never needs Meta.
-            if Streamer.glassesConfigured, streamer.manualSource == "glasses", streamer.registration != "registered" { registerCard }
+            if Streamer.glassesEnabled, streamer.manualSource == "glasses", streamer.registration != "registered" { registerCard }
 
             if photoFlash {
                 Color.white.ignoresSafeArea().transition(.opacity)

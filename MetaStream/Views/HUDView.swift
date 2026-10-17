@@ -9,6 +9,7 @@ struct HUDView: View {
     @EnvironmentObject var privacy: Privacy
     @AppStorage("blurOn") var blurOn = false
     @AppStorage("bitrateKbps") var bitrateKbps = 4000
+    @AppStorage("glassesEnabled") private var glassesEnabled = false
     @Binding var showStatus: Bool
     @Binding var showManager: Bool
     @Binding var showChat: Bool
@@ -44,7 +45,7 @@ struct HUDView: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                if Streamer.glassesConfigured {
+                if Streamer.glassesConfigured && glassesEnabled {
                     StripStyles.stripButton(label: {
                         StripStyles.pill("eyeglasses", streamer.glassesShort, glassesColor)
                     }, action: { showStatus = true })

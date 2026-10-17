@@ -5,15 +5,17 @@
 <h1 align="center">MetaStream</h1>
 
 <p align="center">
-  IRL streaming from <b>Ray-Ban Meta</b> glasses to Kick, Twitch, YouTube, Restream or any RTMP server,<br>
-  with chat, a stream manager and a phone-camera fallback. Built and signed from <b>Windows</b>. No Mac needed.
+  A pocket OBS for IRL streamers. Scenes and widgets, a full audio mix, recording, bonded uplinks, chat with
+  moderator commands and bots, and remote control from a Stream Deck, all on an iPhone or iPad.<br>
+  Streams to Kick, Twitch, YouTube, Restream or any RTMP / SRT / SRTLA server. Meta glasses are an optional camera.<br>
+  Built and signed from <b>Windows</b>. No Mac needed.
 </p>
 
 <p align="center">
   <a href="https://github.com/saeedkolivand/meta-stream/actions/workflows/build.yml"><img src="https://github.com/saeedkolivand/meta-stream/actions/workflows/build.yml/badge.svg" alt="build"></a>
   <img src="https://img.shields.io/badge/iOS-26.0%2B-black" alt="iOS 26.0+">
-  <img src="https://img.shields.io/badge/Meta%20DAT%20SDK-0.9.0-blue" alt="DAT 0.9.0">
-  <img src="https://img.shields.io/badge/video-HEVC%20passthrough-purple" alt="HEVC">
+  <img src="https://img.shields.io/badge/Swift-6-orange" alt="Swift 6">
+  <img src="https://img.shields.io/badge/protocols-RTMP%20%C2%B7%20SRT%20%C2%B7%20SRTLA-purple" alt="RTMP, SRT, SRTLA">
 </p>
 
 <p align="center">
@@ -26,85 +28,133 @@
 
 ## Why this exists
 
-The apps that can talk to Meta glasses (StreamHand, MetaLens) don't show chat, drop the glasses the moment you
-switch apps, and can't manage your broadcast. The apps that do all that (Streamlabs) can't see the glasses.
-MetaStream fills that gap. I wrote it for my own streams and published it so others can build their own copy.
+Desktop streamers get OBS: scenes, audio mixing, recording, a Stream Deck, bots. IRL streamers get a phone app that
+pushes one camera and little else, plus a laptop-and-backpack rig for everything that app can't do. MetaStream puts
+the OBS side of that rig on the phone: build scenes, mix sound, record, bond your connections and run chat from the
+device you are already holding. It started as the missing app for Ray-Ban Meta glasses, which it still supports.
 
 ## What it does
 
+### Cameras
+
 | | |
 |---|---|
-| **Glasses video** | Meta's *Wearables Device Access Toolkit* hands the app the glasses' camera as compressed HEVC, 720×1280 at up to 30 fps |
-| **Streams in the background** | Check chat, answer a text or open Maps while the stream keeps running |
-| **Picture in Picture** | Leaving the app puts the feed in a floating window. That window is also what keeps a transcoded stream running once the app is no longer in front |
-| **Codec handling** | The glasses' HEVC goes out untouched where the destination accepts it. Where it doesn't, the phone decodes and re-encodes to H.264 |
-| **Phone-camera fallback** | When the glasses drop, the back or front camera takes over within 2 seconds and the stream does not restart. You can also switch by hand |
-| **Chat** | Kick, Twitch, YouTube or Restream chat in a sheet that slides over the preview |
-| **Chat read aloud** | Kick chat spoken through the glasses' open-ear speakers, so you never take the phone out. Three priority lanes: stream warnings interrupt, alerts queue, chat drops oldest when it floods |
-| **Tells you when it drops** | Reconnects with backoff, speaks "stream dropped" and "stream back" with a haptic, escalates if it stays down, and turns the timer amber rather than counting dead air as airtime |
-| **Health warnings** | Phone battery, phone thermal and glasses thermal, spoken once each when they cross a threshold |
-| **Stream Manager** | Sign in to Kick, Twitch, Restream and YouTube inside the app to edit the title and category, watch the viewer count, send chat, pull your stream key, and switch Restream destinations on and off |
+| **Phone cameras** | Back or front, 720p or 1080p, portrait 9:16 or landscape 16:9, 24/30/60 fps, with lens, zoom, focus, exposure, HDR and stabilisation controls |
+| **External camera** | A USB-C (UVC) camera such as a DJI Osmo Action shows up as a source on iPad |
+| **Dual camera** | One camera full frame and a second as a small window; tap to swap |
+| **Looks** | Brightness, contrast, saturation, warmth and `.cube` LUTs per camera |
+| **Meta glasses (optional)** | Ray-Ban / Oakley Meta video through Meta's Device Access Toolkit, with automatic phone fallback when they drop. Off by default: turn on *Settings → Meta glasses* to show the glasses controls |
+
+### Scenes and widgets
+
+| | |
+|---|---|
+| **Scenes** | Build as many as you like, each with its own layers and optionally its own camera. Switch with a tap, rotate on a timer, or edit the live scene as a draft and apply it when ready |
+| **Widgets** | Chat, alerts, event list, text with live tokens (`{time}`, `{uptime}`, `{viewers}`, `{bitrate}`, `{speed}`, `{city}`, `{weather}`, `{follower}`, `{sub}`, `{countdown}`, …), QR code, image / GIF, slideshow, video, and any web widget (StreamElements, Streamlabs) |
+| **Scene roles** | Starting (with a countdown after you go live), BRB (switched to on its own while the connection is weak) and Ending. Ready-made Mono and Ticker sets add all three at once |
+| **Stingers** | A transition clip that covers the switch between scenes |
+| **OBS import** | Bring a scene collection over from OBS on your PC; PC-only sources are skipped and listed |
+| **Privacy blur** | Blurs the picture on demand |
+| **External display** | A clean program feed on a USB-C monitor |
+
+### Audio
+
+| | |
+|---|---|
+| **Mix** | Mic, alert sounds, soundboard and clip audio as separate tracks with their own volume, through a limiter |
+| **Meter and dead-air alert** | A level bar on screen, and a warning when the mic goes silent while live |
+| **Soundboard** | Your own sound files, one tap each |
+| **Read aloud** | Chat and alerts spoken in your ear, with priority lanes so stream warnings interrupt and chat never piles up |
+
+### Going live and staying live
+
+| | |
+|---|---|
 | **Destinations** | Presets for Kick, Twitch, YouTube and Restream, plus Instagram, TikTok and any RTMP, RTMPS or SRT server |
-| **SRT** | Paste an `srt://` URL and it publishes over SRT instead, which survives packet loss far better on cellular. Sends HEVC untouched, so it also streams in the background without the floating window |
-| **Phone camera quality** | 720p or 1080p, portrait 9:16 or landscape 16:9, 24/30/60 fps — so the app is fully useful without glasses |
-| **Controls** | Go live and end, mic mute, camera off as black frames, photo capture to Photos, resolution, frame rate, bitrate, microphone picker, keep awake, and a heads-up display with fps, kbps and the stream timer |
-| **Logs** | Every API call, stream event and decoder error lands in Settings → Logs with a share button. Stream keys and tokens are masked before anything is written |
+| **SRTLA bonding** | Use an `srtla://` ingest and the stream is split across Wi-Fi, Ethernet and cellular at once, so one link dropping doesn't drop the stream |
+| **Adaptive bitrate** | Backs off when the uplink struggles and climbs back quickly once it clears |
+| **Reconnects** | Retries with backoff, speaks "stream dropped" and "stream back", and keeps the timer honest |
+| **Health warnings** | Battery, thermal, dead air and connection state, spoken once each |
+| **Background** | Keeps streaming while you check a message or open Maps; Picture in Picture keeps a re-encoded stream alive |
+| **Recording** | Record to Photos with or without going live (HEVC, saved in fragments so a crash keeps what was recorded) |
+| **Live Activity** | Stream state on the Lock Screen and Dynamic Island |
 
-### Limits you should know
+### Chat, moderation and bots
 
-- **720×1280 portrait at 30 fps is the ceiling for the glasses.** The SDK offers nothing higher to
-  any third-party app. The phone camera is not limited by this: it does 720p or 1080p, portrait or
-  landscape, at 24/30/60 fps.
-- **The glasses choose their own bitrate**, which measured 450 to 600 kbps at 720p30. The bitrate slider only affects video the phone encodes, meaning the fallback camera and transcoded output.
-- **Background streaming without the floating window works only for HEVC destinations.** Anything transcoded needs Picture in Picture open, because iOS stops the hardware decoder once the app leaves the screen.
-- **A paid Apple Developer team is required** to build. See [Why a paid Apple team](#why-a-paid-apple-team).
-- The glasses keep one third-party app registered at a time, so registering MetaStream unregisters StreamHand or whatever else you used.
-- **Glasses battery is not readable by third-party apps.** DAT 0.9's `DeviceState` exposes only
-  `thermalLevel`, so the app can warn that the glasses are hot but never that they are nearly flat.
-- The glasses microphone runs over Bluetooth HFP at 8 kHz. The phone mic is the default, and any input can be picked in Settings.
+| | |
+|---|---|
+| **Chat** | Kick, Twitch, YouTube and Restream in one sheet over the preview, with 7TV / BTTV / FFZ emotes and badges |
+| **Slash commands** | Type `/ban`, `/timeout`, `/clear`, `/slow`, `/followers`, `/emoteonly`, `/title`, `/category`, `/raid`, `/poll`, `/ad`, `/announce`, `/marker`, `/clip` and more, like in the platform's own chat |
+| **Bot commands** | Saved commands for your chat bots as one-tap chips, also from the Lock Screen |
+| **App bot** | The app's own bot posts scene notices, answers viewer commands such as `!location`, runs timers and thanks new followers and subs (Kick and Twitch) |
+| **Stream Manager** | Edit title and category, watch viewers, pull your stream key and switch Restream destinations |
 
-## Which codec goes where
+### Remote control and extras
 
-Tested against each ingest, not taken from marketing pages:
-
-| Destination | Takes HEVC | What the app sends |
-|---|---|---|
-| Your own RTMP server | yes, if your server decodes it | HEVC, untouched |
-| YouTube | yes, over enhanced RTMP | HEVC, untouched |
-| Kick | no | H.264 from the phone |
-| Restream over RTMP | no, only over SRT | H.264 from the phone |
-| Any `srt://` ingest | yes | HEVC, untouched |
-| Twitch | Affiliates and Partners only | H.264 from the phone |
-| Instagram, TikTok | no | H.264 from the phone |
-
-Auto follows this table, and Settings lets you override it per stream. Two things come with transcoding. Going live takes a second or two longer, because the decoder waits for a keyframe before connecting, and the stream pauses in the background unless the Picture in Picture window is up.
+| | |
+|---|---|
+| **obs-websocket** | The app speaks the obs-websocket v5 protocol on your local network, so Stream Deck, Touch Portal and Streamer.bot control it as if it were OBS: switch scenes, go live, record, mute. Password protected, local network only |
+| **GPS from iPhone** | A Wi-Fi-only iPad borrows the iPhone's location over Personal Hotspot for speed, distance, city and weather widgets |
+| **Logs** | Every API call and stream event lands in *Settings → Diagnostics* with a share button. Keys and tokens are masked |
 
 ## How it works
 
 ```mermaid
 flowchart LR
-  G[Ray-Ban Meta glasses] -- "Wi-Fi link (DAT SDK)<br/>HEVC 720x1280" --> A
-  P[Phone camera<br/>fallback / manual] -- "HaishinKit encoder<br/>HEVC" --> A
-  M[Microphone<br/>phone / glasses / headset] -- AAC --> A
-  A[MetaStream<br/>RTMPStream passthrough] -- "RTMPS (Enhanced RTMP)" --> K[Kick]
-  A --> T[Twitch]
-  A --> Y[YouTube]
-  A --> R[Restream → everywhere]
-  A --> C[Custom RTMP / own relay → OBS]
-  A <-- "OAuth / REST" --> APIs[Kick · Twitch · Restream · YouTube APIs<br/>title, category, viewers, chat, stream key]
+  subgraph Sources
+    P[Phone cameras]
+    U[USB camera]
+    G[Meta glasses<br/>optional]
+    M[Mic + sounds]
+  end
+  P & U & G --> X[Mixer<br/>scenes · widgets · looks]
+  M --> AM[Audio mix<br/>tracks · limiter]
+  X & AM --> E[Encoder<br/>HEVC / H.264 + AAC]
+  E --> O[RTMP / SRT]
+  E --> B[SRTLA bonding<br/>Wi-Fi · Ethernet · cellular]
+  E --> R[Recording → Photos]
+  X --> D[External display]
+  SD[Stream Deck · Touch Portal<br/>Streamer.bot] -- obs-websocket --> X
+  API[Kick · Twitch · YouTube · Restream] <-- chat · title · bots --> X
 ```
 
-Everything is one SwiftUI app: `Streamer.swift` (glasses + RTMP + fallback), `Platforms.swift` (logins and APIs),
-`ContentView.swift` / `SettingsView.swift` / `StreamManagerView.swift` (UI). There is no server. Platform tokens
-stay on the phone.
+One SwiftUI app on top of [HaishinKit](https://github.com/HaishinKit/HaishinKit.swift). There is no server: platform
+tokens stay on the device. Design decisions are recorded in [`adr/`](adr) and the vocabulary in [`CONTEXT.md`](CONTEXT.md).
+
+## Codec per destination
+
+Tested against each ingest, not taken from marketing pages:
+
+| Destination | Takes HEVC | What the app sends |
+|---|---|---|
+| Your own RTMP server | yes, if your server decodes it | HEVC |
+| YouTube | yes, over enhanced RTMP | HEVC |
+| Kick | no | H.264 |
+| Restream over RTMP | no, only over SRT | H.264 |
+| Any `srt://` or `srtla://` ingest | yes | HEVC |
+| Twitch | Affiliates and Partners only | H.264 |
+| Instagram, TikTok | no | H.264 |
+
+Auto follows this table, and Settings lets you override it per stream.
+
+## Limits you should know
+
+- **Screen share isn't there yet.** It needs a broadcast extension and an App Group ([`adr/0003`](adr/0003-screen-arrives-encoded-like-the-glasses.md)).
+- **Some Kick commands go through kick.com.** Kick's public API has no endpoint for `/clear`, `/slow`, `/poll` and a
+  few others, so the app runs them through a signed-in kick.com page (*Settings → Chat commands*, [`adr/0005`](adr/0005-kick-slash-commands-through-the-website.md)).
+- **Glasses**: 720×1280 portrait at 30 fps is the most Meta's SDK gives any third-party app, the glasses pick their
+  own bitrate, their video can't carry overlays or be recorded unless it is re-encoded, and their battery level isn't
+  readable. The glasses keep one third-party app registered at a time.
+- **Background streaming without Picture in Picture** works only when the video isn't re-encoded.
+- **A paid Apple Developer team** is required for the glasses. See [Why a paid Apple team](#why-a-paid-apple-team).
 
 ---
 
 ## Build your own copy
 
-You need: a pair of Ray-Ban Meta (Gen 1/2, Display, Oakley Meta), an iPhone on iOS 26.0+, the Meta AI app, a
-GitHub account, and access to a **paid Apple Developer team** (yours, or a friend who exports a development
-certificate for you). No Mac is required at any point. GitHub's macOS runners do the compiling.
+You need an iPhone or iPad on iOS 26.0+, a GitHub account, and access to a **paid Apple Developer team** (yours, or a
+friend who exports a development certificate for you). Meta glasses and the Meta AI app are optional. No Mac is
+required at any point: GitHub's macOS runners do the compiling.
 
 ### 1. Fork and rename
 
@@ -112,7 +162,10 @@ Fork this repo. Pick a bundle ID (**no hyphens**, Meta rejects them) and replace
 `project.yml`, `MetaStream/Info.plist` and `MetaStream/Platforms/Platforms.swift`. Replace `metastream.iamsaeed.dev` in
 `Platforms.swift` with your redirect page host (step 5).
 
-### 2. Meta Wearables Developer Center
+### 2. Meta Wearables Developer Center (only for glasses)
+
+Skip this step if you will not use Meta glasses: with no `META_APP_ID` the build hides every glasses control.
+
 
 1. Sign up at <https://wearables.developer.meta.com> and create a project. Bundle ID = yours, Apple Team ID = the paid
    team's ID, Universal link = `metastream://`. Enable the **Camera** permission with a rationale.
@@ -124,7 +177,7 @@ Fork this repo. Pick a bundle ID (**no hyphens**, Meta rejects them) and replace
 In <https://developer.apple.com/account> → Certificates, Identifiers & Profiles:
 
 1. **Devices** → register your iPhone's UDID (`pip install pymobiledevice3` → `pymobiledevice3 usbmux list`).
-2. **Identifiers** → App ID with your bundle ID; enable **Access Wi-Fi Information** and **Hotspot**.
+2. **Identifiers** → App ID with your bundle ID; enable **Access Wi-Fi Information** and **Hotspot** (the glasses need both).
 3. **Profiles** → *iOS App Development* profile for that App ID, your device, an Apple Development certificate → download.
 4. Export that certificate **with its private key** from Keychain Access as a `.p12`.
 
@@ -149,7 +202,7 @@ behind a custom domain (add a `CNAME` record → `<you>.github.io`, **DNS only**
 
 | Secret | Value |
 |---|---|
-| `META_APP_ID`, `CLIENT_TOKEN` | from step 2 |
+| `META_APP_ID`, `CLIENT_TOKEN` | from step 2; leave out for a build without glasses |
 | `TEAM_ID` | the paid team's 10-character Team ID |
 | `P12_BASE64`, `P12_PASSWORD` | `base64 -w0 cert.p12`, and its export password |
 | `PROVISIONING_PROFILE_BASE64` | `base64 -w0 profile.mobileprovision` |
@@ -190,21 +243,20 @@ for a year; rebuilds install over the previous version and keep your settings. A
 
 ## Using it
 
-1. **Register** (first-run card) → approve in Meta AI → back in the app.
-2. **Manage** pill → connect a platform → *Use for streaming* fills the RTMP URL, stream key and chat for you.
-   Or type them in **Settings**.
-3. **Glasses** button → LED on, preview live. **GO LIVE**.
-4. Top pills: tap the source pill to cycle *auto → glasses → back camera → front camera*; tap mic / cam to mute or
-   black out; tap the glasses pill for raw diagnostics.
-5. **Chat** button slides chat over the preview. Settings has quality (resolution / fps), bitrate for phone-camera
-   video, microphone, fallback camera, keep-awake.
+1. **Settings → Ingest & protocol** → pick a destination, or open **Manage**, connect a platform and tap *Use for
+   streaming* to fill the URL, key and chat for you.
+2. **Settings → Scenes & widgets** → *Add Starting, BRB & Ending scenes*, then add your own scenes and widgets.
+3. **GO LIVE.** The source button picks the camera, the record button records, the chat button slides chat over the preview.
+4. **Glasses:** *Settings → Meta glasses → Use Meta glasses*, then register with Meta AI from the card that appears.
+5. **Stream Deck:** *Settings → Remote control* → set a password, then add the app in your OBS plugin as an OBS
+   instance at the address shown.
 
 ## Why a paid Apple team
 
 Since DAT SDK 0.8 the glasses send video over a direct Wi-Fi link. Joining it needs two entitlements,
 `com.apple.developer.networking.HotspotConfiguration` and `com.apple.developer.networking.wifi-info`, which Apple only
-grants to paid teams. A build signed with a free Apple ID (Sideloadly, AltStore) registers and connects over
-Bluetooth but never receives a frame. This is Apple's rule, and the app can't work around it.
+grants to paid teams. A build signed with a free Apple ID (Sideloadly, AltStore) registers the glasses and connects
+over Bluetooth but never receives a frame. This is Apple's rule, and the app can't work around it.
 
 ## Troubleshooting
 
@@ -229,13 +281,15 @@ Bluetooth but never receives a frame. This is Apple's rule, and the app can't wo
 
 ## Roadmap
 
-Done: SRT output, adaptive bitrate, chat read-aloud, 7TV/BTTV/FFZ emotes, privacy blur, Twitch + YouTube chat.
+Done: scenes and widgets, OBS import, audio mix and soundboard, recording, scene roles and stingers, obs-websocket
+remote control, slash commands, App bot, Looks, SRTLA bonding, adaptive bitrate, read aloud, privacy blur.
 
-Next: local recording (blocked: one `AVAssetWriterInput` cannot take both the glasses' encoded HEVC and the mixer's raw frames across a mid-session fallback).
+Next: screen share, animated stingers for the scene templates, Android ([`adr/0002`](adr/0002-android-native-kotlin-port.md)).
 
 ## Credits
 
+[HaishinKit](https://github.com/HaishinKit/HaishinKit.swift) ·
 [Meta Wearables Device Access Toolkit](https://github.com/facebook/meta-wearables-dat-ios) ·
-[HaishinKit](https://github.com/HaishinKit/HaishinKit.swift) · [XcodeGen](https://github.com/yonaskolb/XcodeGen) ·
-[pymobiledevice3](https://github.com/doronz88/pymobiledevice3).
+[BELABOX srtla](https://github.com/BELABOX/srtla) · [XcodeGen](https://github.com/yonaskolb/XcodeGen) ·
+[pymobiledevice3](https://github.com/doronz88/pymobiledevice3) · [Vazirmatn](https://github.com/rastikerdar/vazirmatn).
 Built by [Saeed Kolivand](https://iamsaeed.dev) with Claude Code.

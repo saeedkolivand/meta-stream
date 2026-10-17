@@ -74,7 +74,7 @@ extension Streamer {
         guard let cam = target?.camera, cam != manualSource else { return }
         switch cam {
         case "external": guard externalCameraName != nil else { return }
-        case "glasses": guard Streamer.glassesConfigured else { return }
+        case "glasses": guard Streamer.glassesEnabled else { return }
         case "back", "front", "auto": break
         default: return
         }

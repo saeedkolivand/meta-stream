@@ -8,6 +8,8 @@ struct GoLiveControlsView: View {
     @AppStorage("blurOn") var blurOn = false
     @AppStorage("resolution") var resolution = "high"
     @AppStorage("fps") var fpsSetting = 30
+    @AppStorage("glassesEnabled") private var glassesEnabled = false
+    private var glasses: Bool { Streamer.glassesConfigured && glassesEnabled }
 
     @Binding var showChat: Bool
     @Binding var showSettings: Bool
@@ -25,7 +27,7 @@ struct GoLiveControlsView: View {
         HStack(alignment: .center, spacing: compact ? 8 : (streamer.dualCamActive ? 8 : 18)) {
             // Compact width puts these in a left-edge rail (ContentView) to keep the row within 343 pt.
             if !compact { QuickControls(size: smallSize) }
-            if Streamer.glassesConfigured {
+            if glasses {
                 StripStyles.roundButton(streamer.glassesOn ? "eyeglasses" : "eyeglasses.slash",
                                         filled: streamer.glassesOn, size: smallSize) {
                     hapticTap()
@@ -37,8 +39,8 @@ struct GoLiveControlsView: View {
             Menu {
                 Picker("Video source", selection: Binding(get: { streamer.manualSource },
                                                           set: { hapticTap(); streamer.setSource($0) })) {
-                    Label("Auto", systemImage: "wand.and.stars").tag("auto")
-                    if Streamer.glassesConfigured {
+                    if glasses {   // Auto = glasses with phone fallback, so it only means something with glasses on
+                        Label("Auto", systemImage: "wand.and.stars").tag("auto")
                         Label("Glasses", systemImage: "eyeglasses").tag("glasses")
                     }
                     Label("Back camera", systemImage: "camera.fill").tag("back")

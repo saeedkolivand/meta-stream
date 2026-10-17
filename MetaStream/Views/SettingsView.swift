@@ -14,7 +14,7 @@ struct SettingsView: View {
             List {
                 Section {
                     NavigationLink("Ingest & protocol") { IngestSettingsView() }
-                    NavigationLink("Video (glasses)") { GlassesVideoSettingsView() }
+                    if Streamer.glassesConfigured { NavigationLink("Meta glasses") { GlassesVideoSettingsView() } }
                     NavigationLink("Camera") { CameraSettingsView() }
                     NavigationLink("Scenes & widgets") { OverlaySettingsView() }
                     NavigationLink("Audio") { AudioSettingsView() }
