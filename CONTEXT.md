@@ -95,13 +95,23 @@ Nightbot, ...). Known only by its name; no platform marks bots, and the app has 
 bot beyond what it says and hears in chat.
 _Avoid_: chatbot, integration, service
 
+**App bot**:
+The app's own chat account on Kick and Twitch, which posts automatic messages and answers
+viewers. Unlike a bot, the app controls it. Automatic messages never post as the streamer.
+_Avoid_: our bot, MetaStream bot, auto-chat
+
+**Timer**:
+A message the app bot repeats in chat on a schedule while live, e.g. a social link.
+_Avoid_: scheduled message, auto message, reminder
+
 **Bot announcement**:
 A bot message containing one of the streamer's trigger words (e.g. "won", "winner"), so it is
 worth the streamer's attention while live. Every other bot message is noise.
 _Avoid_: bot alert, bot event, notification
 
 **Command**:
-A chat message starting with `!` that a bot acts on, e.g. `!giveaway start`.
+A chat message starting with `!` that a bot or the app bot acts on, e.g. `!giveaway start`,
+`!location`.
 _Avoid_: action, trigger, macro
 
 **Slash command**:
