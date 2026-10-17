@@ -26,18 +26,48 @@ final class OverlayCompositor {
     private var stinger: ScreenObject?   // the stinger (clip or drawn) on screen, kept above the scene
     private var stingerMixer: MediaMixer?
     private var stingerTask: Task<Void, Never>?   // redraws a built-in stinger's frames
+    private var prepared: Built?   // the next scene, built off-screen while a stinger plays in (see prepare)
+
+    /// A scene's screen objects and what keeps them alive, built but not necessarily on screen yet.
+    @MainActor private struct Built {
+        var key: String
+        var objects: [ScreenObject] = []
+        var feeds: [BrowserFeed] = []
+        var tasks: [Task<Void, Never>] = []
+        var stills: [(object: ImageScreenObject, piece: OverlayPiece)] = []
+        var clips: [(object: AssetScreenObject, url: URL, loop: Bool)] = []   // audio starts when shown, not when built
+        var summary = ""
+        var failed = 0
+
+        func discard() {
+            tasks.forEach { $0.cancel() }
+            feeds.forEach { $0.close() }
+        }
+    }
 
     private static let fadeSteps: [CGFloat] = [0.33, 0.66, 1]
 
+    private func sceneKey(_ scene: OverlayScene?, _ canvas: CGSize, _ mixer: MediaMixer) -> String {
+        scene.map { "\($0.name)|\(Int(canvas.width))x\(Int(canvas.height))|\(ObjectIdentifier(mixer).hashValue)|\(OverlayStore.shared.revision)" } ?? ""
+    }
+
     /// Idempotent: does nothing while scene, canvas, mixer and the store's files are unchanged. A nil scene clears the screen.
-/// With `fade`, stills on screen step down to nothing before the new scene's stills step up; dynamic widgets just pop.
+    /// With `fade`, stills on screen step down to nothing before the new scene's stills step up; dynamic widgets just pop.
+    /// A scene prepare()d for this exact key goes up in one swap instead of being built now.
     /// ponytail: a camera switch is a cut (mixer attach); only overlays fade, in 3 steps 60 ms apart.
     func apply(scene: OverlayScene?, pack: OverlayPack?, canvas: CGSize, mixer: MediaMixer, fade: Bool = false) async {
-        let want = scene.map { "\($0.name)|\(Int(canvas.width))x\(Int(canvas.height))|\(ObjectIdentifier(mixer).hashValue)|\(OverlayStore.shared.revision)" } ?? ""
+        let want = sceneKey(scene, canvas, mixer)
         guard want != key else { return }
         key = want
         generation += 1
         let gen = generation
+        if let p = prepared, p.key == want, !fade {
+            prepared = nil
+            await swapIn(p, mixer: mixer)
+            return
+        }
+        prepared?.discard()
+        prepared = nil
         let doFade = fade && !stills.isEmpty
         if doFade {
             for a in [0.66, 0.33, 0] as [CGFloat] {
@@ -48,71 +78,111 @@ final class OverlayCompositor {
         }
         await teardown()
         guard let scene, let pack, canvas.width > 0, canvas.height > 0, gen == generation else { return }
-
-        let fit = overlayFit(canvasW: pack.canvasW, canvasH: pack.canvasH, outW: canvas.width, outH: canvas.height)
-        var objs: [ScreenObject] = []
-        var newFeeds: [BrowserFeed] = []
-        var newTasks: [Task<Void, Never>] = []
-        var newStills: [(object: ImageScreenObject, piece: OverlayPiece)] = []
-        var counts: [String: Int] = [:]   // layer type -> built, for the log
-        var failed = 0
-        for l in scene.layers where l.visible {
-            switch l.type {
-            case .image, .text, .color:
-                if let w = await dynamicBuild(l, fit, canvas) {
-                    objs.append(w.object)
-                    if let t = w.task { newTasks.append(t) }
-                } else {
-                    guard let p = still(l, fit, canvas) else { failed += 1; continue }
-                    let o = await OverlayScreen.makeImage(p.rect, doFade ? OverlayRaster.withAlpha(p.bitmap, Self.fadeSteps[0]) : p.bitmap)
-                    objs.append(o)
-                    newStills.append((o, p))
-                }
-            case .chat, .alerts, .events, .qr:
-                guard let w = await widget(l, canvas) else { failed += 1; continue }
-                objs.append(w.object)
-                if let t = w.task { newTasks.append(t) }
-            case .slideshow:
-                guard let (o, task) = await slideshow(l, fit, canvas) else { failed += 1; continue }
-                objs.append(o)
-                newTasks.append(task)
-            case .media:
-                guard let (o, task) = await media(l, fit, canvas) else { failed += 1; continue }
-                objs.append(o)
-                if let task { newTasks.append(task) }
-            case .browser:
-                guard let (o, feed) = await browser(l, fit, canvas) else { failed += 1; continue }
-                objs.append(o)
-                newFeeds.append(feed)
-            }
-            counts[l.type.rawValue, default: 0] += 1
-        }
-        if !newFeeds.isEmpty { newTasks.append(snapshotLoop(newFeeds)) }
-
-        guard gen == generation else {   // superseded while building: drop it all
-            newTasks.forEach { $0.cancel() }
-            newFeeds.forEach { $0.close() }
-            await OverlayScreen.remove(objs, from: mixer)
-            return
-        }
+        let b = await build(scene, pack, canvas: canvas, key: want, fadeIn: doFade)
+        guard gen == generation else { b.discard(); return }   // superseded while building: drop it all
         self.mixer = mixer
-        objects = objs
-        feeds = newFeeds
-        tasks = newTasks
-        stills = newStills
-        await OverlayScreen.add(objs, to: mixer)
+        objects = b.objects
+        feeds = b.feeds
+        tasks = b.tasks
+        stills = b.stills
+        await OverlayScreen.add(b.objects, to: mixer)
         if let s = stinger { await OverlayScreen.raise(s, on: mixer) }
+        startClips(b, rewind: false)
         if doFade {
             for a in Self.fadeSteps.dropFirst() {
                 try? await Task.sleep(for: .milliseconds(60))
                 if gen != generation { return }
-                for st in newStills { await OverlayScreen.setImage(st.object, OverlayRaster.withAlpha(st.piece.bitmap, a)) }
+                for st in b.stills { await OverlayScreen.setImage(st.object, OverlayRaster.withAlpha(st.piece.bitmap, a)) }
             }
         }
+        built(b)
+    }
+
+    /// Builds `scene` off-screen (bitmaps, widgets, feeds) so the apply() that follows only swaps layers: the Screen
+    /// re-lays out once, under the stinger, instead of while the scene is built piece by piece.
+    func prepare(scene: OverlayScene?, pack: OverlayPack?, canvas: CGSize, mixer: MediaMixer) async {
+        prepared?.discard()
+        prepared = nil
+        let want = sceneKey(scene, canvas, mixer)
+        guard let scene, let pack, canvas.width > 0, canvas.height > 0, want != key else { return }
+        let b = await build(scene, pack, canvas: canvas, key: want, fadeIn: false)
+        guard b.key != key, prepared == nil else { b.discard(); return }   // applied (or prepared again) meanwhile
+        prepared = b
+    }
+
+    /// Old scene off, prepared scene on, in one Screen step.
+    private func swapIn(_ b: Built, mixer: MediaMixer) async {
+        SoundMix.shared.stopClips()
+        tasks.forEach { $0.cancel() }
+        feeds.forEach { $0.close() }
+        let old = objects, oldMixer = self.mixer
+        self.mixer = mixer
+        objects = b.objects
+        feeds = b.feeds
+        tasks = b.tasks
+        stills = b.stills
+        await OverlayScreen.swap(remove: old, from: oldMixer, add: b.objects, to: mixer, top: stinger)
+        startClips(b, rewind: true)
+        built(b, note: " (prebuilt)")
+    }
+
+    /// Video layers' audio into the mix; a prebuilt clip also restarts its picture, which began reading when built.
+    private func startClips(_ b: Built, rewind: Bool) {
+        for c in b.clips {
+            if rewind {
+                let (o, url) = (c.object, c.url)
+                Task { await OverlayScreen.rewind(o, url) }
+            }
+            SoundMix.shared.playClip(c.url, loop: c.loop)
+        }
+    }
+
+    private func built(_ b: Built, note: String = "") {
         // No key window yet (app still launching) means browser layers couldn't attach: build again on the next sync.
-        if failed > 0, !BrowserFeed.hostAvailable { key = "" }
-        let summary = counts.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }.joined(separator: " ")
-        applog("overlay", "scene built: \(summary) failed=\(failed)")
+        if b.failed > 0, !BrowserFeed.hostAvailable { key = "" }
+        applog("overlay", "scene built: \(b.summary) failed=\(b.failed)\(note)")
+    }
+
+    private func build(_ scene: OverlayScene, _ pack: OverlayPack, canvas: CGSize, key: String, fadeIn: Bool) async -> Built {
+        let fit = overlayFit(canvasW: pack.canvasW, canvasH: pack.canvasH, outW: canvas.width, outH: canvas.height)
+        var b = Built(key: key)
+        var counts: [String: Int] = [:]   // layer type -> built, for the log
+        for l in scene.layers where l.visible {
+            switch l.type {
+            case .image, .text, .color:
+                if let w = await dynamicBuild(l, fit, canvas) {
+                    b.objects.append(w.object)
+                    if let t = w.task { b.tasks.append(t) }
+                } else {
+                    guard let p = still(l, fit, canvas) else { b.failed += 1; continue }
+                    let o = await OverlayScreen.makeImage(p.rect, fadeIn ? OverlayRaster.withAlpha(p.bitmap, Self.fadeSteps[0]) : p.bitmap)
+                    b.objects.append(o)
+                    b.stills.append((o, p))
+                }
+            case .chat, .alerts, .events, .qr:
+                guard let w = await widget(l, canvas) else { b.failed += 1; continue }
+                b.objects.append(w.object)
+                if let t = w.task { b.tasks.append(t) }
+            case .slideshow:
+                guard let (o, task) = await slideshow(l, fit, canvas) else { b.failed += 1; continue }
+                b.objects.append(o)
+                b.tasks.append(task)
+            case .media:
+                guard let url = OverlayStore.shared.local(l.data["file"] ?? ""),
+                      let (o, task) = await media(l, fit, canvas) else { b.failed += 1; continue }
+                b.objects.append(o)
+                if let task { b.tasks.append(task) }
+                b.clips.append((o, url, l.data["loop"] == "true"))
+            case .browser:
+                guard let (o, feed) = await browser(l, fit, canvas) else { b.failed += 1; continue }
+                b.objects.append(o)
+                b.feeds.append(feed)
+            }
+            counts[l.type.rawValue, default: 0] += 1
+        }
+        if !b.feeds.isEmpty { b.tasks.append(snapshotLoop(b.feeds)) }
+        b.summary = counts.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }.joined(separator: " ")
+        return b
     }
 
     /// Plays the stinger clip once over the whole canvas, above every layer (apply() keeps it on top while a scene is
@@ -253,20 +323,18 @@ final class OverlayCompositor {
     }
 
     /// Muted clip; the task re-starts it when it ends if the OBS source loops.
-    private func media(_ l: OverlayLayer, _ fit: Fit, _ canvas: CGSize) async -> (ScreenObject, Task<Void, Never>?)? {
+    private func media(_ l: OverlayLayer, _ fit: Fit, _ canvas: CGSize) async -> (AssetScreenObject, Task<Void, Never>?)? {
         guard let url = OverlayStore.shared.local(l.data["file"] ?? ""), let size = await OverlayRaster.mediaSize(url),
               let rect = OverlayRaster.visible(box(l, size, fit, canvas), in: canvas) else { return nil }
-        let clip = await OverlayScreen.makeMedia(rect, url)
-        SoundMix.shared.playClip(url, loop: l.data["loop"] == "true")   // the clip's audio into the mix; AssetScreenObject is video only
-        let object: ScreenObject = clip
-        guard l.data["loop"] == "true" else { return (object, nil) }
+        let clip = await OverlayScreen.makeMedia(rect, url)   // video only: its audio starts when the scene goes up
+        guard l.data["loop"] == "true" else { return (clip, nil) }
         let loop: Task<Void, Never> = Task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
                 await OverlayScreen.restart(clip, url)
             }
         }
-        return (object, loop)
+        return (clip, loop)
     }
 
     private func browser(_ l: OverlayLayer, _ fit: Fit, _ canvas: CGSize) async -> (ScreenObject, BrowserFeed)? {

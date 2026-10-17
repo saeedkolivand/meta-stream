@@ -48,8 +48,10 @@ extension Streamer {
             stingerTarget = name
             let style = StingerStyle.load()
             Task {
+                let began = Date()
                 await overlays.playStinger(kind, style: style, canvas: blurCanvasSize, mixer: mixer)
-                try? await Task.sleep(for: .seconds(kind.cutSeconds(style)))
+                await prepareScene(name)   // built while the stinger plays in; the cut then only swaps layers
+                try? await Task.sleep(for: .seconds(max(0, kind.cutSeconds(style) - Date().timeIntervalSince(began))))
                 switchScene(stingerTarget ?? name)
                 stingerTarget = nil
                 try? await Task.sleep(for: .seconds(kind.seconds(style) - kind.cutSeconds(style) + 0.15))   // a beat past the end, so it logs and clears itself
@@ -69,14 +71,23 @@ extension Streamer {
                 stingerTarget = nil
                 return
             }
+            let began = Date()
             await overlays.playStinger(url, canvas: blurCanvasSize, mixer: mixer)
             SoundMix.shared.playStinger(url)
-            try? await Task.sleep(for: .seconds(secs * store.stingerCut))
+            await prepareScene(name)
+            try? await Task.sleep(for: .seconds(max(0, secs * store.stingerCut - Date().timeIntervalSince(began))))
             switchScene(stingerTarget ?? name)
             stingerTarget = nil
             try? await Task.sleep(for: .seconds(secs * (1 - store.stingerCut)))
             await overlays.removeStinger()
         }
+    }
+
+    /// Builds the scene a stinger is heading to, so the cut is one swap. Nothing to build when overlays are off.
+    private func prepareScene(_ name: String) async {
+        let store = OverlayStore.shared
+        guard overlaysUsable, let target = store.scenes.first(where: { $0.name == name }) else { return }
+        await overlays.prepare(scene: target, pack: store.pack, canvas: blurCanvasSize, mixer: mixer)
     }
 
     private func switchScene(_ name: String) {

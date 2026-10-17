@@ -70,6 +70,20 @@ enum OverlayScreen {
         try? mixer.screen.addChild(o)
     }
 
+    /// Old scene off, new scene on, stinger back on top, in one actor hop: each add/remove makes the Screen re-lay out
+    /// every child, so doing it all at once costs one re-layout frame.
+    @ScreenActor static func swap(remove old: [ScreenObject], from oldMixer: MediaMixer?, add new: [ScreenObject],
+                                  to mixer: MediaMixer, top: ScreenObject?) {
+        if let oldMixer { remove(old, from: oldMixer) }
+        add(new, to: mixer)
+        if let top { raise(top, on: mixer) }
+    }
+
+    /// Plays a clip from the start again (a prebuilt clip began reading when it was built, not when it went up).
+    @ScreenActor static func rewind(_ o: AssetScreenObject, _ url: URL) {
+        try? o.startReading(AVURLAsset(url: url))
+    }
+
     @ScreenActor static func remove(_ objects: [ScreenObject], from mixer: MediaMixer) {
         for o in objects {
             if let m = o as? AssetScreenObject { m.cancelReading() }
