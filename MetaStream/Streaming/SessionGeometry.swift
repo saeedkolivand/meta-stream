@@ -418,7 +418,7 @@ extension Streamer {
     /// Turning it off also drops the blur effect first (as before). Idempotent on offscreenOn, so a
     /// redundant call (stopLive() forcing `false` when it was never on, say) costs nothing.
     func setOffscreenMode(_ on: Bool) async {
-        if !on { await setBlurEffect(false) }
+        if !on { await setBlurEffect(false); await setLookEffect(false) }
         guard offscreenOn != on else { return }
         offscreenOn = on
         var vm = await mixer.videoMixerSettings
@@ -444,7 +444,8 @@ extension Streamer {
     func syncBlurEffect() async {
         // Read once: `enabled` is a plain nonisolated(unsafe) var ContentView can flip mid-await.
         let blur = privacy?.enabled == true
-        guard blur || dualCamActive || overlaysWanted else { await setOffscreenMode(false); await syncOverlays(); return }
+        let look = lookWanted
+        guard blur || look || dualCamActive || overlaysWanted else { await setOffscreenMode(false); await syncOverlays(); return }
         if !offscreenOn {
             // Offscreen renders into Screen.size, which defaults to 1280x720 landscape. Without this a
             // portrait frame gets fitted into a landscape canvas and the picture shrinks to a stamp.
@@ -461,7 +462,8 @@ extension Streamer {
             await pushOverlayLayout()
         }
         await setBlurEffect(blur)
-        await syncOverlays()   // before the loop starts: objects must match Screen.size by the first rendered frame
+        await setLookEffect(look)
+        await syncOverlays()  // before the loop starts: objects must match Screen.size by the first rendered frame
         await setOffscreenMode(true)
     }
 

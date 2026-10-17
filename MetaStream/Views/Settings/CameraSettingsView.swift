@@ -1,5 +1,6 @@
 import AVFoundation
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct CameraSettingsView: View {
     @AppStorage("fallbackCamera") var fallbackCamera = "back"
@@ -41,6 +42,12 @@ struct CameraSettingsView: View {
     // changes what's probed (see refresh()'s doc).
     @State private var cap: CameraCapabilities?
     @State private var formatCaps: CameraFormatCapabilities?
+
+    // Look of the live source (streamer.lookKey); saved per source on every change.
+    @State private var look = Look()
+    @State private var luts: [String] = []
+    @State private var importingLUT = false
+    @State private var lutError: String?
 
     private var position: AVCaptureDevice.Position { fallbackCamera == "front" ? .front : .back }
 
@@ -168,6 +175,34 @@ struct CameraSettingsView: View {
                 }
 
                 Section {
+                    labeledSlider("Brightness", valueText: String(format: "%+.2f", look.brightness), value: $look.brightness, range: -0.5...0.5)
+                    labeledSlider("Contrast", valueText: String(format: "%.2f", look.contrast), value: $look.contrast, range: 0.5...1.5)
+                    labeledSlider("Saturation", valueText: String(format: "%.2f", look.saturation), value: $look.saturation, range: 0...2)
+                    labeledSlider("Warmth", valueText: String(format: "%+.2f", look.warmth), value: $look.warmth, range: -1...1)
+                    Picker("LUT", selection: $look.lut) {
+                        Text("None").tag(String?.none)
+                        ForEach(luts, id: \.self) { Text($0).tag(String?.some($0)) }
+                    }
+                    Button("Import…") { importingLUT = true }
+                    ForEach(luts, id: \.self) { Text($0).foregroundStyle(.secondary) }
+                        .onDelete { offsets in
+                            for i in offsets {
+                                try? FileManager.default.removeItem(at: Look.folder.appending(path: luts[i]))
+                                if look.lut == luts[i] { look.lut = nil }
+                            }
+                            luts = Look.files()
+                        }
+                    if let lutError { Text(lutError).foregroundStyle(.orange) }
+                    if streamer.live, !streamer.transcoding, streamer.lookKey == "glasses", !look.isNeutral {
+                        Text("Applies from the next stream.").foregroundStyle(.orange)
+                    }
+                    Button("Reset", role: .destructive) { look = Look() }
+                        .disabled(look.isNeutral)
+                } header: { Text("Look (\(streamer.lookKey))") } footer: {
+                    Text("A look changes the picture, so the glasses' video is re-encoded (H.264) while it's not neutral.")
+                }
+
+                Section {
                     Toggle("Center Stage (front camera)", isOn: $centerStage)
                         .onChange(of: centerStage) { _, _ in streamer.applyCenterStage() }
                 } footer: {
@@ -214,7 +249,16 @@ struct CameraSettingsView: View {
         }
         .navigationTitle("Camera")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear(perform: refresh)
+        .onAppear { refresh(); look = Look.load(streamer.lookKey); luts = Look.files() }
+        .onChange(of: streamer.lookKey) { _, k in look = Look.load(k) }
+        .onChange(of: look) { _, l in Look.save(l, streamer.lookKey) }
+        .fileImporter(isPresented: $importingLUT, allowedContentTypes: [UTType(filenameExtension: "cube") ?? .data]) { result in
+            guard case .success(let url) = result else { return }
+            switch Look.importLUT(url) {
+            case .success(let name): lutError = nil; luts = Look.files(); look.lut = name
+            case .failure(let e): lutError = e.localizedDescription
+            }
+        }
         .onChange(of: phoneHeight) { _, newHeight in
             // Changing resolution can invalidate the stored fps/stabilisation (they're interdependent --
             // a format that does 4K60 may not do 4K120) -- snap both to something this resolution actually

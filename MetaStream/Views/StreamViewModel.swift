@@ -33,7 +33,8 @@ final class StreamViewModel: ObservableObject {
         // Dual camera is the same story: the face-cam overlay (and glasses video, which only reaches the mixer
         // as decoded frames) is composited on the phone, so it re-encodes whatever codec was picked.
         // Precedence: blur / dual camera > explicit codec > protocol capability > destination table.
-        if blurOn || dualCamOn { return "h264" }
+        // A non-neutral glasses Look is the same story: passthrough can't be graded (adr/0001).
+        if blurOn || dualCamOn || !Look.load("glasses").isNeutral { return "h264" }
         guard codecPref == "auto" else { return codecPref }
         // SRT carries whatever the server decodes, and passthrough is the entire reason to use it:
         // no transcode means no PiP window needed to keep streaming in the background.

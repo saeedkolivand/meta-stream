@@ -179,6 +179,9 @@ final class Streamer: ObservableObject {
 
     var blurEffectActive = false   // mirrors privacy.enabled -- tracks whether the effect is registered on mixer.screen
 
+    let lookEffect = LookEffect()
+    var lookEffectActive = false   // whether lookEffect is registered on mixer.screen, see Look.swift
+
     var lastFrames = 0
 
     var lastBytes = 0

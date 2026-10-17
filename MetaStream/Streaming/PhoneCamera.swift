@@ -454,7 +454,7 @@ extension Streamer {
         mixer = MediaMixer(captureSessionMode: multi ? .multi : .single, multiTrackAudioMixingEnabled: true)
         mixerIsMulti = multi
         mixerWired = false; wiredUplinkOutput = nil
-        blurEffectActive = false; offscreenOn = false
+        blurEffectActive = false; lookEffectActive = false; offscreenOn = false
         overlayObject = nil
         dualCamSwapped = false
         dualCamActive = false
