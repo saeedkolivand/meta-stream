@@ -191,7 +191,10 @@ final class AppBot: ObservableObject {
         let key = e.origin + "|" + cmd
         guard Self.commands.contains(cmd), platformOn(e.origin), flag("botCmd" + cmd.dropFirst().capitalized) else { return }
         let now = Date()
-        guard Self.cooldownOK(last: answered[key], now: now, privileged: !Set(e.badges).isDisjoint(with: ["broadcaster", "moderator"])) else { return }
+        let privileged = !Set(e.badges).isDisjoint(with: ["broadcaster", "moderator"])
+        // Offline (test mode) only the streamer and mods get answers: !location to anyone off-stream would say where you are.
+        guard streamer?.live == true || privileged else { return }
+        guard Self.cooldownOK(last: answered[key], now: now, privileged: privileged) else { return }
         answered[key] = now
         let name = (e.origin == "kick" ? platforms?.kickUser : platforms?.twitchUser) ?? ""
         if let a = answer(cmd, name.isEmpty ? "The streamer" : name) { say(e.origin, a) }

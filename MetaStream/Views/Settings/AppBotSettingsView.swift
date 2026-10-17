@@ -21,7 +21,7 @@ struct AppBotSettingsView: View {
                 Toggle("Test mode", isOn: $testMode)
                 if !bot.status.isEmpty { Text(bot.status).font(.footnote).foregroundStyle(.secondary) }
             } footer: {
-                Text("Posts only while you are live, never as you. Test mode lets it answer commands and post notices while offline too, so you can try it from your own chat (timers still wait for live); turn it off when done. Kick: create the bot once in your Kick developer app settings. Twitch: connect a second account below (make it a mod of your channel).")
+                Text("Posts only while you are live, never as you. Test mode lets it answer you and your mods (no one else) and post notices while offline, so you can try it from your own chat (timers still wait for live); turn it off when done. Kick: create the bot once in your Kick developer app settings. Twitch: connect a second account below (make it a mod of your channel).")
             }
             Section("Twitch bot account") {
                 if bot.twitchBotName.isEmpty {
