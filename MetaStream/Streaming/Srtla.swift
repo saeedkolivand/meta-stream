@@ -51,7 +51,10 @@ final class Srtla: @unchecked Sendable {
                     let l = try NWListener(using: p)
                     listener = l; started = k
                     l.newConnectionHandler = { [self] c in
-                        local?.cancel(); local = c      // libsrt reconnects from a fresh socket: the newest one is the peer
+                        // libsrt reconnects from a fresh socket: the newest one is the peer. ponytail: the listener is bound to
+                        // loopback, so only processes on this device can reach it; another app on the phone grabbing the port
+                        // between reconnects is out of scope.
+                        local?.cancel(); local = c
                         c.start(queue: queue); recvLocal(c)
                     }
                     l.stateUpdateHandler = { [self] s in
@@ -230,7 +233,7 @@ final class Srtla: @unchecked Sendable {
                 let v = Self.be32(b, i); i += 4
                 if v & 0x8000_0000 != 0, i + 4 <= b.count {   // range: first has the high bit, next is the last lost
                     let last = Self.be32(b, i); i += 4
-                    if v & 0x7FFF_FFFF <= last { for s in (v & 0x7FFF_FFFF)...last { nak(Int32(truncatingIfNeeded: s)) } }
+                    if v & 0x7FFF_FFFF <= last { nakRange(Int32(v & 0x7FFF_FFFF), Int32(truncatingIfNeeded: last)) }
                 } else { nak(Int32(truncatingIfNeeded: v)) }
             }
         case Self.ack:   // SRTLA ACK: a list of acknowledged sequence numbers
@@ -247,6 +250,16 @@ final class Srtla: @unchecked Sendable {
     private func nak(_ s: Int32) {   // register_nak: shrink the window of the link that carried it
         for c in links {
             if let i = c.log.firstIndex(of: s) { c.log[i] = -1; c.window = max(c.window - Self.winDecr, Self.winMin); return }
+        }
+    }
+
+    /// A NAK range checks each link's 256-entry log instead of walking the range: a hostile or broken receiver
+    /// could name two billion sequence numbers in one packet.
+    private func nakRange(_ first: Int32, _ last: Int32) {
+        for c in links {
+            for i in 0..<Self.logSize where c.log[i] >= first && c.log[i] <= last {
+                c.log[i] = -1; c.window = max(c.window - Self.winDecr, Self.winMin)
+            }
         }
     }
 
