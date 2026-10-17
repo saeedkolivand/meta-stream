@@ -63,69 +63,40 @@ enum StingerKind: String, CaseIterable, Sendable {
     func seconds(_ s: StingerStyle) -> Double { (span.end - span.start) * Self.loopSeconds / speed(s) }
     func cutSeconds(_ s: StingerStyle) -> Double { (span.cut - span.start) * Self.loopSeconds / speed(s) }
 
-    /// One frame `t` seconds in, into a top-left-origin context of `size` (UIKit drawing is pushed for text).
-    func draw(_ c: CGContext, size: CGSize, t: Double, style: StingerStyle) {
+    /// The frame `t` seconds in, as a Core Image recipe in top-left canvas coordinates (see StingerCanvas).
+    func art(_ k: StingerCanvas, t: Double, style: StingerStyle) -> CIImage {
         let q = span.start + t * speed(style) / Self.loopSeconds
         switch self {
-        case .lens: StingerArt.lens(c, size, q, style)
-        case .aperture: StingerArt.aperture(c, size, q, style)
-        case .route: StingerArt.route(c, size, q, style)
-        case .viewfinder: StingerArt.viewfinder(c, size, q, style)
-        case .liquid: StingerArt.liquid(c, size, q, style)
-        case .ripple: StingerArt.ripple(c, size, q, style)
-        case .tunnel: StingerArt.tunnel(c, size, q, style)
-        case .burn: StingerArt.burn(c, size, q, style)
+        case .lens: return StingerArt.lens(k, q, style)
+        case .aperture: return StingerArt.aperture(k, q, style)
+        case .route: return StingerArt.route(k, q, style)
+        case .viewfinder: return StingerArt.viewfinder(k, q, style)
+        case .liquid: return StingerArt.liquid(k, q, style)
+        case .ripple: return StingerArt.ripple(k, q, style)
+        case .tunnel: return StingerArt.tunnel(k, q, style)
+        case .burn: return StingerArt.burn(k, q, style)
         }
     }
 
-    /// A full-resolution frame as one bitmap (tests; the stream uses `ciFrame`).
-    func frame(size: CGSize, t: Double, style: StingerStyle) -> OverlayBitmap? {
-        let w = Int(size.width.rounded()), h = Int(size.height.rounded())
-        guard w > 0, h > 0, let c = Self.context(w, h) else { return nil }
-        UIGraphicsPushContext(c)
-        draw(c, size: CGSize(width: w, height: h), t: t, style: style)
-        UIGraphicsPopContext()
-        return c.makeImage().map { OverlayBitmap(image: $0) }
+    /// The stream's frame: the art flipped into Core Image's bottom-left space and cut to the canvas. The GPU renderer
+    /// evaluates it on the GPU while compositing; nothing here touches pixels.
+    func ciFrame(_ k: StingerCanvas, t: Double, style: StingerStyle) -> CIImage {
+        art(k, t: t, style: style)
+            .transformed(by: CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: k.size.height))
+            .cropped(to: k.bounds)
     }
 
-    /// The stream's frame, for the GPU renderer. Shapes draw at `shapeScale` of the canvas and are scaled up on the GPU
-    /// (big flat fills lose nothing, and the CPU fills a quarter of the pixels); the name draws full size on its own
-    /// layer (it is the only thing UIKit draws, into the pushed context) so the text stays sharp.
-    func ciFrame(size: CGSize, t: Double, style: StingerStyle, shapeScale: CGFloat = 0.5) -> CIImage? {
-        let w = Int(size.width.rounded()), h = Int(size.height.rounded())
-        let sw = max(1, Int((CGFloat(w) * shapeScale).rounded())), sh = max(1, Int((CGFloat(h) * shapeScale).rounded()))
-        guard w > 0, h > 0, let shapes = Self.context(sw, sh) else { return nil }
-        shapes.scaleBy(x: CGFloat(sw) / CGFloat(w), y: CGFloat(sh) / CGFloat(h))   // the art keeps drawing in canvas units
-        let text = style.showName && !style.name.isEmpty ? Self.context(w, h) : nil
-        UIGraphicsPushContext(text ?? shapes)
-        draw(shapes, size: CGSize(width: w, height: h), t: t, style: style)
-        UIGraphicsPopContext()
-        guard let art = shapes.makeImage() else { return nil }
-        var image = CIImage(cgImage: art).transformed(by: CGAffineTransform(scaleX: CGFloat(w) / CGFloat(sw), y: CGFloat(h) / CGFloat(sh)))
-        if let label = text?.makeImage() { image = CIImage(cgImage: label).composited(over: image) }
-        return image.cropped(to: CGRect(x: 0, y: 0, width: w, height: h))
-    }
-
-    /// 8-bit sRGB BGRA premultiplied (what UIGraphicsImageRenderer gives OverlayRaster), origin top-left like UIKit.
-    private static func context(_ w: Int, _ h: Int) -> CGContext? {
-        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
-              let c = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0, space: space,
-                                bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
-        else { return nil }
-        c.translateBy(x: 0, y: CGFloat(h))
-        c.scaleBy(x: 1, y: -1)
-        return c
+    /// A frame rendered to an 8-bit sRGB BGRA bitmap (the settings preview, tests).
+    func frame(_ k: StingerCanvas, t: Double, style: StingerStyle, context: CIContext) -> CGImage? {
+        context.createCGImage(ciFrame(k, t: t, style: style), from: k.bounds, format: .BGRA8,
+                              colorSpace: CGColorSpace(name: CGColorSpace.sRGB))
     }
 }
 
-/// The art. Each function lives in StingerArt+*.swift and draws one frame for loop position `q`.
-/// Geometry: the boards are 1920x1080. Things laid out around the centre scale by `unit(size)` (short side / 1080);
-/// anything that must cover the whole frame sizes from `halfDiagonal(size)` so portrait canvases are covered too.
+/// The art. Each function lives in StingerArt+*.swift and returns one frame for loop position `q`, built from
+/// StingerCanvas recipes. Geometry: the boards are 1920x1080. Things laid out around the centre scale by `k.unit`
+/// (short side / 1080); anything that must cover the whole frame sizes from `k.halfDiagonal` so portrait is covered too.
 enum StingerArt {
-    static func unit(_ size: CGSize) -> CGFloat { min(size.width, size.height) / 1080 }
-    static func center(_ size: CGSize) -> CGPoint { CGPoint(x: size.width / 2, y: size.height / 2) }
-    static func halfDiagonal(_ size: CGSize) -> CGFloat { (size.width * size.width + size.height * size.height).squareRoot() / 2 }
-
     static func color(_ argb: UInt32, alpha: CGFloat = 1) -> CGColor {
         CGColor(srgbRed: CGFloat((argb >> 16) & 0xFF) / 255, green: CGFloat((argb >> 8) & 0xFF) / 255,
                 blue: CGFloat(argb & 0xFF) / 255, alpha: CGFloat((argb >> 24) & 0xFF) / 255 * alpha)
@@ -141,20 +112,6 @@ enum StingerArt {
     static func fg(on ink: UInt32) -> UInt32 {
         let lum = 0.299 * Double((ink >> 16) & 0xFF) + 0.587 * Double((ink >> 8) & 0xFF) + 0.114 * Double(ink & 0xFF)
         return lum > 150 ? 0xFF0B_0B0C : 0xFFF2_F1EC
-    }
-
-    /// Draws `text` centred on `at` (UIKit coordinates; the caller's context is pushed). `tracking` is in em.
-    static func name(_ text: String, at: CGPoint, size: CGFloat, weight: UIFont.Weight = .semibold, color argb: UInt32,
-                     alpha: CGFloat = 1, tracking: CGFloat = -0.02, scale: CGFloat = 1) {
-        guard !text.isEmpty, alpha > 0.001 else { return }
-        let font = WidgetFonts.uiFont(face: "", size: size * scale, weight: weight)
-        let str = NSAttributedString(string: text, attributes: [
-            .font: font, .kern: tracking * size * scale,
-            .foregroundColor: UIColor(cgColor: color(argb, alpha: alpha)),
-        ])
-        let b = str.size()
-        // Kerning trails the last glyph too; shift by half of it to stay optically centred (as the splash does).
-        str.draw(at: CGPoint(x: at.x - b.width / 2 + tracking * size * scale / 2, y: at.y - b.height / 2))
     }
 }
 

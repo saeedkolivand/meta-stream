@@ -93,12 +93,13 @@ final class BrowserFeed: NSObject, WKNavigationDelegate {
         ["http", "https", "about"].contains(navigationAction.request.url?.scheme?.lowercased() ?? "") ? .allow : .cancel
     }
 
-    /// One frame: snapshot the page, redraw it into the box, hand the bitmap to the screen object.
+    /// One frame: snapshot the page and hand it to the screen object (redrawn into the box only when it doesn't fit as is).
     func pump() async {
         let cfg = WKSnapshotConfiguration()
         cfg.snapshotWidth = NSNumber(value: Double(box.width / max(web.traitCollection.displayScale, 1)))   // points -> ~box.width px
         guard let img = try? await web.takeSnapshot(configuration: cfg),
-              let piece = OverlayRaster.render(box, canvas: canvas, draw: { img.draw(in: $0) }) else { return }
+              let piece = img.cgImage.flatMap({ OverlayRaster.direct($0, box: box, canvas: canvas) })
+                ?? OverlayRaster.render(box, canvas: canvas, draw: { img.draw(in: $0) }) else { return }
         await OverlayScreen.setImage(target, piece.bitmap)
     }
 

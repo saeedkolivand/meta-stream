@@ -13,7 +13,9 @@ enum WidgetRaster {
         r.scale = box.width / natural.width
         r.isOpaque = false
         guard let cg = r.cgImage else { return nil }
-        return OverlayRaster.render(box, canvas: canvas) { UIImage(cgImage: cg).draw(in: $0) }
+        // Usually the render already is the box: skip the second CPU pass (only a box off the canvas needs clipping).
+        return OverlayRaster.direct(cg, box: box, canvas: canvas)
+            ?? OverlayRaster.render(box, canvas: canvas) { UIImage(cgImage: cg).draw(in: $0) }
     }
 
     /// Sleep length that doubles when the phone is hot, same backoff as the browser snapshot loop.

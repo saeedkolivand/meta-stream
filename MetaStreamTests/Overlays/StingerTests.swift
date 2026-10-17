@@ -1,3 +1,4 @@
+import CoreImage
 import XCTest
 @testable import MetaStream
 
@@ -29,8 +30,10 @@ final class StingerTests: XCTestCase {
     }
 
     /// Alpha at the corners, edge midpoints and centre of one frame.
+    private let context = CIContext()
+
     private func alphas(_ kind: StingerKind, _ size: CGSize, _ t: Double, _ style: StingerStyle) -> [UInt8] {
-        guard let image = kind.frame(size: size, t: t, style: style)?.image,
+        guard let image = kind.frame(StingerCanvas(size: size), t: t, style: style, context: context),
               let data = image.dataProvider?.data, let bytes = CFDataGetBytePtr(data) else { return [] }
         let w = image.width, h = image.height, row = image.bytesPerRow
         var out: [UInt8] = []

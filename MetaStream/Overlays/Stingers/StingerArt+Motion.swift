@@ -1,5 +1,7 @@
 // Liquid, Ripple, Tunnel and Film burn: the motion stingers, ported from their design boards (see Stinger.swift).
+// Core Image recipes (see StingerCanvas): the GPU draws them.
 import CoreGraphics
+import CoreImage
 import UIKit
 
 extension StingerArt {
@@ -11,122 +13,89 @@ extension StingerArt {
         (820, 1180, 240, 0.04), (2000, 900, 260, 0.026), (640, 640, 220, 0.034), (1360, 140, 220, 0.046),
     ]
 
-    /// Two layers of drops (accent, then ink) that swell to cover the frame and shrink away; merged as a metaball field.
-    static func liquid(_ c: CGContext, _ size: CGSize, _ q: Double, _ s: StingerStyle) {
+    /// Two layers of drops (accent, then ink) that swell to cover the frame and shrink away; the board's goo filter merges them.
+    static func liquid(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
         let curve = Curve(0.65, 0, 0.35, 1)
-        goo(c, size, q, curve, [(0.23, 0), (0.38, 1), (0.57, 1), (0.72, 0)], s.accent)
-        goo(c, size, q, curve, [(0.25, 0), (0.40, 1), (0.55, 1), (0.70, 0)], s.ink)
+        var layers = [
+            gooLayer(k, q, curve, [(0.23, 0), (0.38, 1), (0.57, 1), (0.72, 0)], s.accent),
+            gooLayer(k, q, curve, [(0.25, 0), (0.40, 1), (0.55, 1), (0.70, 0)], s.ink),
+        ]
         if s.showName && !s.name.isEmpty {
-            let u = unit(size)
+            let u = k.unit
             let o = Curve(0.33, 1, 0.68, 1)
             let a = o.track(q, [(0.46, 0), (0.49, 1), (0.53, 1), (0.55, 0)])
             let dy = o.track(q, [(0.46, 16), (0.49, 0), (0.53, 0), (0.55, 0)])
-            name(s.name, at: CGPoint(x: size.width / 2, y: size.height / 2 + dy * u), size: 56 * u,
-                 color: fg(on: s.ink), alpha: a)
+            layers.append(k.text(s.name, at: CGPoint(x: k.center.x, y: k.center.y + dy * u), size: 56 * u,
+                                 color: fg(on: s.ink), alpha: a))
         }
+        return k.stack(layers)
     }
 
-    // ponytail: low-res field (about size/6) upscaled by the mask clip; edges are soft like the board's blur.
-    private static func goo(_ c: CGContext, _ size: CGSize, _ q: Double, _ curve: Curve, _ stops: [(Double, Double)], _ argb: UInt32) {
-        let m = Double(max(size.width, size.height)) / 1920
-        // blob centre and squared radius now: the board's scale k = 1500 / r makes every drop 1500 board px at full size
-        let blobs: [(x: Double, y: Double, r2: Double)] = liquidSpec.map { spec in
-            let (x, y, _, d) = spec
-            let r = 1500 * curve.track(q - d, stops) * m
-            return ((x - 120) / 1920 * Double(size.width), (y - 120) / 1080 * Double(size.height), r * r)
+    private static func gooLayer(_ k: StingerCanvas, _ q: Double, _ curve: Curve, _ stops: [(Double, Double)], _ argb: UInt32) -> CIImage {
+        let m = max(k.size.width, k.size.height) / 1920
+        let limit = k.bounds.insetBy(dx: -200, dy: -200)
+        // the board's scale k = 1500 / r makes every drop 1500 board px at full size
+        var blobs: [CIImage] = []
+        for (x, y, _, d) in liquidSpec {
+            let r = 1500 * curve.track(q - d, stops) * Double(m)
+            guard r > 0.5 else { continue }
+            let c = CGPoint(x: (x - 120) / 1920 * Double(k.size.width), y: (y - 120) / 1080 * Double(k.size.height))
+            blobs.append(k.disc(c, CGFloat(r), 0xFFFF_FFFF).cropped(to: limit))
         }
-        guard blobs.contains(where: { $0.r2 > 1e-6 }) else { return }
-        let gw = max(1, Int((size.width / 6).rounded())), gh = max(1, Int((size.height / 6).rounded()))
-        var buf = [UInt8](repeating: 0, count: gw * gh)
-        for row in 0..<gh {
-            // CGImage row 0 is the image top, which a flipped (top-left origin) context draws at the bottom: store reversed.
-            let cy = (Double(gh - 1 - row) + 0.5) / Double(gh) * Double(size.height)
-            for col in 0..<gw {
-                let cx = (Double(col) + 0.5) / Double(gw) * Double(size.width)
-                var f = 0.0
-                for b in blobs where b.r2 > 1e-6 {
-                    let dx = cx - b.x, dy = cy - b.y
-                    f += b.r2 / max(dx * dx + dy * dy, 1e-6)
-                }
-                buf[row * gw + col] = UInt8(min(max((f - 0.8) / 0.4, 0), 1) * 255)
-            }
-        }
-        guard let provider = CGDataProvider(data: Data(buf) as CFData),
-              let mask = CGImage(width: gw, height: gh, bitsPerComponent: 8, bitsPerPixel: 8, bytesPerRow: gw,
-                                 space: CGColorSpaceCreateDeviceGray(),
-                                 bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue), provider: provider,
-                                 decode: nil, shouldInterpolate: true, intent: .defaultIntent)
-        else { return }
-        let rect = CGRect(origin: .zero, size: size)
-        c.saveGState()
-        c.interpolationQuality = .high
-        c.clip(to: rect, mask: mask)
-        c.setFillColor(color(argb))
-        c.fill(rect)
-        c.restoreGState()
+        guard !blobs.isEmpty else { return .empty() }
+        return k.goo(k.stack(blobs), sigma: 36 * m, argb)
     }
 
     // MARK: Ripple
 
     /// Four rings grow in from the centre (circular clip) and open out again through a growing central hole.
-    static func ripple(_ c: CGContext, _ size: CGSize, _ q: Double, _ s: StingerStyle) {
+    static func ripple(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
         let curve = Curve(0.65, 0, 0.35, 1)
-        let hd = Double(halfDiagonal(size))
-        let cen = center(size)
+        let hd = Double(k.halfDiagonal)
+        let cen = k.center
         let colors = [s.accent, mixWhite(s.ink, 0.08), s.accent, s.ink]
+        var layers: [CIImage] = []
         for (i, argb) in colors.enumerated() {
             let pct = curve.track(q - Double(i) * 0.02, [(0.25, 0), (0.40, 80)])
             let rIn = pct / 80 * hd * 1.02
             let hole = curve.track(q - Double(3 - i) * 0.03, [(0.53, 0), (0.68, 1300)]) / 1101 * hd
             guard rIn > 0.5, hole < rIn else { continue }
-            let p = CGMutablePath()
-            p.addEllipse(in: CGRect(x: cen.x - rIn, y: cen.y - rIn, width: rIn * 2, height: rIn * 2))
-            if hole > 0.5 { p.addEllipse(in: CGRect(x: cen.x - hole, y: cen.y - hole, width: hole * 2, height: hole * 2)) }
-            c.saveGState()
-            c.addPath(p)
-            c.setFillColor(color(argb))
-            c.fillPath(using: .evenOdd)
-            c.restoreGState()
+            layers.append(k.ring(cen, inner: hole > 0.5 ? CGFloat(hole) : 0, outer: CGFloat(rIn), argb))
         }
         if s.showName && !s.name.isEmpty {
             let o = Curve(0.33, 1, 0.68, 1)
-            name(s.name, at: cen, size: 56 * unit(size), color: fg(on: s.ink),
-                 alpha: o.track(q, [(0.44, 0), (0.48, 1), (0.52, 1), (0.54, 0)]),
-                 scale: o.track(q, [(0.44, 0.97), (0.48, 1), (0.52, 1), (0.54, 1.02)]))
+            layers.append(k.text(s.name, at: cen, size: 56 * k.unit, color: fg(on: s.ink),
+                                 alpha: o.track(q, [(0.44, 0), (0.48, 1), (0.52, 1), (0.54, 0)]),
+                                 scale: o.track(q, [(0.44, 0.97), (0.48, 1), (0.52, 1), (0.54, 1.02)])))
         }
+        return k.stack(layers)
     }
 
     // MARK: Tunnel
 
     /// Five rounded frames fly out of the centre one after another, spinning, then fold back in reverse.
-    static func tunnel(_ c: CGContext, _ size: CGSize, _ q: Double, _ s: StingerStyle) {
+    static func tunnel(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
         let curve = Curve(0.76, 0, 0.24, 1)
-        let u = unit(size)
-        let cen = center(size)
+        let u = k.unit
+        let cen = k.center
         let colors = [s.accent, mixWhite(s.ink, 0.12), mixWhite(s.ink, 0.07), mixWhite(s.ink, 0.03), s.ink]
-        let w = size.width + 220 * u, h = size.height + 220 * u
+        let w = k.size.width + 220 * u, h = k.size.height + 220 * u
+        let rect = CGRect(x: cen.x - w / 2, y: cen.y - h / 2, width: w, height: h)
+        var layers: [CIImage] = []
         for (i, argb) in colors.enumerated() {
             let qi = q - Double(i) * 0.015, qo = q - Double(4 - i) * 0.03
             let sc = curve.track(qi, [(0.25, 0), (0.41, 1)]) * curve.track(qo, [(0.55, 1), (0.70, 0)])
             let rot = curve.track(qi, [(0.25, -10), (0.41, 0)]) + curve.track(qo, [(0.55, 0), (0.70, 10)])
             guard sc > 0.001 else { continue }
-            c.saveGState()
-            c.translateBy(x: cen.x, y: cen.y)
-            c.rotate(by: CGFloat(rot * .pi / 180))
-            c.scaleBy(x: CGFloat(sc), y: CGFloat(sc))
-            let p = CGMutablePath()
-            p.addRoundedRect(in: CGRect(x: -w / 2, y: -h / 2, width: w, height: h), cornerWidth: 72 * u, cornerHeight: 72 * u)
-            c.addPath(p)
-            c.setFillColor(color(argb))
-            c.fillPath()
-            c.restoreGState()
+            layers.append(k.transform(k.roundedRect(rect, radius: 72 * u, argb), about: cen, scale: CGFloat(sc), rotate: CGFloat(rot)))
         }
         if s.showName && !s.name.isEmpty {
             let o = Curve(0.33, 1, 0.68, 1)
-            name(s.name, at: cen, size: 56 * u, color: fg(on: s.ink),
-                 alpha: o.track(q, [(0.47, 0), (0.50, 1), (0.54, 1), (0.56, 0)]),
-                 scale: o.track(q, [(0.47, 0.9), (0.50, 1), (0.54, 1), (0.56, 0.9)]))
+            layers.append(k.text(s.name, at: cen, size: 56 * u, color: fg(on: s.ink),
+                                 alpha: o.track(q, [(0.47, 0), (0.50, 1), (0.54, 1), (0.56, 0)]),
+                                 scale: o.track(q, [(0.47, 0.9), (0.50, 1), (0.54, 1), (0.56, 0.9)])))
         }
+        return k.stack(layers)
     }
 
     // MARK: Film burn
@@ -141,12 +110,11 @@ extension StingerArt {
     }
 
     /// Three glowing blobs sweep across, then a white-hot flash peaks at the centre and fades.
-    static func burn(_ c: CGContext, _ size: CGSize, _ q: Double, _ s: StingerStyle) {
+    static func burn(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
         let tone = burnTone(s)
         let curve = Curve(0.45, 0, 0.55, 1)
-        let k = CGFloat(halfDiagonal(size)) / 1101
-        let cen = center(size)
-        let space = CGColorSpace(name: CGColorSpace.sRGB)
+        let kk = k.halfDiagonal / 1101
+        let cen = k.center
         // (colour, clear-at fraction, start, end, from (x, y), to (x, y)) per blob
         let blobs: [(UInt32, Double, Double, Double, (Double, Double), (Double, Double))] = [
             (tone[0], 0.62, 0.25, 0.70, (-2400, -120), (2400, 80)),
@@ -155,31 +123,28 @@ extension StingerArt {
         ]
         // ponytail: the board blends these with mix-blend-mode screen against the camera, which an overlay bitmap can't
         // do (the stream composites it with normal alpha), so the blobs read slightly darker over bright video.
+        var acc: CIImage?
         for (argb, clearAt, t0, t1, a, b) in blobs where q > t0 && q < t1 {
             let tx = curve.track(q, [(t0, a.0), (t1, b.0)]), ty = curve.track(q, [(t0, a.1), (t1, b.1)])
-            let p = CGPoint(x: cen.x + CGFloat(tx) * k, y: cen.y + CGFloat(ty) * k)
+            let p = CGPoint(x: cen.x + CGFloat(tx) * kk, y: cen.y + CGFloat(ty) * kk)
             // CSS "circle" gradients reach the farthest corner of the 2200 px box: 1100 * sqrt(2)
-            let r = CGFloat(clearAt * 1100 * 2.0.squareRoot()) * k
-            guard let g = CGGradient(colorsSpace: space, colors: [color(argb), color(argb, alpha: 0)] as CFArray, locations: [0, 1])
-            else { continue }
-            c.saveGState()
-            c.setBlendMode(.screen)
-            c.drawRadialGradient(g, startCenter: p, startRadius: 0, endCenter: p, endRadius: r, options: [])
-            c.restoreGState()
+            let r = CGFloat(clearAt * 1100 * 2.0.squareRoot()) * kk
+            let blob = k.radial(p, 0, r, argb, argb, alphaA: 1, alphaB: 0)
+                .cropped(to: CGRect(x: p.x - r, y: p.y - r, width: 2 * r, height: 2 * r))
+            acc = acc.map { k.screen(blob, over: $0) } ?? blob
         }
+        var layers = [acc ?? .empty()]
         let peak = Curve.easeInOut.track(q, [(0.38, 0), (0.45, 1), (0.52, 1), (0.64, 0)])
-        if peak > 0.001, let g = CGGradient(colorsSpace: space, colors: [color(0xFFFF_FFFF), color(tone[3])] as CFArray, locations: [0, 1]) {
-            c.saveGState()
-            c.setAlpha(CGFloat(peak))
-            c.drawRadialGradient(g, startCenter: cen, startRadius: 0, endCenter: cen, endRadius: halfDiagonal(size) * 0.7,
-                                 options: [.drawsAfterEndLocation])
-            c.restoreGState()
+        if peak > 0.001 {
+            let flash = k.radial(cen, 0, 0.7 * k.halfDiagonal, 0xFFFF_FFFF, tone[3]).cropped(to: k.bounds)
+            layers.append(k.opacity(flash, peak))
         }
         if s.showName && !s.name.isEmpty {
             let o = Curve(0.33, 1, 0.68, 1)
-            name(s.name, at: cen, size: 56 * unit(size), color: tone[4],
-                 alpha: o.track(q, [(0.455, 0), (0.48, 1), (0.51, 1), (0.53, 0)]),
-                 tracking: o.track(q, [(0.455, 0.12), (0.48, -0.01), (0.51, -0.01), (0.53, -0.01)]))
+            layers.append(k.text(s.name, at: cen, size: 56 * k.unit, color: tone[4],
+                                 alpha: o.track(q, [(0.455, 0), (0.48, 1), (0.51, 1), (0.53, 0)]),
+                                 tracking: o.track(q, [(0.455, 0.12), (0.48, -0.01), (0.51, -0.01), (0.53, -0.01)])))
         }
+        return k.stack(layers)
     }
 }

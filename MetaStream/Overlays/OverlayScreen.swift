@@ -98,6 +98,7 @@ final class StingerScreenObject: ScreenObject {
     private let kind: StingerKind
     private let style: StingerStyle
     private var start: CMTime?
+    private var canvas: StingerCanvas?   // its text and stroke caches live as long as the stinger
     // perf: frames drawn, draw time, and the longest gap between video frames, logged once when it ends
     private var frames = 0
     private var drawTotal = 0.0, drawMax = 0.0, gapMax = 0.0
@@ -127,7 +128,9 @@ final class StingerScreenObject: ScreenObject {
             return CIImage.empty()
         }
         let began = CACurrentMediaTime()
-        let image = kind.ciFrame(size: bounds.size, t: t, style: style)
+        let k = canvas?.size == bounds.size ? canvas! : StingerCanvas(size: bounds.size)
+        canvas = k
+        let image = kind.ciFrame(k, t: t, style: style)
         let ms = (CACurrentMediaTime() - began) * 1000
         frames += 1
         drawTotal += ms

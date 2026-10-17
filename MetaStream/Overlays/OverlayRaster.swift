@@ -21,6 +21,14 @@ enum OverlayRaster {
         return r.isNull || r.width < 1 || r.height < 1 ? nil : r
     }
 
+    /// `image` as the box's piece without redrawing it, when it already is the box (on canvas, within a pixel of its
+    /// size). Overlays composite on the GPU, which takes any bitmap format, so the copy into sRGB BGRA isn't needed.
+    static func direct(_ image: CGImage, box: CGRect, canvas: CGSize) -> OverlayPiece? {
+        guard let vis = visible(box, in: canvas), vis == box.integral,
+              abs(CGFloat(image.width) - vis.width) <= 1, abs(CGFloat(image.height) - vis.height) <= 1 else { return nil }
+        return OverlayPiece(bitmap: OverlayBitmap(image: image), rect: CGRect(origin: vis.origin, size: CGSize(width: image.width, height: image.height)))
+    }
+
     /// Runs `draw` with the full box in a bitmap covering only the visible part.
     static func render(_ box: CGRect, canvas: CGSize, draw: (CGRect) -> Void) -> OverlayPiece? {
         guard let vis = visible(box, in: canvas) else { return nil }

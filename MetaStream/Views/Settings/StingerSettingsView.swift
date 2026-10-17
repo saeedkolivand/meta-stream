@@ -89,6 +89,21 @@ private struct StingerPreview: View {
     let kind: StingerKind
     let style: StingerStyle
     @State private var start = Date()
+    @State private var holder = CanvasHolder()
+    @Environment(\.displayScale) private var displayScale
+
+    /// Keeps one StingerCanvas (and its text cache) per preview size.
+    private final class CanvasHolder {
+        var canvas: StingerCanvas?
+        func canvas(for size: CGSize) -> StingerCanvas {
+            if let c = canvas, c.size == size { return c }
+            let c = StingerCanvas(size: size)
+            canvas = c
+            return c
+        }
+    }
+
+    @MainActor private static let context = CIContext()
 
     var body: some View {
         TimelineView(.animation) { tl in
@@ -102,12 +117,10 @@ private struct StingerPreview: View {
                 Text(swapped ? "Next scene" : "Current scene")
                     .font(.title3.weight(.semibold)).foregroundStyle(.white.opacity(0.7))
                 Canvas { ctx, size in
-                    guard t >= 0, t <= total else { return }
-                    ctx.withCGContext { cg in
-                        UIGraphicsPushContext(cg)
-                        kind.draw(cg, size: size, t: t, style: style)
-                        UIGraphicsPopContext()
-                    }
+                    guard t >= 0, t <= total, size.width >= 1, size.height >= 1 else { return }
+                    let px = CGSize(width: (size.width * displayScale).rounded(), height: (size.height * displayScale).rounded())
+                    guard let cg = kind.frame(holder.canvas(for: px), t: t, style: style, context: Self.context) else { return }
+                    ctx.draw(Image(decorative: cg, scale: displayScale), in: CGRect(origin: .zero, size: size))
                 }
             }
         }
