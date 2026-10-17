@@ -57,7 +57,8 @@ final class ChatFeed: ObservableObject {
 
     /// Connects to Kick chat for `slug` (the channel name from the stream URL) and stays connected until `stopKick()`.
     func start(kickSlug: String) {
-        let provider = kick ?? KickChatProvider(onEvent: { [weak self] e in self?.yield(e) })
+        let provider = kick ?? KickChatProvider(onEvent: { [weak self] e in self?.yield(e) },
+                                                onClear: { [weak self] in self?.clear(origin: "kick") })
         kick = provider
         provider.start(slug: kickSlug)
     }
@@ -68,7 +69,8 @@ final class ChatFeed: ObservableObject {
     /// `stopTwitch()`. Identity, subscription creation and scope bookkeeping live in `Platforms`.
     func startTwitch(platforms: Platforms) {
         stopTwitch()
-        let provider = TwitchEventSubProvider(platforms: platforms, onEvent: { [weak self] e in self?.yield(e) })
+        let provider = TwitchEventSubProvider(platforms: platforms, onEvent: { [weak self] e in self?.yield(e) },
+                                              onClear: { [weak self] in self?.clear(origin: "twitch") })
         twitch = provider
         provider.start()
     }
@@ -116,6 +118,15 @@ final class ChatFeed: ObservableObject {
         recent.append(e)
         if recent.count > 100 { recent.removeFirst(recent.count - 100) }
         emit.yield(e)
+    }
+
+    /// A chat clear (our /clear, or one done on the platform by you or a mod): drops that origin's messages, so the chat
+    /// sheet and the on-screen chat empty too. Follows, subs and other events stay. `serial` doesn't move, so nothing
+    /// that reads `events(since:)` (alerts) sees old events again.
+    func clear(origin: String) {
+        let before = recent.count
+        recent.removeAll { $0.origin == origin && $0.kind == .message }
+        applog("chat", "\(origin) chat cleared: \(before - recent.count) messages removed here")
     }
 
     /// Events yielded after `serial` that are still in `recent` (older ones scrolled out of the 100-event buffer).

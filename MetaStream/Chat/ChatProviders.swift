@@ -40,6 +40,7 @@ final class KickChatProvider: ChatProvider {
     private static let fallbackPusher = (key: "34bf7a0ff419a2a775b9", cluster: "us2")
 
     private let onEvent: @MainActor (ChatEvent) -> Void
+    private let onClear: @MainActor () -> Void
     private var socket: URLSessionWebSocketTask?
     private var task: Task<Void, Never>?
     private var stopped = true
@@ -48,7 +49,10 @@ final class KickChatProvider: ChatProvider {
     private var loggedEvents: Set<String> = []
     private var rules = KickRules.defaults
 
-    init(onEvent: @escaping @MainActor (ChatEvent) -> Void) { self.onEvent = onEvent }
+    init(onEvent: @escaping @MainActor (ChatEvent) -> Void, onClear: @escaping @MainActor () -> Void = {}) {
+        self.onEvent = onEvent
+        self.onClear = onClear
+    }
 
     func start(slug: String) {
         stop()
@@ -147,10 +151,12 @@ final class KickChatProvider: ChatProvider {
         if !event.hasPrefix("pusher"), event != Self.chatMessage, loggedEvents.insert(event).inserted {
             applog("chat", "kick event \(event) on \(outer["channel"] as? String ?? ""): \(String((data ?? "").prefix(300)))")
         }
+        if event == Self.chatClear { onClear() }
         if let chatEvent { onEvent(chatEvent) }
     }
 
     private static let chatMessage = "App\\Events\\ChatMessageEvent"
+    private static let chatClear = "App\\Events\\ChatroomClearEvent"   // you or a mod cleared chat (on kick.com or via /clear)
 
     /// Chat messages are parsed here; every other event goes through the (remote-overridable) `rules` table.
     static func parse(event: String, data: String?, rules: KickRules.Rules = KickRules.defaults) -> ChatEvent? {
@@ -178,12 +184,14 @@ final class TwitchEventSubProvider: ChatProvider {
     private static let eventSubURL = URL(string: "wss://eventsub.wss.twitch.tv/ws")!
 
     private let onEvent: @MainActor (ChatEvent) -> Void
+    private let onClear: @MainActor () -> Void
     private weak var platforms: Platforms?
     private var socket: URLSessionWebSocketTask?
     private var task: Task<Void, Never>?
     private var stopped = true
 
-    init(platforms: Platforms, onEvent: @escaping @MainActor (ChatEvent) -> Void) {
+    init(platforms: Platforms, onEvent: @escaping @MainActor (ChatEvent) -> Void, onClear: @escaping @MainActor () -> Void = {}) {
+        self.onClear = onClear
         self.platforms = platforms
         self.onEvent = onEvent
     }
@@ -238,6 +246,7 @@ final class TwitchEventSubProvider: ChatProvider {
                     socket.cancel(with: .goingAway, reason: nil)
                     continue reconnect
                 case "notification":
+                    if metadata["subscription_type"] as? String == "channel.chat.clear" { onClear(); continue }
                     guard let subType = metadata["subscription_type"] as? String,
                           let event = payload["event"] as? [String: Any],
                           let chatEvent = Self.parseEvent(type: subType, event: event)

@@ -192,6 +192,7 @@ struct SlashRunner {
     private func clearChat() async throws -> String {
         if !isKick {
             _ = try await p.twitch.api().call("DELETE", "/moderation/chat", query: mod)
+            chat.clear(origin: "twitch")
             return "Chat cleared"
         }
         // ponytail: signed out of kick.com there is no clear, so delete the Kick messages still in the feed buffer one by one.
@@ -207,6 +208,7 @@ struct SlashRunner {
             }
             catch { continue }   // already gone
         }
+        if n > 0 { chat.clear(origin: "kick") }
         return "Deleted \(n) recent messages; " + fullClear
     }
 

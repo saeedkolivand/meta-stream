@@ -194,7 +194,10 @@ final class TwitchService: ObservableObject {
         var subs: [(type: String, version: String, condition: [String: String])] = [
             ("channel.raid", "1", ["to_broadcaster_user_id": p.twitchUserID]),
         ]
-        if p.twitchHasScopes(["user:read:chat"]) { subs.append(("channel.chat.message", "1", ["broadcaster_user_id": p.twitchUserID, "user_id": p.twitchUserID])) }
+        if p.twitchHasScopes(["user:read:chat"]) {
+            subs.append(("channel.chat.message", "1", ["broadcaster_user_id": p.twitchUserID, "user_id": p.twitchUserID]))
+            subs.append(("channel.chat.clear", "1", ["broadcaster_user_id": p.twitchUserID, "user_id": p.twitchUserID]))
+        }
         if p.twitchHasScopes(["moderator:read:followers"]) { subs.append(("channel.follow", "2", ["broadcaster_user_id": p.twitchUserID, "moderator_user_id": p.twitchUserID])) }
         if p.twitchHasScopes(["channel:read:subscriptions"]) {
             for type in ["channel.subscribe", "channel.subscription.gift", "channel.subscription.message"] {
