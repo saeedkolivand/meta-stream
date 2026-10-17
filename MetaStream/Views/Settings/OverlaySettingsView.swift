@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 /// Scenes you build in the app (widgets, camera per scene, auto-rotate), plus the optional OBS import.
 struct OverlaySettingsView: View {
     @EnvironmentObject var streamer: Streamer
+    @EnvironmentObject var platforms: Platforms
     @ObservedObject private var store = OverlayStore.shared
     @State private var editing: String?
     @State private var renaming: String?
@@ -96,8 +97,15 @@ struct OverlaySettingsView: View {
             } label: {
                 Label("New scene", systemImage: "plus.circle.fill")
             }
+            Menu {
+                ForEach(SceneTemplate.allCases, id: \.self) { t in
+                    Button(t.rawValue) { hapticTap(); store.addTemplate(t, channel: platforms.kickUser) }
+                }
+            } label: {
+                Label("Add Starting, BRB & Ending scenes", systemImage: "rectangle.stack.badge.plus")
+            }
         } header: { Text("Scenes") } footer: {
-            Text("Tap a scene to arrange its widgets. Hold one to show it on stream, duplicate or rename it.")
+            Text("Tap a scene to arrange its widgets. Hold one to show it on stream, duplicate or rename it. The Starting, BRB & Ending set takes those roles over from your other scenes.")
         }
     }
 

@@ -130,6 +130,17 @@ final class OverlayStore: ObservableObject {
         return name
     }
 
+    /// Adds the template's Starting / BRB / Ending scenes; each takes its role off whichever scene had it.
+    func addTemplate(_ t: SceneTemplate, channel: String) {
+        if pack == nil { pack = OverlayPack(canvasW: 1920, canvasH: 1080, scenes: [], skipped: [:]) }
+        for var s in t.scenes(channel: channel) {
+            s.name = freeName("\(t.rawValue) · \(s.name)", numbered: false)
+            for i in scenes.indices where pack?.scenes[i].role == s.role { pack?.scenes[i].role = nil }
+            pack?.scenes.append(s)
+        }
+        _ = persist()
+    }
+
     func duplicateScene(_ name: String) -> String? {
         guard var copy = scenes.first(where: { $0.name == name }) else { return nil }
         copy.name = freeName("\(name) copy", numbered: false)
