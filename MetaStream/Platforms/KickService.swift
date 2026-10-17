@@ -23,7 +23,7 @@ final class KickService: ObservableObject {
             c.queryItems = [
                 .init(name: "response_type", value: "code"), .init(name: "client_id", value: PlatformConfig.kickID),
                 .init(name: "redirect_uri", value: PlatformConfig.webRedirect),
-                .init(name: "scope", value: "user:read channel:read channel:write chat:write streamkey:read"),
+                .init(name: "scope", value: "user:read channel:read channel:write chat:write streamkey:read moderation:ban moderation:chat_message:manage ads:read ads:write channel:rewards:read channel:rewards:write kicks:read events:subscribe"),
                 .init(name: "code_challenge", value: PlatformNet.s256(verifier)), .init(name: "code_challenge_method", value: "S256"),
                 .init(name: "state", value: PlatformNet.random(16)),
             ]
