@@ -139,7 +139,9 @@ extension Streamer {
                 let cam = isExt ? Self.externalCamera() : wideMain ? CameraSettings.device(lens: "wide", position: fallbackPosition) : CameraSettings.captureDevice(position: fallbackPosition)
                 // A .single session can't hold two devices, so any leftover overlay (e.g. from the glasses
                 // branch) must go before track 0 is attached; a .multi session re-attaches track 1 below.
-                if dualCamActive, !(multi && dualWanted) { await detachOverlay() }
+                // In a multicam session the overlay may hold the very camera the main now wants (front <-> back), and one
+                // device can't feed two inputs: free track 1 first. It is re-attached below with the opposite position.
+                if dualCamActive { await detachOverlay() }
                 // A multicam session can't apply presets at all -- each device's activeFormat is picked below.
                 // UVC formats rarely match a preset, so an external device never gets one.
                 if !multi, !isExt { await mixer.setSessionPreset(phoneQuality.sessionPreset) }
@@ -227,6 +229,7 @@ extension Streamer {
             }
         } catch {
             rtmpState = "camera switch: \(error.localizedDescription)"
+            applog("stream", "camera switch to \(manualSource) failed: \(error.localizedDescription)", error: true)
         }
     }
 
