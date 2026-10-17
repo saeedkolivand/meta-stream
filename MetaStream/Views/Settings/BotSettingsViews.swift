@@ -23,7 +23,7 @@ struct CommandsSettingsView: View {
                 .onMove { cmds.move(fromOffsets: $0, toOffset: $1) }
                 Button("Add command") { cmds.append(BotCommand(text: "!", destination: "all")) }
             } footer: {
-                Text("Sent as your own account, so bots that obey only the broadcaster accept them. These are examples; check your bot's dashboard for its exact commands. Tap Edit to reorder.")
+                Text("Sent as your own account, so bots that obey only the broadcaster accept them. A command starting with / (like /clear) runs as a moderator command instead of being posted. These are examples; check your bot's dashboard for its exact commands. Tap Edit to reorder.")
             }
             Section {
                 Toggle("Commands on Lock Screen", isOn: $lockScreen)

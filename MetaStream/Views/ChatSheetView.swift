@@ -240,7 +240,10 @@ struct ChatSheetView: View {
 
     private func run(_ c: BotCommand) {
         hapticTap()
-        Task { await c.send(platforms) }
+        Task {
+            let note = await c.send(platforms, chat: chat)
+            if !note.isEmpty { vm.slashNote = note }
+        }
     }
 
     private func sendChat() {

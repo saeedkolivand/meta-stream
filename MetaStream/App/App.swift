@@ -42,10 +42,11 @@ struct MetaStreamApp: App {
                 AppBot.shared.streamer = streamer; AppBot.shared.platforms = platforms
                 if gpsShare { GPSShare.shared.setEnabled(true) }
                 ObsServer.shared.sync(streamer)
+                BotCommand.addClearOnce()
                 StreamActivityActions.sendCommand = { id in
                     guard UserDefaults.standard.bool(forKey: "lockScreenCommands"),
                           let c = BotCommand.stored().first(where: { $0.id.uuidString == id }) else { return }
-                    Task { await c.send(platforms) }
+                    Task { await c.send(platforms, chat: chat) }
                 }
             }
             .onChange(of: gpsOnly) { _, on in streamer.setGPSOnly(on) }
