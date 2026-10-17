@@ -104,6 +104,12 @@ _Avoid_: bot alert, bot event, notification
 A chat message starting with `!` that a bot acts on, e.g. `!giveaway start`.
 _Avoid_: action, trigger, macro
 
+**Slash command**:
+A chat-input instruction starting with `/` (e.g. `/clear`, `/ban name`, `/slow 30`) that the app
+carries out through the platform's own moderation tools, as the platform's website does. Never
+sent as a message, and never seen by a bot. Unlike a command, which a bot carries out.
+_Avoid_: mod command, chat command, action
+
 **Chat channel**:
 A channel identified by slug or name, for chat purposes only. The only surviving sense of the
 word "channel".
