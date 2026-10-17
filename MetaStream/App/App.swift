@@ -39,6 +39,7 @@ struct MetaStreamApp: App {
             // Streamer speaks connection changes on Speaker's System lane (never muted).
             .onAppear {
                 streamer.speaker = speaker; streamer.privacy = privacy
+                AppBot.shared.streamer = streamer; AppBot.shared.platforms = platforms
                 if gpsShare { GPSShare.shared.setEnabled(true) }
                 ObsServer.shared.sync(streamer)
                 StreamActivityActions.sendCommand = { id in
@@ -54,6 +55,7 @@ struct MetaStreamApp: App {
                 // bounds its own lanes, so nothing here needs backpressure handling.
                 for await e in chat.events {
                     speaker.speak(e)
+                    AppBot.shared.handle(e)
                     if e.kind == .message, !e.flagged, BotList.isAnnouncement(user: e.user, text: e.text) {
                         UINotificationFeedbackGenerator().notificationOccurred(.success)
                     }

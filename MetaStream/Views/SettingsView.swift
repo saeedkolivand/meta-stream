@@ -21,6 +21,7 @@ struct SettingsView: View {
                     NavigationLink("Read aloud") { ReadAloudSettingsView() }
                     NavigationLink("Chat commands") { CommandsSettingsView() }
                     NavigationLink("Chat bots") { BotsSettingsView() }
+                    NavigationLink("App bot") { AppBotSettingsView() }
                     NavigationLink("Privacy") { PrivacySettingsView() }
                     NavigationLink("Remote control") { RemoteSettingsView() }
                 }

@@ -8,9 +8,10 @@ extension Streamer {
     private var startCountdownSeconds: Int { UserDefaults.standard.object(forKey: "startCountdown") as? Int ?? 60 }
     private var endingHoldSeconds: Int { UserDefaults.standard.object(forKey: "endingHold") as? Int ?? 10 }
 
-    /// Hook for role changes (a later step posts chat notices from here).
+    /// Hook for role changes: logs, and the app bot posts its chat notice.
     func sceneRole(_ role: String, on: Bool) {
         applog("overlay", "role \(role) \(on ? "on" : "off") -> \(OverlayStore.shared.scene)")
+        AppBot.shared.role(role, on: on)
     }
 
     /// {countdown}: remaining Starting time as m:ss, empty when no countdown runs.

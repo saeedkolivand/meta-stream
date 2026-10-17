@@ -15,6 +15,7 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
     private var geocoding = false
     private var metersPerSecond: Double?
     private var city = ""
+    private var region = ""           // "Tehran Province, Iran": for the app bot's !location, never the city
     private var meters = 0.0           // driven since distanceKey (the go-live time), reset when a new stream starts
     private var distanceKey: Date?
     private var lastFix: CLLocation?   // last accurate fix, the start of the next distance leg
@@ -38,6 +39,9 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
         let metric = Locale.current.measurementSystem == .metric
         return metric ? String(format: "%.1f km", meters / 1000) : String(format: "%.1f mi", meters / 1609.344)
     }
+
+    /// Province/state and country only; nil until the first geocode.
+    var regionText: String? { region.isEmpty ? nil : region }
 
     var cityText: String { city.isEmpty ? "--" : city }
 
@@ -135,7 +139,14 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
         guard let request = MKReverseGeocodingRequest(location: loc) else { geocoding = false; return }
         Task {
             defer { geocoding = false }
-            if let name = try? await request.mapItems.first?.addressRepresentations?.cityName { city = name }
+            let item = (try? await request.mapItems)?.first
+            if let name = item?.addressRepresentations?.cityName { city = name }
+            // ponytail: rides the city geocode (already throttled to 60 s / 500 m) instead of a second CLGeocoder call.
+            if let pm = item?.placemark {
+                var parts = [pm.administrativeArea, pm.country].compactMap { $0 }
+                if parts.count == 2, parts[0] == parts[1] { parts.removeLast() }
+                region = parts.joined(separator: ", ")
+            }
         }
     }
 }

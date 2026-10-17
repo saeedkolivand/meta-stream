@@ -18,6 +18,9 @@ final class WidgetWeather {
     /// "☁️ 17°", "--" until the first successful fetch; a failed refresh keeps the last value.
     /// Reading it is what turns fetching on, so location never goes to Open-Meteo unless a widget shows {weather}.
     var text: String { wanted = true; return value }
+    /// "18°C, clear": no place name, for the app bot's !weather. Reading it turns fetching on too.
+    var plainText: String { wanted = true; return plain }
+    private var plain = "--"
     private var value = "--"
     private var wanted = false
     private var fetching = false
@@ -38,8 +41,25 @@ final class WidgetWeather {
             guard let url, let data = try? await URLSession.shared.data(from: url).0,
                   let now = (try? JSONDecoder().decode(Forecast.self, from: data))?.current else { lastFail = Date(); return }
             value = "\(Self.emoji(now.code)) \(Int(now.temperature.rounded()))°"
+            plain = "\(Int(now.temperature.rounded()))°\(unit == "celsius" ? "C" : "F"), \(Self.words(now.code))"
             lastOK = (Date(), loc)
             lastFail = nil
+        }
+    }
+
+    /// WMO weather code -> plain words.
+    nonisolated static func words(_ code: Int) -> String {
+        switch code {
+        case 0: "clear"
+        case 1, 2: "partly cloudy"
+        case 3: "overcast"
+        case 45, 48: "foggy"
+        case 51...67: "rainy"
+        case 71...77: "snowy"
+        case 80...82: "showers"
+        case 85, 86: "snow showers"
+        case 95...99: "thunderstorms"
+        default: "unsettled"
         }
     }
 

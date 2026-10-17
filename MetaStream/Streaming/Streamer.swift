@@ -339,6 +339,7 @@ final class Streamer: ObservableObject {
                 self.checkBlurStall()
                 self.checkDeadAir()
                 self.checkBRB()
+                AppBot.shared.tick()
                 self.checkRecordingSource()
                 self.liveActivity.sync(self)
                 if self.live, tick % 5 == 0 {
