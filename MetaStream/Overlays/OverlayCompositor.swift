@@ -126,29 +126,19 @@ final class OverlayCompositor {
         await OverlayScreen.add([o], to: mixer)
     }
 
-    /// Draws a built-in stinger over the whole canvas at ~30 fps until it ends. Frames render off the main actor.
-    /// ponytail: one CPU-drawn full-canvas bitmap per frame; move the art to Metal/CIImage if encode load shows it.
+    /// Puts a built-in stinger over the whole canvas. It draws itself per video frame; layout only re-runs when
+    /// invalidated, so this pokes it at 60 Hz (cheap: no drawing here) until removeStinger().
     func playStinger(_ kind: StingerKind, style: StingerStyle, canvas: CGSize, mixer: MediaMixer) async {
         await removeStinger()
-        let o = await OverlayScreen.makeImage(CGRect(origin: .zero, size: canvas), nil)
+        let o = await OverlayScreen.makeStinger(CGRect(origin: .zero, size: canvas), kind, style)
         stinger = o
         stingerMixer = mixer
         await OverlayScreen.add([o], to: mixer)
-        let total = kind.seconds(style)
-        stingerTask = Task {
-            let start = Date()
-            var n = 0
+        stingerTask = Task { @ScreenActor in
             while !Task.isCancelled {
-                let t = Date().timeIntervalSince(start)
-                guard t <= total else { break }
-                let bitmap = await Task.detached(priority: .userInitiated) { kind.frame(size: canvas, t: t, style: style) }.value
-                guard !Task.isCancelled else { return }
-                await OverlayScreen.setImage(o, bitmap)
-                n += 1
-                let wait = start.addingTimeInterval(Double(n) / 30).timeIntervalSinceNow
-                if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
+                o.invalidateLayout()
+                try? await Task.sleep(for: .milliseconds(16))
             }
-            await OverlayScreen.setImage(o, nil)
         }
     }
 

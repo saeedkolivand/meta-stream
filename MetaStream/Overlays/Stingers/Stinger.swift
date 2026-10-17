@@ -3,6 +3,7 @@
 // `q` is the position in the board's 6 s loop (0...1), so a keyframe at 40% is q 0.40 and a CSS delay of 0.02 x dur
 // shifts q by 0.02. Adding a stinger = one case here + one StingerArt function.
 import CoreGraphics
+import CoreImage
 import Foundation
 import UIKit
 
@@ -77,19 +78,43 @@ enum StingerKind: String, CaseIterable, Sendable {
         }
     }
 
-    /// A frame as a stream bitmap: 8-bit sRGB BGRA premultiplied, the layout UIGraphicsImageRenderer gives OverlayRaster.
+    /// A full-resolution frame as one bitmap (tests; the stream uses `ciFrame`).
     func frame(size: CGSize, t: Double, style: StingerStyle) -> OverlayBitmap? {
         let w = Int(size.width.rounded()), h = Int(size.height.rounded())
-        guard w > 0, h > 0, let space = CGColorSpace(name: CGColorSpace.sRGB),
+        guard w > 0, h > 0, let c = Self.context(w, h) else { return nil }
+        UIGraphicsPushContext(c)
+        draw(c, size: CGSize(width: w, height: h), t: t, style: style)
+        UIGraphicsPopContext()
+        return c.makeImage().map { OverlayBitmap(image: $0) }
+    }
+
+    /// The stream's frame, for the GPU renderer. Shapes draw at `shapeScale` of the canvas and are scaled up on the GPU
+    /// (big flat fills lose nothing, and the CPU fills a quarter of the pixels); the name draws full size on its own
+    /// layer (it is the only thing UIKit draws, into the pushed context) so the text stays sharp.
+    func ciFrame(size: CGSize, t: Double, style: StingerStyle, shapeScale: CGFloat = 0.5) -> CIImage? {
+        let w = Int(size.width.rounded()), h = Int(size.height.rounded())
+        let sw = max(1, Int((CGFloat(w) * shapeScale).rounded())), sh = max(1, Int((CGFloat(h) * shapeScale).rounded()))
+        guard w > 0, h > 0, let shapes = Self.context(sw, sh) else { return nil }
+        shapes.scaleBy(x: CGFloat(sw) / CGFloat(w), y: CGFloat(sh) / CGFloat(h))   // the art keeps drawing in canvas units
+        let text = style.showName && !style.name.isEmpty ? Self.context(w, h) : nil
+        UIGraphicsPushContext(text ?? shapes)
+        draw(shapes, size: CGSize(width: w, height: h), t: t, style: style)
+        UIGraphicsPopContext()
+        guard let art = shapes.makeImage() else { return nil }
+        var image = CIImage(cgImage: art).transformed(by: CGAffineTransform(scaleX: CGFloat(w) / CGFloat(sw), y: CGFloat(h) / CGFloat(sh)))
+        if let label = text?.makeImage() { image = CIImage(cgImage: label).composited(over: image) }
+        return image.cropped(to: CGRect(x: 0, y: 0, width: w, height: h))
+    }
+
+    /// 8-bit sRGB BGRA premultiplied (what UIGraphicsImageRenderer gives OverlayRaster), origin top-left like UIKit.
+    private static func context(_ w: Int, _ h: Int) -> CGContext? {
+        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
               let c = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0, space: space,
                                 bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
         else { return nil }
         c.translateBy(x: 0, y: CGFloat(h))
         c.scaleBy(x: 1, y: -1)
-        UIGraphicsPushContext(c)
-        draw(c, size: CGSize(width: w, height: h), t: t, style: style)
-        UIGraphicsPopContext()
-        return c.makeImage().map { OverlayBitmap(image: $0) }
+        return c
     }
 }
 

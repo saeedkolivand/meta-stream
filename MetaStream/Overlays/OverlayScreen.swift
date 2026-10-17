@@ -2,6 +2,7 @@
 // everything that touches them is @ScreenActor and takes/returns only Sendable values (the objects themselves are
 // implicitly Sendable: they are global-actor isolated classes).
 import AVFoundation
+import CoreImage
 import HaishinKit
 import UIKit
 
@@ -48,8 +49,18 @@ enum OverlayScreen {
         if !o.isReading { try? o.startReading(AVURLAsset(url: url)) }
     }
 
+    /// A built-in stinger over `rect` (the whole canvas).
+    @ScreenActor static func makeStinger(_ rect: CGRect, _ kind: StingerKind, _ style: StingerStyle) -> StingerScreenObject {
+        let o = StingerScreenObject(kind: kind, style: style)
+        layout(o, rect)
+        return o
+    }
+
     /// Z-order is add order: later layers draw on top (the camera frame is the Screen's own first child).
+    /// Overlays composite on the GPU (Core Image on Metal): the CPU renderer converts and alpha-blends every overlay on
+    /// the CPU each frame. Switched before the first overlay goes on; HaishinKit's camera object re-lays out every frame.
     @ScreenActor static func add(_ objects: [ScreenObject], to mixer: MediaMixer) {
+        if !mixer.screen.isGPURendererEnabled { mixer.screen.isGPURendererEnabled = true }
         for o in objects { try? mixer.screen.addChild(o) }
     }
 
@@ -64,5 +75,29 @@ enum OverlayScreen {
             if let m = o as? AssetScreenObject { m.cancelReading() }
             mixer.screen.removeChild(o)
         }
+    }
+}
+
+/// A built-in stinger as a screen object. It draws the frame for each video frame's own timestamp, so it moves in step
+/// with the video instead of racing it. GPU renderer only (the CPU renderer asks for a CGImage, which this never makes).
+final class StingerScreenObject: ScreenObject {
+    private let kind: StingerKind
+    private let style: StingerStyle
+    private var start: CMTime?
+
+    init(kind: StingerKind, style: StingerStyle) {
+        self.kind = kind
+        self.style = style
+        super.init()
+    }
+
+    override func makeImage(_ renderer: some ScreenRenderer) -> CIImage? {
+        let now = renderer.presentationTimeStamp
+        let first = start ?? now
+        start = first
+        let t = (now - first).seconds
+        // An empty image (not nil) once it's over: nil would leave the renderer's last frame on screen.
+        guard t.isFinite, t >= 0, t <= kind.seconds(style) else { return CIImage.empty() }
+        return kind.ciFrame(size: bounds.size, t: t, style: style)
     }
 }
