@@ -133,12 +133,9 @@ struct SlashRunner {
     private func userID(_ login: String) async throws -> String? {
         if let e = chat.recent.last(where: { $0.origin == origin && $0.kind == .message && $0.user.lowercased() == login && !$0.userId.isEmpty }) { return e.userId }
         if isKick {
-            // ponytail: unverified whether Kick slugs keep "_" or turn it into "-"; try as typed, then hyphenated.
-            for slug in Set([login, login.replacingOccurrences(of: "_", with: "-")]) {
-                let r = try await p.kick.api().call("GET", "/public/v1/channels", query: [.init(name: "slug", value: slug)])
-                if let id = (r["data"] as? [[String: Any]])?.first?["broadcaster_user_id"] as? Int { return String(id) }
-            }
-            return nil
+            // Exact name only: guessing a variant (e.g. "_" -> "-") could ban a different person.
+            let r = try await p.kick.api().call("GET", "/public/v1/channels", query: [.init(name: "slug", value: login)])
+            return ((r["data"] as? [[String: Any]])?.first?["broadcaster_user_id"] as? Int).map(String.init)
         }
         let r = try await p.twitch.api().call("GET", "/users", query: [.init(name: "login", value: login)])
         return (r["data"] as? [[String: Any]])?.first?["id"] as? String
