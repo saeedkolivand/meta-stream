@@ -32,9 +32,15 @@ One broadcast, from going live to ending. Survives reconnects.
 _Avoid_: stream, run, broadcast
 
 **Connection**:
-One socket carrying a session to its ingest. Drops and re-establishes within a session, so a
-session is not a connection.
+One publish to the ingest, carrying a session. Drops and re-establishes within a session, so a
+session is not a connection. With bonding, one connection runs over several links at once.
 _Avoid_: stream, link, socket
+
+**Bonding**:
+Splitting one connection's packets across several internet links (Wi-Fi, cellular, wired) and
+merging them again at a receiver, so the session survives one link dipping. The receiver is the
+ingest; bonding is on exactly when the ingest is a bonding receiver.
+_Avoid_: multipath, aggregation, link combining
 
 **Downtime**:
 Time within a session during which no connection was publishing.
@@ -55,10 +61,21 @@ A named set of layers shown over the stream, optionally with a camera to switch 
 selected. Built in the app or imported from OBS.
 _Avoid_: overlay pack, collection, profile
 
+**Scene role**:
+A job a scene is given so the app can switch to it on its own: Starting (shown with a countdown
+after going live), BRB (while the link is too weak) and Ending (held briefly after stopping).
+A scene has at most one role; a manual switch always wins.
+_Avoid_: auto scene, special scene, preset
+
 **Layer**:
 One item in a scene: a widget, image, text, color, clip or web page. Placed relative to the frame
 (in-app) or by OBS transform (imported).
 _Avoid_: source, item, element
+
+**Stinger**:
+A short video played over a scene change, which happens underneath it at the cut point. One
+stinger serves every scene change; it hides the hitch of a camera switch.
+_Avoid_: transition video, wipe, animation
 
 **Widget**:
 A native in-app layer (chat, alerts, event list, text, QR code) drawn as one bitmap that is
@@ -72,6 +89,21 @@ The destination a viewer typed a message on. Chat is aggregated across destinati
 message carries one.
 _Avoid_: chat source, chat site, chat platform
 
+**Bot**:
+A chat account that posts automated messages on the streamer's behalf (BotRix, StreamElements,
+Nightbot, ...). Known only by its name; no platform marks bots, and the app has no access to a
+bot beyond what it says and hears in chat.
+_Avoid_: chatbot, integration, service
+
+**Bot announcement**:
+A bot message containing one of the streamer's trigger words (e.g. "won", "winner"), so it is
+worth the streamer's attention while live. Every other bot message is noise.
+_Avoid_: bot alert, bot event, notification
+
+**Command**:
+A chat message starting with `!` that a bot acts on, e.g. `!giveaway start`.
+_Avoid_: action, trigger, macro
+
 **Chat channel**:
 A channel identified by slug or name, for chat purposes only. The only surviving sense of the
 word "channel".
@@ -80,14 +112,35 @@ _Avoid_: room, chatroom
 ### Capture
 
 **Video source**:
-Where the picture comes from: the glasses, the back camera, or the front camera. The word
-"source" is reserved for this and is never used for chat or audio.
+Where the picture comes from: the glasses, the back camera, the front camera, an external
+(USB) camera, or the screen. The word "source" is reserved for this and is never used for chat
+or audio.
 _Avoid_: input, feed, camera
 
-**Session recording**:
-The local file for one session. A record of what was broadcast, not a pristine original — it
-contains exactly what went out.
-_Avoid_: VOD, master, capture
+**Face cam**:
+A second video source shown as a small window over the main one. Either can be the big picture;
+the window is hidden while privacy blur is on.
+_Avoid_: dual camera, PiP, overlay camera
+
+**Look**:
+A video source's color treatment: brightness, contrast, saturation, warmth and an optional LUT.
+A neutral look leaves the picture untouched; any other look needs a transcode.
+_Avoid_: filter, grade, preset, color correction
+
+**Recording**:
+A local file the streamer chose to make, started and stopped independently of streaming: one
+session may hold several recordings, and a recording may exist with no session at all. While
+live it contains exactly what went out, not a pristine original.
+_Avoid_: session recording, VOD, master, capture
+
+**Mix**:
+Everything viewers hear: the mic plus alert sounds, clip audio and sounds. Heard only on
+stream, never through the phone's speaker.
+_Avoid_: audio, output, master
+
+**Sound**:
+A short audio file the streamer plays into the mix on a tap, from the soundboard.
+_Avoid_: sound effect, SFX, sample
 
 **Privacy blur**:
 Obscuring faces, text, licence plates or chosen objects in the outgoing picture. Best-effort
