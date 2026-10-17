@@ -5,21 +5,10 @@ import SwiftUI
 /// must never live in the scrolling status strip where a long run of pills can push them off the edge.
 struct GoLiveControlsView: View {
     @EnvironmentObject var streamer: Streamer
-    @AppStorage("rtmpURL") var ingestURL = "rtmps://fa723fc1b171.global-contribute.live-video.net:443/app/"
-    @AppStorage("streamKey") var streamKey = ""
-    @AppStorage("micUID") var micUID = ""
-    @AppStorage("fallbackCamera") var fallbackCamera = "back"
-    @AppStorage("bitrateKbps") var bitrateKbps = 4000
-    @AppStorage("srtLatencyMs") var srtLatencyMs = 2000
-    @AppStorage("phoneHeight") var phoneHeight = 720
-    @AppStorage("phoneLandscape") var phoneLandscape = false
-    @AppStorage("phoneFps") var phoneFps = 30
-    @AppStorage("phoneStabilization") var phoneStabilization = "off"
     @AppStorage("blurOn") var blurOn = false
     @AppStorage("resolution") var resolution = "high"
     @AppStorage("fps") var fpsSetting = 30
 
-    var codec: String
     @Binding var showChat: Bool
     @Binding var showSettings: Bool
 
@@ -72,11 +61,7 @@ struct GoLiveControlsView: View {
                 if streamer.live {
                     streamer.requestStop()
                 } else {
-                    streamer.goLive(url: ingestURL, key: streamKey, micUID: micUID,
-                                    fallbackPosition: fallbackCamera == "front" ? .front : .back,
-                                    bitrateKbps: bitrateKbps, codec: codec, srtLatencyMs: srtLatencyMs,
-                                    quality: .init(height: phoneHeight, landscape: phoneLandscape, fps: phoneFps,
-                                                   stabilization: phoneStabilization))
+                    streamer.goLiveFromSettings()
                 }
             } label: {
                 ZStack {

@@ -20,6 +20,7 @@ struct SettingsView: View {
                     NavigationLink("Audio") { AudioSettingsView() }
                     NavigationLink("Read aloud") { ReadAloudSettingsView() }
                     NavigationLink("Privacy") { PrivacySettingsView() }
+                    NavigationLink("Remote control") { RemoteSettingsView() }
                 }
                 Section {
                     NavigationLink("Diagnostics & about") { DiagnosticsSettingsView() }

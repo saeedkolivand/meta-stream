@@ -40,6 +40,7 @@ struct MetaStreamApp: App {
             .onAppear {
                 streamer.speaker = speaker; streamer.privacy = privacy
                 if gpsShare { GPSShare.shared.setEnabled(true) }
+                ObsServer.shared.sync(streamer)
             }
             .onChange(of: gpsOnly) { _, on in streamer.setGPSOnly(on) }
             .task {

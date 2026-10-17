@@ -79,7 +79,7 @@ struct ContentView: View {
             VStack {
                 HUDView(showStatus: $showStatus, showManager: $showManager, showChat: chatToggle, showCameraControls: $showCameraControls)
                 Spacer()
-                GoLiveControlsView(codec: vm.codec, showChat: chatToggle, showSettings: $showSettings)
+                GoLiveControlsView(showChat: chatToggle, showSettings: $showSettings)
             }
             .padding(.horizontal)
 
