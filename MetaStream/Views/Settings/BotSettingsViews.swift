@@ -30,6 +30,7 @@ struct CommandsSettingsView: View {
             } footer: {
                 Text("Shows up to 3 commands marked Lock Screen as buttons on the live card. A tap in your pocket could fire one.")
             }
+            KickSessionSection()
         }
         .navigationTitle("Chat commands")
         .navigationBarTitleDisplayMode(.inline)

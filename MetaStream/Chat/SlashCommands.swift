@@ -46,13 +46,18 @@ struct SlashRunner {
 
     private static let both = ["ban", "unban", "timeout", "untimeout", "delete", "clear", "title", "category", "ad", "help"]
     private static let twitchOnly = ["slow", "emoteonly", "followers", "subscribers", "raid", "announce", "marker", "clip"]
-    private static let kickLater = ["host", "poll", "prediction"]
+    private static let kickLater = ["host", "poll", "prediction", "polldelete", "followonly", "mod", "unmod", "vip", "unvip"]
 
     func run(_ name: String, _ a: [String]) async -> String {
         let label = DisplayNames.platformName(origin)
-        if name == "help" { return "\(label): " + (Self.both + (isKick ? [] : Self.twitchOnly)).map { "/" + $0 }.joined(separator: " ") }
+        if name == "help" { return "\(label): " + (Self.both + (isKick ? KickWeb.commands.filter { !Self.both.contains($0) } : Self.twitchOnly)).map { "/" + $0 }.joined(separator: " ") }
         guard (Self.both + Self.twitchOnly + Self.kickLater).contains(name) else { return "Unknown command /\(name)" }
-        if isKick, Self.kickLater.contains(name) { return "/\(name) is coming with the kick.com session" }  // adr/0005
+        // adr/0005: through the signed-in kick.com page. Signed out, /clear keeps its public-API fallback below.
+        if isKick, KickWeb.commands.contains(name) {
+            let signedIn = await KickWeb.shared.ready()   // not inside `||`: autoclosures can't await
+            if name != "clear" || signedIn { return await KickWeb.shared.run(name, a) }
+        }
+        if isKick, Self.kickLater.contains(name) { return "Kick has no /\(name) yet" }
         if isKick, Self.twitchOnly.contains(name) { return "Kick has no API for /\(name) yet" }
         if !isKick, Self.kickLater.contains(name) { return "Twitch has no /\(name)" }
         if isKick ? p.kickUserID == 0 : p.twitchUserID.isEmpty { return "\(label) isn't connected" }
@@ -181,8 +186,7 @@ struct SlashRunner {
             _ = try await p.twitch.api().call("DELETE", "/moderation/chat", query: mod)
             return "Chat cleared"
         }
-        // ponytail: Kick has no clear endpoint, so delete the Kick messages still in the feed buffer one by one;
-        // a later step does a real clear through the kick.com session.
+        // ponytail: signed out of kick.com there is no clear, so delete the Kick messages still in the feed buffer one by one.
         let ids = chat.recent.filter { $0.origin == "kick" && $0.kind == .message && !$0.id.isEmpty }.map(\.id)
         var n = 0
         for id in ids {
