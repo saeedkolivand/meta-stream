@@ -184,9 +184,16 @@ final class AppBot: ObservableObject {
         }
     }
 
+    /// A donor name is whatever someone typed on a donation site, and the bot posts it as a trusted (mod) account: no
+    /// links, no leading "!" or "/" (another bot would run "!giveaway end donated €1" as a command), at most 25 characters.
+    static func safeName(_ raw: String) -> String {
+        let cleaned = Speaker.sanitize(raw, maxLength: 25).drop { "!/\.@#".contains($0) || $0.isWhitespace }
+        return cleaned.isEmpty ? "Someone" : String(cleaned)
+    }
+
     private func thank(_ e: ChatEvent, _ key: String, to origins: [String]? = nil) {
         guard flag("botThanks"), !Speaker.isBlocked(e.user, extra: UserDefaults.standard.string(forKey: "ttsBlocked") ?? "") else { return }
-        let text = Self.fill(tpl(key), user: e.user, count: e.count).replacingOccurrences(of: "{amount}", with: e.tipMoney.display)
+        let text = Self.fill(tpl(key), user: Self.safeName(e.user), count: e.count).replacingOccurrences(of: "{amount}", with: e.tipMoney.display)
         (origins ?? [e.origin]).forEach { say($0, text) }
     }
 

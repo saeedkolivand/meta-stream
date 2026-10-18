@@ -115,7 +115,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
             return e.user == lastChatter ? note : "\(user) says \(note)"
         case .tip:
             let m = e.tipMoney
-            let usdCents = Rates.shared.convert(m, to: "USD").map { NSDecimalNumber(decimal: $0 * 100).intValue } ?? Int.max   // unknown rate: read it
+            let usdCents = Rates.shared.convert(m, to: "USD").map { NSDecimalNumber(decimal: $0 * 100).intValue } ?? 0   // unknown rate: read only when no minimum is set (fail closed)
             guard tipsOn, usdCents >= minTipCents else { return nil }
             let amount = Self.spokenMoney(m)
             return note.isEmpty ? "\(user) tipped \(amount)" : "\(user) tipped \(amount): \(note)"
