@@ -98,9 +98,6 @@ extension Streamer {
                 // Glasses video enters the mixer as decoded frames on track 0 (Transcoder), never as a capture
                 // device, so the only camera here is the optional front-camera overlay on track 1.
                 if dualCamActive { await detachOverlay() }
-                // Re-attaching track 0 in a running multicam session left only the overlay's connection (main camera
-                // dark; hardwareCost 0.25, one input, in the topology log). Into an empty track, as at launch, both run.
-                if multi { try? await mixer.attachVideo(nil, track: 0) }
                 try await mixer.attachVideo(nil)
                 source = "glasses"
                 cameraDevice = nil
@@ -145,6 +142,9 @@ extension Streamer {
                 // In a multicam session the overlay may hold the very camera the main now wants (front <-> back), and one
                 // device can't feed two inputs: free track 1 first. It is re-attached below with the opposite position.
                 if dualCamActive { await detachOverlay() }
+                // Re-attaching track 0 in a running multicam session left only the overlay's connection (main camera
+                // dark; hardwareCost 0.25, one input, in the topology log). Into an empty track, as at launch, both run.
+                if multi { try? await mixer.attachVideo(nil, track: 0) }
                 // A multicam session can't apply presets at all -- each device's activeFormat is picked below.
                 // UVC formats rarely match a preset, so an external device never gets one.
                 if !multi, !isExt { await mixer.setSessionPreset(phoneQuality.sessionPreset) }
