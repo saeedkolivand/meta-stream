@@ -20,7 +20,11 @@ struct Money: Codable, Equatable, Hashable, Sendable {
         case "RIAL", "IRR", "RLS", "ریال": return "IRR"
         case "$", "US$", "DOLLAR": return "USD"
         case "€", "EURO": return "EUR"
-        default: return c.isEmpty ? "USD" : c
+        default:
+            if c.isEmpty { return "USD" }
+            // Codes come from donation sites and end up in the bot's chat posts: real ones are 2-6 letters or digits.
+            let ok = (2...6).contains(c.count) && c.unicodeScalars.allSatisfy { ("A"..."Z").contains($0) || ("0"..."9").contains($0) }
+            return ok ? c : "XXX"
         }
     }
 
