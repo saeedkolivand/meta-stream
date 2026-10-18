@@ -24,11 +24,11 @@ enum AlertIsland {
 
     static func total(hold: Int) -> Double { enter + Double(hold) + exit }
 
-    static func isBig(_ e: ChatEvent) -> Bool {
-        (e.kind == .tip && e.amountCents >= 1000) || (e.kind == .raid && e.count >= 50)
+    @MainActor static func isBig(_ e: ChatEvent) -> Bool {
+        (e.kind == .tip && (Rates.shared.convert(e.tipMoney, to: "USD") ?? 0) >= 10) || (e.kind == .raid && e.count >= 50)
     }
 
-    static func height(_ e: ChatEvent) -> CGFloat { isBig(e) ? 154 : 124 }
+    @MainActor static func height(_ e: ChatEvent) -> CGFloat { isBig(e) ? 154 : 124 }
 
     /// ARGB per kind; subscribe takes the widget's accent so the colour setting still means something.
     static func color(_ k: ChatEvent.Kind, accent: UInt32) -> UInt32 {
@@ -53,13 +53,15 @@ enum AlertIsland {
         }
     }
 
+    static func label(_ e: ChatEvent) -> String { e.kind == .cheer && e.origin == "kick" ? "KICKS" : label(e.kind) }
+
     /// The amount at `progress` (0...1) of its count-up; nil for follows and subs.
     static func amountText(_ e: ChatEvent, progress p: Double) -> String? {
         switch e.kind {
         case .tip:
-            let dollars = Double(e.amountCents) / 100 * p
-            return e.amountCents % 100 == 0 ? "$\(Int(dollars.rounded()))" : String(format: "$%.2f", dollars)
-        case .cheer: return "\(Int((Double(e.count) * p).rounded())) bits"
+            let m = e.tipMoney
+            return Money(m.amount * Decimal(p), m.currency).display
+        case .cheer: return "\(Int((Double(e.count) * p).rounded())) \(e.cheerUnit)"
         case .raid: return "\(Int((Double(e.count) * p).rounded())) viewers"
         default: return nil
         }

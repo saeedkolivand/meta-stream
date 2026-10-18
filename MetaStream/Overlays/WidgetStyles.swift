@@ -147,6 +147,39 @@ struct EventListStyle: Equatable, Sendable {
     }
 }
 
+struct GoalWidgetStyle: Equatable, Sendable {
+    var width: CGFloat = 720
+    var height: CGFloat = 120
+    var fontSize: CGFloat = 28
+    var barColor: UInt32 = 0xFF53_FC18
+    var trackColor: UInt32 = 0xFF26_262B
+    var textColor: UInt32 = 0xFFFF_FFFF
+    var backgroundColor: UInt32 = 0xD910_1014
+    var background = true
+    var showPercent = true
+    var showOther = false
+    var face = ""
+
+    init() {}
+    init(_ d: [String: String]) {
+        let o = GoalWidgetStyle()
+        width = d.num("width", o.width); height = d.num("height", o.height); fontSize = d.num("fontSize", o.fontSize)
+        barColor = d.argb("barColor", o.barColor); trackColor = d.argb("trackColor", o.trackColor)
+        textColor = d.argb("textColor", o.textColor); backgroundColor = d.argb("backgroundColor", o.backgroundColor)
+        background = d.flag("background", o.background); showPercent = d.flag("showPercent", o.showPercent)
+        showOther = d.flag("showOther", o.showOther); face = d.str("face", o.face)
+    }
+
+    var natural: CGSize { CGSize(width: width, height: height) }
+
+    var data: [String: String] {
+        ["width": "\(Double(width))", "height": "\(Double(height))", "fontSize": "\(Double(fontSize))",
+         "barColor": "\(barColor)", "trackColor": "\(trackColor)", "textColor": "\(textColor)",
+         "backgroundColor": "\(backgroundColor)", "background": flagText(background), "showPercent": flagText(showPercent),
+         "showOther": flagText(showOther), "face": face]
+    }
+}
+
 struct QRWidgetStyle: Equatable, Sendable {
     var text = ""
     var caption = ""

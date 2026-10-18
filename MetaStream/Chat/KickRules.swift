@@ -25,7 +25,7 @@ enum KickRules {
         "App\\Events\\GiftedSubscriptionsEvent": {"kind": "subscribe", "user": ["gifter_username", "username"], "count": ["gifted_usernames", "quantity", "gifter_total"], "minCount": 1},
         "App\\Events\\StreamHostEvent": {"kind": "raid", "user": ["host_username"], "count": ["number_viewers"]},
         "App\\Events\\FollowersUpdated": {"kind": "follow", "user": ["username"], "require": "followed"},
-        "App\\Events\\KicksGifted": {"kind": "tip", "user": ["sender.username", "username"], "amount": ["gift.amount", "amount"], "text": ["message"]}
+        "App\\Events\\KicksGifted": {"kind": "cheer", "user": ["sender.username", "username"], "count": ["gift.amount", "amount"], "text": ["message"]}
       }
     }
     """#

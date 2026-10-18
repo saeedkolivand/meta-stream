@@ -17,6 +17,7 @@ struct WidgetInspectorView: View {
         case .chat: ChatWidgetStyle().data
         case .alerts: AlertWidgetStyle().data
         case .events: EventListStyle().data
+        case .goal: GoalWidgetStyle().data
         case .qr: QRWidgetStyle().data
         case .text: TextWidgetStyle().data
         default: [:]
@@ -42,6 +43,7 @@ struct WidgetInspectorView: View {
             case .alerts: alertSection
             case .events: eventSection
             case .text: textSection
+            case .goal: goalSection
             case .qr: qrSection
             case .browser: webSection
             case .image, .media, .color, .slideshow: EmptyView()
@@ -102,6 +104,24 @@ struct WidgetInspectorView: View {
             Toggle("Background", isOn: flag("background"))
             ColorPicker("Background color", selection: color("backgroundColor"))
             ColorPicker("Text color", selection: color("textColor"))
+        }
+    }
+
+    @ViewBuilder private var goalSection: some View {
+        Section {
+            fontPicker
+            slider("Font size", num("fontSize"), 16...64, format: "%.0f")
+            slider("Box width", num("width"), 300...1200, format: "%.0f")
+            slider("Box height", num("height"), 80...300, format: "%.0f")
+            Toggle("Show percent", isOn: flag("showPercent"))
+            Toggle("Show other currencies", isOn: flag("showOther"))
+            Toggle("Background", isOn: flag("background"))
+            ColorPicker("Bar color", selection: color("barColor"))
+            ColorPicker("Track color", selection: color("trackColor"))
+            ColorPicker("Text color", selection: color("textColor"))
+            ColorPicker("Background color", selection: color("backgroundColor"))
+        } header: { Text("Goal") } footer: {
+            Text("Title, target and currency are set in Settings.")
         }
     }
 

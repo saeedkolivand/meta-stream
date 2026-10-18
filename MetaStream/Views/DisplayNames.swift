@@ -53,9 +53,8 @@ enum DisplayNames {
     static func eventSummary(_ e: ChatEvent) -> String {
         switch e.kind {
         case .tip:
-            let amount = String(format: "%.2f", Double(e.amountCents) / 100)
-            return "\(e.user) tipped $\(amount)" + (e.text.isEmpty ? "" : " — \(e.text)")
-        case .cheer: return "\(e.user) cheered \(e.count) bits" + (e.text.isEmpty ? "" : " — \(e.text)")
+            return "\(e.user) tipped \(e.tipMoney.display)" + (e.text.isEmpty ? "" : " — \(e.text)")
+        case .cheer: return "\(e.user) cheered \(e.count) \(e.cheerUnit)" + (e.text.isEmpty ? "" : " — \(e.text)")
         case .follow: return "\(e.user) followed"
         case .subscribe:
             return e.count == 0 ? "\(e.user) subscribed" : e.count == 1 ? "\(e.user) gifted a sub" : "\(e.user) gifted \(e.count) subs"
@@ -63,6 +62,13 @@ enum DisplayNames {
         case .message: return e.text
         }
     }
+}
+
+extension ChatEvent {
+    /// A tip in the currency it was given in; events without one carry US cents.
+    var tipMoney: Money { money ?? Money(Decimal(amountCents) / 100, "USD") }
+    /// What a `.cheer` counts: Kick's currency is KICKs, Twitch's is bits.
+    var cheerUnit: String { origin == "kick" ? "KICKs" : "bits" }
 }
 
 /// Migrates the old `chatSite` UserDefaults key to `chatOrigin`. Call before first read; safe to call

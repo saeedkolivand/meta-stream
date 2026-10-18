@@ -16,8 +16,10 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
     private var metersPerSecond: Double?
     private var city = ""
     private var region = ""           // "Tehran Province, Iran": for the app bot's !location, never the city
-    private var meters = 0.0           // driven since distanceKey (the go-live time), reset when a new stream starts
-    private var distanceKey: Date?
+    // Travelled on `distanceDay` (the day the current stream started), kept across streams and launches: a second
+    // stream the same day carries on, the first one on a new day starts at 0.
+    private var meters = UserDefaults.standard.double(forKey: "distanceMeters")
+    private var distanceDay = UserDefaults.standard.string(forKey: "distanceDay") ?? ""
     private var lastFix: CLLocation?   // last accurate fix, the start of the next distance leg
     private var loggedFix = false
     private var phonePoll: Task<Void, Never>?   // iPad only: asks the hotspot iPhone for its GPS (see GPSShare)
@@ -33,11 +35,28 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
         return "\(n < 1 ? 0 : n) \(metric ? "km/h" : "mph")"
     }
 
-    /// "3.4 km" (mi in non-metric locales) travelled since the stream went live; 0.0 until a moving, accurate fix.
+    /// "3.4 km" (mi in non-metric locales) travelled today: since the first stream that started on the day the
+    /// current one did (`since` = its go-live time; nil = today). 0.0 until a moving, accurate fix.
     func distanceText(since: Date?) -> String {
-        if since != distanceKey { distanceKey = since; meters = 0 }
+        let day = Self.dayKey(since ?? Date())
+        if day != distanceDay {
+            distanceDay = day
+            meters = 0
+            saveDistance()
+        }
         let metric = Locale.current.measurementSystem == .metric
         return metric ? String(format: "%.1f km", meters / 1000) : String(format: "%.1f mi", meters / 1609.344)
+    }
+
+    private func saveDistance() {
+        UserDefaults.standard.set(meters, forKey: "distanceMeters")
+        UserDefaults.standard.set(distanceDay, forKey: "distanceDay")
+    }
+
+    /// "2026-10-18" in the phone's own calendar and time zone.
+    static func dayKey(_ d: Date) -> String {
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: d)
+        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
     /// Province/state and country only; nil until the first geocode.
@@ -125,7 +144,7 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
             if let prev = lastFix {
                 let d = loc.distance(from: prev), dt = time.timeIntervalSince(prev.timestamp)
                 // Only while moving (a parked car must not creep) and not across GPS jumps (> 70 m/s).
-                if speed >= 1, dt <= 0 || d / dt <= 70 { meters += d }
+                if speed >= 1, dt <= 0 || d / dt <= 70 { meters += d; saveDistance() }
             }
             lastFix = CLLocation(coordinate: loc.coordinate, altitude: 0, horizontalAccuracy: accuracy,
                                  verticalAccuracy: -1, timestamp: time)

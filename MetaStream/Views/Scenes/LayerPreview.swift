@@ -32,6 +32,8 @@ struct LayerPreview: View {
             AlertBannerView(event: AlertBannerView.sample, style: AlertWidgetStyle(layer.data))
         case .events:
             EventListView(events: EventListView.samples, style: EventListStyle(layer.data))
+        case .goal:
+            GoalView.sample(GoalWidgetStyle(layer.data))
         case .qr:
             let style = QRWidgetStyle(layer.data)
             if let img = QRCode.image(style.text.isEmpty ? "https://example.com" : style.text, style: style, size: natural) {

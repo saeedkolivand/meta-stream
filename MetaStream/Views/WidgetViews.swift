@@ -243,7 +243,7 @@ struct AlertBannerView: View {
                 .foregroundColor(event.kind == .follow ? Color(white: 17.0 / 255) : .white)   // follow's colour is light
                 .frame(width: d, height: d).background(tint, in: Circle())
             VStack(alignment: .leading, spacing: 2) {
-                Text(AlertIsland.label(event.kind)).font(font(0.45, .semibold)).kerning(size * 0.45 * 0.16)
+                Text(AlertIsland.label(event)).font(font(0.45, .semibold)).kerning(size * 0.45 * 0.16)
                     .foregroundColor(.white.opacity(0.74)).lineLimit(1)
                 Text(event.user).font(font(1, .bold)).foregroundColor(text)
                     .lineLimit(1).minimumScaleFactor(0.5).rowDirection(WidgetFonts.isRTL(event.user))

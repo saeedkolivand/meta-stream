@@ -5,15 +5,20 @@ import Foundation
 /// Two numeric fields cover everything: `amountCents` is money (tips), `count` is countable
 /// things (raid viewers, cheered bits). ponytail: cents as Int, never Double — currency in
 /// floating point is a rounding bug waiting to happen.
-/// `subscribe` with count > 0 is a GIFT of `count` subs by `user`; count 0 is a normal (re)sub.
+/// `subscribe` with count > 0 is a GIFT of `count` subs by `user`; count 0 is a normal (re)sub. Twitch Bits and Kick
+/// KICKs are both `cheer` with `count` = how many; what any of it is worth: DonationPrices.money.
 struct ChatEvent: Sendable {
     enum Kind: Equatable { case message, tip, cheer, follow, subscribe, raid }
     let kind: Kind
     let user: String
     var text: String = ""
     var amountCents: Int = 0
+    /// A tip's amount in the currency it was given in (donation sites, Super Chats); nil = `amountCents` US cents.
+    var money: Money? = nil
     var count: Int = 0
     var origin: String = ""
+    /// Twitch sub tier 1...3 (Prime counts as 1); other platforms have one tier.
+    var tier: Int = 1
     /// Normalized role badges (see ChatBadges) and the sender's "#RRGGBB" name color; messages only.
     var badges: [String] = []
     var color: String? = nil

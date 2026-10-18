@@ -43,6 +43,9 @@ struct MetaStreamApp: App {
                 if gpsShare { GPSShare.shared.setEnabled(true) }
                 ObsServer.shared.sync(streamer)
                 BotCommand.addClearOnce()
+                Rates.shared.start()
+                DonationHub.shared.start(chat: chat)
+                GoalStore.shared.onReached = { speaker.speakSystem("Goal reached"); AppBot.shared.goalReached(GoalStore.shared.config.title) }
                 StreamActivityActions.sendCommand = { id in
                     guard UserDefaults.standard.bool(forKey: "lockScreenCommands"),
                           let c = BotCommand.stored().first(where: { $0.id.uuidString == id }) else { return }
@@ -55,6 +58,10 @@ struct MetaStreamApp: App {
                 // chat.events for good. ponytail: one consumer for the app's lifetime. ChatFeed buffers, Speaker
                 // bounds its own lanes, so nothing here needs backpressure handling.
                 for await e in chat.events {
+                    // Every money event counts toward the goal once (a donation site's own events are already recorded).
+                    if e.origin != "test-donation", let m = DonationPrices.money(e) {
+                        GoalStore.shared.record(key: e.origin + ":" + (e.id.isEmpty ? UUID().uuidString : e.id), source: e.origin, money: m, at: e.at)
+                    }
                     speaker.speak(e)
                     AppBot.shared.handle(e)
                     if e.kind == .message, !e.flagged, BotList.isAnnouncement(user: e.user, text: e.text) {

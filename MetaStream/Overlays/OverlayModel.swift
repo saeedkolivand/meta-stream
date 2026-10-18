@@ -2,7 +2,7 @@
 import CoreGraphics
 import Foundation
 
-enum OverlayLayerType: String, Codable, Sendable { case browser, image, media, text, color, slideshow, chat, alerts, events, qr }
+enum OverlayLayerType: String, Codable, Sendable { case browser, image, media, text, color, slideshow, chat, alerts, events, qr, goal }
 
 /// Frame-relative placement for in-app widgets, so one layout works in portrait, landscape and any resolution.
 /// anchor: 0..8 row-major (0 TL, 1 TC, 2 TR, 3 ML, 4 C, 5 MR, 6 BL, 7 BC, 8 BR).
@@ -111,6 +111,7 @@ enum OverlayChecks {
         assert(ChatWidgetStyle(ChatWidgetStyle().data) == ChatWidgetStyle() && ChatWidgetStyle([:]) == ChatWidgetStyle())
         assert(AlertWidgetStyle(AlertWidgetStyle().data) == AlertWidgetStyle() && AlertWidgetStyle([:]) == AlertWidgetStyle())
         assert(EventListStyle(EventListStyle().data) == EventListStyle() && EventListStyle([:]) == EventListStyle())
+        assert(GoalWidgetStyle(GoalWidgetStyle().data) == GoalWidgetStyle() && GoalWidgetStyle([:]) == GoalWidgetStyle())
         assert(QRWidgetStyle(QRWidgetStyle().data) == QRWidgetStyle() && QRWidgetStyle([:]) == QRWidgetStyle())
         assert(TextWidgetStyle(TextWidgetStyle().data) == TextWidgetStyle() && TextWidgetStyle([:]) == TextWidgetStyle())
         applog("overlay", "OverlayChecks.demo() passed")

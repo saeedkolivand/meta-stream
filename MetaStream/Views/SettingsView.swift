@@ -17,6 +17,7 @@ struct SettingsView: View {
                     if Streamer.glassesConfigured { NavigationLink("Meta glasses") { GlassesVideoSettingsView() } }
                     NavigationLink("Camera") { CameraSettingsView() }
                     NavigationLink("Scenes & widgets") { OverlaySettingsView() }
+                    NavigationLink("Goal") { GoalSettingsView() }
                     NavigationLink("Audio") { AudioSettingsView() }
                     NavigationLink("Read aloud") { ReadAloudSettingsView() }
                     NavigationLink("Chat commands") { CommandsSettingsView() }

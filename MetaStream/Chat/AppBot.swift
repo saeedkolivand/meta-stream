@@ -42,8 +42,9 @@ final class AppBot: ObservableObject {
         "botTplStartingOn": "Starting soon!", "botTplEndingOn": "Thanks for watching!",
         "botTplFollow": "{user}, thanks for the follow!", "botTplSub": "{user}, thanks for subscribing!",
         "botTplGift": "{user}, thanks for the {count} gifted subs!", "botTplRaid": "{user}, thanks for the raid with {count} viewers!",
+        "botTplTip": "{user} donated {amount}, thank you!",
     ]
-    private static let commands = ["!location", "!speed", "!distance", "!weather", "!battery", "!uptime", "!commands"]
+    private static let commands = ["!location", "!speed", "!distance", "!weather", "!battery", "!uptime", "!goal", "!commands"]
 
     private func flag(_ key: String, _ fallback: Bool = true) -> Bool { UserDefaults.standard.object(forKey: key) as? Bool ?? fallback }
 
@@ -170,7 +171,10 @@ final class AppBot: ObservableObject {
 
     /// From the chat.events loop: viewer commands, the timers' message count and thank-yous.
     func handle(_ e: ChatEvent) {
-        guard !e.flagged, active, e.origin == "kick" || e.origin == "twitch" else { return }
+        guard !e.flagged, active else { return }
+        // A donation site's tip is thanked on every platform the bot is on; test donations never.
+        if e.kind == .tip, ["donofa", "reymit", "streamelements"].contains(e.origin) { thank(e, "botTplTip", to: ["kick", "twitch"]); return }
+        guard e.origin == "kick" || e.origin == "twitch" else { return }
         switch e.kind {
         case .message: message(e)
         case .follow: thank(e, "botTplFollow")
@@ -180,9 +184,16 @@ final class AppBot: ObservableObject {
         }
     }
 
-    private func thank(_ e: ChatEvent, _ key: String) {
+    private func thank(_ e: ChatEvent, _ key: String, to origins: [String]? = nil) {
         guard flag("botThanks"), !Speaker.isBlocked(e.user, extra: UserDefaults.standard.string(forKey: "ttsBlocked") ?? "") else { return }
-        say(e.origin, Self.fill(tpl(key), user: e.user, count: e.count))
+        let text = Self.fill(tpl(key), user: e.user, count: e.count).replacingOccurrences(of: "{amount}", with: e.tipMoney.display)
+        (origins ?? [e.origin]).forEach { say($0, text) }
+    }
+
+    /// From GoalStore.onReached.
+    func goalReached(_ title: String) {
+        guard flag("botNotices") else { return }
+        ["kick", "twitch"].forEach { say($0, "Goal reached: \(title)!") }
     }
 
     /// One of the app bot's own lines (read aloud and the counters skip them). Kick doesn't say what the bot account is
@@ -232,16 +243,20 @@ final class AppBot: ObservableObject {
         switch cmd {
         case "!location":
             if flag("botHideLocation", false) { return "Location is private right now" }
-            return loc.regionText.map { "\(name) is in \($0)" }
-        case "!speed": return known(loc.speedText).map { "\(name) is going \($0)" }
-        case "!distance": return "\(name) has travelled \(loc.distanceText(since: streamer?.liveSince)) this stream"
-        case "!weather": return known(WidgetWeather.shared.plainText).map { "It's \($0) where \(name) is" }
+            return loc.regionText.map { "\(name) is in \($0)" } ?? "\(name)'s location isn't known yet"
+        // An answer that says why beats silence, which looks like a broken bot (a Wi-Fi iPad has no GPS speed).
+        case "!speed": return known(loc.speedText).map { "\(name) is going \($0)" } ?? "Speed isn't available right now (no GPS)"
+        case "!distance": return "\(name) has travelled \(loc.distanceText(since: streamer?.liveSince)) today"
+        case "!weather": return known(WidgetWeather.shared.plainText).map { "It's \($0) where \(name) is" } ?? "The weather there isn't known yet"
+        case "!goal":
+            let g = GoalStore.shared, c = g.config.currency
+            return "\(Money(g.total, c).display) of \(Money(g.config.target, c).display) for \(g.config.title) (\(Int(g.progress * 100))%)"
         case "!commands":   // whichever commands are switched on right now
             let on = Self.commands.filter { $0 != "!commands" && flag("botCmd" + $0.dropFirst().capitalized) }
             return on.isEmpty ? nil : "Commands: " + on.joined(separator: " ")
         case "!battery": return (streamer?.phoneBattery ?? Self.batteryNow()).map { "\(name)'s phone is at \($0)%" }
         case "!uptime":
-            guard let since = streamer?.liveSince else { return nil }
+            guard let since = streamer?.liveSince else { return "\(name) isn't live right now" }
             let m = max(0, Int(Date().timeIntervalSince(since))) / 60
             return "\(name) has been live for \(m >= 60 ? "\(m / 60) h " : "")\(m % 60) min"
         default: return nil

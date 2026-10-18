@@ -280,8 +280,9 @@ final class TwitchEventSubProvider: ChatProvider {
             guard let user = event["user_name"] as? String else { return nil }
             return ChatEvent(kind: .follow, user: user, origin: "twitch")
         case "channel.subscribe":
-            guard let user = event["user_name"] as? String else { return nil }
-            return ChatEvent(kind: .subscribe, user: user, origin: "twitch")
+            // Recipients of a gift arrive here too (is_gift); channel.subscription.gift already counts them.
+            guard let user = event["user_name"] as? String, event["is_gift"] as? Bool != true else { return nil }
+            return ChatEvent(kind: .subscribe, user: user, origin: "twitch", tier: twitchTier(event))
         case "channel.raid":
             guard let user = event["from_broadcaster_user_name"] as? String else { return nil }
             return ChatEvent(kind: .raid, user: user, count: event["viewers"] as? Int ?? 0, origin: "twitch")
@@ -293,15 +294,21 @@ final class TwitchEventSubProvider: ChatProvider {
         }
     }
 
+    /// EventSub's "1000" / "2000" / "3000" (Prime arrives as "1000").
+    private static func twitchTier(_ event: [String: Any]) -> Int {
+        ((event["tier"] as? String).flatMap(Int.init) ?? 1000) / 1000
+    }
+
     /// Gifted subs (`total` of them; an anonymous gifter has a null user_name) and resubs with a message.
     private static func parseSubscriptionEvent(type: String, event: [String: Any]) -> ChatEvent? {
         switch type {
         case "channel.subscription.gift":
             let user = event["user_name"] as? String ?? "Anonymous"
-            return ChatEvent(kind: .subscribe, user: user, count: max(chatInt(event["total"]) ?? 1, 1), origin: "twitch")
+            return ChatEvent(kind: .subscribe, user: user, count: max(chatInt(event["total"]) ?? 1, 1), origin: "twitch", tier: twitchTier(event))
         case "channel.subscription.message":
             guard let user = event["user_name"] as? String else { return nil }
-            return ChatEvent(kind: .subscribe, user: user, text: (event["message"] as? [String: Any])?["text"] as? String ?? "", origin: "twitch")
+            return ChatEvent(kind: .subscribe, user: user, text: (event["message"] as? [String: Any])?["text"] as? String ?? "", origin: "twitch",
+                             tier: twitchTier(event))
         default:
             return nil
         }
@@ -365,7 +372,9 @@ final class YouTubePollProvider: ChatProvider {
         case "superChatEvent", "superStickerEvent":
             let details = (snippet[type == "superChatEvent" ? "superChatDetails" : "superStickerDetails"] as? [String: Any]) ?? [:]
             let micros = (details["amountMicros"] as? String).flatMap(Int.init) ?? (details["amountMicros"] as? NSNumber)?.intValue ?? 0
-            return ChatEvent(kind: .tip, user: user, text: details["userComment"] as? String ?? "", amountCents: micros / 10_000, origin: "youtube")
+            let currency = details["currency"] as? String ?? "USD"
+            return ChatEvent(kind: .tip, user: user, text: details["userComment"] as? String ?? "", amountCents: micros / 10_000,
+                             money: Money(Decimal(micros) / 1_000_000, currency), origin: "youtube")
         default:
             return parseMembership(type: type, snippet: snippet, user: user)
         }

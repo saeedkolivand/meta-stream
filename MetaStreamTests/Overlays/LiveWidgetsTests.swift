@@ -68,7 +68,7 @@ final class AlertIslandTests: XCTestCase {
         XCTAssertNil(AlertIsland.amountText(ChatEvent(kind: .follow, user: "a"), progress: 1))
     }
 
-    func testBigTier() {
+    @MainActor func testBigTier() {
         XCTAssertTrue(AlertIsland.isBig(ChatEvent(kind: .tip, user: "a", amountCents: 1000)))
         XCTAssertFalse(AlertIsland.isBig(ChatEvent(kind: .tip, user: "a", amountCents: 999)))
         XCTAssertTrue(AlertIsland.isBig(ChatEvent(kind: .raid, user: "a", count: 50)))

@@ -2,13 +2,14 @@ import SwiftUI
 
 /// What the "+" menu can add. Each kind has one place that knows its defaults, so a new widget looks right immediately.
 enum NewWidget: CaseIterable {
-    case chat, alerts, events, text, clock, liveTime, drive, socials, image, qr, web
+    case chat, alerts, events, goal, text, clock, liveTime, drive, socials, image, qr, web
 
     var title: String {
         switch self {
         case .chat: "Chat"
         case .alerts: "Alerts"
         case .events: "Event list"
+        case .goal: "Goal"
         case .text: "Text"
         case .clock: "Clock"
         case .liveTime: "Live time"
@@ -25,6 +26,7 @@ enum NewWidget: CaseIterable {
         case .chat: OverlayLayerType.chat.icon
         case .alerts: OverlayLayerType.alerts.icon
         case .events: OverlayLayerType.events.icon
+        case .goal: OverlayLayerType.goal.icon
         case .text: OverlayLayerType.text.icon
         case .clock: "clock.fill"
         case .liveTime: "record.circle"
@@ -42,6 +44,7 @@ enum NewWidget: CaseIterable {
         case .chat: OverlayLayer.widget(.chat, name: "Chat", layout: .inset(6), data: ChatWidgetStyle().data)
         case .alerts: OverlayLayer.widget(.alerts, name: "Alerts", layout: .inset(1), data: AlertWidgetStyle().data)
         case .events: OverlayLayer.widget(.events, name: "Event list", layout: .inset(2), data: EventListStyle().data)
+        case .goal: OverlayLayer.widget(.goal, name: "Goal", layout: .inset(1), data: GoalWidgetStyle().data)
         case .text: textLayer()
         case .clock: preset("Clock", "🕒 {time}  {date}  {weather}", 0)
         case .liveTime: preset("Live time", "🔴 {uptime}", 2)
@@ -77,6 +80,7 @@ extension OverlayLayerType {
         case .chat: "bubble.left.and.bubble.right.fill"
         case .alerts: "bell.badge.fill"
         case .events: "list.bullet.rectangle.fill"
+        case .goal: "flag.checkered"
         case .text: "textformat"
         case .image: "photo.fill"
         case .media: "film.fill"

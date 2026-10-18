@@ -114,8 +114,10 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
             defer { lastChatter = e.user }
             return e.user == lastChatter ? note : "\(user) says \(note)"
         case .tip:
-            guard tipsOn, e.amountCents >= minTipCents else { return nil }
-            let amount = Self.spokenAmount(cents: e.amountCents)
+            let m = e.tipMoney
+            let usdCents = Rates.shared.convert(m, to: "USD").map { NSDecimalNumber(decimal: $0 * 100).intValue } ?? Int.max   // unknown rate: read it
+            guard tipsOn, usdCents >= minTipCents else { return nil }
+            let amount = Self.spokenMoney(m)
             return note.isEmpty ? "\(user) tipped \(amount)" : "\(user) tipped \(amount): \(note)"
         case .follow:
             return followsOn ? "\(user) followed" : nil
@@ -123,7 +125,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
             return subsOn ? "\(user) subscribed" : nil
         case .cheer:
             guard tipsOn else { return nil }   // bits are money; same gate as tips
-            return note.isEmpty ? "\(user) cheered \(e.count) bits" : "\(user) cheered \(e.count) bits: \(note)"
+            return note.isEmpty ? "\(user) cheered \(e.count) \(e.cheerUnit)" : "\(user) cheered \(e.count) \(e.cheerUnit): \(note)"
         case .raid:
             return raidsOn ? "\(user) raided with \(e.count) viewers" : nil
         }
@@ -238,6 +240,28 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         s = SharedPatterns.mention.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "$1")
         s = s.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
         return s.count > maxLength ? String(s.prefix(maxLength)) : s
+    }
+
+    /// "one million toman", "ten euros", "five dollars and fifty cents"; other currencies as a plain number and code.
+    static func spokenMoney(_ money: Money) -> String {
+        let m = money.inToman
+        guard m.amount > 0 else { return "money" }
+        let f = NumberFormatter(); f.numberStyle = .spellOut; f.locale = Locale(identifier: "en_US")
+        func words(_ d: Decimal) -> String { f.string(from: d as NSDecimalNumber) ?? "\(d)" }
+        let unit: (String, String)
+        switch m.currency {
+        case "IRT": unit = ("toman", "toman")
+        case "EUR": unit = ("euro", "euros")
+        case "USD": unit = ("dollar", "dollars")
+        default: return "\(m.amount) \(m.currency)"
+        }
+        let amount = m.amount.rounded(m.currency == "IRT" ? 0 : 2)
+        var whole = Decimal(), rest = amount
+        NSDecimalRound(&whole, &rest, 0, .down)
+        let cents = NSDecimalNumber(decimal: (amount - whole) * 100).intValue
+        var s = whole == 0 && cents > 0 ? "" : "\(words(whole)) \(whole == 1 ? unit.0 : unit.1)"
+        if cents > 0 { s += (s.isEmpty ? "" : " and ") + "\(words(Decimal(cents))) cent\(cents == 1 ? "" : "s")" }
+        return s
     }
 
     /// Spells whole-dollar amounts ("five dollars"); anything with cents stays a plain number ("12.50 dollars").

@@ -39,7 +39,7 @@ struct AppBotSettingsView: View {
                 template("Ending scene", "botTplEndingOn")
             } footer: { Text("Empty = don't post.") }
             Section {
-                ForEach(["Location", "Speed", "Distance", "Weather", "Battery", "Uptime", "Commands"], id: \.self) { c in
+                ForEach(["Location", "Speed", "Distance", "Weather", "Battery", "Uptime", "Goal", "Commands"], id: \.self) { c in
                     CommandToggle(name: c)
                 }
                 Toggle("Hide location", isOn: $hideLocation)
@@ -52,7 +52,8 @@ struct AppBotSettingsView: View {
                 template("Sub", "botTplSub")
                 template("Gifted subs", "botTplGift")
                 template("Raid", "botTplRaid")
-            } footer: { Text("{user} and {count}. Empty = don't post.") }
+                template("Donation", "botTplTip")
+            } footer: { Text("{user}, {count} and (donations) {amount}. Empty = don't post.") }
             Section {
                 Toggle("Timers", isOn: $timersOn)
                 ForEach($timers) { $t in
