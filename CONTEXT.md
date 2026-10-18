@@ -158,6 +158,49 @@ _Avoid_: audio, output, master
 A short audio file the streamer plays into the mix on a tap, from the soundboard.
 _Avoid_: sound effect, SFX, sample
 
+### Money
+
+**Donation**:
+Money a viewer gives the streamer, from any source: a donation site, a platform tip, KICKs, Bits,
+a Super Chat, a subscription or a gifted subscription. It has an amount and the currency it was
+given in, counted at what the viewer paid, before any platform or site takes its cut. A
+subscription's amount is its set price, since platforms don't say what one paid. Only a paid
+donation counts; one refunded later is taken back out of the goal at the value it added.
+_Avoid_: tip (as the general word), dono, support, payment
+
+**Goal**:
+A target sum of donations the stream works toward, counted in one goal currency and shown as
+progress. A donation in another currency is converted into it once, at the rate when it
+arrives, and keeps that value; later rate changes never move the goal. One goal runs at a time and
+lasts across streams until the streamer resets it, counting on past its target.
+_Avoid_: donation goal bar, target, milestone
+
+**Donation source**:
+Where the app learns of a donation: a platform's own event, a donation site's API, the streamer
+entering it by hand (cash, a bank transfer), or (only where nothing more direct exists) a bot's
+chat announcement. Every donation has exactly one, so nothing is counted twice.
+_Avoid_: integration, provider, feed
+
+**Missed donation**:
+A donation made while the app wasn't listening (closed, or reconnecting), found afterwards on the
+donation site. It counts toward the goal but is never announced: no alert, read-aloud or thank-you.
+_Avoid_: backfilled, offline donation, catch-up
+
+**Pending donation**:
+A donation the app knows about but can't convert yet because no recent enough rate is known. It
+is listed but doesn't move the goal until a rate arrives.
+_Avoid_: unconverted, queued, waiting tip
+
+**Market rate**:
+The free-market toman rate (what toman actually trades at), never the far lower official rial
+rate. A streamer-set rate replaces it when given.
+_Avoid_: official rate, bank rate, exchange price
+
+**Goal currency**:
+The one currency a goal is counted in (toman, US dollar or euro). Other currencies may be shown
+beside it as conversions, never counted separately.
+_Avoid_: base currency, unit
+
 **Privacy blur**:
 Obscuring faces, text, licence plates or chosen objects in the outgoing picture. Best-effort
 per frame, never a guarantee.
