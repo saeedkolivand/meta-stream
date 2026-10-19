@@ -44,6 +44,7 @@ struct MetaStreamApp: App {
                 ObsServer.shared.sync(streamer)
                 BotCommand.addClearOnce()
                 Rates.shared.start()
+                AudioRouteLog.start()
                 DonationHub.shared.start(chat: chat)
                 GoalStore.shared.onReached = { speaker.speakSystem("Goal reached"); AppBot.shared.goalReached(GoalStore.shared.config.title) }
                 StreamActivityActions.sendCommand = { id in

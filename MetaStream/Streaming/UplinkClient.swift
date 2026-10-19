@@ -235,6 +235,7 @@ extension Streamer {
                 // generic one. Glasses (HFP) and USB mics keep .default, which leaves their own processing alone.
                 if port == nil || port?.portType == .builtInMic { try? audioSession.setMode(.videoRecording) }
                 try audioSession.setActive(true)
+                AudioRouteLog.log("go live")
 
                 if !muted { try await mixer.attachAudio(AVCaptureDevice.default(for: .audio)) }
                 await wireMixer()
