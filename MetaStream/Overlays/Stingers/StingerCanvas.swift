@@ -10,6 +10,7 @@ final class StingerCanvas {
     let size: CGSize
     private var texts: [String: CGImage] = [:]
     private var strokes: [String: CIImage] = [:]
+    var symbols: [String: CGImage] = [:]   // SF Symbols rendered once (see AlertIslandGPU.swift)
 
     init(size: CGSize) { self.size = size }
 

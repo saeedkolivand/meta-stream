@@ -64,6 +64,14 @@ enum OverlayScreen {
         return o
     }
 
+    /// An Island alert over `rect` (the whole canvas); it draws inside the Alerts widget's `box`.
+    @ScreenActor static func makeIsland(_ rect: CGRect, _ e: ChatEvent, _ style: AlertWidgetStyle, hold: Int, big: Bool,
+                                        box: CGRect) -> AlertIslandScreenObject {
+        let o = AlertIslandScreenObject(event: e, style: style, hold: hold, big: big, box: box)
+        layout(o, rect)
+        return o
+    }
+
     /// Z-order is add order: later layers draw on top (the camera frame is the Screen's own first child).
     /// Overlays composite on the GPU (Core Image on Metal): the CPU renderer converts and alpha-blends every overlay on
     /// the CPU each frame. Switched before the first overlay goes on; HaishinKit's camera object re-lays out every frame.

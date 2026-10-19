@@ -8,7 +8,7 @@ import UIKit
 private func argbColor(_ argb: UInt32) -> Color { Color(uiColor: OverlayRaster.color(argb: argb)) }
 
 /// SF Symbol + tint per event kind, shared by chat event rows and the event list.
-private func eventSymbol(_ k: ChatEvent.Kind) -> (name: String, color: Color) {
+func eventSymbol(_ k: ChatEvent.Kind) -> (name: String, color: Color) {
     switch k {
     case .message: return ("bubble.left.fill", .white)
     case .follow: return ("heart.fill", .pink)
@@ -253,9 +253,13 @@ struct AlertBannerView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            if let amount = AlertIsland.amountText(event, progress: pose.progress) {
-                Text(amount).font(font(big ? 1.8 : 1.3, .bold)).monospacedDigit()
-                    .foregroundColor(tint).lineLimit(1).fixedSize()
+            if let a = AlertIsland.amountParts(event, progress: pose.progress) {
+                // Number at the amount size, unit at half of it; capped at 40% of the shared width and shrinking past
+                // that, so the name column never collapses.
+                let k: CGFloat = big ? 1.8 : 1.3
+                (Text(a.number).font(font(k, .bold)).monospacedDigit() + Text(a.unit.isEmpty ? "" : " " + a.unit).font(font(k / 2, .bold)))
+                    .foregroundColor(tint).lineLimit(1).minimumScaleFactor(0.5)
+                    .frame(maxWidth: AlertIsland.amountMax(big: big), alignment: .trailing)
             }
         }
         .padding(.leading, (height - d) / 2).padding(.trailing, 44)

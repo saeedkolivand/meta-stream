@@ -1,5 +1,5 @@
 // Native alert banner: queues follow/sub/raid/tip/cheer events from the chat feed and shows each one in turn.
-// The "Island" capsule animates as ~24 fps re-renders of AlertBannerView (see AlertIsland.swift); the hold is one static frame.
+// The "Island" capsule is drawn on the GPU (AlertIslandGPU.swift); without a mixer it falls back to ~24 fps CPU re-renders of AlertBannerView.
 import HaishinKit
 import SwiftUI
 import UIKit
@@ -29,7 +29,7 @@ extension OverlayCompositor {
                 if e.kind == .tip || e.kind == .cheer, style.donationKind != .island, let mixer = self?.mixer {
                     await DonationAlertPlayer.play(e, style: style, canvas: canvas, box: box, goalBox: goalBox, mixer: mixer)
                 } else {
-                    await AlertPlayer.play(e, style: style, on: o, natural: natural, box: box, canvas: canvas)
+                    await AlertPlayer.play(e, style: style, on: o, natural: natural, box: box, canvas: canvas, mixer: self?.mixer)
                 }
                 try? await Task.sleep(for: .seconds(AlertIsland.gap))
             }

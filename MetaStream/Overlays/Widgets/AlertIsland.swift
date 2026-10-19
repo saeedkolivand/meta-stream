@@ -28,7 +28,28 @@ enum AlertIsland {
         (e.kind == .tip && (Rates.shared.convert(e.tipMoney, to: "USD") ?? 0) >= 10) || (e.kind == .raid && e.count >= 50)
     }
 
-    @MainActor static func height(_ e: ChatEvent) -> CGFloat { isBig(e) ? 154 : 124 }
+    @MainActor static func height(_ e: ChatEvent) -> CGFloat { height(big: isBig(e)) }
+    static func height(big: Bool) -> CGFloat { big ? 154 : 124 }
+
+    // Content geometry in points of the 900x240 natural area, shared by the SwiftUI banner and the GPU recipe.
+    static let gapX: CGFloat = 24
+    static let padTrailing: CGFloat = 44
+    static func fullWidth(big: Bool) -> CGFloat { big ? 800 : 740 }
+    static func iconSize(big: Bool) -> CGFloat { big ? 120 : 84 }
+    /// What the name column and the amount share (icon and the three gaps/padding taken out).
+    static func share(big: Bool) -> CGFloat {
+        fullWidth(big: big) - (height(big: big) - iconSize(big: big)) / 2 - iconSize(big: big) - 2 * gapX - padTrailing
+    }
+    /// The amount may take 40% of the shared width and shrinks past that, so the name always shows.
+    static func amountMax(big: Bool) -> CGFloat { 0.4 * share(big: big) }
+
+    /// 12_300 -> "12.3K", 1_200_000 -> "1.2M"; plain below 10,000.
+    static func compact(_ n: Int) -> String {
+        guard n >= 10_000 else { return "\(n)" }
+        let (v, unit) = n >= 999_950 ? (Double(n) / 1e6, "M") : (Double(n) / 1e3, "K")
+        let s = String(format: "%.1f", v)
+        return (s.hasSuffix(".0") ? String(s.dropLast(2)) : s) + unit
+    }
 
     /// ARGB per kind; subscribe takes the widget's accent so the colour setting still means something.
     static func color(_ k: ChatEvent.Kind, accent: UInt32) -> UInt32 {
@@ -57,12 +78,17 @@ enum AlertIsland {
 
     /// The amount at `progress` (0...1) of its count-up; nil for follows and subs.
     static func amountText(_ e: ChatEvent, progress p: Double) -> String? {
+        amountParts(e, progress: p).map { $0.unit.isEmpty ? $0.number : "\($0.number) \($0.unit)" }
+    }
+
+    /// The amount as number + unit (drawn smaller), counts compact from 10,000; nil for follows and subs.
+    static func amountParts(_ e: ChatEvent, progress p: Double) -> (number: String, unit: String)? {
         switch e.kind {
         case .tip:
             let m = e.tipMoney
-            return Money(m.amount * Decimal(p), m.currency).display
-        case .cheer: return "\(Int((Double(e.count) * p).rounded())) \(e.cheerUnit)"
-        case .raid: return "\(Int((Double(e.count) * p).rounded())) viewers"
+            return (Money(m.amount * Decimal(p), m.currency).display, "")
+        case .cheer: return (compact(Int((Double(e.count) * p).rounded())), e.cheerUnit)
+        case .raid: return (compact(Int((Double(e.count) * p).rounded())), "viewers")
         default: return nil
         }
     }
@@ -93,11 +119,28 @@ enum AlertIsland {
     }
 }
 
-/// The render loop for one alert: motion phases draw ~24 fps, the hold draws a single static frame.
+/// Plays one alert: on the GPU (IslandArt) when the mixer is up; otherwise the CPU fallback, whose motion phases
+/// draw ~24 fps and whose hold draws a single static frame.
 @MainActor
 enum AlertPlayer {
-    static func play(_ e: ChatEvent, style: AlertWidgetStyle, on o: ImageScreenObject, natural: CGSize, box: CGRect, canvas: CGSize) async {
+    static func play(_ e: ChatEvent, style: AlertWidgetStyle, on o: ImageScreenObject, natural: CGSize, box: CGRect, canvas: CGSize,
+                     mixer: MediaMixer?) async {
         let hold = style.holdSeconds, big = AlertIsland.isBig(e)
+        if let mixer {
+            let g = await OverlayScreen.makeIsland(CGRect(origin: .zero, size: canvas), e, style, hold: hold, big: big, box: box)
+            await OverlayScreen.add([g], to: mixer)   // added last: on top of everything
+            // Layout only re-runs when invalidated, so poke it at 60 Hz (cheap: no drawing here), as for a stinger.
+            let poke = Task { @ScreenActor in
+                while !Task.isCancelled {
+                    g.invalidateLayout()
+                    try? await Task.sleep(for: .milliseconds(16))
+                }
+            }
+            try? await Task.sleep(for: .seconds(AlertIsland.total(hold: hold) + 0.15))   // a beat past the end, so it logs and clears itself
+            poke.cancel()
+            await OverlayScreen.remove([g], from: mixer)
+            return
+        }
         let start = Date(), total = AlertIsland.total(hold: hold)
         let exitAt = AlertIsland.enter + Double(hold)
         var heldDrawn = false
