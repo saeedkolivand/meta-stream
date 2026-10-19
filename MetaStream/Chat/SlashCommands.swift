@@ -46,12 +46,13 @@ struct SlashRunner {
 
     private static let both = ["ban", "unban", "timeout", "untimeout", "delete", "clear", "title", "category", "ad", "help"]
     private static let twitchOnly = ["slow", "emoteonly", "followers", "subscribers", "raid", "announce", "marker", "clip"]
-    private static let kickLater = ["host", "poll", "prediction", "polldelete", "followonly", "mod", "unmod", "vip", "unvip"]
+    private static let kickLater = ["host", "poll", "prediction", "polldelete", "followonly"]
+    private static let kickOnly = ["mod", "unmod", "vip", "unvip", "og", "unog"]   // run by KickWeb; Twitch has none here
 
     func run(_ name: String, _ a: [String]) async -> String {
         let label = DisplayNames.platformName(origin)
         if name == "help" { return "\(label): " + (Self.both + (isKick ? KickWeb.commands.filter { !Self.both.contains($0) } : Self.twitchOnly)).map { "/" + $0 }.joined(separator: " ") }
-        guard (Self.both + Self.twitchOnly + Self.kickLater).contains(name) else { return "Unknown command /\(name)" }
+        guard (Self.both + Self.twitchOnly + Self.kickLater + Self.kickOnly).contains(name) else { return "Unknown command /\(name)" }
         // adr/0005: through the signed-in kick.com page. Signed out, /clear keeps its public-API fallback below.
         if isKick, KickWeb.commands.contains(name) {
             let signedIn = await KickWeb.shared.ready()   // not inside `||`: autoclosures can't await
@@ -59,12 +60,17 @@ struct SlashRunner {
         }
         if isKick, Self.kickLater.contains(name) { return "Kick has no /\(name) yet" }
         if isKick, Self.twitchOnly.contains(name) { return "Kick has no API for /\(name) yet" }
-        if !isKick, Self.kickLater.contains(name) { return "Twitch has no /\(name)" }
+        if !isKick, Self.kickLater.contains(name) || Self.kickOnly.contains(name) { return "Twitch has no /\(name)" }
         if isKick ? p.kickUserID == 0 : p.twitchUserID.isEmpty { return "\(label) isn't connected" }
         if !isKick, let f = Self.feature(name), !p.twitchHasScopes(TwitchService.actionScopes[f] ?? []) { return "Reconnect Twitch to allow \(f)" }
         do {
             switch name {
-            case "ban", "timeout", "unban", "untimeout": return try await banning(name, a)
+            case "ban", "timeout", "unban", "untimeout":
+                do { return try await banning(name, a) }
+                catch {   // e.g. 401/403 without the moderation scope: try the signed-in kick.com page
+                    if isKick, let note = await viaKickWeb(name, a) { return note }
+                    throw error
+                }
             case "delete":
                 guard let raw = a.first else { return "Usage: /delete user" }
                 guard let m = lastMessage(from: login(raw)) else { return "No recent message from \(login(raw))" }
@@ -182,6 +188,16 @@ struct SlashRunner {
             _ = try await p.twitch.api().call("POST", "/moderation/bans", query: mod, body: ["data": data])
         }
         return secs.map { "Timed out \(who) for \(SlashCommand.pretty($0))" } ?? "Banned \(who)"
+    }
+
+    /// Kick ban/timeout/unban through kick.com's own endpoints (captured 2026-10-19); nil = not signed in or refused.
+    private func viaKickWeb(_ name: String, _ a: [String]) async -> String? {
+        guard let raw = a.first, await KickWeb.shared.ready() else { return nil }
+        let who = login(raw)
+        if name.hasPrefix("un") { return await KickWeb.shared.unban(who) ? "Unbanned \(who)" : nil }
+        guard name == "timeout" else { return await KickWeb.shared.ban(who, minutes: nil) ? "Banned \(who)" : nil }
+        let minutes = min(max(((a.dropFirst().first.flatMap(SlashCommand.seconds) ?? 600) + 59) / 60, 1), 10080)
+        return await KickWeb.shared.ban(who, minutes: minutes) ? "Timed out \(who) for \(SlashCommand.pretty(minutes * 60))" : nil
     }
 
     private func deleteMessage(_ id: String) async throws {

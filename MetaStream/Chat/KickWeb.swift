@@ -8,7 +8,7 @@ import WebKit
 final class KickWeb: ObservableObject {
     static let shared = KickWeb()
     static let commands = ["slow", "emoteonly", "followers", "followonly", "subscribers", "raid", "clip", "clear", "poll", "polldelete",
-                           "mod", "unmod", "vip", "unvip", "prediction"]
+                           "mod", "unmod", "vip", "unvip", "og", "unog", "prediction"]
     @Published private(set) var user = ""     // signed-in username; "" = not signed in
     var signedIn: Bool { !user.isEmpty }
     private var slug = ""
@@ -33,6 +33,23 @@ final class KickWeb: ObservableObject {
         let p = a.joined(separator: " ").split(separator: "|", omittingEmptySubsequences: false).map { $0.trimmingCharacters(in: .whitespaces) }
         guard let title = p.first, !title.isEmpty, (2...6).contains(p.count - 1), p.dropFirst().allSatisfy({ $0.count >= 2 }) else { return nil }
         return (title, Array(p.dropFirst()))
+    }
+
+    /// A typed username as kick.com wants it: no leading "@", lowercase; nil when empty.
+    static func person(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+        let u = (raw.hasPrefix("@") ? String(raw.dropFirst()) : raw).lowercased()
+        return u.isEmpty ? nil : u
+    }
+
+    /// JSON object text for a request body.
+    private static func jsonText(_ o: [String: Any]) -> String? {
+        (try? JSONSerialization.data(withJSONObject: o)).flatMap { String(data: $0, encoding: .utf8) }
+    }
+
+    /// Percent-encodes one path segment.
+    private static func segment(_ s: String) -> String {
+        s.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlPathAllowed.subtracting(CharacterSet(charactersIn: "/"))) ?? s
     }
 
     // MARK: session
@@ -70,6 +87,10 @@ final class KickWeb: ObservableObject {
         guard await ready() else { return "Sign in to kick.com in Settings to use /\(cmd)" }
         if name == "prediction" { return "Kick predictions open a dialog on kick.com; not supported yet" }
         if name == "subscribers" { return "Kick has no subscriber-only mode" }
+        let roles = ["mod": "moderators", "vip": "vips", "og": "ogs"]   // /unmod -> "mod" after dropping "un"
+        let role = roles[name.hasPrefix("un") ? String(name.dropFirst(2)) : name]
+        let who = Self.person(a.first)
+        if role != nil, who == nil { return "Usage: /\(name) user" }
         guard let w = await page("/popout/\(slug)/chat") else { return "kick.com chat isn't ready; try again" }
         let typed = "/" + ([name] + a).joined(separator: " ")
         let api = "https://kick.com/api/v2/channels/\(slug)/polls"
@@ -87,14 +108,39 @@ final class KickWeb: ObservableObject {
             req = ("PATCH", "https://web.kick.com/api/v1/channels/\(id)/chat/settings", body)
         case "clear":   // captured from kick.com's chat box on 2026-10-17 (HTTP 200); Kick then sends ChatroomClearEvent
             req = ("POST", "https://kick.com/api/v2/channels/\(slug)/chat-commands", #"{"command":"clear"}"#)
-        default:   // raid, clip, mod, unmod, vip, unvip: no known endpoint, type it like a person (unverified)
+        case "mod", "unmod", "vip", "unvip", "og", "unog":   // captured from kick.com on 2026-10-19 (HTTP 200/201)
+            guard let role, let who else { return "Usage: /\(name) user" }
+            let base = "https://kick.com/api/internal/v1/channels/\(slug)/community/\(role)"
+            req = name.hasPrefix("un") ? ("DELETE", base + "/" + Self.segment(who), nil) : ("POST", base, Self.jsonText(["username": who]))
+        default:   // raid, clip: no known endpoint, type it like a person (unverified)
             return await type(w, typed)
         }
         let r = await fetch(w, req.method, req.url, req.body)
         applog("chat", "kick.com /\(name) -> HTTP \(r.status)")
         if (200..<300).contains(r.status) { return "Done: \(typed)" }
         if r.status == 401 || r.status == 403 { return "kick.com session expired — sign in again in Settings" }
+        if role != nil { return "kick.com refused \(typed) (HTTP \(r.status))" }
         return await type(w, typed)
+    }
+
+    /// Ban (permanent) or timeout (minutes) through kick.com; true on 2xx. Captured on 2026-10-19. Caller checks `ready()`.
+    func ban(_ user: String, minutes: Int?) async -> Bool {
+        guard let who = Self.person(user) else { return false }
+        var body: [String: Any] = ["banned_username": who, "reason": "", "permanent": minutes == nil]
+        if let minutes { body["duration"] = minutes }
+        return await call(minutes == nil ? "ban" : "timeout", "POST", "https://kick.com/api/v2/channels/\(slug)/bans", Self.jsonText(body))
+    }
+
+    func unban(_ user: String) async -> Bool {
+        guard let who = Self.person(user) else { return false }
+        return await call("unban", "DELETE", "https://kick.com/api/v2/channels/\(slug)/bans/\(Self.segment(who))", nil)
+    }
+
+    private func call(_ name: String, _ method: String, _ url: String, _ body: String?) async -> Bool {
+        guard !slug.isEmpty, let w = await page("/") else { return false }
+        let r = await fetch(w, method, url, body)
+        applog("chat", "kick.com /\(name) -> HTTP \(r.status)")
+        return (200..<300).contains(r.status)
     }
 
     /// The channel id (not the user id), cached.
