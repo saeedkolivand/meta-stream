@@ -56,7 +56,12 @@ struct SlashRunner {
         // adr/0005: through the signed-in kick.com page. Signed out, /clear keeps its public-API fallback below.
         if isKick, KickWeb.commands.contains(name) {
             let signedIn = await KickWeb.shared.ready()   // not inside `||`: autoclosures can't await
-            if name != "clear" || signedIn { return await KickWeb.shared.run(name, a) }
+            if name != "clear" || signedIn {
+                let reply = await KickWeb.shared.run(name, a)
+                // Kick's ChatroomClearEvent clears the app too, but only if it arrives: don't depend on it.
+                if name == "clear", reply.hasPrefix("Done") { chat.clear(origin: "kick") }
+                return reply
+            }
         }
         if isKick, Self.kickLater.contains(name) { return "Kick has no /\(name) yet" }
         if isKick, Self.twitchOnly.contains(name) { return "Kick has no API for /\(name) yet" }
