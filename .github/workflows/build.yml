@@ -33,7 +33,10 @@ jobs:
           KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
           KEYCHAIN_PASSWORD="$(uuidgen)"
           echo "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
-          echo "$PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/profile.mobileprovision"
+          # Profiles may be gzipped before base64: a secret holds at most 48 KB and a profile listing several
+          # devices outgrows that. gunzip -f passes a plain (uncompressed) profile through unchanged.
+          profile() { echo "$1" | base64 --decode | gunzip -cf > "$2"; }
+          profile "$PROFILE_BASE64" "$RUNNER_TEMP/profile.mobileprovision"
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
           security set-keychain-settings -lut 21600 "$KEYCHAIN"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
@@ -53,7 +56,7 @@ jobs:
           # Absent = app-only build, exactly as before. Present = LIVE_ACTIVITY=true makes xcodegen include
           # liveactivity.yml, so the extension is built, embedded and signed with its own profile.
           if [ -n "$LIVE_ACTIVITY_PROFILE_BASE64" ]; then
-            echo "$LIVE_ACTIVITY_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/la.mobileprovision"
+            profile "$LIVE_ACTIVITY_PROFILE_BASE64" "$RUNNER_TEMP/la.mobileprovision"
             security cms -D -i "$RUNNER_TEMP/la.mobileprovision" > "$RUNNER_TEMP/la.plist"
             LA_UUID=$(/usr/libexec/PlistBuddy -c 'Print UUID' "$RUNNER_TEMP/la.plist")
             LA_NAME=$(/usr/libexec/PlistBuddy -c 'Print Name' "$RUNNER_TEMP/la.plist")
@@ -70,7 +73,7 @@ jobs:
           # Optional third profile for the screen-share broadcast extension (com.saeedkolivand.metastream.Screen);
           # absent = SCREEN=false, the app builds without it and hides the Screen source.
           if [ -n "$SCREEN_PROFILE_BASE64" ]; then
-            echo "$SCREEN_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/screen.mobileprovision"
+            profile "$SCREEN_PROFILE_BASE64" "$RUNNER_TEMP/screen.mobileprovision"
             security cms -D -i "$RUNNER_TEMP/screen.mobileprovision" > "$RUNNER_TEMP/screen.plist"
             SC_UUID=$(/usr/libexec/PlistBuddy -c 'Print UUID' "$RUNNER_TEMP/screen.plist")
             SC_NAME=$(/usr/libexec/PlistBuddy -c 'Print Name' "$RUNNER_TEMP/screen.plist")
