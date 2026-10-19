@@ -173,10 +173,12 @@ struct GoalWidgetStyle: Equatable, Sendable {
     var showPercent = true
     var showOther = false
     var face = ""
+    var design = "bar"   // "bar" | "liquid" | "road" | "segments"
 
     init() {}
     init(_ d: [String: String]) {
         let o = GoalWidgetStyle()
+        design = d.str("design", o.design)
         width = d.num("width", o.width); height = d.num("height", o.height); fontSize = d.num("fontSize", o.fontSize)
         barColor = d.argb("barColor", o.barColor); trackColor = d.argb("trackColor", o.trackColor)
         textColor = d.argb("textColor", o.textColor); backgroundColor = d.argb("backgroundColor", o.backgroundColor)
@@ -184,10 +186,18 @@ struct GoalWidgetStyle: Equatable, Sendable {
         showOther = d.flag("showOther", o.showOther); face = d.str("face", o.face)
     }
 
-    var natural: CGSize { CGSize(width: width, height: height) }
+    /// The bar follows the box sliders; the other designs are drawn at a fixed size.
+    var natural: CGSize {
+        switch design {
+        case "liquid": CGSize(width: 420, height: 76)
+        case "road": CGSize(width: 500, height: 74)
+        case "segments": CGSize(width: 480, height: 40)
+        default: CGSize(width: width, height: height)
+        }
+    }
 
     var data: [String: String] {
-        ["width": "\(Double(width))", "height": "\(Double(height))", "fontSize": "\(Double(fontSize))",
+        ["design": design, "width": "\(Double(width))", "height": "\(Double(height))", "fontSize": "\(Double(fontSize))",
          "barColor": "\(barColor)", "trackColor": "\(trackColor)", "textColor": "\(textColor)",
          "backgroundColor": "\(backgroundColor)", "background": flagText(background), "showPercent": flagText(showPercent),
          "showOther": flagText(showOther), "face": face]

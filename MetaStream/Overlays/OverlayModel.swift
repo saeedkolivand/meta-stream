@@ -112,6 +112,7 @@ enum OverlayChecks {
         assert(AlertWidgetStyle(AlertWidgetStyle().data) == AlertWidgetStyle() && AlertWidgetStyle([:]) == AlertWidgetStyle())
         assert(EventListStyle(EventListStyle().data) == EventListStyle() && EventListStyle([:]) == EventListStyle())
         assert(GoalWidgetStyle(GoalWidgetStyle().data) == GoalWidgetStyle() && GoalWidgetStyle([:]) == GoalWidgetStyle())
+        assert(GoalWidgetStyle(["design": "road"]).design == "road" && GoalWidgetStyle(GoalWidgetStyle(["design": "liquid"]).data).design == "liquid")
         assert(QRWidgetStyle(QRWidgetStyle().data) == QRWidgetStyle() && QRWidgetStyle([:]) == QRWidgetStyle())
         assert(TextWidgetStyle(TextWidgetStyle().data) == TextWidgetStyle() && TextWidgetStyle([:]) == TextWidgetStyle())
         applog("overlay", "OverlayChecks.demo() passed")

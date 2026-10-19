@@ -33,7 +33,8 @@ struct LayerPreview: View {
         case .events:
             EventListView(events: EventListView.samples, style: EventListStyle(layer.data))
         case .goal:
-            GoalView.sample(GoalWidgetStyle(layer.data))
+            let style = GoalWidgetStyle(layer.data)
+            if style.design == "bar" { GoalView.sample(style) } else { GoalDesignView.sample(style) }
         case .qr:
             let style = QRWidgetStyle(layer.data)
             if let img = QRCode.image(style.text.isEmpty ? "https://example.com" : style.text, style: style, size: natural) {

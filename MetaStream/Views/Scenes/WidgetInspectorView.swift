@@ -137,10 +137,18 @@ struct WidgetInspectorView: View {
 
     @ViewBuilder private var goalSection: some View {
         Section {
+            Picker("Design", selection: str("design")) {
+                Text("Bar").tag("bar")
+                Text("Liquid").tag("liquid")
+                Text("Road trip").tag("road")
+                Text("Segments").tag("segments")
+            }
             fontPicker
             slider("Font size", num("fontSize"), 16...64, format: "%.0f")
-            slider("Box width", num("width"), 300...1200, format: "%.0f")
-            slider("Box height", num("height"), 80...300, format: "%.0f")
+            if raw("design") == "bar" {   // the other designs have a fixed size; scale them with Size
+                slider("Box width", num("width"), 300...1200, format: "%.0f")
+                slider("Box height", num("height"), 80...300, format: "%.0f")
+            }
             Toggle("Show percent", isOn: flag("showPercent"))
             Toggle("Show other currencies", isOn: flag("showOther"))
             Toggle("Background", isOn: flag("background"))
