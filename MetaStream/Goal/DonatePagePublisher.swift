@@ -35,9 +35,18 @@ final class DonatePagePublisher: ObservableObject {
         return u
     }
 
+    /// The key is bound to the host it was saved for: pointing the URL at another site stops sending it until the
+    /// key is entered again, so a typo or a changed URL can never hand the key to someone else.
+    var hasToken: Bool { !token.isEmpty }
+
+    private var host: String? {
+        URL(string: pageURL.trimmingCharacters(in: .whitespaces))?.host?.lowercased()
+    }
+
     func setToken(_ raw: String) {
         let t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         keychain.set(t.isEmpty ? nil : t, forKey: "donatePageToken")
+        UserDefaults.standard.set(t.isEmpty ? nil : host, forKey: "donatePageTokenHost")
         outcome = .none
         request()
     }
@@ -51,7 +60,7 @@ final class DonatePagePublisher: ObservableObject {
         case .rejected: return "Token rejected"
         case .unreachable: return "Can't reach the page"
         case .http(let c): return "Page answered HTTP \(c)"
-        case .badURL: return "Page URL isn't valid"
+        case .badURL: return "Needs an https:// URL, and the key saved for that address"
         }
     }
 
@@ -116,8 +125,10 @@ final class DonatePagePublisher: ObservableObject {
     private func send() async {
         let key = token
         guard !key.isEmpty else { return }
+        // HTTPS only (the key is a bearer secret), and only to the host the key was saved for.
         guard let url = URL(string: pageURL.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/api/goal"),
-              url.scheme != nil else { outcome = .badURL; return }
+              url.scheme?.lowercased() == "https", let h = url.host?.lowercased(),
+              h == UserDefaults.standard.string(forKey: "donatePageTokenHost") else { outcome = .badURL; return }
         lastSent = Date()
         let g = GoalStore.shared
         do {

@@ -48,7 +48,6 @@ struct GoalSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: pageURL) { _, _ in page.request() }
         .onAppear {
-            pageKey = page.token
             guard !loaded else { return }
             loaded = true
             let c = goal.config
@@ -173,8 +172,10 @@ struct GoalSettingsView: View {
     private var donatePageSection: some View {
         Section {
             TextField("Page URL", text: $pageURL).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-            SecureField("Page key", text: $pageKey).textInputAutocapitalization(.never).autocorrectionDisabled()
-            Button("Save") { page.setToken(pageKey); page.request() }.buttonStyle(.borderless)
+            // Never loaded back into the field: the saved key stays in the Keychain, the field only takes a new one.
+            SecureField(page.hasToken ? "Key saved (enter a new one to replace)" : "Page key", text: $pageKey)
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+            Button("Save") { page.setToken(pageKey); pageKey = ""; page.request() }.buttonStyle(.borderless).disabled(pageKey.isEmpty)
             TimelineView(.periodic(from: .now, by: 5)) { _ in
                 Text(page.statusText).font(.footnote).foregroundStyle(.secondary)
             }
