@@ -517,8 +517,9 @@ final class DonationHub: ObservableObject {
             if let s = raw as? String { raw = s.replacingOccurrences(of: ",", with: "") }
             guard let amount = Rates.decimal(raw), amount > 0 else { return }
             applog("goal", "donito donate -> real")
-            // No donation id: name|amount|currency|message|minute keeps a repeat of the same event from counting twice.
-            let id = [dn, Self.text(d["amount"]), cur, message, String(Int(Date().timeIntervalSince1970 / 60))].joined(separator: "|")
+            // Donito sends no donation id, but its socket delivers each donation exactly once (no replay on reconnect),
+            // so every arrival gets its own id: two identical donations ("Ali", 50,000) both count and both play.
+            let id = UUID().uuidString
             let p = Parsed(id: id, name: dn.isEmpty ? "Someone" : dn, message: message, money: Money(amount, cur), date: Date(), state: .paid)
             ingest(.donito, [p], live: true)
             return
