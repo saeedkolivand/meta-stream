@@ -229,6 +229,7 @@ private struct SiteKeyRow: View {
     @ObservedObject private var hub = DonationHub.shared
     @State private var key = ""
     @State private var widget = ""
+    @State private var overlay = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -245,7 +246,15 @@ private struct SiteKeyRow: View {
                     .font(.footnote).foregroundStyle(.secondary)
                 Button("Save") { DonationHub.shared.setDonofaWidget(widget) }.buttonStyle(.borderless)
             }
+            if site == .reymit {
+                Divider()
+                if !hub.reymitOverlayStatus.isEmpty { Text(hub.reymitOverlayStatus).font(.footnote).foregroundStyle(.secondary) }
+                SecureField("Overlay link (test alerts)", text: $overlay).textInputAutocapitalization(.never).autocorrectionDisabled()
+                Text("Paste the Reymit overlay link. Reymit's test button only reaches the overlay; tests play the alert and never count.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                Button("Save") { DonationHub.shared.setReymitOverlay(overlay) }.buttonStyle(.borderless)
+            }
         }
-        .onAppear { key = DonationHub.shared.key(site); widget = DonationHub.shared.donofaWidget() }
+        .onAppear { key = DonationHub.shared.key(site); widget = DonationHub.shared.donofaWidget(); overlay = DonationHub.shared.reymitOverlay() }
     }
 }

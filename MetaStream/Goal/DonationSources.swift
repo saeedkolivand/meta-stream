@@ -58,6 +58,7 @@ final class DonationHub: ObservableObject {
 
     @Published private(set) var status: [Site: String] = [:]
     @Published private(set) var widgetStatus = ""
+    @Published private(set) var reymitOverlayStatus = ""
     private var widgetIds: [Int: String] = [:]   // Donofa widget: child numeric id -> identifier (a single widget maps itself)
     private var widgetSeen: Set<Int> = []   // action ids already handled
 
@@ -105,7 +106,8 @@ final class DonationHub: ObservableObject {
     private func run(_ site: Site) {
         stop(site)
         let k = key(site)
-        guard !k.isEmpty else { setStatus(site, "Not set up"); return }
+        let overlay = site == .reymit ? reymitOverlay() : ""   // Reymit's overlay link works without the API token
+        guard !k.isEmpty || !overlay.isEmpty else { setStatus(site, "Not set up"); return }
         guard chat != nil else { return }
         setStatus(site, "Connecting…")
         switch site {
@@ -114,7 +116,9 @@ final class DonationHub: ObservableObject {
         case .donofa:
             tasks[site] = Task { [weak self] in await self?.runDonofa(k) }
         case .reymit:
-            let path = k.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? k
+            if !overlay.isEmpty { liveTasks[site] = Task { [weak self] in await self?.runReymitOverlay(overlay) } }
+            if k.isEmpty { setStatus(site, "No API token (overlay only)"); return }
+            let path =k.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? k
             tasks[site] = Task { [weak self] in
                 await self?.poll(.reymit, every: 10) { [weak self] in
                     guard let self else { return (.unreachable, []) }
@@ -365,6 +369,84 @@ final class DonationHub: ObservableObject {
                 codes.append("\(step) \(code)")
             }
             applog("goal", "donofa ack \(id) " + codes.joined(separator: ", "))
+        }
+    }
+
+    // MARK: Reymit overlay (test alerts)
+
+    func reymitOverlay() -> String { store.string(forKey: "donationKey.reymitOverlay") ?? "" }
+
+    func setReymitOverlay(_ link: String) {
+        let l = link.trimmingCharacters(in: .whitespacesAndNewlines)
+        if l.isEmpty { store.removeObject(forKey: "donationKey.reymitOverlay") } else { store.set(l, forKey: "donationKey.reymitOverlay") }
+        reymitOverlayStatus = ""
+        run(.reymit)
+    }
+
+    private func setOverlayStatus(_ text: String) {
+        guard !Task.isCancelled, reymitOverlayStatus != text else { return }
+        reymitOverlayStatus = text
+        applog("goal", "reymit " + (text == "Overlay: listening" ? "overlay: listening" : text))   // never the link or key
+    }
+
+    /// The overlay's long poll: the server holds each request until something changes (empty body = no change). Only its
+    /// test donation is used; real ones arrive through the API-token poll. The key stays URL-encoded as pasted.
+    private func runReymitOverlay(_ link: String) async {
+        guard let key = URLComponents(string: link)?.percentEncodedQueryItems?.first(where: { $0.name == "key" })?.value, !key.isEmpty else {
+            setOverlayStatus("Overlay: link rejected"); return
+        }
+        var md5 = "", md5o = "", started = "0", last = "0", lastTest = ""
+        var first = true
+        var attempt = 0
+        while !Task.isCancelled {
+            var code = 0
+            var body = ""
+            if let url = URL(string: "https://reymit.ir/overlay/data.php?NWSL=1&key=\(key)&md5sum=\(md5)&md5overlaydata=\(md5o)&startedat=\(started)&lastupdate=\(last)") {
+                var req = URLRequest(url: url, timeoutInterval: 40)
+                req.setValue(Self.donofaUA, forHTTPHeaderField: "User-Agent")
+                req.setValue("https://reymit.ir/overlay/?key=\(key)", forHTTPHeaderField: "Referer")
+                if let (data, resp) = try? await URLSession.shared.data(for: req), let h = resp as? HTTPURLResponse {
+                    code = h.statusCode
+                    body = String(decoding: data, as: UTF8.self)
+                }
+            }
+            if Task.isCancelled { return }
+            if (400..<500).contains(code) { setOverlayStatus("Overlay: link rejected"); return }
+            guard (200..<300).contains(code) else {
+                setOverlayStatus("Can't reach Reymit")
+                try? await Task.sleep(for: .seconds(Self.donofaBackoff[min(attempt, Self.donofaBackoff.count - 1)]))
+                attempt += 1
+                continue
+            }
+            attempt = 0
+            setOverlayStatus("Overlay: listening")
+            if let o = Self.object(body), let d = o["data"] as? [String: Any] {
+                md5 = Self.text(d["md5"])
+                md5o = Self.text(d["md5overlaydata"])
+                let now = Self.text(d["now"])
+                if started == "0", !now.isEmpty { started = now }
+                // lastupdate is echoed back as received: take its text from the raw body, not a re-formatted Double.
+                if let r = body.range(of: "\"lastupdate\":") {
+                    let t = String(body[r.upperBound...].drop { $0 == " " }.prefix { $0.isNumber || $0 == "." })
+                    last = t.isEmpty ? Self.text(d["lastupdate"]) : t
+                } else {
+                    last = Self.text(d["lastupdate"])
+                }
+                if let t = d["testdonation"] as? [String: Any] {
+                    let time = Self.text(t["time"])
+                    // The test stays in later replies: once per time; one already old at startup is not replayed.
+                    let stale = first && (Double(now) ?? 0) - (Double(time) ?? 0) > 60
+                    if !time.isEmpty, time != lastTest {
+                        lastTest = time
+                        if !stale {
+                            applog("goal", "reymit overlay test -> alert")
+                            announceTest(.reymit, name: Self.text(t["name"]), message: Self.text(t["desc"]), amount: t["amount"], currency: "IRT")
+                        }
+                    }
+                }
+            }
+            first = false
+            try? await Task.sleep(for: .seconds(1))
         }
     }
 
