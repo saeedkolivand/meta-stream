@@ -226,7 +226,9 @@ private struct PriceField: View {
 private struct SiteKeyRow: View {
     let site: DonationHub.Site
     let status: String
+    @ObservedObject private var hub = DonationHub.shared
     @State private var key = ""
+    @State private var widget = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -235,7 +237,15 @@ private struct SiteKeyRow: View {
             SecureField(site.keyLabel, text: $key).textInputAutocapitalization(.never).autocorrectionDisabled()
             Text(site.help).font(.footnote).foregroundStyle(.secondary)
             Button("Save") { DonationHub.shared.setKey(site, key) }.buttonStyle(.borderless)
+            if site == .donofa {
+                Divider()
+                if !hub.widgetStatus.isEmpty { Text("Widget: " + hub.widgetStatus).font(.footnote).foregroundStyle(.secondary) }
+                SecureField("Widget link (alerts)", text: $widget).textInputAutocapitalization(.never).autocorrectionDisabled()
+                Text("Paste a Donofa widget or widget-group link. Donofa then sends its alerts here (one at a time, like in OBS); real donations still count through your API key.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                Button("Save") { DonationHub.shared.setDonofaWidget(widget) }.buttonStyle(.borderless)
+            }
         }
-        .onAppear { key = DonationHub.shared.key(site) }
+        .onAppear { key = DonationHub.shared.key(site); widget = DonationHub.shared.donofaWidget() }
     }
 }

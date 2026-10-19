@@ -54,6 +54,9 @@ final class DonationHub: ObservableObject {
     private enum Outcome { case ok, rejected, unreachable }
 
     @Published private(set) var status: [Site: String] = [:]
+    @Published private(set) var widgetStatus = ""
+    private var widgetIds: [Int: String] = [:]   // Donofa widget: child numeric id -> identifier (a single widget maps itself)
+    private var widgetSeen: Set<Int> = []   // action ids already handled
 
     private static let rejectedText = "Key rejected — paste a new one"
     private let store = KeychainTokenStore()
@@ -184,6 +187,9 @@ final class DonationHub: ObservableObject {
         do {
             try await ws.send(.string(Self.json(["event": "pusher:subscribe", "data": ["channel": "user." + key]])))
             applog("goal", "donofa: socket open, subscribing")
+            if let ident = await fetchDonofaWidget() {
+                try await ws.send(.string(Self.json(["event": "pusher:subscribe", "data": ["channel": "widget." + ident]])))
+            }
             while !Task.isCancelled {
                 guard case .string(let text) = try await ws.receive() else { continue }
                 guard let o = Self.object(text), let ev = o["event"] as? String else { continue }
@@ -205,6 +211,9 @@ final class DonationHub: ObservableObject {
                     if code >= 4100 { return (false, connected) }   // 41xx/42xx/43xx: reconnect as the protocol says
                     set(.donofa, Self.rejectedText)
                     return (true, connected)
+                case "widget.action":
+                    let d = (o["data"] as? [String: Any]) ?? Self.object(o["data"] as? String ?? "")
+                    if let d { donofaWidgetAction(d) }
                 default:
                     applog("goal", "donofa event: " + ev)   // names only: tells us what the panel's test donation is called
                     let isTest = ev.lowercased().contains("test")
@@ -220,11 +229,137 @@ final class DonationHub: ObservableObject {
                         continue
                     }
                     logFields(.donofa, d)
-                    if let p = Self.parse(d, .donofa) { ingest(.donofa, [p], live: true) }
+                    // With a widget link the widget's alert is the one announcement: record silently.
+                    if let p = Self.parse(d, .donofa) { ingest(.donofa, [p], live: true, announce: donofaWidget().isEmpty) }
                 }
             }
         } catch {}
         return (false, connected)
+    }
+
+    // MARK: Donofa alert widget
+
+    private static let donofaTestMessage = "پیام نمایشی و فرضی دونیت"
+    private static let donofaUA = "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+
+    /// Widget (or group) link: its identifier and salt. Never logged.
+    private static func widgetLink(_ s: String) -> (ident: String, salt: String)? {
+        guard let c = URLComponents(string: s), let ident = c.path.split(separator: "/").last.map(String.init), !ident.isEmpty else { return nil }
+        return (ident, c.queryItems?.first { $0.name == "salt" }?.value ?? "")
+    }
+
+    /// Cloudflare answers 403 (1010) without these browser headers.
+    private static func donofaRequest(_ url: URL, post: Bool) -> URLRequest {
+        var r = URLRequest(url: url, timeoutInterval: 15)
+        if post { r.httpMethod = "POST" }
+        r.setValue(donofaUA, forHTTPHeaderField: "User-Agent")
+        r.setValue("https://w.donofa.com", forHTTPHeaderField: "Origin")
+        r.setValue("https://w.donofa.com/", forHTTPHeaderField: "Referer")
+        r.setValue("application/json", forHTTPHeaderField: "Accept")
+        r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        return r
+    }
+
+    func donofaWidget() -> String { store.string(forKey: "donationKey.donofaWidget") ?? "" }
+
+    func setDonofaWidget(_ link: String) {
+        let l = link.trimmingCharacters(in: .whitespacesAndNewlines)
+        if l.isEmpty { store.removeObject(forKey: "donationKey.donofaWidget") } else { store.set(l, forKey: "donationKey.donofaWidget") }
+        widgetIds = [:]
+        widgetStatus = ""
+        run(.donofa)   // reconnects: the socket fetches the widget info and subscribes
+    }
+
+    private func setWidgetStatus(_ text: String) {
+        widgetStatus = text
+        applog("goal", "donofa widget: " + text)
+    }
+
+    /// Fetches the widget info into `widgetIds` (child id -> identifier); returns the channel identifier to subscribe, nil if none/rejected.
+    private func fetchDonofaWidget() async -> String? {
+        let link = donofaWidget()
+        guard !link.isEmpty else { return nil }
+        guard let parts = Self.widgetLink(link), var c = URLComponents(string: "https://api.donofa.com/api/v2/widgets/legacy/"
+                + (parts.ident.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? parts.ident)) else {
+            setWidgetStatus("link rejected"); return nil
+        }
+        c.queryItems = [URLQueryItem(name: "salt", value: parts.salt)]
+        let ident = parts.ident
+        guard let url = c.url else { setWidgetStatus("link rejected"); return nil }
+        guard let (data, resp) = try? await URLSession.shared.data(for: Self.donofaRequest(url, post: false)),
+              let code = (resp as? HTTPURLResponse)?.statusCode else { setWidgetStatus("can't reach Donofa"); return ident }
+        guard (200..<300).contains(code) else { setWidgetStatus(code == 404 || code == 403 ? "link rejected" : "HTTP \(code)"); return code == 404 || code == 403 ? nil : ident }
+        let w = (Self.object(String(decoding: data, as: UTF8.self))?["widget"]) as? [String: Any]
+        let kids = (w?["children"] as? [[String: Any]]) ?? []
+        var ids: [Int: String] = [:]
+        for k in (kids.isEmpty ? [w ?? [:]] : kids) {
+            let i = Self.text(k["identifier"])
+            if let id = (k["id"] as? NSNumber)?.intValue, !i.isEmpty { ids[id] = i }
+        }
+        widgetIds = ids
+        setWidgetStatus(kids.isEmpty ? "single widget" : "group of \(kids.count)")
+        return ident
+    }
+
+    /// One alert from the widget channel: acknowledged always (Donofa's queue stalls otherwise), played only if a donation or a test.
+    private func donofaWidgetAction(_ a: [String: Any]) {
+        guard let id = (a["id"] as? NSNumber)?.intValue, widgetSeen.insert(id).inserted else { return }   // the group channel repeats children's alerts
+        let type = Self.text(a["type"])
+        let d = (a["data"] as? [String: Any]) ?? [:]
+        if let wid = (a["widget_id"] as? NSNumber)?.intValue, let child = widgetIds[wid] {
+            donofaAck(id, child, legacy: (a["is_legacy"] as? Bool) ?? false)
+        } else {
+            applog("goal", "donofa ack \(id) skipped: unknown widget", error: true)
+        }
+        let name = Self.text(d["name"]), message = Self.text(d["message"])
+        let test = name == "John Doe" && message == Self.donofaTestMessage   // the panel's test button carries no flag
+        var cur = Self.text(d["currency"])
+        if cur.isEmpty || cur.lowercased().hasPrefix("toman") { cur = "IRT" }
+        let result: String
+        if type == "donate" {
+            if test {
+                announceTest(.donofa, name: name, message: message, amount: d["amount"], currency: cur)
+                result = "test"
+            } else if let chat, let amount = Rates.decimal(d["amount"]), amount > 0 {
+                // Alert only: the goal counts it from the user.<key> donate.created.
+                chat.yield(ChatEvent(kind: .tip, user: name.isEmpty ? "Someone" : name, text: message, money: Money(amount, cur), origin: "donofa"))
+                result = "alert"
+            } else {
+                result = "ignored (platform event)"
+            }
+        } else if test, let chat {
+            let n = Int(Self.text(d["amount"])) ?? 0
+            let kind: ChatEvent.Kind, count: Int
+            switch type {
+            case "follow": kind = .follow; count = 0
+            case "subscribe": kind = .subscribe; count = 0
+            case "raid": kind = .raid; count = min(max(n, 1), 10_000)
+            case "points": kind = .cheer; count = min(max(n, 1), 100_000)
+            default: applog("goal", "donofa widget action \(id) \(type) -> ignored (platform event)"); return
+            }
+            chat.yield(ChatEvent(kind: kind, user: name.isEmpty ? "Someone" : name, text: message, count: count, origin: "test-donation"))
+            result = "test"
+        } else {
+            result = "ignored (platform event)"
+        }
+        applog("goal", "donofa widget action \(id) \(type) -> \(result)")
+    }
+
+    /// handshake now, complete 3 s later (the alert has played); logs both HTTP codes once.
+    private func donofaAck(_ id: Int, _ child: String, legacy: Bool) {
+        let base = (legacy ? "https://api.donofa.com/api/v2/widgets/legacy/" : "https://api.donofa.com/api/v2/widgets/")
+            + (child.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? child) + "/actions/\(id)/"
+        Task {
+            var codes: [String] = []
+            for step in ["handshake", "complete"] {
+                if step == "complete" { try? await Task.sleep(for: .seconds(3)) }
+                var code = "failed"
+                if let u = URL(string: base + step), let (_, r) = try? await URLSession.shared.data(for: Self.donofaRequest(u, post: true)),
+                   let h = r as? HTTPURLResponse { code = String(h.statusCode) }
+                codes.append("\(step) \(code)")
+            }
+            applog("goal", "donofa ack \(id) " + codes.joined(separator: ", "))
+        }
     }
 
     // MARK: StreamElements realtime
@@ -432,7 +567,7 @@ final class DonationHub: ObservableObject {
 
     /// Record first, announce only what was new: a donation reported twice is announced once.
     @discardableResult
-    private func ingest(_ site: Site, _ items: [Parsed], live: Bool) -> Int {
+    private func ingest(_ site: Site, _ items: [Parsed], live: Bool, announce: Bool = true) -> Int {
         guard !Task.isCancelled, let chat else { return 0 }
         var new = 0
         for p in items.sorted(by: { $0.date < $1.date }) {
@@ -447,7 +582,7 @@ final class DonationHub: ObservableObject {
             lastAt[site] = max(lastAt[site] ?? .distantPast, at)
             if live {
                 if GoalStore.shared.record(key: key, source: site.rawValue, money: p.money, at: at, note: [p.name, p.message].filter { !$0.isEmpty }.joined(separator: " · ")) {
-                    chat.yield(ChatEvent(kind: .tip, user: p.name, text: p.message, money: p.money, origin: site.rawValue, id: p.id))
+                    if announce { chat.yield(ChatEvent(kind: .tip, user: p.name, text: p.message, money: p.money, origin: site.rawValue, id: p.id)) }
                     new += 1
                 }
             } else if GoalStore.shared.record(key: key, source: site.rawValue, money: p.money, at: at, missed: true, note: [p.name, p.message].filter { !$0.isEmpty }.joined(separator: " · ")) {
