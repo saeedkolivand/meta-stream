@@ -197,6 +197,8 @@ final class TwitchService: ObservableObject {
         if p.twitchHasScopes(["user:read:chat"]) {
             subs.append(("channel.chat.message", "1", ["broadcaster_user_id": p.twitchUserID, "user_id": p.twitchUserID]))
             subs.append(("channel.chat.clear", "1", ["broadcaster_user_id": p.twitchUserID, "user_id": p.twitchUserID]))
+            subs.append(("channel.chat.message_delete", "1", ["broadcaster_user_id": p.twitchUserID, "user_id": p.twitchUserID]))
+            subs.append(("channel.chat.clear_user_messages", "1", ["broadcaster_user_id": p.twitchUserID, "user_id": p.twitchUserID]))
         }
         if p.twitchHasScopes(["moderator:read:followers"]) { subs.append(("channel.follow", "2", ["broadcaster_user_id": p.twitchUserID, "moderator_user_id": p.twitchUserID])) }
         if p.twitchHasScopes(["channel:read:subscriptions"]) {

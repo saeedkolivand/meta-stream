@@ -69,7 +69,8 @@ final class ChatFeed: ObservableObject {
     /// Connects to Kick chat for `slug` (the channel name from the stream URL) and stays connected until `stopKick()`.
     func start(kickSlug: String) {
         let provider = kick ?? KickChatProvider(onEvent: { [weak self] e in self?.yield(e) },
-                                                onClear: { [weak self] in self?.clear(origin: "kick") })
+                                                onClear: { [weak self] in self?.clear(origin: "kick") },
+                                                onRemove: { [weak self] m, u, l in self?.remove(origin: "kick", messageID: m, userID: u, login: l) })
         kick = provider
         provider.start(slug: kickSlug)
     }
@@ -81,7 +82,8 @@ final class ChatFeed: ObservableObject {
     func startTwitch(platforms: Platforms) {
         stopTwitch()
         let provider = TwitchEventSubProvider(platforms: platforms, onEvent: { [weak self] e in self?.yield(e) },
-                                              onClear: { [weak self] in self?.clear(origin: "twitch") })
+                                              onClear: { [weak self] in self?.clear(origin: "twitch") },
+                                              onRemove: { [weak self] m, u, l in self?.remove(origin: "twitch", messageID: m, userID: u, login: l) })
         twitch = provider
         provider.start()
     }
@@ -140,6 +142,22 @@ final class ChatFeed: ObservableObject {
         clears += 1
         clearedAt = Date()
         applog("chat", "\(origin) chat cleared: \(before - recent.count) messages removed here")
+    }
+
+    /// A moderator deleted one message (`messageID`), or timed out / banned a user (their messages all go, like Twitch's
+    /// own chat). Bumps `clears` so the on-screen chat redraws.
+    func remove(origin: String, messageID: String? = nil, userID: String? = nil, login: String? = nil) {
+        let before = recent.count
+        recent.removeAll { e in
+            guard e.origin == origin, e.kind == .message else { return false }
+            if let messageID { return e.id == messageID }
+            if let userID, !userID.isEmpty, e.userId == userID { return true }
+            if let login, !login.isEmpty, e.user.lowercased() == login.lowercased() { return true }
+            return false
+        }
+        guard recent.count != before else { return }
+        clears += 1
+        applog("chat", "\(origin) moderation: \(before - recent.count) message(s) removed")
     }
 
     /// Events yielded after `serial` that are still in `recent` (older ones scrolled out of the 100-event buffer).

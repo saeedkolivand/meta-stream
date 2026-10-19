@@ -41,6 +41,7 @@ final class KickChatProvider: ChatProvider {
 
     private let onEvent: @MainActor (ChatEvent) -> Void
     private let onClear: @MainActor () -> Void
+    private let onRemove: @MainActor (_ messageID: String?, _ userID: String?, _ login: String?) -> Void
     private var socket: URLSessionWebSocketTask?
     private var task: Task<Void, Never>?
     private var stopped = true
@@ -49,9 +50,11 @@ final class KickChatProvider: ChatProvider {
     private var loggedEvents: Set<String> = []
     private var rules = KickRules.defaults
 
-    init(onEvent: @escaping @MainActor (ChatEvent) -> Void, onClear: @escaping @MainActor () -> Void = {}) {
+    init(onEvent: @escaping @MainActor (ChatEvent) -> Void, onClear: @escaping @MainActor () -> Void = {},
+         onRemove: @escaping @MainActor (_ messageID: String?, _ userID: String?, _ login: String?) -> Void = { _, _, _ in }) {
         self.onEvent = onEvent
         self.onClear = onClear
+        self.onRemove = onRemove
     }
 
     func start(slug: String) {
@@ -152,11 +155,22 @@ final class KickChatProvider: ChatProvider {
             applog("chat", "kick event \(event) on \(outer["channel"] as? String ?? ""): \(String((data ?? "").prefix(300)))")
         }
         if event == Self.chatClear { onClear() }
+        if event == Self.messageDeleted || event == Self.userBanned,
+           let d = data.flatMap({ try? JSONSerialization.jsonObject(with: Data($0.utf8)) as? [String: Any] }) {
+            if event == Self.messageDeleted, let id = (d["message"] as? [String: Any])?["id"] as? String { onRemove(id, nil, nil) }
+            if event == Self.userBanned, let u = d["user"] as? [String: Any] {
+                onRemove(nil, (u["id"] as? NSNumber)?.stringValue ?? u["id"] as? String, u["username"] as? String)
+            }
+        }
         if let chatEvent { onEvent(chatEvent) }
     }
 
     private static let chatMessage = "App\\Events\\ChatMessageEvent"
     private static let chatClear = "App\\Events\\ChatroomClearEvent"   // you or a mod cleared chat (on kick.com or via /clear)
+    // Captured 2026-10-19: {"message":{"id":"<message id>"},"aiModerated":false,...} (a mod's delete, or AutoMod)
+    private static let messageDeleted = "App\\Events\\MessageDeletedEvent"
+    // A timeout ("duration": minutes) or ban ("permanent": true): {"user":{"id":98713098,"username":"...",...},...}
+    private static let userBanned = "App\\Events\\UserBannedEvent"
 
     /// Chat messages are parsed here; every other event goes through the (remote-overridable) `rules` table.
     static func parse(event: String, data: String?, rules: KickRules.Rules = KickRules.defaults) -> ChatEvent? {
@@ -185,13 +199,16 @@ final class TwitchEventSubProvider: ChatProvider {
 
     private let onEvent: @MainActor (ChatEvent) -> Void
     private let onClear: @MainActor () -> Void
+    private let onRemove: @MainActor (_ messageID: String?, _ userID: String?, _ login: String?) -> Void
     private weak var platforms: Platforms?
     private var socket: URLSessionWebSocketTask?
     private var task: Task<Void, Never>?
     private var stopped = true
 
-    init(platforms: Platforms, onEvent: @escaping @MainActor (ChatEvent) -> Void, onClear: @escaping @MainActor () -> Void = {}) {
+    init(platforms: Platforms, onEvent: @escaping @MainActor (ChatEvent) -> Void, onClear: @escaping @MainActor () -> Void = {},
+         onRemove: @escaping @MainActor (_ messageID: String?, _ userID: String?, _ login: String?) -> Void = { _, _, _ in }) {
         self.onClear = onClear
+        self.onRemove = onRemove
         self.platforms = platforms
         self.onEvent = onEvent
     }
@@ -247,6 +264,14 @@ final class TwitchEventSubProvider: ChatProvider {
                     continue reconnect
                 case "notification":
                     if metadata["subscription_type"] as? String == "channel.chat.clear" { onClear(); continue }
+                    if let e = payload["event"] as? [String: Any] {
+                        switch metadata["subscription_type"] as? String {
+                        case "channel.chat.message_delete": onRemove(e["message_id"] as? String, nil, nil); continue
+                        case "channel.chat.clear_user_messages":   // a ban or timeout clears that user's messages
+                            onRemove(nil, e["target_user_id"] as? String, e["target_user_login"] as? String); continue
+                        default: break
+                        }
+                    }
                     guard let subType = metadata["subscription_type"] as? String,
                           let event = payload["event"] as? [String: Any],
                           let chatEvent = Self.parseEvent(type: subType, event: event)
