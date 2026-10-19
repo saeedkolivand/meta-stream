@@ -177,7 +177,8 @@ struct GoalSettingsView: View {
                         Spacer()
                         badges(e)
                     }
-                    Text("\(e.source.capitalized) · \(e.at.formatted(date: .abbreviated, time: .shortened))" + (e.note.isEmpty ? "" : " · \(e.note)"))
+                    if !e.note.isEmpty { Text(e.note).font(.subheadline).lineLimit(2) }   // who, what (sub, KICKs, bits...) and their message
+                    Text("\(e.source.capitalized) · \(e.at.formatted(date: .abbreviated, time: .shortened))")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 .swipeActions {   // a test that counted, a mistake: out of the total, kept in the list as refunded

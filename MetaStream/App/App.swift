@@ -60,7 +60,7 @@ struct MetaStreamApp: App {
                 for await e in chat.events {
                     // Every money event counts toward the goal once (a donation site's own events are already recorded).
                     if e.origin != "test-donation", let m = DonationPrices.money(e) {
-                        GoalStore.shared.record(key: e.origin + ":" + (e.id.isEmpty ? UUID().uuidString : e.id), source: e.origin, money: m, at: e.at)
+                        GoalStore.shared.record(key: e.origin + ":" + (e.id.isEmpty ? UUID().uuidString : e.id), source: e.origin, money: m, at: e.at, note: e.goalNote)
                     }
                     speaker.speak(e)
                     AppBot.shared.handle(e)

@@ -69,6 +69,20 @@ extension ChatEvent {
     var tipMoney: Money { money ?? Money(Decimal(amountCents) / 100, "USD") }
     /// What a `.cheer` counts: Kick's currency is KICKs, Twitch's is bits.
     var cheerUnit: String { origin == "kick" ? "KICKs" : "bits" }
+
+    /// What the goal's donation list says about this event: "Arash · gifted 5 subs", "Sara · 500 KICKs · gg".
+    var goalNote: String {
+        let what: String
+        switch kind {
+        case .cheer: what = "\(count) \(cheerUnit)"
+        case .subscribe:
+            let tierText = origin == "twitch" && tier > 1 ? "Tier \(tier) " : ""
+            what = count > 1 ? "gifted \(count) \(tierText)subs" : count == 1 ? "gifted a \(tierText)sub" : "\(tierText)sub"   // count > 0 = a gift
+        case .tip: what = origin == "youtube" ? "Super Chat" : "donation"
+        default: what = ""
+        }
+        return [user, what, text].filter { !$0.isEmpty }.joined(separator: " · ")
+    }
 }
 
 /// Migrates the old `chatSite` UserDefaults key to `chatOrigin`. Call before first read; safe to call

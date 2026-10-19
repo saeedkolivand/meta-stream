@@ -521,11 +521,11 @@ final class DonationHub: ObservableObject {
             let at = live ? Date() : p.date
             lastAt[site] = max(lastAt[site] ?? .distantPast, at)
             if live {
-                if GoalStore.shared.record(key: key, source: site.rawValue, money: p.money, at: at) {
+                if GoalStore.shared.record(key: key, source: site.rawValue, money: p.money, at: at, note: [p.name, p.message].filter { !$0.isEmpty }.joined(separator: " · ")) {
                     chat.yield(ChatEvent(kind: .tip, user: p.name, text: p.message, money: p.money, origin: site.rawValue, id: p.id))
                     new += 1
                 }
-            } else if GoalStore.shared.record(key: key, source: site.rawValue, money: p.money, at: at, missed: true) {
+            } else if GoalStore.shared.record(key: key, source: site.rawValue, money: p.money, at: at, missed: true, note: [p.name, p.message].filter { !$0.isEmpty }.joined(separator: " · ")) {
                 new += 1
             }
         }
