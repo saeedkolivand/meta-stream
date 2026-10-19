@@ -227,7 +227,6 @@ private struct SiteKeyRow: View {
     let site: DonationHub.Site
     let status: String
     @State private var key = ""
-    @State private var widget = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -236,16 +235,7 @@ private struct SiteKeyRow: View {
             SecureField(site.keyLabel, text: $key).textInputAutocapitalization(.never).autocorrectionDisabled()
             Text(site.help).font(.footnote).foregroundStyle(.secondary)
             Button("Save") { DonationHub.shared.setKey(site, key) }.buttonStyle(.borderless)
-            if site == .donofa {
-                SecureField("Alert widget link (for test alerts)", text: $widget).textInputAutocapitalization(.never).autocorrectionDisabled()
-                Text("Paste the alert widget link from Donofa's widget page. Donofa sends its test button only there; tests play the alert but never count.")
-                    .font(.footnote).foregroundStyle(.secondary)
-                Button("Save") { DonationHub.shared.setDonofaWidget(widget) }.buttonStyle(.borderless)
-            }
         }
-        .onAppear {
-            key = DonationHub.shared.key(site)
-            if site == .donofa { widget = DonationHub.shared.donofaWidget() }
-        }
+        .onAppear { key = DonationHub.shared.key(site) }
     }
 }

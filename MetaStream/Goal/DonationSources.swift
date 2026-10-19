@@ -66,8 +66,6 @@ final class DonationHub: ObservableObject {
     private var loggedFields: Set<Site> = []
     private var loggedTypes: Set<String> = []   // StreamElements event types whose keys were logged this run
     private var channelIds: [Site: String] = [:]   // StreamElements channel id, shared by the poll and the socket's tip lookup
-    private var lastDonofaReal = Date.distantPast   // last donate.created handled on the user channel
-    private var loggedWidgetKeys = false
 
     init() {
         for s in Site.allCases { status[s] = "Not set up" }
@@ -80,18 +78,6 @@ final class DonationHub: ObservableObject {
         if k.isEmpty { store.removeObject(forKey: "donationKey." + site.rawValue) } else { store.set(k, forKey: "donationKey." + site.rawValue) }
         lastAt[site] = nil
         run(site)
-    }
-
-    /// The Donofa alert widget identifier (its link's last path component), "" when unset.
-    func donofaWidget() -> String { store.string(forKey: "donationKey.donofaWidget") ?? "" }
-
-    /// Accepts the full widget link or a bare identifier; restarts Donofa.
-    func setDonofaWidget(_ link: String) {
-        let t = link.trimmingCharacters(in: .whitespacesAndNewlines)
-        let id = t.components(separatedBy: "?")[0].components(separatedBy: "#")[0]
-            .split(separator: "/").last.map(String.init) ?? ""
-        if id.isEmpty { store.removeObject(forKey: "donationKey.donofaWidget") } else { store.set(id, forKey: "donationKey.donofaWidget") }
-        run(.donofa)
     }
 
     func start(chat: ChatFeed) {
@@ -117,8 +103,7 @@ final class DonationHub: ObservableObject {
         setStatus(site, "Connecting…")
         switch site {
         case .donofa:
-            let w = donofaWidget()
-            tasks[site] = Task { [weak self] in await self?.runDonofa(k, w) }
+            tasks[site] = Task { [weak self] in await self?.runDonofa(k) }
         case .reymit:
             let path = k.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? k
             tasks[site] = Task { [weak self] in
@@ -157,11 +142,11 @@ final class DonationHub: ObservableObject {
 
     private static let donofaBackoff: [UInt64] = [2, 5, 10, 30]
 
-    private func runDonofa(_ key: String, _ widget: String) async {
+    private func runDonofa(_ key: String) async {
         var attempt = 0
         while !Task.isCancelled {
             if await donofaCatchUp(key) == .rejected { return }
-            let r = await donofaSocket(key, widget)
+            let r = await donofaSocket(key)
             if Task.isCancelled || r.rejected { return }
             if r.connected { attempt = 0 } else { set(.donofa, "Can't reach Donofa") }
             try? await Task.sleep(for: .seconds(Self.donofaBackoff[min(attempt, Self.donofaBackoff.count - 1)]))
@@ -189,7 +174,7 @@ final class DonationHub: ObservableObject {
     }
 
     /// Pusher-protocol WebSocket (same approach as KickChatProvider). Returns when the socket ends.
-    private func donofaSocket(_ key: String, _ widget: String) async -> (rejected: Bool, connected: Bool) {
+    private func donofaSocket(_ key: String) async -> (rejected: Bool, connected: Bool) {
         guard let url = URL(string: "wss://ws.donofa.com/app/AF5Ed2JK?protocol=7&client=js&version=8.4.0&flash=false") else { return (false, false) }
         let ws = URLSession.shared.webSocketTask(with: url)
         sockets[.donofa] = ws
@@ -198,9 +183,6 @@ final class DonationHub: ObservableObject {
         var connected = false
         do {
             try await ws.send(.string(Self.json(["event": "pusher:subscribe", "data": ["channel": "user." + key]])))
-            if !widget.isEmpty {
-                try await ws.send(.string(Self.json(["event": "pusher:subscribe", "data": ["channel": "widget." + widget]])))
-            }
             applog("goal", "donofa: socket open, subscribing")
             while !Task.isCancelled {
                 guard case .string(let text) = try await ws.receive() else { continue }
@@ -209,18 +191,10 @@ final class DonationHub: ObservableObject {
                 case "pusher:ping":
                     try await ws.send(.string(#"{"event":"pusher:pong"}"#))
                 case "pusher_internal:subscription_succeeded":
-                    if (o["channel"] as? String)?.hasPrefix("widget.") == true {
-                        applog("goal", "donofa: widget subscription_succeeded")
-                        continue
-                    }
                     connected = true
                     applog("goal", "donofa: subscription_succeeded")
                     set(.donofa, connectedText(.donofa))
                 case "pusher_internal:subscription_error":
-                    if (o["channel"] as? String)?.hasPrefix("widget.") == true {   // a bad widget link must not drop the key's connection
-                        applog("goal", "donofa: widget subscription_error", error: true)
-                        continue
-                    }
                     applog("goal", "donofa: subscription_error", error: true)
                     set(.donofa, Self.rejectedText)
                     return (true, connected)
@@ -231,9 +205,6 @@ final class DonationHub: ObservableObject {
                     if code >= 4100 { return (false, connected) }   // 41xx/42xx/43xx: reconnect as the protocol says
                     set(.donofa, Self.rejectedText)
                     return (true, connected)
-                case _ where ev == "widget.action" || ev.hasSuffix("WidgetActionEvent"):
-                    let inner = (o["data"] as? [String: Any]) ?? Self.object(o["data"] as? String ?? "")
-                    donofaWidgetAction(inner ?? [:])
                 default:
                     applog("goal", "donofa event: " + ev)   // names only: tells us what the panel's test donation is called
                     let isTest = ev.lowercased().contains("test")
@@ -249,57 +220,11 @@ final class DonationHub: ObservableObject {
                         continue
                     }
                     logFields(.donofa, d)
-                    lastDonofaReal = Date()   // the widget channel's copy of this one is skipped
                     if let p = Self.parse(d, .donofa) { ingest(.donofa, [p], live: true) }
                 }
             }
         } catch {}
         return (false, connected)
-    }
-
-    /// The alert widget channel carries Donofa's test button (and probably real donations too, which the user channel announced
-    /// already): a donation that no real one preceded within 4 s plays as a test, never recorded.
-    private func donofaWidgetAction(_ p: [String: Any]) {
-        let d = (p["data"] as? [String: Any]) ?? [:]
-        if !loggedWidgetKeys {
-            loggedWidgetKeys = true
-            applog("goal", "donofa widget action keys: \(p.keys.sorted().joined(separator: ", ")), data{\(d.keys.sorted().joined(separator: ", "))}")
-        }
-        func pick(_ keys: [String]) -> Any? { Self.first(d, keys) ?? Self.first(p, keys) }   // the widget reads u.x ?? e.x
-        let type = Self.text(p["type"])
-        guard ["donate", "irt", "payment"].contains(type.lowercased()) else {
-            applog("goal", "donofa widget action \(type) -> ignored (not a donation)")
-            return
-        }
-        func dec(_ keys: [String]) -> Decimal? {
-            var raw = pick(keys)
-            if let s = raw as? String { raw = s.replacingOccurrences(of: ",", with: "") }
-            guard let a = Rates.decimal(raw), a > 0 else { return nil }
-            return a
-        }
-        let cur = Self.text(pick(["currency"]))
-        let money: Money
-        if let a = dec(["amount"]), !cur.isEmpty { money = Money(a, cur) }
-        else if let a = dec(["amount_irt"]) { money = Money(a, "IRT") }
-        else if let a = dec(["amount_usd"]) { money = Money(a, "USD") }
-        else if let a = dec(["amount"]) { money = Money(a, "IRT") }
-        else {
-            applog("goal", "donofa widget action \(type) -> ignored (no amount)")
-            return
-        }
-        let name = Self.text(pick(["name", "username"]))
-        let message = Self.text(pick(["message"]))
-        Task { [weak self] in
-            try? await Task.sleep(for: .seconds(2))
-            guard !Task.isCancelled, let self, let chat = self.chat else { return }
-            if Date().timeIntervalSince(self.lastDonofaReal) < 4 {
-                applog("goal", "donofa widget action \(type) -> skipped (real donation)")
-                return
-            }
-            applog("goal", "donofa widget action \(type) -> test")
-            chat.yield(ChatEvent(kind: .tip, user: name.isEmpty ? "Someone" : name, text: message, amountCents: 0,
-                                 money: money, origin: "test-donation"))
-        }
     }
 
     // MARK: StreamElements realtime
