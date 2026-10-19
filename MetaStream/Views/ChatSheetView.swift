@@ -65,8 +65,8 @@ struct ChatSheetView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(chat.recent.enumerated()), id: \.offset) { i, event in
-                            chatRow(event, animate: i >= chat.recent.count - StreamChatView.animatedRows)
+                        ForEach(Array(chat.visible.enumerated()), id: \.offset) { i, event in
+                            chatRow(event, animate: i >= chat.visible.count - StreamChatView.animatedRows)
                         }
                         Color.clear.frame(height: 1).id("bottom")
                             .onAppear { atBottom = true }
@@ -75,7 +75,7 @@ struct ChatSheetView: View {
                     .padding(.horizontal)
                 }
                 .dynamicTypeSize(Self.chatSizes[min(chatTextSize, Self.chatSizes.count - 1)])
-                .onChange(of: chat.recent.count) { _, _ in
+                .onChange(of: chat.visible.count) { _, _ in
                     guard atBottom else { return }
                     withAnimation { proxy.scrollTo("bottom", anchor: .bottom) }
                 }
@@ -151,7 +151,7 @@ struct ChatSheetView: View {
         summarizing = true
         summary = nil
         summaryError = nil
-        let events = chat.recent
+        let events = chat.visible
         Task {
             do { summary = try await ChatSummary.summarize(events) }
             catch let f as ChatSummary.Failure { summaryError = f.message }

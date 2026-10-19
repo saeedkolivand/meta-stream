@@ -72,7 +72,7 @@ extension OverlayCompositor {
             while !Task.isCancelled {
                 if let chat = ctx.chat, let emotes = ctx.emotes {
                     let now = Date()
-                    let rows = StreamChatView.rows(chat.recent, style, now: now)
+                    let rows = StreamChatView.rows(chat.visible, style, now: now)
                     burst = ChatBurst.isBurst(rows.filter { $0.kind == .message }.map(\.at), now: now)
                     // Time only enters the signature while something moves: ~20 fps for a new row's 0.32 s entry,
                     // 4 fps inside a fade-out ramp. Otherwise the picture is static and never re-rendered.
@@ -88,7 +88,7 @@ extension OverlayCompositor {
                         last = sig
                         lastRender = now
                         let piece = rows.isEmpty ? nil : WidgetRaster.piece(
-                            StreamChatView(events: chat.recent, style: style, emotes: emotes,
+                            StreamChatView(events: chat.visible, style: style, emotes: emotes,
                                            channel: UserDefaults.standard.string(forKey: "chatChannel") ?? "", now: now, burst: burst),
                             natural: natural, box: box, canvas: canvas)
                         stats.add(ms: Date().timeIntervalSince(now) * 1000)

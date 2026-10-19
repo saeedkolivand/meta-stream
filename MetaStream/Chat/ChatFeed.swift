@@ -41,6 +41,10 @@ final class ChatFeed: ObservableObject {
     private(set) var serial = 0
     /// Bumped by every clear: a clear adds no event, so `serial` alone can't tell the on-screen chat to redraw.
     private(set) var clears = 0
+    /// The chat sheet and the on-screen chat show only what arrived after the last clear: a clear empties them of
+    /// everything (alerts and site events too, from any origin), while `recent` keeps events for the Event list.
+    @Published private(set) var clearedAt = Date.distantPast
+    var visible: [ChatEvent] { recent.filter { $0.at > clearedAt } }
     @Published private(set) var lastFollower = ""
     @Published private(set) var lastSubscriber = ""
     @Published private(set) var flooding = false
@@ -127,13 +131,14 @@ final class ChatFeed: ObservableObject {
         emit.yield(e)
     }
 
-    /// A chat clear (our /clear, or one done on the platform by you or a mod): drops that origin's messages, so the chat
-    /// sheet and the on-screen chat empty too. Follows, subs and other events stay. `serial` doesn't move, so nothing
-    /// that reads `events(since:)` (alerts) sees old events again.
+    /// A chat clear (our /clear, or one done on the platform by you or a mod): drops that origin's messages and moves
+    /// `clearedAt`, so the chat sheet and the on-screen chat empty completely. The Event list still sees follows and
+    /// subs. `serial` doesn't move, so nothing that reads `events(since:)` (alerts) sees old events again.
     func clear(origin: String) {
         let before = recent.count
         recent.removeAll { $0.origin == origin && $0.kind == .message }
         clears += 1
+        clearedAt = Date()
         applog("chat", "\(origin) chat cleared: \(before - recent.count) messages removed here")
     }
 
