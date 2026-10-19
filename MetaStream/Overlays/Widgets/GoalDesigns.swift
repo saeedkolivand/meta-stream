@@ -90,7 +90,7 @@ struct GoalLiquidView: View {
                 .frame(width: fw, height: h, alignment: .topLeading)
                 .clipped()
                 Circle().strokeBorder(Color.white, lineWidth: 2).frame(width: 28, height: 28)
-                    .scaleEffect(0.4 + 1.2 * s).opacity(splash).offset(x: fw - 14, y: 3)
+                    .scaleEffect(CGFloat(0.4 + 1.2 * s)).opacity(splash).offset(x: fw - 14, y: 3)
                 Capsule().strokeBorder(Color.white.opacity(0.08), lineWidth: 2)
                 if style.showPercent {
                     GoalSwap(before: "\(Int((from * 100).rounded()))%", after: "\(Int((to * 100).rounded()))%", s: swap)
@@ -123,11 +123,14 @@ struct GoalLiquidView: View {
     }
 
     private func bubble(_ i: Int, _ fw: CGFloat, _ h: CGFloat) -> some View {
-        let u = (t * 0.9 + Double(i) * 0.17).truncatingRemainder(dividingBy: 1)
-        let o = u < 0.2 ? u / 0.2 * 0.8 : 0.8 * (1 - u) / 0.8
+        let u: Double = (t * 0.9 + Double(i) * 0.17).truncatingRemainder(dividingBy: 1)
+        let o: Double = u < 0.2 ? u / 0.2 * 0.8 : 0.8 * (1 - u) / 0.8
+        let scale: CGFloat = 0.6 + 0.4 * CGFloat(u)
+        let x: CGFloat = fw * CGFloat(0.1 + 0.16 * Double(i)) - 3
+        let y: CGFloat = h - 9 - 30 * CGFloat(u)
         return Circle().strokeBorder(Color.white.opacity(0.7), lineWidth: 1.5).frame(width: 6, height: 6)
-            .scaleEffect(0.6 + 0.4 * u).opacity(o)
-            .offset(x: fw * CGFloat(0.1 + 0.16 * Double(i)) - 3, y: h - 9 - CGFloat(30 * u))
+            .scaleEffect(scale).opacity(o)
+            .offset(x: x, y: y)
     }
 }
 
@@ -189,8 +192,8 @@ struct GoalRoadView: View {
             .offset(y: 26)
             ForEach(0..<3, id: \.self) { i in pinView(i, w, accent) }
             flag.offset(x: w - 12, y: 8)
-            Circle().fill(Color.goalSteel).frame(width: 8, height: 8).scaleEffect(0.4 + t).opacity(puff)
-                .offset(x: cx - 36 - 22 * CGFloat(t), y: 25 - 6 * CGFloat(t))
+            Circle().fill(Color.goalSteel).frame(width: 8, height: 8).scaleEffect(CGFloat(0.4 + t)).opacity(puff)
+                .offset(x: cx - 36 - 22 * CGFloat(t), y: 25 - 6 * CGFloat(t) as CGFloat)
             car(accent).offset(x: cx - 30, y: 13)
         }
     }
