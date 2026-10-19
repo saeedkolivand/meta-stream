@@ -84,7 +84,7 @@ extension OverlayCompositor {
                     } else {
                         let title = celebrating ? "Goal reached!" : cfg.title
                         let pins = [25, 50, 75].map { Money(cfg.target * Decimal($0) / 100, cfg.currency).display }
-                        func draw(_ a: Decimal, _ b: Decimal, _ fromP: Double, _ toP: Double, _ t: Double) async {
+                        @MainActor func draw(_ a: Decimal, _ b: Decimal, _ fromP: Double, _ toP: Double, _ t: Double) async {
                             let view = GoalDesignView(style: style, title: title, beforeText: Money(a, cfg.currency).display,
                                                       afterText: Money(b, cfg.currency).display,
                                                       targetText: Money(cfg.target, cfg.currency).display, from: fromP, to: toP,
