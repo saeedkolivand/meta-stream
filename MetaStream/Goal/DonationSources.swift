@@ -118,7 +118,7 @@ final class DonationHub: ObservableObject {
         case .reymit:
             if !overlay.isEmpty { liveTasks[site] = Task { [weak self] in await self?.runReymitOverlay(overlay) } }
             if k.isEmpty { setStatus(site, "No API token (overlay only)"); return }
-            let path =k.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? k
+            let path = k.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? k
             tasks[site] = Task { [weak self] in
                 await self?.poll(.reymit, every: 10) { [weak self] in
                     guard let self else { return (.unreachable, []) }
