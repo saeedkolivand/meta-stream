@@ -53,6 +53,9 @@ extension Streamer {
         case "glasses":
             if source == "phone" { Task { await switchTo(glasses: true) } }
             return
+        case "screen":
+            if ScreenSource.available { Task { await switchTo(glasses: true) } }   // same path as the glasses: frames are appended, no capture device
+            return
         default: break
         }
         if glassesStreaming {
@@ -99,14 +102,27 @@ extension Streamer {
                 // device, so the only camera here is the optional front-camera overlay on track 1.
                 if dualCamActive { await detachOverlay() }
                 try await mixer.attachVideo(nil)
-                source = "glasses"
+                let screen = screenWanted
+                source = screen ? "screen" : "glasses"
                 cameraDevice = nil
                 cameraCapabilities = nil
-                if dualWanted {
+                if screen {
+                    // Screen frames are decoded by ScreenSource and appended like the glasses'. They flow even idle, for the preview.
+                    await wireMixer()
+                    let mixer = self.mixer, hot = self.hot
+                    screenSource.sink = { sb in
+                        guard hot.screen else { return }
+                        hot.appended += 1
+                        guard let sb = Self.retimestamped(sb) else { return }
+                        Task { await mixer.append(sb) }
+                    }
+                }
+                // Face cam over the screen: iPad only. An iPhone stops the camera while another app is in front (adr/0003).
+                if dualWanted, !screen || UIDevice.current.userInterfaceIdiom == .pad {
                     await wireMixer()
                     if await attachOverlayCamera(position: .front) {
                         try? await mixer.setFrameRate(30)
-                        await setOrientation(.portrait)   // glasses canvas is 720x1280 portrait
+                        await setOrientation(screen && phoneQuality.landscape ? landscapeOrientation : .portrait)   // glasses canvas is 720x1280 portrait
                         dualCamActive = true
                         await syncBlurEffect()
                         logFaceCamHealth()

@@ -94,7 +94,7 @@ Auto follows this table, and Settings lets you override it per stream.
 
 ## Limits you should know
 
-- **Screen share isn't there yet.** It needs a broadcast extension and an App Group ([`adr/0003`](../adr/0003-screen-arrives-encoded-like-the-glasses.md)).
+- **Screen share has no sound, and starts from iOS's own sheet.** Pick *Screen* as the video source, tap the broadcast button, then *Start Broadcast*. It goes through a broadcast extension ([`adr/0003`](../adr/0003-screen-arrives-encoded-like-the-glasses.md)), up to 1080p. The face cam over it is iPad-only; on an iPhone the screen replaces the camera. Builds without the extension's profile hide the option.
 - **Some Kick commands go through kick.com.** Kick's public API has no endpoint for `/clear`, `/slow`, `/poll` and a
   few others, so the app runs them through a signed-in kick.com page (*Settings → Chat commands*, [`adr/0005`](../adr/0005-kick-slash-commands-through-the-website.md)).
 - **Glasses**: 720×1280 portrait at 30 fps is the most Meta's SDK gives any third-party app, the glasses pick their
@@ -132,5 +132,5 @@ tokens stay on the device. Design decisions are recorded in [`adr/`](../adr) and
 Done: scenes and widgets, OBS import, audio mix and soundboard, recording, scene roles and stingers, obs-websocket
 remote control, slash commands, App bot, Looks, SRTLA bonding, adaptive bitrate, read aloud, privacy blur.
 
-Next: screen share, animated stingers for the scene templates, Android ([`adr/0002`](../adr/0002-android-native-kotlin-port.md)).
+Next: animated stingers for the scene templates, Android ([`adr/0002`](../adr/0002-android-native-kotlin-port.md)).
 

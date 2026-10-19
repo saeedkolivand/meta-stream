@@ -5,6 +5,8 @@ name: MetaStream
 include:
   - path: liveactivity.yml
     enable: ${LIVE_ACTIVITY}
+  - path: screen.yml   # same for the screen-share broadcast extension, gated on SCREEN
+    enable: ${SCREEN}
 options:
   bundleIdPrefix: com.saeedkolivand
   deploymentTarget:

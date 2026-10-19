@@ -82,6 +82,9 @@ extension Streamer {
 
     var dualWanted: Bool { dualLocked ?? UserDefaults.standard.bool(forKey: "dualCam") }
 
+    /// Screen is the chosen video source and this build carries the broadcast extension.
+    var screenWanted: Bool { manualSource == "screen" && ScreenSource.available }
+
     /// Dual camera is wanted AND this phone can run two cameras at once.
     nonisolated static var wantsMultiCam: Bool {
         UserDefaults.standard.bool(forKey: "dualCam") && AVCaptureMultiCamSession.isMultiCamSupported
@@ -449,7 +452,8 @@ extension Streamer {
         // Read once: `enabled` is a plain nonisolated(unsafe) var ContentView can flip mid-await.
         let blur = privacy?.enabled == true
         let look = lookWanted
-        guard blur || look || dualCamActive || overlaysWanted else { await setOffscreenMode(false); await syncOverlays(); return }
+        guard blur || look || dualCamActive || overlaysWanted || screenWanted else {   // screen frames are fitted into the canvas by the offscreen render
+        await setOffscreenMode(false); await syncOverlays(); return }
         if !offscreenOn {
             // Offscreen renders into Screen.size, which defaults to 1280x720 landscape. Without this a
             // portrait frame gets fitted into a landscape canvas and the picture shrinks to a stamp.
@@ -493,7 +497,7 @@ extension Streamer {
     // Session-fixed encoder geometry, extracted from goLive(): the phone camera uses the configured
     // quality, glasses sessions stay 720x1280. Fixes the size for the session; players break otherwise.
     func resolveSessionGeometry() -> (size: CGSize, rate: Int, onPhone: Bool) {
-        let onPhone = source == "phone" || manualSource == "back" || manualSource == "front" || manualSource == "external"
+        let onPhone = source == "phone" || screenWanted || manualSource == "back" || manualSource == "front" || manualSource == "external"
             || (manualSource == "auto" && !glassesStreaming)
         let size = onPhone ? phoneQuality.size : Self.glassesSize
         let rate = onPhone ? phoneQuality.fps : 30

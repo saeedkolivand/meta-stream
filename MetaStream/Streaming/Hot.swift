@@ -14,6 +14,7 @@ import MWDATCamera
 final class Hot: @unchecked Sendable {
     var live = false
     var forward = false                // source == "glasses" && !cameraOff (phone is the default source)
+    var screen = false                 // source == "screen" && !cameraOff: decoded screen frames go to the mixer
     var frames = 0
     var bytes = 0
     var transcoder: Transcoder?         // non-nil = decode HEVC → H.264 encoder instead of passthrough
@@ -118,6 +119,8 @@ extension Streamer {
 
     func syncHot() {
         hot.forward = source == "glasses" && !cameraOff
+        hot.screen = source == "screen" && !cameraOff
+        ScreenPump.shared.active.value = hot.screen
         // The glasses preview normally shows the raw HEVC stream directly (AVSampleBufferDisplayLayer decodes
         // it itself -- lower latency than round-tripping through the mixer), but that raw stream can never be
         // blurred (or composited with the face cam): it never reaches the mixer (see the ADR). While glasses
@@ -127,7 +130,7 @@ extension Streamer {
         // from goLive()/stopLive()/syncBlurEffect() too, since those flip the state this depends on without
         // themselves being observed properties.
         let glassesBlurredLive = hot.forward && hot.transcoder != nil && (hot.live || hot.warm) && (privacy?.enabled == true || dualCamActive || overlaysWanted || lookWanted)
-        let show = source == "phone" || cameraOff || glassesBlurredLive
+        let show = source == "phone" || source == "screen" || cameraOff || glassesBlurredLive
         if show != hot.showMixerVideo { hot.showMixerVideo = show; hot.preview?.sampleBufferRenderer.flush(); ExternalDisplay.layer?.sampleBufferRenderer.flush() }   // format switches between sources
     }
 

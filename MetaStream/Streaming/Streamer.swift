@@ -56,7 +56,7 @@ final class Streamer: ObservableObject {
 
     @Published var source = "phone" { didSet { syncHot(); applog("stream", "source=\(source) manual=\(manualSource)") } }   // what is going out right now
 
-    @Published var manualSource = "back"       // phone camera by default; "auto" | "glasses" | "back" | "front" | "external" (user's choice)
+    @Published var manualSource = "back"       // phone camera by default; "auto" | "glasses" | "back" | "front" | "external" | "screen" (user's choice)
 
     /// localizedName of the connected UVC camera (iPad USB-C; iPhones never expose one), nil when none. Drives
     /// whether the source picker offers "External camera"; kept fresh by the connect/disconnect observers in init.
@@ -122,7 +122,7 @@ final class Streamer: ObservableObject {
     /// True whenever HaishinKit's own encoder is doing the work: h264 transcode (any source), or hevc with
     /// the phone driving video — phone-camera fallback (source == "phone") or black frames (cameraOff).
     /// False only for hevc glasses passthrough, the one case with no bitrate knob (see goLive's gate comment).
-    var phoneEncodes: Bool { hot.transcoder != nil || source == "phone" || cameraOff }
+    var phoneEncodes: Bool { hot.transcoder != nil || source == "phone" || source == "screen" || cameraOff }
 
     /// Short glasses state for the HUD: "streaming" | "connecting" | "off".
     var glassesShort: String {
@@ -153,6 +153,9 @@ final class Streamer: ObservableObject {
     @Published var cameraPosition: AVCaptureDevice.Position = .back
 
     let hot = Hot()
+
+    /// Screen share (adr/0003): decodes the broadcast extension's frames; its `sink` is the mixer while Screen is the video source.
+    let screenSource = ScreenSource()
 
     lazy var sink = LayerSink(hot: hot)
 

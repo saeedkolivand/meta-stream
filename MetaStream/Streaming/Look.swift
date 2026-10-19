@@ -116,6 +116,7 @@ extension Streamer {
     /// Which source's look is live: glasses, or the phone camera position / external camera.
     var lookKey: String {
         if source == "glasses" { return "glasses" }
+        if source == "screen" { return "screen" }
         if manualSource == "external" { return "external" }
         return manualSource == "front" || (manualSource == "auto" && fallbackPosition == .front) ? "front" : "back"
     }

@@ -96,7 +96,7 @@ struct HUDView: View {
                 if streamer.thermal != .nominal {
                     StripStyles.pill("thermometer", thermalLabel, streamer.thermal == .fair ? .white : .orange)
                 }
-                StripStyles.pill(streamer.source == "phone" ? (streamer.manualSource == "external" ? "video.fill" : "iphone") : "eyeglasses",
+                StripStyles.pill(streamer.source == "screen" ? "display" : streamer.source == "phone" ? (streamer.manualSource == "external" ? "video.fill" : "iphone") : "eyeglasses",
                      streamer.manualSource == "auto" ? "auto · \(streamer.source)"
                          : streamer.manualSource == "external" ? (streamer.externalCameraName ?? "external") : streamer.manualSource,
                      streamer.source == "phone" ? .orange : .white)

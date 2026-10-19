@@ -48,6 +48,9 @@ struct GoLiveControlsView: View {
                     if streamer.externalCameraName != nil {
                         Label("External camera", systemImage: "video.fill").tag("external")
                     }
+                    if ScreenSource.available {   // only in a build that carries the broadcast extension
+                        Label("Screen", systemImage: "display").tag("screen")
+                    }
                 }
             } label: {
                 Image(systemName: sourceIcon)
@@ -57,6 +60,7 @@ struct GoLiveControlsView: View {
                     .background(streamer.manualSource == "auto" ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.white), in: Circle())
             }
             .buttonStyle(.plain)
+            if streamer.manualSource == "screen", ScreenSource.available { ScreenButton(screen: streamer.screenSource, size: smallSize) }
 
             Button {
                 hapticTap(strong: true)
@@ -100,6 +104,7 @@ struct GoLiveControlsView: View {
         case "back": return "camera.fill"
         case "front": return "camera.rotate.fill"
         case "external": return "video.fill"
+        case "screen": return "display"
         default: return streamer.source == "phone" ? "iphone" : "eyeglasses"
         }
     }

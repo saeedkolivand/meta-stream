@@ -1,0 +1,23 @@
+# Included by project.yml only when SCREEN=true (see `include:` there). Same pattern as liveactivity.yml: the
+# broadcast extension needs its own App ID + provisioning profile, so without them the app builds without it.
+# Arrays append, so the MetaStream entry only adds one dependency to the app target defined in project.yml.
+targets:
+  MetaStream:
+    dependencies:
+      - target: MetaStreamScreen   # an app extension lands in PlugIns/
+  MetaStreamScreen:
+    type: app-extension
+    platform: iOS
+    sources:
+      - MetaStreamScreen
+      - MetaStream/Streaming/ScreenShared.swift   # shared with the app target
+    settings:
+      base:
+        INFOPLIST_FILE: MetaStreamScreen/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.saeedkolivand.metastream.Screen
+        CODE_SIGN_ENTITLEMENTS: MetaStreamScreen/MetaStreamScreen.entitlements
+        SWIFT_VERSION: "6.0"
+        SWIFT_STRICT_CONCURRENCY: minimal
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Manual
+        PROVISIONING_PROFILE_SPECIFIER: $(SCREEN_PROFILE_NAME)   # passed per-target from CI, see build.yml
