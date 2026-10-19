@@ -189,9 +189,9 @@ struct GoalWidgetStyle: Equatable, Sendable {
     /// The bar follows the box sliders; the other designs are drawn at a fixed size.
     var natural: CGSize {
         switch design {
-        case "liquid": CGSize(width: 420, height: 76)
-        case "road": CGSize(width: 500, height: 74)
-        case "segments": CGSize(width: 480, height: 40)
+        case "liquid": CGSize(width: 630, height: 114)   // board size x GoalDesignView.scale
+        case "road": CGSize(width: 750, height: 111)
+        case "segments": CGSize(width: 720, height: 60)
         default: CGSize(width: width, height: height)
         }
     }

@@ -180,6 +180,11 @@ struct GoalSettingsView: View {
                     Text("\(e.source.capitalized) · \(e.at.formatted(date: .abbreviated, time: .shortened))" + (e.note.isEmpty ? "" : " · \(e.note)"))
                         .font(.footnote).foregroundStyle(.secondary)
                 }
+                .swipeActions {   // a test that counted, a mistake: out of the total, kept in the list as refunded
+                    if e.state == .counted || e.state == .pending {
+                        Button("Remove", role: .destructive) { goal.refund(e.id) }
+                    }
+                }
             }
         }
     }

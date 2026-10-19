@@ -64,6 +64,8 @@ final class DonationHub: ObservableObject {
     private var logged: [Site: String] = [:]
     private var lastAt: [Site: Date] = [:]
     private var loggedFields: Set<Site> = []
+    private var loggedTypes: Set<String> = []   // StreamElements event types whose keys were logged this run
+    private var channelIds: [Site: String] = [:]   // StreamElements channel id, shared by the poll and the socket's tip lookup
 
     init() {
         for s in Site.allCases { status[s] = "Not set up" }
@@ -89,6 +91,7 @@ final class DonationHub: ObservableObject {
         tasks[site]?.cancel(); tasks[site] = nil
         liveTasks[site]?.cancel(); liveTasks[site] = nil
         sockets[site]?.cancel(with: .goingAway, reason: nil); sockets[site] = nil
+        channelIds[site] = nil
     }
 
     /// (Re)starts one site; "Not set up" without a key. Nothing runs before `start(chat:)`.
@@ -124,6 +127,7 @@ final class DonationHub: ObservableObject {
                         guard o == .ok else { return (o, []) }
                         guard let id = (json as? [String: Any])?["_id"] as? String else { return (.unreachable, []) }
                         channel = id
+                        self.channelIds[.streamelements] = id
                     }
                     let (o, json) = await self.get("https://api.streamelements.com/kappa/v2/tips/\(channel)?limit=25&sort=-createdAt", auth: auth, reject: [401, 403])
                     let raws = Self.items(json)
@@ -277,16 +281,18 @@ final class DonationHub: ObservableObject {
                         return (true, connected)
                     case "event":
                         let type = Self.text(p["type"])
+                        let d = (p["data"] as? [String: Any]) ?? [:]
                         applog("goal", "streamelements event: " + type)
-                        guard type == "tip", let d = p["data"] as? [String: Any] else { continue }
-                        var flat: [String: Any] = [:]
-                        flat["id"] = Self.first(d, ["tipId"]) ?? p["_id"]
-                        flat["amount"] = d["amount"]
-                        let cur = Self.text(d["currency"])
-                        flat["currency"] = cur.isEmpty ? "USD" : cur
-                        flat["name"] = Self.first(d, ["displayName", "username"])
-                        flat["message"] = d["message"]
-                        if let parsed = Self.parse(flat, .donofa) { ingest(.streamelements, [parsed], live: true) }
+                        logEventKeys(type, p, d)
+                        // The dashboard's Emulate buttons arrive as ordinary events: tell them apart before counting or announcing.
+                        let flagged = Self.isMock(p) || Self.isMock(d)
+                        if type == "tip" {
+                            await streamElementsTip(key, p, d, flagged: flagged)
+                        } else if flagged {
+                            announceTestAlert(type, d)
+                        } else {
+                            applog("goal", "streamelements \(type) -> real, ignored (the platform delivers it)")
+                        }
                     case "event:test":
                         let listener = Self.text(p["listener"])
                         applog("goal", "streamelements test event: " + listener)
@@ -301,6 +307,88 @@ final class DonationHub: ObservableObject {
             }
         } catch {}
         return (false, connected)
+    }
+
+    /// A socket tip: flagged = test; else real tips are saved by StreamElements (GET 200), emulated ones are not (404/400).
+    /// Lookup failures fall back to real; the poll's dedupe key keeps that from double counting.
+    private func streamElementsTip(_ key: String, _ p: [String: Any], _ d: [String: Any], flagged: Bool) async {
+        let cur = Self.text(d["currency"])
+        let currency = cur.isEmpty ? "USD" : cur
+        let tipId = Self.text(Self.first(d, ["tipId"]) ?? p["_id"])
+        var test = flagged
+        var why = "flag"
+        if !flagged, !tipId.isEmpty {
+            let auth = "Bearer " + key
+            var channel = channelIds[.streamelements] ?? ""
+            if channel.isEmpty {
+                let (o, json) = await get("https://api.streamelements.com/kappa/v2/channels/me", auth: auth, reject: [401, 403])
+                if o == .ok, let id = (json as? [String: Any])?["_id"] as? String { channel = id; channelIds[.streamelements] = id }
+            }
+            let enc = tipId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? tipId
+            if !channel.isEmpty, let code = await httpStatus("https://api.streamelements.com/kappa/v2/tips/\(channel)/\(enc)", auth: auth),
+               code == 404 || code == 400 {
+                test = true
+                why = "not in store"
+            }
+        }
+        if Task.isCancelled { return }
+        if test {
+            applog("goal", "streamelements tip -> test (\(why))")
+            announceTest(.streamelements, name: Self.text(Self.first(d, ["displayName", "username", "name"])),
+                         message: Self.text(d["message"]), amount: d["amount"], currency: currency)
+            return
+        }
+        applog("goal", "streamelements tip -> real")
+        var flat: [String: Any] = [:]
+        flat["id"] = tipId
+        flat["amount"] = d["amount"]
+        flat["currency"] = currency
+        flat["name"] = Self.first(d, ["displayName", "username"])
+        flat["message"] = d["message"]
+        if let parsed = Self.parse(flat, .donofa) { ingest(.streamelements, [parsed], live: true) }
+    }
+
+    /// An emulated follow/sub/cheer/raid plays its alert (origin "test-donation": never thanked, never recorded).
+    private func announceTestAlert(_ type: String, _ d: [String: Any]) {
+        guard !Task.isCancelled, let chat else { return }
+        let n = Int(Self.text(d["amount"]))
+        let kind: ChatEvent.Kind, count: Int
+        switch type {
+        case "follower", "follow": kind = .follow; count = 0
+        case "subscriber": kind = .subscribe; count = 0   // a normal sub; amount is months, and count > 0 would read as a gift of that many
+        case "cheer": kind = .cheer; count = n ?? 0
+        case "raid", "host": kind = .raid; count = n ?? 0
+        default:
+            applog("goal", "streamelements \(type) -> test (flag), no alert for this type")
+            return
+        }
+        applog("goal", "streamelements \(type) -> test (flag)")
+        let name = Self.text(Self.first(d, ["displayName", "username", "name"]))
+        chat.yield(ChatEvent(kind: kind, user: name.isEmpty ? "Someone" : name, text: Self.text(d["message"]), count: count, origin: "test-donation"))
+    }
+
+    /// Any of isMock/isTest/mock/test true (Bool or "true") marks an emulated event.
+    private static func isMock(_ o: [String: Any]) -> Bool {
+        ["isMock", "isTest", "mock", "test"].contains { k in
+            if let b = o[k] as? Bool { return b }
+            return (o[k] as? String)?.lowercased() == "true"
+        }
+    }
+
+    /// Key names (never values) of the first event of each type per run: learns where the test flag lives on device.
+    private func logEventKeys(_ type: String, _ p: [String: Any], _ d: [String: Any]) {
+        guard loggedTypes.insert(type).inserted else { return }
+        let top = p.keys.filter { $0 != "data" }.sorted().joined(separator: ", ")
+        applog("goal", "streamelements \(type) keys: \(top), data{\(d.keys.sorted().joined(separator: ", "))}")
+    }
+
+    /// Status code only (nil when unreachable).
+    private func httpStatus(_ url: String, auth: String) async -> Int? {
+        guard let u = URL(string: url) else { return nil }
+        var req = URLRequest(url: u, timeoutInterval: 15)
+        req.setValue(auth, forHTTPHeaderField: "Authorization")
+        guard let (_, resp) = try? await URLSession.shared.data(for: req) else { return nil }
+        return (resp as? HTTPURLResponse)?.statusCode
     }
 
     /// A site's test donation plays the alert but is not recorded in the goal.

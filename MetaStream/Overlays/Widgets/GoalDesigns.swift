@@ -345,7 +345,15 @@ struct GoalDesignView: View {
     var pins: [String] = []
     var celebrating = false
 
+    /// The designs are laid out in 1280-wide board units (the previews); a stream canvas is 1920 wide, so draw 1.5x.
+    static let scale: CGFloat = 1.5
+
     var body: some View {
+        design.scaleEffect(Self.scale, anchor: .topLeading)
+            .frame(width: style.natural.width, height: style.natural.height, alignment: .topLeading)
+    }
+
+    @ViewBuilder private var design: some View {
         switch style.design {
         case "road":
             GoalRoadView(style: style, title: title, beforeText: beforeText, afterText: afterText, targetText: targetText,
