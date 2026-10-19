@@ -39,6 +39,8 @@ final class ChatFeed: ObservableObject {
     @Published private(set) var recent: [ChatEvent] = []   // last 100, across every origin
     /// Events yielded so far. Not @Published: widgets poll it on their own tick instead of re-rendering SwiftUI.
     private(set) var serial = 0
+    /// Bumped by every clear: a clear adds no event, so `serial` alone can't tell the on-screen chat to redraw.
+    private(set) var clears = 0
     @Published private(set) var lastFollower = ""
     @Published private(set) var lastSubscriber = ""
     @Published private(set) var flooding = false
@@ -131,6 +133,7 @@ final class ChatFeed: ObservableObject {
     func clear(origin: String) {
         let before = recent.count
         recent.removeAll { $0.origin == origin && $0.kind == .message }
+        clears += 1
         applog("chat", "\(origin) chat cleared: \(before - recent.count) messages removed here")
     }
 
