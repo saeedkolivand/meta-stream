@@ -91,6 +91,34 @@ struct WidgetInspectorView: View {
             ColorPicker("Accent color", selection: color("accentColor"))
             ColorPicker("Text color", selection: color("textColor"))
         }
+        Section {
+            Picker("Donation style", selection: str("design")) {
+                ForEach(DonationAlertKind.allCases, id: \.rawValue) { Text($0.title).tag($0.rawValue) }
+            }
+            if raw("design") != "island" {
+                designColor("designAccent", "Colour")
+                if raw("design") == "neon" { designColor("designSecond", "Second colour") }
+                Picker("Speed", selection: str("designSpeed")) {
+                    Text("Slow").tag("slow")
+                    Text("Normal").tag("normal")
+                    Text("Quick").tag("quick")
+                }
+                .pickerStyle(.segmented)
+            }
+        } header: {
+            Text("Donations")
+        } footer: {
+            Text("Donations (tips, Bits, KICKs) use this design; follows, subs and raids keep the Island banner.")
+        }
+    }
+
+    /// "Design colour" on = 0, the design's own colour; off shows a picker.
+    @ViewBuilder private func designColor(_ key: String, _ title: String) -> some View {
+        let own = Binding<Bool> {
+            (UInt32(raw(key) ?? "") ?? 0) == 0
+        } set: { layer.data[key] = $0 ? "0" : String(0xFFFF_FFFF as UInt32) }
+        Toggle("Design colour", isOn: own)
+        if !own.wrappedValue { ColorPicker(title, selection: color(key)) }
     }
 
     @ViewBuilder private var eventSection: some View {

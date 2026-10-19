@@ -56,6 +56,14 @@ enum OverlayScreen {
         return o
     }
 
+    /// A donation alert over `rect` (the whole canvas).
+    @ScreenActor static func makeDonation(_ rect: CGRect, _ kind: DonationAlertKind, _ info: DonationAlertInfo,
+                                          _ style: DonationAlertStyle) -> DonationAlertScreenObject {
+        let o = DonationAlertScreenObject(kind: kind, info: info, style: style)
+        layout(o, rect)
+        return o
+    }
+
     /// Z-order is add order: later layers draw on top (the camera frame is the Screen's own first child).
     /// Overlays composite on the GPU (Core Image on Metal): the CPU renderer converts and alpha-blends every overlay on
     /// the CPU each frame. Switched before the first overlay goes on; HaishinKit's camera object re-lays out every frame.
@@ -131,6 +139,60 @@ final class StingerScreenObject: ScreenObject {
         let k = canvas?.size == bounds.size ? canvas! : StingerCanvas(size: bounds.size)
         canvas = k
         let image = kind.ciFrame(k, t: t, style: style)
+        let ms = (CACurrentMediaTime() - began) * 1000
+        frames += 1
+        drawTotal += ms
+        drawMax = max(drawMax, ms)
+        if frames > 1 { gapMax = max(gapMax, t - last) }
+        last = t
+        return image
+    }
+}
+
+/// A donation alert as a screen object: same structure as StingerScreenObject, with progress p = t / duration.
+final class DonationAlertScreenObject: ScreenObject {
+    private let kind: DonationAlertKind
+    private let info: DonationAlertInfo
+    private let style: DonationAlertStyle
+    private var start: CMTime?
+    private var canvas: StingerCanvas?
+    // perf: frames drawn, draw time, and the longest gap between video frames, logged once when it ends
+    private var frames = 0
+    private var drawTotal = 0.0, drawMax = 0.0, gapMax = 0.0
+    private var last = 0.0
+    private var logged = false
+
+    init(kind: DonationAlertKind, info: DonationAlertInfo, style: DonationAlertStyle) {
+        self.kind = kind
+        self.info = info
+        self.style = style
+        super.init()
+    }
+
+    override func makeImage(_ renderer: some ScreenRenderer) -> CIImage? {
+        let now = renderer.presentationTimeStamp
+        let first = start ?? now
+        start = first
+        let t = (now - first).seconds
+        let duration = kind.seconds / max(style.speed, 0.1)
+        // An empty image (not nil) once it's over: nil would leave the renderer's last frame on screen.
+        guard t.isFinite, t >= 0, t <= duration else {
+            if !logged, frames > 0 {
+                logged = true
+                applog("perf", "donation alert \(kind.rawValue): \(frames) frames in \(String(format: "%.2f", last)) s "
+                       + "(\(String(format: "%.0f", Double(frames) / max(last, 0.01))) fps), draw avg \(String(format: "%.1f", drawTotal / Double(frames))) ms "
+                       + "max \(String(format: "%.1f", drawMax)) ms, longest gap \(String(format: "%.0f", gapMax * 1000)) ms, "
+                       + "canvas \(Int(bounds.width))x\(Int(bounds.height)), renderer \(type(of: renderer))")
+            }
+            return CIImage.empty()
+        }
+        let began = CACurrentMediaTime()
+        let k = canvas?.size == bounds.size ? canvas! : StingerCanvas(size: bounds.size)
+        canvas = k
+        // Top-left art flipped once into Core Image's bottom-left space and cut to the canvas, like StingerKind.ciFrame.
+        let image = DonationArt.frame(kind, p: t / duration, info: info, style: style, c: k)
+            .transformed(by: CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: k.size.height))
+            .cropped(to: k.bounds)
         let ms = (CACurrentMediaTime() - began) * 1000
         frames += 1
         drawTotal += ms

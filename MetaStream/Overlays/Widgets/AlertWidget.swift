@@ -5,13 +5,13 @@ import SwiftUI
 import UIKit
 
 extension OverlayCompositor {
-    func alertWidget(_ l: OverlayLayer, box: CGRect, canvas: CGSize) async -> WidgetBuild? {
+    func alertWidget(_ l: OverlayLayer, box: CGRect, canvas: CGSize, goalBox: CGRect?) async -> WidgetBuild? {
         guard let rect = OverlayRaster.visible(box, in: canvas) else { return nil }
         let style = AlertWidgetStyle(l.data)
         let natural = CGSize(width: 900, height: 240)
         let ctx = context
         let o = await OverlayScreen.makeImage(rect, nil)
-        let task = Task {
+        let task = Task { [weak self] in
             var seen = ctx.chat?.serial ?? 0   // start from "now": a scene switch must not replay old follows
             var queue: [ChatEvent] = []
             while !Task.isCancelled {
@@ -26,7 +26,11 @@ extension OverlayCompositor {
                 }
                 let e = queue.removeFirst()
                 SoundMix.shared.playAlert()   // into the mix with the banner; ignored unless live
-                await AlertPlayer.play(e, style: style, on: o, natural: natural, box: box, canvas: canvas)
+                if e.kind == .tip || e.kind == .cheer, style.donationKind != .island, let mixer = self?.mixer {
+                    await DonationAlertPlayer.play(e, style: style, canvas: canvas, goalBox: goalBox, mixer: mixer)
+                } else {
+                    await AlertPlayer.play(e, style: style, on: o, natural: natural, box: box, canvas: canvas)
+                }
                 try? await Task.sleep(for: .seconds(AlertIsland.gap))
             }
         }

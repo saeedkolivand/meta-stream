@@ -17,7 +17,7 @@ final class OverlayCompositor {
 
     private var key = ""
     private var generation = 0       // bumped per apply(); a build that finds it changed abandons itself
-    private var mixer: MediaMixer?   // the mixer `objects` are on, kept so teardown removes them from the right Screen
+    private(set) var mixer: MediaMixer?   // the mixer `objects` are on, kept so teardown removes them from the right Screen
     private var objects: [ScreenObject] = []
     private var feeds: [BrowserFeed] = []
     private var tasks: [Task<Void, Never>] = []
@@ -147,6 +147,10 @@ final class OverlayCompositor {
         let fit = overlayFit(canvasW: pack.canvasW, canvasH: pack.canvasH, outW: canvas.width, outH: canvas.height)
         var b = Built(key: key)
         var counts: [String: Int] = [:]   // layer type -> built, for the log
+        // The Goal widget's place on the canvas: the "Goal surge" donation alert lands its bar there.
+        let goalBox = scene.layers.first { $0.type == .goal && $0.visible }.map {
+            widgetRect($0.layout ?? WidgetLayout(), natural: OverlayStore.shared.naturalSize($0) ?? CGSize(width: 400, height: 200), canvas: canvas)
+        }
         for l in scene.layers where l.visible {
             switch l.type {
             case .image, .text, .color:
@@ -160,7 +164,7 @@ final class OverlayCompositor {
                     b.stills.append((o, p))
                 }
             case .chat, .alerts, .events, .qr, .goal:
-                guard let w = await widget(l, canvas) else { b.failed += 1; continue }
+                guard let w = await widget(l, canvas, goalBox: goalBox) else { b.failed += 1; continue }
                 b.objects.append(w.object)
                 if let t = w.task { b.tasks.append(t) }
             case .slideshow:
@@ -242,12 +246,12 @@ final class OverlayCompositor {
     }
 
     /// Chat / alerts / event list / QR: always frame-relative; a layer without a layout gets the default one.
-    private func widget(_ l: OverlayLayer, _ canvas: CGSize) async -> WidgetBuild? {
+    private func widget(_ l: OverlayLayer, _ canvas: CGSize, goalBox: CGRect?) async -> WidgetBuild? {
         let natural = OverlayStore.shared.naturalSize(l) ?? CGSize(width: 400, height: 200)
         let rect = widgetRect(l.layout ?? WidgetLayout(), natural: natural, canvas: canvas)
         switch l.type {
         case .chat: return await chatWidget(l, box: rect, canvas: canvas)
-        case .alerts: return await alertWidget(l, box: rect, canvas: canvas)
+        case .alerts: return await alertWidget(l, box: rect, canvas: canvas, goalBox: goalBox)
         case .events: return await eventListWidget(l, box: rect, canvas: canvas)
         case .qr: return await qrWidget(l, box: rect, canvas: canvas)
         case .goal: return await goalWidget(l, box: rect, canvas: canvas)

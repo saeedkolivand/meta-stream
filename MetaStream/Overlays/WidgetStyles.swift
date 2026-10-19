@@ -84,10 +84,16 @@ struct AlertWidgetStyle: Equatable, Sendable {
     var accentColor: UInt32 = 0xFF91_46FF
     var textColor: UInt32 = 0xFFFF_FFFF
     var face = ""
+    var design = "island"          // DonationAlertKind raw value; donations (tips, Bits, KICKs) only
+    var designAccent: UInt32 = 0   // 0 = the design's own colour
+    var designSecond: UInt32 = 0   // neon's second tube; 0 = the design's own
+    var designSpeed = "normal"     // "slow" | "normal" | "quick"
 
     init() {}
     init(_ d: [String: String]) {
         let o = AlertWidgetStyle()
+        design = d.str("design", o.design); designAccent = d.argb("designAccent", o.designAccent)
+        designSecond = d.argb("designSecond", o.designSecond); designSpeed = d.str("designSpeed", o.designSpeed)
         follow = d.flag("follow", o.follow); subscribe = d.flag("subscribe", o.subscribe); raid = d.flag("raid", o.raid)
         tip = d.flag("tip", o.tip); cheer = d.flag("cheer", o.cheer); holdSeconds = d.int("holdSeconds", o.holdSeconds)
         fontSize = d.num("fontSize", o.fontSize); accentColor = d.argb("accentColor", o.accentColor)
@@ -96,12 +102,20 @@ struct AlertWidgetStyle: Equatable, Sendable {
 
     var natural: CGSize { CGSize(width: 900, height: 240) }
 
+    var donationKind: DonationAlertKind { DonationAlertKind(rawValue: design) ?? .island }
+
+    var donationStyle: DonationAlertStyle {
+        DonationAlertStyle(accent: designAccent, second: designSecond,
+                           speed: designSpeed == "slow" ? 0.75 : designSpeed == "quick" ? 1.33 : 1)
+    }
+
     func shows(_ kind: ChatEvent.Kind) -> Bool {
         eventShown(kind, follow: follow, subscribe: subscribe, raid: raid, tip: tip, cheer: cheer)
     }
 
     var data: [String: String] {
-        ["follow": flagText(follow), "subscribe": flagText(subscribe), "raid": flagText(raid), "tip": flagText(tip),
+        ["design": design, "designAccent": "\(designAccent)", "designSecond": "\(designSecond)", "designSpeed": designSpeed,
+         "follow": flagText(follow), "subscribe": flagText(subscribe), "raid": flagText(raid), "tip": flagText(tip),
          "cheer": flagText(cheer), "holdSeconds": "\(holdSeconds)", "fontSize": "\(Double(fontSize))",
          "accentColor": "\(accentColor)", "textColor": "\(textColor)", "face": face]
     }

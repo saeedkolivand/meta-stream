@@ -40,6 +40,7 @@
 
 | | |
 |---|---|
+| **Donation alerts** | Pick a design for tips, Bits and KICKs in the Alerts widget (Coin burst, Neon sign, Receipt, Holo card, Shockwave, Goal surge): drawn live over the whole frame, with your colour and speed. Follows, subs and raids keep the Island banner |
 | **Mix** | Mic, alert sounds, soundboard and clip audio as separate tracks with their own volume, through a limiter |
 | **Meter and dead-air alert** | A level bar on screen, and a warning when the mic goes silent while live |
 | **Soundboard** | Your own sound files, one tap each |

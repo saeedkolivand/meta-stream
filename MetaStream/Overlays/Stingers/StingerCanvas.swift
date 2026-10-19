@@ -133,15 +133,16 @@ final class StingerCanvas {
     // MARK: text (drawn once per look, then moved and faded on the GPU)
 
     /// `text` centred on `at`. `tracking` is in em (it changes the layout, so each distinct value is its own render).
+    /// `face` is a WidgetFonts face id ("" = system).
     func text(_ text: String, at: CGPoint, size: CGFloat, weight: UIFont.Weight = .semibold, color argb: UInt32,
-              alpha: CGFloat = 1, tracking: CGFloat = -0.02, scale: CGFloat = 1) -> CIImage {
+              alpha: CGFloat = 1, tracking: CGFloat = -0.02, scale: CGFloat = 1, face: String = "") -> CIImage {
         guard !text.isEmpty, alpha > 0.001, size > 0 else { return .empty() }
-        let key = "\(text)|\(Int(size * 2))|\(weight.rawValue)|\(argb)|\(Int((tracking * 200).rounded()))"
+        let key = "\(text)|\(Int(size * 2))|\(weight.rawValue)|\(argb)|\(Int((tracking * 200).rounded()))|\(face)"
         let image: CGImage
         if let cached = texts[key] {
             image = cached
         } else {
-            let font = WidgetFonts.uiFont(face: "", size: size, weight: weight)
+            let font = WidgetFonts.uiFont(face: face, size: size, weight: weight)
             let str = NSAttributedString(string: text, attributes: [
                 .font: font, .kern: tracking * size, .foregroundColor: UIColor(cgColor: StingerArt.color(argb)),
             ])

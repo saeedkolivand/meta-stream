@@ -127,6 +127,10 @@
 		<string>Vazirmatn-Regular.ttf</string>
 		<string>Vazirmatn-SemiBold.ttf</string>
 		<string>Vazirmatn-Bold.ttf</string>
+		<string>Unbounded-Variable.ttf</string>
+		<string>TiltNeon-Variable.ttf</string>
+		<string>JetBrainsMono-Variable.ttf</string>
+		<string>Manrope-Variable.ttf</string>
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Adds your voice to the live stream</string>

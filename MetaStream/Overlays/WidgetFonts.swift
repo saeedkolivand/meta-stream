@@ -1,10 +1,33 @@
 // Fonts for everything drawn on the stream. Latin stays in the chosen face (system SF by default); Persian/Arabic
 // glyphs fall through a cascade list to Vazirmatn, so mixed "gg خیلی خوب" lines render correctly with no per-run work.
+import CoreText
 import SwiftUI
 import UIKit
 
 enum WidgetFonts {
-    static let faces: [(id: String, label: String)] = [("", "System"), ("Vazirmatn", "Vazirmatn")]
+    static let faces: [(id: String, label: String)] = [
+        ("", "System"), ("Vazirmatn", "Vazirmatn"), ("Unbounded", "Unbounded"), ("TiltNeon", "Tilt Neon"),
+        ("JetBrainsMono", "JetBrains Mono"), ("Manrope", "Manrope"),
+    ]
+
+    /// The variable fonts (donation alerts): face id -> PostScript name of the file's default instance.
+    private static let variablePS = ["Unbounded": "Unbounded-Regular", "TiltNeon": "TiltNeon-Regular",
+                                     "JetBrainsMono": "JetBrainsMono-Regular", "Manrope": "Manrope-ExtraLight"]
+
+    /// UIFont.Weight onto the 100...900 `wght` axis.
+    private static func wght(_ w: UIFont.Weight) -> Double {
+        switch w.rawValue {
+        case ..<(-0.7): 100
+        case ..<(-0.5): 200
+        case ..<(-0.3): 300
+        case ..<0.1: 400
+        case ..<0.27: 500
+        case ..<0.35: 600
+        case ..<0.5: 700
+        case ..<0.6: 800
+        default: 900
+        }
+    }
 
     private static func vazirName(_ w: UIFont.Weight) -> String {
         w.rawValue >= UIFont.Weight.bold.rawValue ? "Vazirmatn-Bold"
@@ -17,7 +40,12 @@ enum WidgetFonts {
         let vazir = UIFont(name: vazirName(weight), size: size)
         if face == "Vazirmatn", let vazir { return vazir }
         var base = UIFont.systemFont(ofSize: size, weight: weight)
-        if !face.isEmpty,
+        if let ps = variablePS[face] {
+            let axis = UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String)
+            let d = UIFontDescriptor(fontAttributes: [.name: ps, .size: size, axis: [0x7767_6874: wght(weight)]])
+            let f = UIFont(descriptor: d, size: size)
+            if f.fontName.hasPrefix(face) { base = f }   // else the file isn't in the bundle: system font
+        } else if !face.isEmpty,
            let named = UIFont(name: face, size: size) ?? UIFont.fontNames(forFamilyName: face).first.flatMap({ UIFont(name: $0, size: size) }) {
             base = named
             if weight.rawValue >= UIFont.Weight.semibold.rawValue, let d = named.fontDescriptor.withSymbolicTraits(.traitBold) {
