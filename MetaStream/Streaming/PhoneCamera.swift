@@ -124,6 +124,7 @@ extension Streamer {
                         try? await mixer.setFrameRate(30)
                         await setOrientation(screen && phoneQuality.landscape ? landscapeOrientation : .portrait)   // glasses canvas is 720x1280 portrait
                         dualCamActive = true
+                        await pushOverlayLayout()   // attachOverlayCamera laid it out hidden (dualCamActive was still false)
                         await syncBlurEffect()
                         logFaceCamHealth()
                     }
