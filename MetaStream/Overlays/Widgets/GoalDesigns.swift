@@ -1,12 +1,12 @@
-// Compact Goal designs: Liquid, Road trip, Segments. Each draws one frame from (from -> to, reaction progress t).
+// Compact Goal designs: Liquid, Road trip, Segments (the minimal ones: GoalDesignsLine / GoalDesignsRound). Each draws one frame from (from -> to, reaction progress t).
 // t is 0...1: 0 shows `from`/`beforeText`, 1 is settled and shows `to`/`afterText`. The render loop plays t over 1.6 s after a donation.
 // ponytail: no idle animation (waves, bubbles, the car stay still between donations) so the widget costs nothing when
 // nothing happens; the wave phase and bubbles only move with t.
 import SwiftUI
 
-private func goalColor(_ argb: UInt32) -> Color { Color(uiColor: OverlayRaster.color(argb: argb)) }
+func goalColor(_ argb: UInt32) -> Color { Color(uiColor: OverlayRaster.color(argb: argb)) }
 
-private extension Color {
+extension Color {
     static let goalInk = Color(red: 18 / 255, green: 19 / 255, blue: 24 / 255)   // the boards' #121318
     static let goalSteel = Color(red: 0xD7 / 255, green: 0xD8 / 255, blue: 0xDE / 255)
     static let goalDim = Color(red: 0xA9 / 255, green: 0xAB / 255, blue: 0xB5 / 255)
@@ -17,23 +17,38 @@ enum GoalMotion {
     static func seg(_ t: Double, _ a: Double, _ b: Double) -> Double { min(1, max(0, (t - a) / (b - a))) }
     /// The move itself (fill, car) takes the first 75% of the reaction, eased.
     static func move(_ t: Double) -> Double { let s = seg(t, 0, 0.75); return s * s * (3 - 2 * s) }
+    static func smooth(_ s: Double) -> Double { s * s * (3 - 2 * s) }
+    /// The boards' 6 s loops put the donation at 40...75 % of the loop; `lp` is the eased progress of t inside loop-% window a...b.
+    static func lp(_ t: Double, _ a: Double, _ b: Double) -> Double { smooth(seg(40 + 35 * t, a, b)) }
+    /// Piecewise-linear board keyframes (loop %, value) sampled at t; `delay` shifts them later (loop %).
+    static func kf(_ t: Double, _ pts: [(Double, Double)], delay: Double = 0) -> Double {
+        let l = 40 + 35 * t - delay
+        guard var prev = pts.first else { return 0 }
+        if l <= prev.0 { return prev.1 }
+        for p in pts.dropFirst() {
+            if l <= p.0 { return prev.1 + (p.1 - prev.1) * (l - prev.0) / (p.0 - prev.0) }
+            prev = p
+        }
+        return prev.1
+    }
 }
 
 /// Old text fading out, new text rising in.
-private struct GoalSwap: View {
+struct GoalSwap: View {
     let before: String
     let after: String
     let s: Double
+    var alignment: Alignment = .trailing
 
     var body: some View {
-        ZStack(alignment: .trailing) {
+        ZStack(alignment: alignment) {
             Text(before).opacity(1 - s)
             Text(after).opacity(s).offset(y: 8 * (1 - s))
         }
     }
 }
 
-private func goalDir(_ text: String) -> LayoutDirection { WidgetFonts.isRTL(text) ? .rightToLeft : .leftToRight }
+func goalDir(_ text: String) -> LayoutDirection { WidgetFonts.isRTL(text) ? .rightToLeft : .leftToRight }
 
 // MARK: Liquid
 
@@ -331,7 +346,7 @@ struct GoalSegmentsView: View {
 
 // MARK: dispatch
 
-/// The chosen non-bar design (`style.design`: "liquid", "road", "segments").
+/// The chosen non-bar design (`style.design`: "liquid", "road", "segments", "hairline", "island", "miniring", "dots", "spark").
 struct GoalDesignView: View {
     let style: GoalWidgetStyle
     let title: String
@@ -349,9 +364,16 @@ struct GoalDesignView: View {
     static let scale: CGFloat = 1.5
 
     var body: some View {
-        design.scaleEffect(Self.scale, anchor: .topLeading)
-            .frame(width: style.natural.width, height: style.natural.height, alignment: .topLeading)
+        // The box is fixed; variable-width designs hug one side of it (laid out in board units, then scaled).
+        let box = style.natural
+        design.frame(width: box.width / Self.scale, height: box.height / Self.scale, alignment: Self.side(style.design))
+            .scaleEffect(Self.scale, anchor: .topLeading)
+            .frame(width: box.width, height: box.height, alignment: .topLeading)
     }
+
+    static func side(_ design: String) -> Alignment { design == "spark" ? .trailing : design == "island" ? .center : .leading }
+    /// How long the donation reaction plays (the island pill expands, holds and contracts).
+    static func reactionSeconds(_ design: String) -> Double { design == "island" ? 2.4 : 1.6 }
 
     @ViewBuilder private var design: some View {
         switch style.design {
@@ -361,6 +383,21 @@ struct GoalDesignView: View {
         case "segments":
             GoalSegmentsView(style: style, title: title, beforeText: beforeText, afterText: afterText, targetText: targetText,
                              from: from, to: to, deltaText: deltaText, t: t)
+        case "hairline":
+            GoalHairlineView(style: style, title: title, beforeText: beforeText, afterText: afterText, targetText: targetText,
+                             from: from, to: to, deltaText: deltaText, t: t)
+        case "island":
+            GoalIslandView(style: style, title: title, beforeText: beforeText, afterText: afterText, targetText: targetText,
+                           from: from, to: to, deltaText: deltaText, t: t)
+        case "miniring":
+            GoalMiniRingView(style: style, title: title, beforeText: beforeText, afterText: afterText, targetText: targetText,
+                             from: from, to: to, deltaText: deltaText, t: t)
+        case "dots":
+            GoalDotsView(style: style, title: title, beforeText: beforeText, afterText: afterText, targetText: targetText,
+                         from: from, to: to, deltaText: deltaText, t: t)
+        case "spark":
+            GoalSparkView(style: style, title: title, beforeText: beforeText, afterText: afterText, targetText: targetText,
+                          from: from, to: to, deltaText: deltaText, t: t)
         default:
             GoalLiquidView(style: style, title: title, beforeText: beforeText, afterText: afterText, targetText: targetText,
                            from: from, to: to, deltaText: deltaText, t: t)

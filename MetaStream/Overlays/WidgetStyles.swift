@@ -173,7 +173,7 @@ struct GoalWidgetStyle: Equatable, Sendable {
     var showPercent = true
     var showOther = false
     var face = ""
-    var design = "bar"   // "bar" | "liquid" | "road" | "segments"
+    var design = "bar"   // "bar" | "liquid" | "road" | "segments" | "hairline" | "island" | "miniring" | "dots" | "spark"
 
     init() {}
     init(_ d: [String: String]) {
@@ -192,6 +192,12 @@ struct GoalWidgetStyle: Equatable, Sendable {
         case "liquid": CGSize(width: 630, height: 114)   // board size x GoalDesignView.scale
         case "road": CGSize(width: 750, height: 111)
         case "segments": CGSize(width: 720, height: 60)
+        // Variable-width designs: a generous box (~40-character title) the content hugs one side of.
+        case "hairline": CGSize(width: 720, height: 130)
+        case "island": CGSize(width: 800, height: 90)
+        case "miniring": CGSize(width: 760, height: 150)
+        case "dots": CGSize(width: 880, height: 96)
+        case "spark": CGSize(width: 760, height: 120)
         default: CGSize(width: width, height: height)
         }
     }

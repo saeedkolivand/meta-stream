@@ -142,6 +142,11 @@ struct WidgetInspectorView: View {
                 Text("Liquid").tag("liquid")
                 Text("Road trip").tag("road")
                 Text("Segments").tag("segments")
+                Text("Hairline").tag("hairline")
+                Text("Island pill").tag("island")
+                Text("Mini ring").tag("miniring")
+                Text("Dot wave").tag("dots")
+                Text("Spark").tag("spark")
             }
             fontPicker
             slider("Font size", num("fontSize"), 16...64, format: "%.0f")

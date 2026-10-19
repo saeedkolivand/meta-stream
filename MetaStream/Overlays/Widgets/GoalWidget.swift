@@ -58,6 +58,7 @@ extension OverlayCompositor {
         let natural = style.natural
         let o = await OverlayScreen.makeImage(rect, nil)
         let design = style.design
+        let secs = GoalDesignView.reactionSeconds(design)
         let task = Task {
             var last = ""
             var wasReached = GoalStore.shared.reached
@@ -95,7 +96,7 @@ extension OverlayCompositor {
                         }
                         let total = store.total
                         if total > shownTotal {
-                            // A donation arrived: play the reaction (t 0...1 over 1.6 s). If the total moves again, restart from what is shown.
+                            // A donation arrived: play the reaction (t 0...1 over `secs`: 1.6 s, the island pill 2.4 s). If the total moves again, restart from what is shown.
                             var fromTotal = shownTotal, fromP = shownP
                             var toTotal = total, toP = store.progress
                             var t0 = Date()
@@ -103,12 +104,12 @@ extension OverlayCompositor {
                                 let now = store.total
                                 if now < toTotal { break }   // refund mid-reaction: the next poll redraws statically
                                 if now != toTotal {
-                                    let t = min(1, Date().timeIntervalSince(t0) / 1.6)
+                                    let t = min(1, Date().timeIntervalSince(t0) / secs)
                                     fromP += (toP - fromP) * GoalMotion.move(t)
                                     if t >= 0.5 { fromTotal = toTotal }
                                     toTotal = now; toP = store.progress; t0 = Date()
                                 }
-                                let t = min(1, Date().timeIntervalSince(t0) / 1.6)
+                                let t = min(1, Date().timeIntervalSince(t0) / secs)
                                 await draw(fromTotal, toTotal, fromP, toP, t)
                                 if t >= 1 { break }
                                 try? await Task.sleep(for: WidgetRaster.pause(33))
