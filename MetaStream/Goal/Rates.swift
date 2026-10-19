@@ -125,22 +125,24 @@ final class Rates: ObservableObject {
 
     // MARK: fetching
 
-    /// Nobitex market stats: {"stats": {"usdt-rls": {"latest": "<rials>"}}}. Unofficial shape: logged when it fails.
+    /// Nobitex market stats: {"stats": {"usdt-rls": {"latest": "<rials>"}}}. apiv2 answers from abroad (api.nobitex.ir
+    /// doesn't even resolve outside Iran); api is the fallback for networks inside Iran that only reach that one.
     nonisolated static func fetchNobitex() async -> Decimal? {
-        guard let url = URL(string: "https://api.nobitex.ir/market/stats") else { return nil }
-        var req = URLRequest(url: url, timeoutInterval: 15)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = Data(#"{"srcCurrency":"usdt","dstCurrency":"rls"}"#.utf8)
-        guard let (data, _) = try? await URLSession.shared.data(for: req),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let pair = (json["stats"] as? [String: Any])?["usdt-rls"] as? [String: Any],
-              let rials = decimal(pair["latest"]), rials > 0
-        else {
-            applog("goal", "Nobitex rate unavailable", error: true)
-            return nil
+        for host in ["apiv2.nobitex.ir", "api.nobitex.ir"] {
+            guard let url = URL(string: "https://\(host)/market/stats") else { continue }
+            var req = URLRequest(url: url, timeoutInterval: 15)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = Data(#"{"srcCurrency":"usdt","dstCurrency":"rls"}"#.utf8)
+            if let (data, _) = try? await URLSession.shared.data(for: req),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let pair = (json["stats"] as? [String: Any])?["usdt-rls"] as? [String: Any],
+               let rials = decimal(pair["latest"]), rials > 0 {
+                return rials / 10
+            }
         }
-        return rials / 10
+        applog("goal", "Nobitex rate unavailable", error: true)
+        return nil
     }
 
     /// {"rates": {"USD": 1.08}}: dollars per euro.
