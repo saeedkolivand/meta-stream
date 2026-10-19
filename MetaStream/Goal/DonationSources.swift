@@ -59,7 +59,9 @@ final class DonationHub: ObservableObject {
     private let store = KeychainTokenStore()
     private var chat: ChatFeed?
     private var tasks: [Site: Task<Void, Never>] = [:]
+    private var liveTasks: [Site: Task<Void, Never>] = [:]   // StreamElements' realtime socket, beside its polling task
     private var sockets: [Site: URLSessionWebSocketTask] = [:]
+    private var logged: [Site: String] = [:]
     private var lastAt: [Site: Date] = [:]
     private var loggedFields: Set<Site> = []
 
@@ -85,6 +87,7 @@ final class DonationHub: ObservableObject {
 
     private func stop(_ site: Site) {
         tasks[site]?.cancel(); tasks[site] = nil
+        liveTasks[site]?.cancel(); liveTasks[site] = nil
         sockets[site]?.cancel(with: .goingAway, reason: nil); sockets[site] = nil
     }
 
@@ -92,9 +95,9 @@ final class DonationHub: ObservableObject {
     private func run(_ site: Site) {
         stop(site)
         let k = key(site)
-        guard !k.isEmpty else { status[site] = "Not set up"; return }
+        guard !k.isEmpty else { setStatus(site, "Not set up"); return }
         guard chat != nil else { return }
-        status[site] = "Connecting…"
+        setStatus(site, "Connecting…")
         switch site {
         case .donofa:
             tasks[site] = Task { [weak self] in await self?.runDonofa(k) }
@@ -110,6 +113,7 @@ final class DonationHub: ObservableObject {
                 }
             }
         case .streamelements:
+            liveTasks[site] = Task { [weak self] in await self?.runStreamElements(k) }
             tasks[site] = Task { [weak self] in
                 var channel = ""
                 await self?.poll(.streamelements, every: 15) { [weak self] in
@@ -155,7 +159,9 @@ final class DonationHub: ObservableObject {
             guard o == .ok else { continue }
             let raws = Self.items(json)
             logFields(.donofa, raws.first)
-            ingest(.donofa, raws.compactMap { Self.parse($0, .donofa) }, live: false)
+            let parsed = raws.compactMap { Self.parse($0, .donofa) }
+            let n = ingest(.donofa, parsed, live: false)
+            applog("goal", "donofa history ok: \(parsed.count) donations, \(n) new")
             set(.donofa, connectedText(.donofa))
             return .ok
         }
@@ -173,6 +179,7 @@ final class DonationHub: ObservableObject {
         var connected = false
         do {
             try await ws.send(.string(Self.json(["event": "pusher:subscribe", "data": ["channel": "user." + key]])))
+            applog("goal", "donofa: socket open, subscribing")
             while !Task.isCancelled {
                 guard case .string(let text) = try await ws.receive() else { continue }
                 guard let o = Self.object(text), let ev = o["event"] as? String else { continue }
@@ -181,21 +188,33 @@ final class DonationHub: ObservableObject {
                     try await ws.send(.string(#"{"event":"pusher:pong"}"#))
                 case "pusher_internal:subscription_succeeded":
                     connected = true
+                    applog("goal", "donofa: subscription_succeeded")
                     set(.donofa, connectedText(.donofa))
                 case "pusher_internal:subscription_error":
+                    applog("goal", "donofa: subscription_error", error: true)
                     set(.donofa, Self.rejectedText)
                     return (true, connected)
                 case "pusher:error":
                     let d = (o["data"] as? [String: Any]) ?? Self.object(o["data"] as? String ?? "")
                     let code = d?["code"] as? Int ?? 0
+                    applog("goal", "donofa: pusher:error code \(code)", error: true)
                     if code >= 4100 { return (false, connected) }   // 41xx/42xx/43xx: reconnect as the protocol says
                     set(.donofa, Self.rejectedText)
                     return (true, connected)
                 default:
-                    guard ev.hasSuffix("donate.created") else { continue }   // goal.updated, timer.updated, ...: ignored
+                    applog("goal", "donofa event: " + ev)   // names only: tells us what the panel's test donation is called
+                    let isTest = ev.lowercased().contains("test")
+                    guard isTest || ev.hasSuffix("donate.created") else { continue }   // goal.updated, timer.updated, ...: ignored
                     let inner = (o["data"] as? [String: Any]) ?? Self.object(o["data"] as? String ?? "")
                     // ponytail: the payload may be the donation itself or wrap it; unwrap both guesses.
                     guard let d = (inner?["donate"] as? [String: Any]) ?? (inner?["data"] as? [String: Any]) ?? inner else { continue }
+                    if isTest {   // plays the alert, never counts toward the goal
+                        var cur = Self.text(Self.first(d, Shape.donofa.currency))
+                        if cur.isEmpty || cur.lowercased().hasPrefix("toman") { cur = "IRT" }
+                        announceTest(.donofa, name: Self.text(Self.first(d, Shape.donofa.name)), message: Self.text(Self.first(d, Shape.donofa.message)),
+                                     amount: Self.first(d, Shape.donofa.amount), currency: cur)
+                        continue
+                    }
                     logFields(.donofa, d)
                     if let p = Self.parse(d, .donofa) { ingest(.donofa, [p], live: true) }
                 }
@@ -204,11 +223,103 @@ final class DonationHub: ObservableObject {
         return (false, connected)
     }
 
+    // MARK: StreamElements realtime
+
+    /// Live tips and test events over its socket.io v2 socket; the tips poll stays for catch-up. Reconnects with backoff.
+    private func runStreamElements(_ key: String) async {
+        var attempt = 0
+        while !Task.isCancelled {
+            let r = await streamElementsSocket(key)
+            if Task.isCancelled || r.rejected { return }
+            if r.connected { attempt = 0 }
+            try? await Task.sleep(for: .seconds(Self.donofaBackoff[min(attempt, Self.donofaBackoff.count - 1)]))
+            attempt += 1
+        }
+    }
+
+    private func streamElementsSocket(_ key: String) async -> (rejected: Bool, connected: Bool) {
+        guard let url = URL(string: "wss://realtime.streamelements.com/socket.io/?cluster=main&EIO=3&transport=websocket") else { return (false, false) }
+        let ws = URLSession.shared.webSocketTask(with: url)
+        sockets[.streamelements] = ws
+        ws.resume()
+        var pinger: Task<Void, Never>?
+        defer { pinger?.cancel(); ws.cancel(with: .goingAway, reason: nil) }
+        var connected = false
+        do {
+            while !Task.isCancelled {
+                guard case .string(let t) = try await ws.receive() else { continue }
+                if t.hasPrefix("0{") {   // Engine.IO open: start the keepalive ("2" -> "3")
+                    applog("goal", "streamelements: socket open")
+                    let ms = (Self.object(String(t.dropFirst()))?["pingInterval"] as? Double) ?? 25000
+                    pinger?.cancel()
+                    pinger = Task { [ws] in
+                        while !Task.isCancelled {
+                            try? await Task.sleep(for: .milliseconds(Int(ms)))
+                            try? await ws.send(.string("2"))
+                        }
+                    }
+                } else if t == "40" {   // socket.io connect
+                    let auth = (try? JSONSerialization.data(withJSONObject: ["authenticate", ["method": "jwt", "token": key]] as [Any])) ?? Data()
+                    try await ws.send(.string("42" + String(decoding: auth, as: UTF8.self)))
+                } else if t.hasPrefix("41") {
+                    return (false, connected)
+                } else if t.hasPrefix("42") {
+                    let body = String(t.drop { $0.isNumber })
+                    guard let arr = (try? JSONSerialization.jsonObject(with: Data(body.utf8))) as? [Any], let name = arr.first as? String else { continue }
+                    let p = (arr.count > 1 ? arr[1] as? [String: Any] : nil) ?? [:]
+                    switch name {
+                    case "authenticated":
+                        connected = true
+                        applog("goal", "streamelements: authenticated")
+                    case "unauthorized":
+                        applog("goal", "streamelements: unauthorized", error: true)
+                        set(.streamelements, Self.rejectedText)
+                        return (true, connected)
+                    case "event":
+                        let type = Self.text(p["type"])
+                        applog("goal", "streamelements event: " + type)
+                        guard type == "tip", let d = p["data"] as? [String: Any] else { continue }
+                        var flat: [String: Any] = [:]
+                        flat["id"] = Self.first(d, ["tipId"]) ?? p["_id"]
+                        flat["amount"] = d["amount"]
+                        let cur = Self.text(d["currency"])
+                        flat["currency"] = cur.isEmpty ? "USD" : cur
+                        flat["name"] = Self.first(d, ["displayName", "username"])
+                        flat["message"] = d["message"]
+                        if let parsed = Self.parse(flat, .donofa) { ingest(.streamelements, [parsed], live: true) }
+                    case "event:test":
+                        let listener = Self.text(p["listener"])
+                        applog("goal", "streamelements test event: " + listener)
+                        guard listener.lowercased().hasPrefix("tip"), let e = p["event"] as? [String: Any] else { continue }
+                        let cur = Self.text(e["currency"])
+                        announceTest(.streamelements, name: Self.text(Self.first(e, ["name", "displayName", "username"])),
+                                     message: Self.text(e["message"]), amount: e["amount"], currency: cur.isEmpty ? "USD" : cur)
+                    default:
+                        applog("goal", "streamelements event: " + name)   // event:update, ...: ignored
+                    }
+                }
+            }
+        } catch {}
+        return (false, connected)
+    }
+
+    /// A site's test donation plays the alert but is not recorded in the goal.
+    private func announceTest(_ site: Site, name: String, message: String, amount: Any?, currency: String) {
+        guard !Task.isCancelled, let chat else { return }
+        var raw = amount
+        if let s = raw as? String { raw = s.replacingOccurrences(of: ",", with: "") }
+        guard let a = Rates.decimal(raw), a > 0 else { return }
+        applog("goal", "\(site.rawValue) test donation announced")
+        chat.yield(ChatEvent(kind: .tip, user: name.isEmpty ? "Someone" : name, text: message, amountCents: 0,
+                             money: Money(a, currency), origin: "test-donation"))
+    }
+
     // MARK: polling (Reymit, StreamElements)
 
     /// The first successful poll is catch-up (unknown ids are missed); later polls are live. A rejected key ends the loop.
     private func poll(_ site: Site, every seconds: Int, fetch: () async -> (Outcome, [Parsed])) async {
         var first = true
+        var logged = false
         while !Task.isCancelled {
             let (o, items) = await fetch()
             if Task.isCancelled { return }
@@ -219,7 +330,9 @@ final class DonationHub: ObservableObject {
             case .unreachable:
                 set(site, "Can't reach \(site.title)")
             case .ok:
-                ingest(site, items, live: !first)
+                let n = ingest(site, items, live: !first)
+                if !logged || n > 0 { applog("goal", "\(site.rawValue) poll ok: \(items.count) donations, \(n) new") }
+                logged = true
                 first = false
                 set(site, connectedText(site))
             }
@@ -230,8 +343,10 @@ final class DonationHub: ObservableObject {
     // MARK: recording
 
     /// Record first, announce only what was new: a donation reported twice is announced once.
-    private func ingest(_ site: Site, _ items: [Parsed], live: Bool) {
-        guard !Task.isCancelled, let chat else { return }
+    @discardableResult
+    private func ingest(_ site: Site, _ items: [Parsed], live: Bool) -> Int {
+        guard !Task.isCancelled, let chat else { return 0 }
+        var new = 0
         for p in items.sorted(by: { $0.date < $1.date }) {
             let key = site.rawValue + ":" + p.id
             switch p.state {
@@ -245,11 +360,13 @@ final class DonationHub: ObservableObject {
             if live {
                 if GoalStore.shared.record(key: key, source: site.rawValue, money: p.money, at: at) {
                     chat.yield(ChatEvent(kind: .tip, user: p.name, text: p.message, money: p.money, origin: site.rawValue, id: p.id))
+                    new += 1
                 }
-            } else {
-                GoalStore.shared.record(key: key, source: site.rawValue, money: p.money, at: at, missed: true)
+            } else if GoalStore.shared.record(key: key, source: site.rawValue, money: p.money, at: at, missed: true) {
+                new += 1
             }
         }
+        return new
     }
 
     // MARK: status
@@ -257,7 +374,16 @@ final class DonationHub: ObservableObject {
     /// Only the site's own task writes status after a contact; a cancelled (replaced) task must not overwrite the new one.
     private func set(_ site: Site, _ text: String) {
         guard !Task.isCancelled else { return }
+        setStatus(site, text)
+    }
+
+    /// Logs each status change once (the "· last donation N min ago" tail is ignored).
+    private func setStatus(_ site: Site, _ text: String) {
         status[site] = text
+        let head = text.components(separatedBy: " ·")[0]
+        guard logged[site] != head else { return }
+        logged[site] = head
+        applog("goal", "\(site.rawValue): " + head)
     }
 
     private func connectedText(_ site: Site) -> String {

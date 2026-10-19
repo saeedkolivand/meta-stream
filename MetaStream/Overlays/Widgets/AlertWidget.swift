@@ -27,7 +27,7 @@ extension OverlayCompositor {
                 let e = queue.removeFirst()
                 SoundMix.shared.playAlert()   // into the mix with the banner; ignored unless live
                 if e.kind == .tip || e.kind == .cheer, style.donationKind != .island, let mixer = self?.mixer {
-                    await DonationAlertPlayer.play(e, style: style, canvas: canvas, goalBox: goalBox, mixer: mixer)
+                    await DonationAlertPlayer.play(e, style: style, canvas: canvas, box: box, goalBox: goalBox, mixer: mixer)
                 } else {
                     await AlertPlayer.play(e, style: style, on: o, natural: natural, box: box, canvas: canvas)
                 }

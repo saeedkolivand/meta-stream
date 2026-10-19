@@ -108,7 +108,7 @@ struct WidgetInspectorView: View {
         } header: {
             Text("Donations")
         } footer: {
-            Text("Donations (tips, Bits, KICKs) use this design; follows, subs and raids keep the Island banner.")
+            Text("Donations (tips, Bits, KICKs) use this design; follows, subs and raids keep the Island banner. Donation designs play where the Alerts widget sits; drag and resize it to move them.")
         }
     }
 

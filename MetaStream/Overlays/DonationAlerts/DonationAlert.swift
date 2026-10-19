@@ -20,6 +20,19 @@ enum DonationAlertKind: String, CaseIterable, Sendable {
         }
     }
 
+    /// The design's main element on the 1280x720 board: this is what sits on the Alerts widget's box.
+    var focus: CGRect {
+        switch self {
+        case .island: CGRect(x: 0, y: 0, width: 1280, height: 720)
+        case .coinBurst: CGRect(x: 240, y: 60, width: 800, height: 200)
+        case .neon: CGRect(x: 300, y: 80, width: 680, height: 340)
+        case .receipt: CGRect(x: 820, y: 38, width: 380, height: 682)
+        case .holo: CGRect(x: 120, y: 100, width: 360, height: 510)
+        case .shockwave: CGRect(x: 240, y: 100, width: 800, height: 380)
+        case .goalSurge: CGRect(x: 80, y: 560, width: 300, height: 80)
+        }
+    }
+
     /// Length at Normal speed: the board's loop (Slow and Quick scale it, see DonationAlertStyle.speed).
     var seconds: Double {
         switch self {
@@ -72,6 +85,28 @@ struct DonationBoard {
         origin = CGPoint(x: (canvas.width - 1280 * s) / 2, y: 0)
     }
 
+    /// Follows the Alerts widget: `box` is its rect on the canvas. The scale is the fit scale times the widget's layer scale
+    /// (box.width / its width at layer scale 1, which is 900 * min(canvas) / 1080), and the design's `focus` rect (board
+    /// coords) is centred on the box, kept inside the canvas. nil box = the plain layout above.
+    init(_ canvas: CGSize, focus: CGRect, box: CGRect?) {
+        let base = min(canvas.width / 1280, canvas.height / 720)
+        guard let box, box.width > 0 else {
+            s = base
+            origin = CGPoint(x: (canvas.width - 1280 * base) / 2, y: 0)
+            return
+        }
+        let unit = 900 * min(canvas.width, canvas.height) / 1080
+        let sc = base * box.width / unit
+        func place(_ want: CGFloat, _ lo: CGFloat, _ hi: CGFloat, _ size: CGFloat) -> CGFloat {
+            // keep [lo, hi] (focus extent, board units * sc) inside 0...size; if it doesn't fit, centre it
+            let minO = -lo, maxO = size - hi
+            return minO > maxO ? (minO + maxO) / 2 : min(max(want, minO), maxO)
+        }
+        s = sc
+        origin = CGPoint(x: place(box.midX - focus.midX * sc, focus.minX * sc, focus.maxX * sc, canvas.width),
+                         y: place(box.midY - focus.midY * sc, focus.minY * sc, focus.maxY * sc, canvas.height))
+    }
+
     func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: origin.x + x * s, y: origin.y + y * s) }
     func len(_ v: CGFloat) -> CGFloat { v * s }
     func rect(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> CGRect { CGRect(x: origin.x + x * s, y: origin.y + y * s, width: w * s, height: h * s) }
@@ -90,8 +125,9 @@ enum Key {
 }
 
 enum DonationArt {
-    static func frame(_ k: DonationAlertKind, p: Double, info: DonationAlertInfo, style: DonationAlertStyle, c: StingerCanvas) -> CIImage {
-        let b = DonationBoard(c.size)
+    static func frame(_ k: DonationAlertKind, p: Double, info: DonationAlertInfo, style: DonationAlertStyle, c: StingerCanvas,
+                      box: CGRect?) -> CIImage {
+        let b = DonationBoard(c.size, focus: k.focus, box: box)
         switch k {
         case .island: return .empty()
         case .coinBurst: return coinBurst(p: p, info: info, style: style, c: c, b: b)

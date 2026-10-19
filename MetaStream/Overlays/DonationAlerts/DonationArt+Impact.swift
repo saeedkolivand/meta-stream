@@ -331,9 +331,11 @@ extension DonationArt {
         var layers: [CIImage] = []
 
         // where the orb lands: the end of the new fill, or a top-centre spot without a goal
-        var target = b.pt(640, 100)
+        // (the bar uses the plain board: only the chip and the orb's start follow the Alerts widget)
+        let ub = DonationBoard(c.size)
+        var target = ub.pt(640, 100)
         if let goal = info.goal {
-            let box = goal.box ?? b.rect(280, 40, 720, 120)
+            let box = goal.box ?? ub.rect(280, 40, 720, 120)
             let f = box.width / 720
             let o = CGPoint(x: box.minX, y: box.midY - 60 * f)
             target = CGPoint(x: o.x + (16 + 688 * CGFloat(min(1, max(0, goal.to)))) * f, y: o.y + 66.5 * f)

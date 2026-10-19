@@ -6,10 +6,10 @@ import HaishinKit
 
 @MainActor
 enum DonationAlertPlayer {
-    static func play(_ e: ChatEvent, style: AlertWidgetStyle, canvas: CGSize, goalBox: CGRect?, mixer: MediaMixer) async {
+    static func play(_ e: ChatEvent, style: AlertWidgetStyle, canvas: CGSize, box: CGRect, goalBox: CGRect?, mixer: MediaMixer) async {
         let kind = style.donationKind, ds = style.donationStyle
         let alert = Self.info(e, goalBox: goalBox)
-        let o = await OverlayScreen.makeDonation(CGRect(origin: .zero, size: canvas), kind, alert, ds)
+        let o = await OverlayScreen.makeDonation(CGRect(origin: .zero, size: canvas), kind, alert, ds, box: box)
         await OverlayScreen.add([o], to: mixer)   // added last: on top of everything
         // Layout only re-runs when invalidated, so poke it at 60 Hz (cheap: no drawing here), as for a stinger.
         let poke = Task { @ScreenActor in

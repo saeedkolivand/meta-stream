@@ -58,8 +58,8 @@ enum OverlayScreen {
 
     /// A donation alert over `rect` (the whole canvas).
     @ScreenActor static func makeDonation(_ rect: CGRect, _ kind: DonationAlertKind, _ info: DonationAlertInfo,
-                                          _ style: DonationAlertStyle) -> DonationAlertScreenObject {
-        let o = DonationAlertScreenObject(kind: kind, info: info, style: style)
+                                          _ style: DonationAlertStyle, box: CGRect?) -> DonationAlertScreenObject {
+        let o = DonationAlertScreenObject(kind: kind, info: info, style: style, box: box)
         layout(o, rect)
         return o
     }
@@ -154,6 +154,7 @@ final class DonationAlertScreenObject: ScreenObject {
     private let kind: DonationAlertKind
     private let info: DonationAlertInfo
     private let style: DonationAlertStyle
+    private let box: CGRect?   // the Alerts widget's box on the canvas: the design plays there
     private var start: CMTime?
     private var canvas: StingerCanvas?
     // perf: frames drawn, draw time, and the longest gap between video frames, logged once when it ends
@@ -162,10 +163,11 @@ final class DonationAlertScreenObject: ScreenObject {
     private var last = 0.0
     private var logged = false
 
-    init(kind: DonationAlertKind, info: DonationAlertInfo, style: DonationAlertStyle) {
+    init(kind: DonationAlertKind, info: DonationAlertInfo, style: DonationAlertStyle, box: CGRect?) {
         self.kind = kind
         self.info = info
         self.style = style
+        self.box = box
         super.init()
     }
 
@@ -190,7 +192,7 @@ final class DonationAlertScreenObject: ScreenObject {
         let k = canvas?.size == bounds.size ? canvas! : StingerCanvas(size: bounds.size)
         canvas = k
         // Top-left art flipped once into Core Image's bottom-left space and cut to the canvas, like StingerKind.ciFrame.
-        let image = DonationArt.frame(kind, p: t / duration, info: info, style: style, c: k)
+        let image = DonationArt.frame(kind, p: t / duration, info: info, style: style, c: k, box: box)
             .transformed(by: CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: k.size.height))
             .cropped(to: k.bounds)
         let ms = (CACurrentMediaTime() - began) * 1000
