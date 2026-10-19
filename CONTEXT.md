@@ -181,6 +181,11 @@ entering it by hand (cash, a bank transfer), or (only where nothing more direct 
 chat announcement. Every donation has exactly one, so nothing is counted twice.
 _Avoid_: integration, provider, feed
 
+**Donate page**:
+The streamer's own public web page listing every way a viewer can donate to them. The `!donate`
+command answers with its link. One page, for this streamer only.
+_Avoid_: tip page, donation link, link-in-bio
+
 **Missed donation**:
 A donation made while the app wasn't listening (closed, or reconnecting), found afterwards on the
 donation site. It counts toward the goal but is never announced: no alert, read-aloud or thank-you.
