@@ -173,7 +173,7 @@ final class AppBot: ObservableObject {
     func handle(_ e: ChatEvent) {
         guard !e.flagged, active else { return }
         // A donation site's tip is thanked on every platform the bot is on; test donations never.
-        if e.kind == .tip, ["donofa", "reymit", "streamelements"].contains(e.origin) { thank(e, "botTplTip", to: ["kick", "twitch"]); return }
+        if e.kind == .tip, ["donofa", "reymit", "streamelements", "donito"].contains(e.origin) { thank(e, "botTplTip", to: ["kick", "twitch"]); return }
         guard e.origin == "kick" || e.origin == "twitch" else { return }
         switch e.kind {
         case .message: message(e)

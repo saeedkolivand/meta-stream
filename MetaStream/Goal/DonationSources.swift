@@ -27,9 +27,10 @@ final class DonationHub: ObservableObject {
     static let shared = DonationHub()
 
     enum Site: String, CaseIterable, Sendable {
-        case donofa, reymit, streamelements
+        case donofa, reymit, streamelements, donito
         var title: String {
             switch self {
+            case .donito: return "Donito"
             case .donofa: return "Donofa"
             case .reymit: return "Reymit"
             case .streamelements: return "StreamElements"
@@ -37,6 +38,7 @@ final class DonationHub: ObservableObject {
         }
         var keyLabel: String {
             switch self {
+            case .donito: return "Overlay link"
             case .donofa: return "API key"
             case .reymit: return "API token"
             case .streamelements: return "JWT token"
@@ -44,6 +46,7 @@ final class DonationHub: ObservableObject {
         }
         var help: String {
             switch self {
+            case .donito: return "Donito › Overlays: copy any overlay's link."
             case .donofa: return "Find it in your Donofa panel under API settings."
             case .reymit: return "Find it in Reymit under Settings › Miscellaneous (متفرقه)."
             case .streamelements: return "Dashboard › your profile › Account › Channels › Show secrets (it resets about every two weeks)."
@@ -77,7 +80,8 @@ final class DonationHub: ObservableObject {
     func key(_ site: Site) -> String { store.string(forKey: "donationKey." + site.rawValue) ?? "" }
 
     func setKey(_ site: Site, _ key: String) {
-        let k = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        var k = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        if site == .donito, let c = URLComponents(string: k), c.host != nil, let t = c.path.split(separator: "/").last { k = String(t) }   // link -> token
         if k.isEmpty { store.removeObject(forKey: "donationKey." + site.rawValue) } else { store.set(k, forKey: "donationKey." + site.rawValue) }
         lastAt[site] = nil
         run(site)
@@ -105,6 +109,8 @@ final class DonationHub: ObservableObject {
         guard chat != nil else { return }
         setStatus(site, "Connecting…")
         switch site {
+        case .donito:
+            liveTasks[site] = Task { [weak self] in await self?.runDonito(k) }
         case .donofa:
             tasks[site] = Task { [weak self] in await self?.runDonofa(k) }
         case .reymit:
@@ -360,6 +366,95 @@ final class DonationHub: ObservableObject {
             }
             applog("goal", "donofa ack \(id) " + codes.joined(separator: ", "))
         }
+    }
+
+    // MARK: Donito
+
+    private static let donitoDemoName = "کاربر آزمایشی", donitoDemoMessage = "این یک پیام حامی آزمایشی است."
+
+    /// Overlay Centrifugo socket (JSON protocol): live events only, no history and no ack. Reconnects with backoff.
+    private func runDonito(_ token: String) async {
+        var attempt = 0
+        while !Task.isCancelled {
+            let r = await donitoSocket(token)
+            if Task.isCancelled || r.rejected { return }
+            if r.connected { attempt = 0 } else { set(.donito, "Can't reach Donito") }
+            try? await Task.sleep(for: .seconds(Self.donofaBackoff[min(attempt, Self.donofaBackoff.count - 1)]))
+            attempt += 1
+        }
+    }
+
+    private func donitoSocket(_ token: String) async -> (rejected: Bool, connected: Bool) {
+        guard var c = URLComponents(string: "wss://donito.me/ws/connection/event/websocket") else { return (false, false) }
+        c.queryItems = [URLQueryItem(name: "token", value: token)]
+        guard let url = c.url else { return (false, false) }
+        let ws = URLSession.shared.webSocketTask(with: url)
+        sockets[.donito] = ws
+        ws.resume()
+        defer { ws.cancel(with: .goingAway, reason: nil) }
+        var connected = false
+        do {
+            try await ws.send(.string(#"{"id":1,"connect":{"name":"overlays"}}"#))
+            while !Task.isCancelled {
+                guard case .string(let text) = try await ws.receive() else { continue }
+                for line in text.split(separator: "\n") {   // a frame may hold several objects
+                    guard let o = Self.object(String(line)) else { continue }
+                    if o.isEmpty {   // server ping
+                        try await ws.send(.string("{}"))
+                    } else if o["error"] != nil {
+                        applog("goal", "donito: error reply", error: true)
+                        set(.donito, Self.rejectedText)
+                        return (true, connected)
+                    } else if o["connect"] != nil {
+                        connected = true
+                        set(.donito, connectedText(.donito))
+                    } else if let pub = (o["push"] as? [String: Any])?["pub"] as? [String: Any],
+                              let ev = (pub["data"] as? [String: Any]) {
+                        donitoEvent(Self.text(ev["action"]), (ev["data"] as? [String: Any]) ?? [:])
+                    }
+                }
+            }
+        } catch {}
+        return (false, connected)
+    }
+
+    private func donitoEvent(_ action: String, _ d: [String: Any]) {
+        guard !action.isEmpty, !Task.isCancelled, let chat else { return }
+        if loggedTypes.insert("donito:" + action).inserted { applog("goal", "donito action: " + action) }
+        let name = Self.text(d["user_name"]), message = Self.text(d["message"])
+        if action == "donate" {
+            let dn = Self.text(d["name"])
+            logFields(.donito, d)
+            let cur = Self.text(d["currency_type"]).isEmpty ? "IRT" : Self.text(d["currency_type"])
+            if dn == Self.donitoDemoName && message == Self.donitoDemoMessage {   // the panel's test button carries no flag
+                applog("goal", "donito donate -> test")
+                announceTest(.donito, name: dn, message: message, amount: d["amount"], currency: cur)
+                return
+            }
+            var raw = d["amount"]
+            if let s = raw as? String { raw = s.replacingOccurrences(of: ",", with: "") }
+            guard let amount = Rates.decimal(raw), amount > 0 else { return }
+            applog("goal", "donito donate -> real")
+            // No donation id: name|amount|currency|message|minute keeps a repeat of the same event from counting twice.
+            let id = [dn, Self.text(d["amount"]), cur, message, String(Int(Date().timeIntervalSince1970 / 60))].joined(separator: "|")
+            let p = Parsed(id: id, name: dn.isEmpty ? "Someone" : dn, message: message, money: Money(amount, cur), date: Date(), state: .paid)
+            ingest(.donito, [p], live: true)
+            return
+        }
+        guard name.contains("آزمایشی") else { return }   // real follows/subs/KICKs arrive from Kick/Twitch directly
+        let kind: ChatEvent.Kind, count: Int
+        switch action {
+        case "kick_kicks_gifted": kind = .cheer; count = Int(Self.text(d["kicks"])) ?? 0
+        case "kick_channel_follow", "twitch_channel_follow": kind = .follow; count = 0
+        case "twitch_channel_subscribe", "kick_channel_subscribe", "kick_channel_subscribe_gift":
+            let gift = (d["is_gift"] as? Bool) ?? ((d["is_gift"] as? NSNumber)?.intValue == 1)
+            kind = .subscribe; count = gift ? (Int(Self.text(d["gift_count"])) ?? 1) : 0
+        default: return
+        }
+        var tier = 1
+        if let t = Int(Self.text(d["tier"])) { tier = t >= 1000 ? min(t / 1000, 3) : min(max(t, 1), 3) }
+        applog("goal", "donito \(action) -> test")
+        chat.yield(ChatEvent(kind: kind, user: name, text: message, count: count, origin: "test-donation", tier: tier))
     }
 
     // MARK: StreamElements realtime

@@ -60,7 +60,7 @@ struct MetaStreamApp: App {
                 for await e in chat.events {
                     // Every money event counts toward the goal once (a donation site's own events are already recorded).
                     // DonationHub records donofa/reymit/streamelements itself (own ids): the alert must not count twice.
-                    if !["test-donation", "donofa", "reymit", "streamelements"].contains(e.origin), let m = DonationPrices.money(e) {
+                    if !["test-donation", "donofa", "reymit", "streamelements", "donito"].contains(e.origin), let m = DonationPrices.money(e) {
                         GoalStore.shared.record(key: e.origin + ":" + (e.id.isEmpty ? UUID().uuidString : e.id), source: e.origin, money: m, at: e.at, note: e.goalNote)
                     }
                     speaker.speak(e)
