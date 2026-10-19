@@ -46,6 +46,7 @@ struct MetaStreamApp: App {
                 Rates.shared.start()
                 AudioRouteLog.start()
                 DonationHub.shared.start(chat: chat)
+                DonatePagePublisher.shared.start(streamer: streamer)
                 GoalStore.shared.onReached = { speaker.speakSystem("Goal reached"); AppBot.shared.goalReached(GoalStore.shared.config.title) }
                 StreamActivityActions.sendCommand = { id in
                     guard UserDefaults.standard.bool(forKey: "lockScreenCommands"),

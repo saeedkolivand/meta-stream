@@ -8,6 +8,9 @@ struct GoalSettingsView: View {
     @ObservedObject private var rates = Rates.shared
     @ObservedObject private var hub = DonationHub.shared
     @AppStorage("goalManualTomanPerEUR") private var manualRate = ""
+    @ObservedObject private var page = DonatePagePublisher.shared
+    @AppStorage("donatePageURL") private var pageURL = DonatePagePublisher.defaultURL
+    @State private var pageKey = ""
 
     @State private var title = ""
     @State private var target = ""
@@ -38,11 +41,14 @@ struct GoalSettingsView: View {
             addSection
             testSection
             sourcesSection
+            donatePageSection
             recentSection
         }
         .navigationTitle("Goal")
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: pageURL) { _, _ in page.request() }
         .onAppear {
+            pageKey = page.token
             guard !loaded else { return }
             loaded = true
             let c = goal.config
@@ -162,6 +168,19 @@ struct GoalSettingsView: View {
                 SiteKeyRow(site: site, status: hub.status[site] ?? "")
             }
         } header: { Text("Donation sources") }
+    }
+
+    private var donatePageSection: some View {
+        Section {
+            TextField("Page URL", text: $pageURL).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+            SecureField("Page key", text: $pageKey).textInputAutocapitalization(.never).autocorrectionDisabled()
+            Button("Save") { page.setToken(pageKey); page.request() }.buttonStyle(.borderless)
+            TimelineView(.periodic(from: .now, by: 5)) { _ in
+                Text(page.statusText).font(.footnote).foregroundStyle(.secondary)
+            }
+        } header: { Text("Donate page") } footer: {
+            Text("Your donate page shows this goal live. Set the same key on Cloudflare (GOAL_TOKEN).")
+        }
     }
 
     private var recentSection: some View {

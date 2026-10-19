@@ -43,8 +43,10 @@ final class AppBot: ObservableObject {
         "botTplFollow": "{user}, thanks for the follow!", "botTplSub": "{user}, thanks for subscribing!",
         "botTplGift": "{user}, thanks for the {count} gifted subs!", "botTplRaid": "{user}, thanks for the raid with {count} viewers!",
         "botTplTip": "{user} donated {amount}, thank you!",
+        "botTplDonate": "{title}: {total} / {target} ({percent}%) · {url}",
     ]
-    private static let commands = ["!location", "!speed", "!distance", "!weather", "!battery", "!uptime", "!goal", "!commands"]
+    private static let donateAliases = ["!tip", "!support", "!donation"]   // share the "Donate" switch
+    private static let commands = ["!location", "!speed", "!distance", "!weather", "!battery", "!uptime", "!goal", "!donate", "!commands"] + donateAliases
 
     private func flag(_ key: String, _ fallback: Bool = true) -> Bool { UserDefaults.standard.object(forKey: key) as? Bool ?? fallback }
 
@@ -64,6 +66,8 @@ final class AppBot: ObservableObject {
         now.timeIntervalSince(since) >= Double(max(minutes, 5) * 60) && msgs >= 5
             && lastAny.map { now.timeIntervalSince($0) >= 300 } ?? true
     }
+
+    static func switchKey(_ cmd: String) -> String { "botCmd" + (donateAliases.contains(cmd) ? "Donate" : cmd.dropFirst().capitalized) }
 
     static func fill(_ template: String, user: String, count: Int) -> String {
         template.replacingOccurrences(of: "{user}", with: user).replacingOccurrences(of: "{count}", with: String(count))
@@ -221,7 +225,7 @@ final class AppBot: ObservableObject {
         let cmd = e.text.split(whereSeparator: \.isWhitespace).first?.lowercased() ?? ""
         let key = e.origin + "|" + cmd
         guard Self.commands.contains(cmd) else { return }
-        guard platformOn(e.origin), flag("botCmd" + cmd.dropFirst().capitalized) else {
+        guard platformOn(e.origin), flag(Self.switchKey(cmd)) else {
             applog("bot", "\(cmd) on \(e.origin) ignored: \(platformOn(e.origin) ? "command switched off" : "app bot off or not connected there")")
             return
         }
@@ -258,8 +262,16 @@ final class AppBot: ObservableObject {
         case "!goal":
             let g = GoalStore.shared, c = g.config.currency
             return "\(Money(g.total, c).display) of \(Money(g.config.target, c).display) for \(g.config.title) (\(Int(g.progress * 100))%)"
-        case "!commands":   // whichever commands are switched on right now
-            let on = Self.commands.filter { $0 != "!commands" && flag("botCmd" + $0.dropFirst().capitalized) }
+        case "!donate", "!tip", "!support", "!donation":
+            let g = GoalStore.shared, c = g.config, url = DonatePagePublisher.shared.shortURL
+            guard c.target > 0 else { return "Support the stream: \(url)" }
+            return tpl("botTplDonate").replacingOccurrences(of: "{title}", with: c.title)
+                .replacingOccurrences(of: "{total}", with: Money(g.total, c.currency).display)
+                .replacingOccurrences(of: "{target}", with: Money(c.target, c.currency).display)
+                .replacingOccurrences(of: "{percent}", with: String(Int(g.progress * 100)))
+                .replacingOccurrences(of: "{url}", with: url)
+        case "!commands":   // whichever commands are switched on right now (aliases are not listed)
+            let on = Self.commands.filter { $0 != "!commands" && !Self.donateAliases.contains($0) && flag(Self.switchKey($0)) }
             return on.isEmpty ? nil : "Commands: " + on.joined(separator: " ")
         case "!battery": return (streamer?.phoneBattery ?? Self.batteryNow()).map { "\(name)'s phone is at \($0)%" }
         case "!uptime":
@@ -310,6 +322,7 @@ final class AppBot: ObservableObject {
         assert(!timerDue(since: t, minutes: 10, msgs: 9, lastAny: later.addingTimeInterval(-299), now: later))   // another timer just posted
         assert(timerDue(since: t, minutes: 10, msgs: 9, lastAny: later.addingTimeInterval(-300), now: later))
         assert(fill("{user}: {count} subs", user: "bob", count: 5) == "bob: 5 subs")
+        assert(switchKey("!tip") == "botCmdDonate" && switchKey("!donate") == "botCmdDonate" && switchKey("!goal") == "botCmdGoal")
         applog("chat", "AppBot.demo() passed")
     }
     #endif
