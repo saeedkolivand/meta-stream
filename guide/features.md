@@ -8,6 +8,8 @@
    streaming* to fill the URL, key and chat for you.
 2. **Settings → Scenes & widgets** → *Add Starting, BRB & Ending scenes*, then add your own scenes and widgets.
 3. **GO LIVE.** The source button picks the camera, the record button records, the chat button slides chat over the preview.
+   With Kick or Twitch connected, GO LIVE first shows a *Stream info* sheet (title, category, tags) so you can check
+   them before you start; switch it off with *Ask before going live* at the bottom of that sheet.
 4. **Glasses:** *Settings → Meta glasses → Use Meta glasses*, then register with Meta AI from the card that appears.
 5. **Stream Deck:** *Settings → Remote control* → set a password, then add the app in your OBS plugin as an OBS
    instance at the address shown.

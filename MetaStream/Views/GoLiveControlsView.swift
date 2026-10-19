@@ -5,6 +5,9 @@ import SwiftUI
 /// must never live in the scrolling status strip where a long run of pills can push them off the edge.
 struct GoLiveControlsView: View {
     @EnvironmentObject var streamer: Streamer
+    @EnvironmentObject var platforms: Platforms
+    @AppStorage("askStreamInfo") private var askStreamInfo = true
+    @State private var showInfo = false
     @AppStorage("blurOn") var blurOn = false
     @AppStorage("resolution") var resolution = "high"
     @AppStorage("fps") var fpsSetting = 30
@@ -21,6 +24,7 @@ struct GoLiveControlsView: View {
 
     var body: some View {
         controls.padding(.bottom, 12)
+            .sheet(isPresented: $showInfo) { StreamInfoSheet { streamer.goLiveFromSettings() }.environmentObject(platforms) }
     }
 
     private var controls: some View {
@@ -67,7 +71,9 @@ struct GoLiveControlsView: View {
                 if streamer.live {
                     streamer.requestStop()
                 } else {
-                    streamer.goLiveFromSettings()
+                    // Own relay only (no Kick/Twitch account): nothing to edit, so skip the sheet.
+                    if askStreamInfo, platforms.kickConnected || platforms.twitchConnected { showInfo = true }
+                    else { streamer.goLiveFromSettings() }
                 }
             } label: {
                 ZStack {
