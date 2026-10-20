@@ -10,6 +10,9 @@ struct SessionSample: Codable {
     var downSeconds: Int
     /// Audio clock skew at this minute; nil in older files and when the mix reported none yet.
     var skewMs: Int?
+    /// Donations this minute in the session's goal currency, and Chatters first seen ever this minute. Nil in older files.
+    var donations: Double?
+    var newChatters: Int?
 }
 
 /// A point in a stream session worth coming back for: a chat spike, a big donation or a raid.

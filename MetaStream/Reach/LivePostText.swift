@@ -28,7 +28,9 @@ enum LivePostText {
         "wild": "چت ترکوند", "from": "از طرف", "raid": "رید از", "newChatters": "چتر جدید", "chatters": "چتر",
         "thanks": "ممنون از همه", "cancelled": "امروز لغو شد",
         "pingWild": "چت الان ترکونده", "pingDonation": "دونیت بزرگ از طرف", "pingThanks": "بیا تشکر کن",
-        "pingRaid": "رید از", "pingWith": "با", "pingViewers": "بیننده"
+        "pingRaid": "رید از", "pingWith": "با", "pingViewers": "بیننده",
+        "wrappedWild": "چت ترکوند", "wrappedMsgs": "پیام در دقیقه", "wrappedStreams": "استریم", "wrappedHours": "ساعت",
+        "wrappedKm": "کیلومتر", "wrappedPeak": "اوج بیننده", "wrappedTop": "چترهای برتر", "wrappedBest": "بهترین لحظه"
     ]
     private static let en = [
         "soon": "Going live soon", "live": "LIVE", "watching": "watching", "goal": "Goal", "of": "of", "for": "for", "last": "Last",
@@ -37,7 +39,9 @@ enum LivePostText {
         "wild": "chat went wild", "from": "from", "raid": "raid from", "newChatters": "new chatters", "chatters": "chatters",
         "thanks": "thanks everyone", "cancelled": "Cancelled for today",
         "pingWild": "Chat's going wild right now", "pingDonation": "Big donation from", "pingThanks": "come say thanks",
-        "pingRaid": "Raid from", "pingWith": "with", "pingViewers": "viewers"
+        "pingRaid": "Raid from", "pingWith": "with", "pingViewers": "viewers",
+        "wrappedWild": "chat went wild", "wrappedMsgs": "messages/min", "wrappedStreams": "streams", "wrappedHours": "hours",
+        "wrappedKm": "km", "wrappedPeak": "peak viewers", "wrappedTop": "top chatters", "wrappedBest": "best moment"
     ]
 
     static func tr(_ key: String, _ lang: String) -> String { (lang == "en" ? en : fa)[key] ?? key }

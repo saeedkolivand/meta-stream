@@ -8,12 +8,19 @@ import SwiftUI
 /// Screens live in Views/Settings/; shared rows live in SettingsControls.swift.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var wrappedPending = false
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    NavigationLink("Streams") { StreamsView() }
+                    NavigationLink { StreamsView() } label: {
+                        HStack {
+                            Text("Streams")
+                            Spacer()
+                            if wrappedPending { Circle().fill(Color.accentColor).frame(width: 8, height: 8) }
+                        }
+                    }
                     NavigationLink("Ingest & protocol") { IngestSettingsView() }
                     if Streamer.glassesConfigured { NavigationLink("Meta glasses") { GlassesVideoSettingsView() } }
                     NavigationLink("Camera") { CameraSettingsView() }
@@ -32,6 +39,7 @@ struct SettingsView: View {
                     NavigationLink("Diagnostics & about") { DiagnosticsSettingsView() }
                 }
             }
+            .onAppear { wrappedPending = WrappedStore.pendingMonth(records: SessionLog.all()) != nil }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }

@@ -16,6 +16,8 @@ final class SessionLog: ObservableObject {
     private(set) var lastDonation: (user: String, display: String)?
     private var registry: [String: Known] = [:]
     private var minuteChat = 0
+    private var minuteDonations = 0.0
+    private var minuteNewChatters = 0
     private var lastSpikeAt: Date?
     private var holdingGPS = false
     private var metersAtBegin = 0.0
@@ -51,6 +53,8 @@ final class SessionLog: ObservableObject {
         current = SessionRecord(start: Date(), title: title, currency: GoalStore.shared.config.currency, trackingStarted: registry.isEmpty)
         lastDonation = nil
         minuteChat = 0
+        minuteDonations = 0
+        minuteNewChatters = 0
         lastSpikeAt = nil
         AudioSkew.clear()
         if !holdingGPS { holdingGPS = true; WidgetLocation.shared.retain() }
@@ -65,7 +69,8 @@ final class SessionLog: ObservableObject {
         let previous = rec.samples.suffix(10).map(\.chat)
         rec.samples.append(SessionSample(
             minute: rec.samples.count + 1, viewers: viewers, chat: minuteChat, kbps: streamer.kbps,
-            drops: streamer.drops, downSeconds: Int(streamer.downtime), skewMs: AudioSkew.latest))
+            drops: streamer.drops, downSeconds: Int(streamer.downtime), skewMs: AudioSkew.latest,
+            donations: minuteDonations, newChatters: minuteNewChatters))
         let city = WidgetLocation.shared.cityText
         if city != "--", !(rec.cities ?? []).contains(city) { rec.cities = (rec.cities ?? []) + [city] }
         if Self.isSpike(minuteChat, previous: previous), lastSpikeAt.map({ now.timeIntervalSince($0) >= 300 }) ?? true {
@@ -73,6 +78,8 @@ final class SessionLog: ObservableObject {
             rec.moments.append(Moment(at: now, kind: .chatSpike, user: "", detail: "\(minuteChat)/min", value: Double(minuteChat)))
         }
         minuteChat = 0
+        minuteDonations = 0
+        minuteNewChatters = 0
         current = rec
         // Every 5 minutes the session so far goes to disk too, so a crash 6 hours in doesn't lose the whole record.
         if rec.samples.count % 5 == 0 { Self.save(rec, to: Self.file(rec)) }
@@ -124,6 +131,7 @@ final class SessionLog: ObservableObject {
         } else {
             registry[key] = Known(name: current?.chatterNames[key] ?? "", firstSeen: now, lastSeen: now)
             current?.newChatters += 1
+            minuteNewChatters += 1
         }
     }
 
@@ -133,6 +141,7 @@ final class SessionLog: ObservableObject {
         current?.donationCount += 1
         if let converted {
             current?.donationTotal += converted
+            minuteDonations += NSDecimalNumber(decimal: converted).doubleValue
             if !Self.isAnonymous(name), converted > (current?.topDonorAmount ?? 0) {
                 current?.topDonor = name
                 current?.topDonorDisplay = money.display

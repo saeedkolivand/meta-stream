@@ -3,9 +3,16 @@ import SwiftUI
 /// Settings > Streams: every recorded stream session, newest first, each opening its Session report.
 struct StreamsView: View {
     @State private var records: [SessionRecord] = []
+    @State private var reviewMonth: String?
 
     var body: some View {
         List {
+            if let month = WrappedStore.pendingMonth(records: records) {
+                NavigationLink { WrappedReviewView(month: month, records: records) } label: {
+                    Text("\(WrappedStore.monthName(month)) Wrapped is ready to review")
+                }
+            }
+            if !records.isEmpty { Section { HeatmapView(records: records) } }
             ForEach(records) { record in
                 NavigationLink { SessionReportView(record: record) } label: { row(record) }
             }
@@ -14,6 +21,17 @@ struct StreamsView: View {
                 records.remove(atOffsets: offsets)
             }
         }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu("Wrapped…") {
+                    ForEach(WrappedStore.allMonths(records), id: \.self) { month in
+                        Button(WrappedStore.monthName(month)) { reviewMonth = month }
+                    }
+                }
+                .disabled(records.isEmpty)
+            }
+        }
+        .navigationDestination(item: $reviewMonth) { WrappedReviewView(month: $0, records: records) }
         .overlay { if records.isEmpty { Text("No streams recorded yet").foregroundStyle(.secondary) } }
         .navigationTitle("Streams")
         .onAppear { records = SessionLog.all() }
