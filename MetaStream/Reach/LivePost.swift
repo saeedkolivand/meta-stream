@@ -100,7 +100,7 @@ final class LivePost: ObservableObject {
             }
             lastEdit = Date()
             lastPhoto = Date()
-            if let jpeg = await FrameGrab.shared.next() { try await push(text, jpeg: jpeg) }
+            if let jpeg = safe(await FrameGrab.shared.next(), stream) { try await push(text, jpeg: jpeg) }
         }
     }
 
@@ -124,22 +124,31 @@ final class LivePost: ObservableObject {
         let text = LivePostText.live(liveInput(stream), lang: lang)
         enqueue { [self] in
             var jpeg: Data?
-            if wantPhoto { jpeg = await FrameGrab.shared.next() }
+            if wantPhoto { jpeg = safe(await FrameGrab.shared.next(), stream) }
             // A photo retry that found no frame (glasses passthrough never reaches the mixer) edits nothing.
             guard jpeg != nil || textDue else { return }
             try await push(text, jpeg: jpeg)
         }
     }
 
-    /// The session is over: the post becomes the recap, with one last frame if one comes quickly.
+    /// The session is over: the post becomes the recap and keeps the last photo taken while live. No new frame: by the
+    /// time this job runs stopLive() has torn the session down (blur may be off), so a fresh grab could publish a
+    /// picture viewers never saw, unblurred.
     func sessionEnded(_ record: SessionRecord?) {
         guard state != nil else { return }
         closing = true
         let text = record.map { LivePostText.recap(recapInput($0), lang: lang) } ?? LivePostText.endedBare(lang: lang)
         enqueue { [self] in
             defer { state = nil }
-            try await push(text, jpeg: await FrameGrab.shared.next(timeout: .seconds(1)))
+            try await push(text)
         }
+    }
+
+    /// A grabbed frame is only published if, when it arrives, the stream is still live and not ending, and privacy
+    /// blur isn't reporting a stall: the photo stays in the channel, so it must be a frame viewers saw, as they saw it.
+    private func safe(_ jpeg: Data?, _ stream: Streamer) -> Data? {
+        guard stream.live, !closing, stream.privacy?.stalled != true else { return nil }
+        return jpeg
     }
 
     /// Once at launch: an old announcement is withdrawn; a post still saying live belongs to a session that died with the app.

@@ -31,6 +31,10 @@ final class SessionLog {
     }
 
     /// Donation sites and platforms use these placeholders for a donor who gave no name; they never become top donor.
+    /// The name the Live post may publish: the same gate that keeps slurs off TTS and the stream widgets
+    /// (`ChatEvent.offensive`). The post stays in the channel, so a blocked name or text becomes "Someone".
+    static func publicName(_ e: ChatEvent) -> String { e.offensive ? "Someone" : e.user }
+
     static func isAnonymous(_ name: String) -> Bool {
         let trimmed = name.trimmingCharacters(in: .whitespaces).lowercased()
         return trimmed.isEmpty || anonymous.contains(trimmed)
@@ -70,7 +74,8 @@ final class SessionLog {
         switch e.kind {
         case .message: message(e)
         case .tip, .cheer: donation(e)
-        case .raid where e.count >= 10: current?.moments.append(Moment(at: e.at, kind: .raid, user: e.user, detail: "\(e.count)"))
+        case .raid where e.count >= 10:
+            current?.moments.append(Moment(at: e.at, kind: .raid, user: Self.publicName(e), detail: "\(e.count)"))
         default: break
         }
     }
@@ -93,36 +98,37 @@ final class SessionLog {
         let key = "\(e.origin)|\(e.userId)"
         let first = current?.chatterCounts[key] == nil
         current?.chatterCounts[key, default: 0] += 1
-        current?.chatterNames[key] = e.user
+        let blocked = Speaker.isBlocked(e.user, extra: UserDefaults.standard.string(forKey: "ttsBlocked") ?? "")
+        current?.chatterNames[key] = blocked ? "" : e.user   // kept locally, but Wrapped may publish it later
         guard first else { return }
         let now = Date()
         if var known = registry[key] {
-            known.name = e.user
+            known.name = current?.chatterNames[key] ?? ""
             known.lastSeen = now
             registry[key] = known
             current?.returningChatters += 1
         } else {
-            registry[key] = Known(name: e.user, firstSeen: now, lastSeen: now)
+            registry[key] = Known(name: current?.chatterNames[key] ?? "", firstSeen: now, lastSeen: now)
             current?.newChatters += 1
         }
     }
 
     private func donation(_ e: ChatEvent) {
         guard e.origin != "test-donation", let money = DonationPrices.money(e) else { return }
-        let converted = Rates.shared.convert(money, to: GoalStore.shared.config.currency)
+        let converted = Rates.shared.convert(money, to: GoalStore.shared.config.currency), name = Self.publicName(e)
         current?.donationCount += 1
         if let converted {
             current?.donationTotal += converted
-            if !Self.isAnonymous(e.user), converted > (current?.topDonorAmount ?? 0) {
-                current?.topDonor = e.user
+            if !Self.isAnonymous(name), converted > (current?.topDonorAmount ?? 0) {
+                current?.topDonor = name
                 current?.topDonorDisplay = money.display
                 current?.topDonorAmount = converted
             }
         }
-        lastDonation = (e.user, money.display)
+        lastDonation = (name, money.display)
         let threshold = UserDefaults.standard.object(forKey: "momentDonationEUR") as? Double ?? 20
         if let eur = Rates.shared.convert(money, to: "EUR"), eur >= Decimal(threshold) {
-            current?.moments.append(Moment(at: e.at, kind: .donation, user: e.user, detail: money.display))
+            current?.moments.append(Moment(at: e.at, kind: .donation, user: name, detail: money.display))
         }
     }
 
