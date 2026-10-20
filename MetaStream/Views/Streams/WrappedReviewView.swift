@@ -9,6 +9,7 @@ struct WrappedReviewView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var includeDistance = true
     @State private var includeCities = true
+    @State private var includeMoment = true
     @State private var includeTotal: Bool
     @State private var excluded: Set<String> = []
     @State private var published: Bool
@@ -31,6 +32,9 @@ struct WrappedReviewView: View {
         if !includeTotal { out.donations = nil }
         out.topChatters.removeAll { excluded.contains("c:" + $0.name) }
         out.topDonors.removeAll { excluded.contains("d:" + $0.name) }
+        // An excluded name must not come back through the best moment's label ("€40 from Ali").
+        let names = excluded.map { String($0.dropFirst(2)) }
+        if !includeMoment || names.contains(where: { out.bestMoment?.label.contains($0) == true }) { out.bestMoment = nil }
         return out
     }
 
@@ -41,6 +45,7 @@ struct WrappedReviewView: View {
                     Toggle("Include distance", isOn: $includeDistance)
                     Toggle("Include cities", isOn: $includeCities)
                     Toggle("Include donation total", isOn: $includeTotal)
+                    Toggle("Include best moment", isOn: $includeMoment)
                 }
                 summary(draft)
                 rows("Top chatters", prefix: "c:", items: base?.topChatters.map { ($0.name, "\($0.messages)") } ?? [])
