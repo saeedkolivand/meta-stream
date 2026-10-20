@@ -2,7 +2,8 @@
 # Run: swiftlint lint --strict --baseline .swiftlint-baseline.json  (CI, build.yml's lint job). The baseline holds
 # the violations that existed when CI started enforcing (2026-10-20); anything new fails, and so does an old one once
 # its line is edited, so the backlog shrinks as code is touched. After fixing old ones, refresh it with
-# --write-baseline .swiftlint-baseline.json (same command) so they can't come back.
+# --write-baseline .swiftlint-baseline.json (same command) so they can't come back. Write it from an LF checkout
+# (WSL clone or CI), never the Windows working copy: CRLF lines don't match CI's and the whole baseline misses.
 
 only_rules:
   # Correctness / safety (audit: force unwraps, unredacted logs, swallowed errors)
