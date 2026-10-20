@@ -176,6 +176,7 @@ struct ContentView: View {
         .onChange(of: vm.voiceYouTube) { _, _ in vm.startChat(chat: chat, platforms: platforms, emotes: emotes, speaker: speaker) }
         .onChange(of: platforms.twitchConnected) { _, _ in vm.startChat(chat: chat, platforms: platforms, emotes: emotes, speaker: speaker) }
         .onChange(of: platforms.ytConnected) { _, _ in vm.startChat(chat: chat, platforms: platforms, emotes: emotes, speaker: speaker) }
+        .task(id: streamer.live) { if streamer.live { await platforms.pollViewersWhileLive() } }
         .onChange(of: vm.blurOn) { _, _ in vm.applyBlur(privacy: privacy, streamer: streamer) }
         .onChange(of: vm.blurFaces) { _, _ in vm.applyBlur(privacy: privacy, streamer: streamer) }
         .onChange(of: vm.blurText) { _, _ in vm.applyBlur(privacy: privacy, streamer: streamer) }

@@ -104,6 +104,18 @@ final class Platforms: NSObject, ObservableObject {
         if ytConnected { Task { await refreshYouTube() } }
     }
 
+    /// While a stream session runs, viewer counts are re-read every 60 s (both platforms update theirs about once a
+    /// minute): the viewer pill, {viewers} and anything else reading kickViewers/twitchViewers. Ends when the task is
+    /// cancelled (ContentView keys it on streamer.live). FOUND BUG: counts used to be fetched only at launch and in the
+    /// Stream Manager, so a 7 h stream showed its go-live number throughout.
+    func pollViewersWhileLive() async {
+        while !Task.isCancelled {
+            if kickConnected { await kick.refreshViewers() }
+            if twitchConnected { await twitch.refreshViewers() }
+            try? await Task.sleep(for: .seconds(60))
+        }
+    }
+
     // MARK: - Kick
 
     func connectKick() { kick.connect() }

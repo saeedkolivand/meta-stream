@@ -62,6 +62,16 @@ final class KickService: ObservableObject {
         } catch { p.status = error.localizedDescription }
     }
 
+    /// Viewers + live only, for the while-live poll: refresh() is 2 calls and a status message.
+    func refreshViewers() async {
+        do {
+            let ch = ((try await api().call("GET", "/public/v1/channels"))["data"] as? [[String: Any]])?.first
+            guard let st = ch?["stream"] as? [String: Any] else { return }
+            p.kickLive = st["is_live"] as? Bool ?? false
+            p.kickViewers = st["viewer_count"] as? Int ?? 0
+        } catch { applog("api", "kick viewers: \(error.localizedDescription)", error: true) }
+    }
+
     func search(_ q: String) async -> [StreamCategory] {
         guard q.count >= 3 else { return [] }
         let r = try? await api().call("GET", "/public/v2/categories", query: [.init(name: "name", value: q), .init(name: "limit", value: "8")])

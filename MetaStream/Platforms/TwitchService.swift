@@ -121,6 +121,17 @@ final class TwitchService: ObservableObject {
         } catch { p.status = error.localizedDescription }
     }
 
+    /// Viewers + live only, for the while-live poll: refresh() is 4-5 calls and a status message.
+    func refreshViewers() async {
+        guard !p.twitchUserID.isEmpty else { return }
+        do {
+            let res = try await api().call("GET", "/streams", query: [.init(name: "user_id", value: p.twitchUserID)])
+            let live = (res["data"] as? [[String: Any]])?.first
+            p.twitchLive = live != nil
+            p.twitchViewers = live?["viewer_count"] as? Int ?? 0
+        } catch { applog("api", "twitch viewers: \(error.localizedDescription)", error: true) }
+    }
+
     func search(_ q: String) async -> [StreamCategory] {
         guard q.count >= 2 else { return [] }
         let r = try? await api().call("GET", "/search/categories", query: [.init(name: "query", value: q), .init(name: "first", value: "8")])
