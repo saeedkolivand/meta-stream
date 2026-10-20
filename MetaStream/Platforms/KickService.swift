@@ -47,7 +47,7 @@ final class KickService: ObservableObject {
                 p.kickUser = u["name"] as? String ?? ""
             }
             if let ch = ((try await api().call("GET", "/public/v1/channels"))["data"] as? [[String: Any]])?.first {
-                p.kickTitle = ch["stream_title"] as? String ?? ""
+                Self.keepTitle(ch, into: p)
                 if let cat = ch["category"] as? [String: Any], let id = cat["id"] as? Int {
                     p.kickCategory = StreamCategory(id: String(id), name: cat["name"] as? String ?? "")
                 }
@@ -66,10 +66,19 @@ final class KickService: ObservableObject {
     func refreshViewers() async {
         do {
             let ch = ((try await api().call("GET", "/public/v1/channels"))["data"] as? [[String: Any]])?.first
+            if let ch { Self.keepTitle(ch, into: p) }
             guard let st = ch?["stream"] as? [String: Any] else { return }
             p.kickLive = st["is_live"] as? Bool ?? false
             p.kickViewers = st["viewer_count"] as? Int ?? 0
         } catch { applog("api", "kick viewers: \(error.localizedDescription)", error: true) }
+    }
+
+    /// FOUND BUG: right after a PATCH, and until Kick flips the channel live (~15 s), GET /channels returns
+    /// stream_title "" (category id 0 too), and that blank overwrote the title just saved: the Live post went out
+    /// untitled. A blank is never taken; apply() keeps what it sent. ponytail: a title cleared on kick.com itself
+    /// stays shown here until the app restarts.
+    private static func keepTitle(_ ch: [String: Any], into platforms: Platforms) {
+        if let title = ch["stream_title"] as? String, !title.isEmpty { platforms.kickTitle = title }
     }
 
     func search(_ q: String) async -> [StreamCategory] {
@@ -88,6 +97,7 @@ final class KickService: ObservableObject {
         if cleanTags != p.kickTags { body["custom_tags"] = cleanTags }  // omit when unchanged: an empty/unloaded field must not wipe real tags
         await PlatformFlow.mutate(status: { self.p.status = $0 }, done: "Kick title updated", refresh: { await self.refresh() }) {
             _ = try await self.api().call("PATCH", "/public/v1/channels", body: body)
+            self.p.kickTitle = title
             if body["custom_tags"] != nil { self.p.kickTags = cleanTags }
         }
     }
