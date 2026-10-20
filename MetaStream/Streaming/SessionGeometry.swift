@@ -361,11 +361,7 @@ extension Streamer {
         // and HaishinKit's audio encoder stamps time by counting samples from one anchor set at go-live -- a minute
         // muted left every later audio packet stamped a minute early, so audio and video drifted apart for the rest
         // of the session. (The orange mic dot stays on while muted; that's the price.)
-        Task {
-            var s = await mixer.audioMixerSettings
-            s.isMuted = on
-            await mixer.setAudioMixerSettings(s)
-        }
+        Task { await applyAudioMix() }
     }
 
     /// Keeps the mixer's blur effect registration and rendering mode in sync with Privacy.enabled. Privacy

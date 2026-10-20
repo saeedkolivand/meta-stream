@@ -223,10 +223,14 @@ final class SoundMix {
 }
 
 extension Streamer {
-    /// Mixer track volumes: track 0 = mic (Settings volume), track 1 = the sounds engine (its volumes are applied inside it).
+    /// The only writer of the mixer's audio settings: track 0 = mic (Settings volume), track 1 = the sounds engine (its
+    /// volumes are applied inside it), plus mute. Everything is rebuilt from current state after the read, so a mute
+    /// tapped while another write is in flight can't be overwritten by a stale copy (mic live while the app says muted).
+    /// Muted also zeroes the mic track as a backstop to isMuted.
     func applyAudioMix() async {
         var s = await mixer.audioMixerSettings
-        s.tracks[0] = AudioMixerTrackSettings(volume: AudioMath.gain(UserDefaults.standard.object(forKey: "volMic") as? Double ?? 1))
+        s.isMuted = muted
+        s.tracks[0] = AudioMixerTrackSettings(volume: muted ? 0 : AudioMath.gain(UserDefaults.standard.object(forKey: "volMic") as? Double ?? 1))
         s.tracks[1] = AudioMixerTrackSettings(volume: 1)
         await mixer.setAudioMixerSettings(s)
     }

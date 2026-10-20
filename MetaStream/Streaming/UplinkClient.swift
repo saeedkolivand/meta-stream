@@ -237,10 +237,7 @@ extension Streamer {
                 try audioSession.setActive(true)
                 AudioRouteLog.log("go live")
 
-                try await mixer.attachAudio(AVCaptureDevice.default(for: .audio))   // always: mute is a mixer flag, see setMuted
-                var mix = await mixer.audioMixerSettings
-                mix.isMuted = muted
-                await mixer.setAudioMixerSettings(mix)
+                try await mixer.attachAudio(AVCaptureDevice.default(for: .audio))   // always: mute is a mixer flag, applied by wireMixer's applyAudioMix
                 await wireMixer()
 
                 // profileLevel containing "HEVC" flips HaishinKit's internal format to .hevc (onMetaData codec id);
