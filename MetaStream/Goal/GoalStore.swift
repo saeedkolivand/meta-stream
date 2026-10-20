@@ -138,6 +138,7 @@ final class GoalStore: ObservableObject {
         config = Config(title: title, target: target, currency: currency, start: start, startedAt: Date())
         entries = []
         reached = false
+        applog("goal", "goal reset: \(title), target \(Money(target, currency).display)")
         changed()
     }
 
