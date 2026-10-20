@@ -46,7 +46,7 @@ final class SoundMix {
     var mixer: MediaMixer?
 
     /// live && !muted. Sounds only exist on stream, so nothing plays (or runs) otherwise.
-    /// ponytail: HaishinKit's mix is clocked by the mic track, so while the mic is muted (detached) the whole mix, sounds included, stops.
+    /// ponytail: mute zeroes the whole mix (AudioMixerSettings.isMuted), sounds included, so there's nothing to play them into.
     var enabled = false {
         didSet {
             guard oldValue != enabled else { return }
