@@ -348,7 +348,7 @@ final class Streamer: ObservableObject {
                 self.checkBlurStall()
                 self.checkDeadAir()
                 self.checkBRB()
-                AppBot.shared.tick()
+                AppBot.shared.tick(); LivePost.shared.second(self)   // one line: this init is already over the length rule (baseline)
                 self.checkRecordingSource()
                 self.liveActivity.sync(self)
                 if self.live, tick % 5 == 0 {
@@ -363,6 +363,7 @@ final class Streamer: ObservableObject {
     let liveActivity = LiveActivityController()   // Lock Screen / Dynamic Island card, see LiveActivity.swift
 
     func stopLive() {
+        if live { LivePost.shared.sessionEnded(SessionLog.shared.end()) }
         reconnectTask?.cancel()
         reconnectTask = nil
         srtla?.stop(); srtla = nil; srtlaLinks = []

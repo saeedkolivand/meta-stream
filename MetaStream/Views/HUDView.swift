@@ -19,6 +19,7 @@ struct HUDView: View {
     @State var showNetwork = false   // not private, same memberwise-init reason as overlays below
 
     @ObservedObject var overlays = OverlayStore.shared   // not private: it would make HUDView's memberwise init private
+    @ObservedObject var livePost = LivePost.shared       // not private, same reason
 
     /// Active scene; tap for the list. Glasses HEVC passthrough can't be drawn on, so it says so there.
     private var scenePill: some View {
@@ -113,6 +114,7 @@ struct HUDView: View {
                 }, action: { hapticTap(); streamer.capturePhoto() })
                 .disabled(streamer.glassesShort != "streaming")
                 .opacity(streamer.glassesShort == "streaming" ? 1 : 0.4)
+                if livePost.enabled, !streamer.live, livePost.phase != .live { announcePill }
                 StripStyles.stripButton(label: {
                     StripStyles.pill("slider.horizontal.3", "manage", .cyan)
                 }, action: { hapticTap(); showManager = true })
@@ -125,6 +127,15 @@ struct HUDView: View {
         }
         .padding(.top, 4)
         .sheet(isPresented: $showNetwork) { NetworkPanelView().environmentObject(streamer) }
+    }
+
+    /// Posts the Live post's announcement; while one is up, withdraws it.
+    private var announcePill: some View {
+        let announced = livePost.phase == .announced
+        return StripStyles.stripButton(label: {
+            StripStyles.pill(announced ? "xmark.circle" : "megaphone.fill", announced ? "cancel announce" : "announce",
+                             announced ? .orange : .white)
+        }, action: { hapticTap(); if announced { livePost.cancelAnnouncement() } else { livePost.announce() } })
     }
 
     /// White normally; orange when sending well under target or the queue backed up in the last 5 s; red while down.

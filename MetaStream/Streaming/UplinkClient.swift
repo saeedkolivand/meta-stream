@@ -146,6 +146,7 @@ extension Streamer {
         await mixer.addOutput(faceCamFrames)
         await mixer.addOutput(levelTap)
         await mixer.addOutput(recorder)
+        await mixer.addOutput(FrameGrab.shared)
         await mixer.startRunning()
     }
 
@@ -357,6 +358,8 @@ extension Streamer {
                     liveSince = now
                     evaluateSource()
                     startRole()
+                    SessionLog.shared.begin(title: LivePost.shared.title)
+                    LivePost.shared.sessionStarted(self)
                 }
             } catch {
                 if Task.isCancelled { return }

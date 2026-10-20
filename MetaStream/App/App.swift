@@ -40,6 +40,7 @@ struct MetaStreamApp: App {
             .onAppear {
                 streamer.speaker = speaker; streamer.privacy = privacy
                 AppBot.shared.streamer = streamer; AppBot.shared.platforms = platforms
+                LivePost.shared.platforms = platforms; LivePost.shared.resume()
                 if gpsShare { GPSShare.shared.setEnabled(true) }
                 ObsServer.shared.sync(streamer)
                 BotCommand.addClearOnce()
@@ -67,6 +68,7 @@ struct MetaStreamApp: App {
                     }
                     speaker.speak(e)
                     AppBot.shared.handle(e)
+                    SessionLog.shared.record(e)
                     if e.kind == .message, !e.flagged, BotList.isAnnouncement(user: e.user, text: e.text) {
                         UINotificationFeedbackGenerator().notificationOccurred(.success)
                     }
