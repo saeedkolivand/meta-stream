@@ -14,6 +14,8 @@ final class LivePost: ObservableObject {
         var phase: Phase
         var announcedAt: Date?
         var hasPhoto: Bool
+        /// Message ids of the Moment pings, kept so a killed app can still delete them. Optional: older saves lack it.
+        var pings: [Int]?
     }
 
     @Published private(set) var phase: Phase?
@@ -30,8 +32,12 @@ final class LivePost: ObservableObject {
     private var closing = false
     private var lastEdit = Date.distantPast
     private var lastPhoto = Date.distantPast
+    private var lastPing = Date.distantPast
+    private var handledMoments = 0
 
     private static let announcementLife: TimeInterval = 3600
+    private static let pingGap: TimeInterval = 900
+    private static let pingMax = 4
 
     private init() {
         state = UserDefaults.standard.data(forKey: "livePost").flatMap { try? JSONDecoder().decode(State.self, from: $0) }
@@ -88,6 +94,8 @@ final class LivePost: ObservableObject {
     func sessionStarted(_ stream: Streamer) {
         guard enabled else { return }
         closing = false
+        handledMoments = 0
+        lastPing = .distantPast
         let text = LivePostText.live(liveInput(stream), lang: lang)
         enqueue { [self] in
             if var st = state, st.phase == .announced {
@@ -108,7 +116,28 @@ final class LivePost: ObservableObject {
     func second(_ stream: Streamer) {
         guard stream.live else { expireIfStale(); return }
         SessionLog.shared.tick(stream, viewers: viewers)
+        pingNewMoments()
         tick(stream)
+    }
+
+    /// A Moment found since the last look gets a reply to the live post, unless a ping went out in the last 15 min or
+    /// 4 already have: such a moment is dropped, never queued. Moments seen while pings are off are skipped too.
+    private func pingNewMoments() {
+        guard let st = state, st.phase == .live, !closing else { return }
+        let moments = SessionLog.shared.current?.moments ?? []
+        guard moments.count > handledMoments else { return }
+        let moment = moments[handledMoments]
+        handledMoments = moments.count
+        let now = Date()
+        guard flag("telegramPings", true), (st.pings ?? []).count < Self.pingMax,
+              now.timeIntervalSince(lastPing) >= Self.pingGap else { return }
+        lastPing = now
+        let text = LivePostText.ping(moment, slug: slug, lang: lang)
+        enqueue { [self] in
+            let id = try await Telegram.sendMessage(text: text, replyTo: st.messageId)
+            guard state?.messageId == st.messageId else { try? await Telegram.deleteMessage(id); return }   // the post is gone
+            state?.pings = (state?.pings ?? []) + [id]
+        }
     }
 
     /// Every 60 s the text is rebuilt and edited; every 5 min (every 15 s until the first one works) a frame goes with it.
@@ -139,8 +168,9 @@ final class LivePost: ObservableObject {
         closing = true
         let text = record.map { LivePostText.recap(recapInput($0), lang: lang) } ?? LivePostText.endedBare(lang: lang)
         enqueue { [self] in
+            let pings = state?.pings ?? []   // read here: a ping queued before this job has finished by now
             defer { state = nil }
-            try await push(text)
+            try await closeOut(pings) { try await push(text) }
         }
     }
 
@@ -157,7 +187,21 @@ final class LivePost: ObservableObject {
         if st.phase == .announced { expireIfStale(); return }
         state = nil
         let text = LivePostText.endedBare(lang: lang)
-        enqueue { [self] in try await edit(text, id: st.messageId, photo: st.hasPhoto) }
+        enqueue { [self] in
+            try await closeOut(st.pings ?? []) { try await edit(text, id: st.messageId, photo: st.hasPhoto) }
+        }
+    }
+
+    /// Runs the recap edit first, then deletes every ping (each error ignored on its own); the edit's error still surfaces.
+    private func closeOut(_ pings: [Int], _ work: () async throws -> Void) async throws {
+        var failure: Error?
+        do { try await work() } catch { failure = error }
+        for id in pings {
+            do { try await Telegram.deleteMessage(id) } catch {   // total: one failed delete must not skip the rest
+                if !Telegram.isGone(error) { applog("telegram", "ping delete: \(error.localizedDescription)", error: true) }
+            }
+        }
+        if let failure { throw failure }
     }
 
     // MARK: sending
@@ -223,7 +267,9 @@ final class LivePost: ObservableObject {
     static func demo() {
         let encoded = try? JSONEncoder().encode(State(messageId: 7, phase: .live, announcedAt: nil, hasPhoto: true))
         let back = encoded.flatMap { try? JSONDecoder().decode(State.self, from: $0) }
-        assert(back?.messageId == 7 && back?.phase == .live && back?.hasPhoto == true)
+        assert(back?.messageId == 7 && back?.phase == .live && back?.hasPhoto == true && back?.pings == nil)
+        let legacy = Data(#"{"messageId":7,"phase":"live","hasPhoto":false}"#.utf8)
+        assert((try? JSONDecoder().decode(State.self, from: legacy))?.pings == nil)
         applog("reach", "LivePost.demo() passed")
     }
     #endif

@@ -3,6 +3,7 @@ import Foundation
 import AVFoundation
 import CoreMedia
 import HaishinKit
+import os
 
 enum AudioMath {
     static let deadAirDB: Float = -50
@@ -45,6 +46,14 @@ final class AudioLevel: ObservableObject {
     func set(_ v: Float) { db = v; at = Date() }
 }
 
+/// The latest audio clock skew, written from the audio thread, read by the Session report's recorder. Lock-protected.
+enum AudioSkew {
+    private static let box = OSAllocatedUnfairLock<Int?>(initialState: nil)
+    static func set(_ ms: Int) { box.withLock { $0 = ms } }
+    static func clear() { box.withLock { $0 = nil } }
+    static var latest: Int? { box.withLock { $0 } }
+}
+
 /// Taps the mixer's final audio (track UInt8.max = what goes out) and reports the loudest buffer every ~125 ms.
 final class LevelOutput: MediaMixerOutput, @unchecked Sendable {
     private let onLevel: @Sendable (Float) -> Void
@@ -69,7 +78,10 @@ final class LevelOutput: MediaMixerOutput, @unchecked Sendable {
         nextSampleTime = when.isSampleTimeValid ? when.sampleTime + AVAudioFramePosition(buffer.frameLength) : nil
         if now.timeIntervalSince(lastSkewLog) >= 60, when.isHostTimeValid {
             lastSkewLog = now
-            applog("audio", "clock skew \(Int((AVAudioTime.seconds(forHostTime: when.hostTime) - AVAudioTime.seconds(forHostTime: mach_absolute_time())) * 1000)) ms")
+            let ahead = AVAudioTime.seconds(forHostTime: when.hostTime) - AVAudioTime.seconds(forHostTime: mach_absolute_time())
+            let skew = Int(ahead * 1000)
+            AudioSkew.set(skew)
+            applog("audio", "clock skew \(skew) ms")
         }
         guard now.timeIntervalSince(last) >= 0.125 else { return }
         last = now

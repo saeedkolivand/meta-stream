@@ -8,6 +8,8 @@ struct SessionSample: Codable {
     var kbps: Int
     var drops: Int
     var downSeconds: Int
+    /// Audio clock skew at this minute; nil in older files and when the mix reported none yet.
+    var skewMs: Int?
 }
 
 /// A point in a stream session worth coming back for: a chat spike, a big donation or a raid.
@@ -18,6 +20,8 @@ struct Moment: Codable {
     var kind: Kind
     var user: String
     var detail: String
+    /// EUR for a donation, viewers for a raid, messages per minute for a chat spike. Nil in older files.
+    var value: Double?
 }
 
 /// Everything kept about one stream session. Chat text is never stored, only counts per Chatter key.
@@ -39,6 +43,11 @@ struct SessionRecord: Codable {
     var returningChatters = 0
     /// The Chatter registry was empty when the session began: the recap says counting started today.
     var trackingStarted = false
+    // Added after release 1, so Optional: older files decode them as nil.
+    var distanceMeters: Double?
+    var cities: [String]?
+    /// Public donor name to total in `currency`; anonymous placeholders excluded.
+    var donors: [String: Decimal]?
 
     var peakViewers: Int { samples.map(\.viewers).max() ?? 0 }
 
@@ -49,3 +58,5 @@ struct SessionRecord: Codable {
 
     var duration: TimeInterval { (end ?? Date()).timeIntervalSince(start) }
 }
+
+extension SessionRecord: Identifiable { var id: Date { start } }

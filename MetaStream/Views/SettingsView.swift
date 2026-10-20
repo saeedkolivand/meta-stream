@@ -13,6 +13,7 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section {
+                    NavigationLink("Streams") { StreamsView() }
                     NavigationLink("Ingest & protocol") { IngestSettingsView() }
                     if Streamer.glassesConfigured { NavigationLink("Meta glasses") { GlassesVideoSettingsView() } }
                     NavigationLink("Camera") { CameraSettingsView() }

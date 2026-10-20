@@ -26,14 +26,18 @@ enum LivePostText {
         "updated": "به‌روزرسانی", "reconnecting": "در حال اتصال دوباره…", "starting": "شروع تا", "ended": "لایو تمام شد",
         "peak": "اوج", "avg": "میانگین", "donations": "دونیت", "top": "بیشترین", "moments": "لحظه‌ها",
         "wild": "چت ترکوند", "from": "از طرف", "raid": "رید از", "newChatters": "چتر جدید", "chatters": "چتر",
-        "thanks": "ممنون از همه", "cancelled": "امروز لغو شد"
+        "thanks": "ممنون از همه", "cancelled": "امروز لغو شد",
+        "pingWild": "چت الان ترکونده", "pingDonation": "دونیت بزرگ از طرف", "pingThanks": "بیا تشکر کن",
+        "pingRaid": "رید از", "pingWith": "با", "pingViewers": "بیننده"
     ]
     private static let en = [
         "soon": "Going live soon", "live": "LIVE", "watching": "watching", "goal": "Goal", "of": "of", "for": "for", "last": "Last",
         "updated": "updated", "reconnecting": "reconnecting…", "starting": "Starting in", "ended": "Stream ended",
         "peak": "peak", "avg": "avg", "donations": "donations", "top": "top", "moments": "Moments",
         "wild": "chat went wild", "from": "from", "raid": "raid from", "newChatters": "new chatters", "chatters": "chatters",
-        "thanks": "thanks everyone", "cancelled": "Cancelled for today"
+        "thanks": "thanks everyone", "cancelled": "Cancelled for today",
+        "pingWild": "Chat's going wild right now", "pingDonation": "Big donation from", "pingThanks": "come say thanks",
+        "pingRaid": "Raid from", "pingWith": "with", "pingViewers": "viewers"
     ]
 
     static func tr(_ key: String, _ lang: String) -> String { (lang == "en" ? en : fa)[key] ?? key }
@@ -68,6 +72,18 @@ enum LivePostText {
         let stats: String? = "⏱ \(duration(rec.duration)) · 👁 \(tr("peak", lang)) \(rec.peak) · \(tr("avg", lang)) \(rec.avg)"
         return join([top, stats, donationLine(rec, lang), goalLine(rec.goal, lang), momentsLine(rec.moments, lang),
                      chattersLine(rec, lang), link(rec.slug)])
+    }
+
+    /// A Moment ping: one short line about the moment, then the stream link (omitted without a slug).
+    static func ping(_ moment: Moment, slug: String, lang: String) -> String {
+        let line: String
+        switch moment.kind {
+        case .chatSpike: line = "🔥 " + tr("pingWild", lang)
+        case .donation: line = "💸 \(tr("pingDonation", lang)) \(moment.user) (\(moment.detail)) \u{2014} \(tr("pingThanks", lang))"
+        case .raid:
+            line = "🚀 \(tr("pingRaid", lang)) \(moment.user) \(tr("pingWith", lang)) \(moment.detail) \(tr("pingViewers", lang))"
+        }
+        return join([line, link(slug)])
     }
 
     /// Telegram limits: 1024 characters for a caption, 4096 for a text message.
@@ -145,6 +161,15 @@ enum LivePostText {
         rec.topName = nil
         assert(!recap(rec, lang: "en").contains("💸"))
         assert(fit(String(repeating: "x", count: 5000), photo: true).count == 1024)
+        let donation = Moment(at: Date(), kind: .donation, user: "Bob", detail: "€25")
+        assert(ping(donation, slug: "s", lang: "en") == "💸 Big donation from Bob (€25) \u{2014} come say thanks\n▶️ kick.com/s")
+        assert(ping(donation, slug: "", lang: "fa") == "💸 دونیت بزرگ از طرف Bob (€25) \u{2014} بیا تشکر کن")
+        let raid = Moment(at: Date(), kind: .raid, user: "Al", detail: "40")
+        assert(ping(raid, slug: "", lang: "en") == "🚀 Raid from Al with 40 viewers")
+        assert(ping(raid, slug: "s", lang: "fa") == "🚀 رید از Al با 40 بیننده\n▶️ kick.com/s")
+        let spike = Moment(at: Date(), kind: .chatSpike, user: "", detail: "30/min")
+        assert(ping(spike, slug: "s", lang: "en") == "🔥 Chat's going wild right now\n▶️ kick.com/s")
+        assert(ping(spike, slug: "", lang: "fa") == "🔥 چت الان ترکونده")
         applog("reach", "LivePostText.demo() passed")
     }
     #endif

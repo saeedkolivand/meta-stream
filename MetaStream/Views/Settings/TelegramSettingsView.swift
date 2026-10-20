@@ -7,6 +7,7 @@ struct TelegramSettingsView: View {
     @AppStorage("telegramLang") private var lang = "fa"
     @AppStorage("telegramShowCity") private var showCity = false
     @AppStorage("telegramShowTotal") private var showTotal = true
+    @AppStorage("telegramPings") private var pings = true
     @AppStorage("momentDonationEUR") private var bigDonation = 20.0
     @State private var token = ""
     @State private var hasToken = false
@@ -47,6 +48,12 @@ struct TelegramSettingsView: View {
                 Stepper(value: $bigDonation, in: 1...1000, step: 5) { Text("Big donation moment (€\(Int(bigDonation)))") }
             } header: { Text("Post") } footer: {
                 Text("The language only changes the labels; titles and names stay as you typed them.")
+            }
+            Section {
+                Toggle("Moment pings", isOn: $pings)
+            } footer: {
+                Text("A short reply to the live post when chat spikes, a big donation lands or a raid comes in; "
+                     + "at most one per 15 min and 4 per stream, deleted when the stream ends.")
             }
             Section {
                 Toggle("Show city", isOn: $showCity)

@@ -48,6 +48,9 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
         return metric ? String(format: "%.1f km", meters / 1000) : String(format: "%.1f mi", meters / 1609.344)
     }
 
+    /// Metres travelled on the current distance day, for the Session report's distance.
+    var metersToday: Double { meters }
+
     private func saveDistance() {
         UserDefaults.standard.set(meters, forKey: "distanceMeters")
         UserDefaults.standard.set(distanceDay, forKey: "distanceDay")

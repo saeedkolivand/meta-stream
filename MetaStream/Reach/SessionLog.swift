@@ -3,18 +3,22 @@ import Foundation
 /// Records the running stream session (CONTEXT.md "Reach"): a per-minute timeline, Moments, donation totals and
 /// Chatters. Saved as JSON when the session ends. Chat text is never stored, only counts per Chatter key.
 @MainActor
-final class SessionLog {
+final class SessionLog: ObservableObject {
     static let shared = SessionLog()
 
     /// A Chatter the app has seen before, kept across sessions.
     struct Known: Codable { var name: String; var firstSeen: Date; var lastSeen: Date }
 
     private(set) var current: SessionRecord?
+    /// The session that just ended, for the Session report sheet. Only this publishes: `current` changes every minute.
+    @Published var justEnded: SessionRecord?
     /// The latest donation this session, for the Live post's "Last:" line.
     private(set) var lastDonation: (user: String, display: String)?
     private var registry: [String: Known] = [:]
     private var minuteChat = 0
     private var lastSpikeAt: Date?
+    private var holdingGPS = false
+    private var metersAtBegin = 0.0
 
     private static let anonymous = ["someone", "anonymous", "an anonymous cheerer"]
     private static var sessionsDir: URL { URL.applicationSupportDirectory.appending(path: "sessions") }
@@ -48,6 +52,9 @@ final class SessionLog {
         lastDonation = nil
         minuteChat = 0
         lastSpikeAt = nil
+        AudioSkew.clear()
+        if !holdingGPS { holdingGPS = true; WidgetLocation.shared.retain() }
+        metersAtBegin = WidgetLocation.shared.metersToday
     }
 
     /// Called every second while live; appends a sample on each minute boundary, then looks for a chat spike.
@@ -58,10 +65,12 @@ final class SessionLog {
         let previous = rec.samples.suffix(10).map(\.chat)
         rec.samples.append(SessionSample(
             minute: rec.samples.count + 1, viewers: viewers, chat: minuteChat, kbps: streamer.kbps,
-            drops: streamer.drops, downSeconds: Int(streamer.downtime)))
+            drops: streamer.drops, downSeconds: Int(streamer.downtime), skewMs: AudioSkew.latest))
+        let city = WidgetLocation.shared.cityText
+        if city != "--", !(rec.cities ?? []).contains(city) { rec.cities = (rec.cities ?? []) + [city] }
         if Self.isSpike(minuteChat, previous: previous), lastSpikeAt.map({ now.timeIntervalSince($0) >= 300 }) ?? true {
             lastSpikeAt = now
-            rec.moments.append(Moment(at: now, kind: .chatSpike, user: "", detail: "\(minuteChat)/min"))
+            rec.moments.append(Moment(at: now, kind: .chatSpike, user: "", detail: "\(minuteChat)/min", value: Double(minuteChat)))
         }
         minuteChat = 0
         current = rec
@@ -75,7 +84,7 @@ final class SessionLog {
         case .message: message(e)
         case .tip, .cheer: donation(e)
         case .raid where e.count >= 10:
-            current?.moments.append(Moment(at: e.at, kind: .raid, user: Self.publicName(e), detail: "\(e.count)"))
+            current?.moments.append(Moment(at: e.at, kind: .raid, user: Self.publicName(e), detail: "\(e.count)", value: Double(e.count)))
         default: break
         }
     }
@@ -85,8 +94,13 @@ final class SessionLog {
         guard var rec = current else { return nil }
         rec.end = Date()
         current = nil
+        if holdingGPS { holdingGPS = false; WidgetLocation.shared.release() }
+        // ponytail: if the day rolled over midnight the day's metres reset to 0 mid-stream, so the end value alone stands in.
+        let metres = WidgetLocation.shared.metersToday - metersAtBegin
+        rec.distanceMeters = metres >= 0 ? metres : WidgetLocation.shared.metersToday
         Self.save(rec, to: Self.file(rec))
         Self.save(registry, to: Self.chattersFile)
+        justEnded = rec
         return rec
     }
 
@@ -124,11 +138,17 @@ final class SessionLog {
                 current?.topDonorDisplay = money.display
                 current?.topDonorAmount = converted
             }
+            if !Self.isAnonymous(name) {
+                var donors = current?.donors ?? [:]
+                donors[name, default: 0] += converted
+                current?.donors = donors
+            }
         }
         lastDonation = (name, money.display)
         let threshold = UserDefaults.standard.object(forKey: "momentDonationEUR") as? Double ?? 20
         if let eur = Rates.shared.convert(money, to: "EUR"), eur >= Decimal(threshold) {
-            current?.moments.append(Moment(at: e.at, kind: .donation, user: name, detail: money.display))
+            current?.moments.append(Moment(at: e.at, kind: .donation, user: name, detail: money.display,
+                                           value: NSDecimalNumber(decimal: eur).doubleValue))
         }
     }
 
@@ -142,6 +162,14 @@ final class SessionLog {
         format.dateFormat = "yyyy-MM-dd'T'HHmmss"
         return format.string(from: date)
     }
+
+    /// Every saved session, newest first; files that no longer decode are skipped.
+    static func all() -> [SessionRecord] {
+        let urls = (try? FileManager.default.contentsOfDirectory(at: sessionsDir, includingPropertiesForKeys: nil)) ?? []
+        return urls.filter { $0.pathExtension == "json" }.compactMap { load(SessionRecord.self, from: $0) }.sorted { $0.start > $1.start }
+    }
+
+    static func delete(_ rec: SessionRecord) { _ = try? FileManager.default.removeItem(at: file(rec)) }
 
     private static func load<T: Decodable>(_ type: T.Type, from url: URL) -> T? {
         (try? Data(contentsOf: url)).flatMap { try? JSONDecoder().decode(type, from: $0) }

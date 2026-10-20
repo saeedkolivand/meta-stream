@@ -15,6 +15,7 @@ struct ContentView: View {
     @AppStorage("camLevelOn") var camLevelOn = false
     @AppStorage("dockChat") private var dockChat = true
 
+    @ObservedObject var sessionLog = SessionLog.shared   // not private: it would make ContentView's memberwise init private
     @StateObject private var vm = StreamViewModel()
     @StateObject private var emotes = Emotes()
     @StateObject private var levelMonitor = LevelMonitor()
@@ -108,6 +109,13 @@ struct ContentView: View {
         }
         .background(Color.black.ignoresSafeArea())
         .onGeometryChange(for: Bool.self) { $0.size.width > $0.size.height } action: { landscape = $0 }
+        .sheet(item: $sessionLog.justEnded) { record in
+            NavigationStack {
+                SessionReportView(record: record)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { sessionLog.justEnded = nil } } }
+            }
+            .preferredColorScheme(.dark)
+        }
     }
 
     /// Preview, controls and the auto-hide behaviour; split from `body` so the type checker copes with the modifier chain.
