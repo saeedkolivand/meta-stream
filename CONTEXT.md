@@ -210,3 +210,36 @@ _Avoid_: base currency, unit
 Obscuring faces, text, licence plates or chosen objects in the outgoing picture. Best-effort
 per frame, never a guarantee.
 _Avoid_: censor, redact, filter, anonymise
+
+### Reach
+
+**Live post**:
+The one Telegram channel message a stream session owns: posted when the session starts (or earlier, by
+an announcement, which the session then adopts), kept current while it runs, and turned into the
+session's recap when it ends. The app writes it; nothing else does.
+_Avoid_: go-live notification, announcement
+
+**Moment**:
+A point in a stream session worth coming back for: a chat spike, a big donation or a raid. Found by
+the app as it happens, kept with the session, and listed in its recap.
+_Avoid_: highlight, marker, clip
+
+**Moment ping**:
+A short Telegram message, sent as a reply to the live post, that a moment is happening right now.
+Rate-limited, and removed when the session ends.
+
+**Session report**:
+The streamer's private account of one stream session: the public recap plus connection health, audio
+sync and the per-minute timeline. Never posted anywhere.
+_Avoid_: stats, analytics, summary
+
+**Wrapped**:
+A monthly public page summing up the streamer's month: hours, distance, cities (names only, never
+dates or places), top chatters and donors, best moment. Drafted by the app, published only when the
+streamer approves.
+_Avoid_: recap (that is one session's), monthly report
+
+**Chatter**:
+One account that has chatted, identified by its chat origin plus that platform's user id, so a rename
+keeps its history and the same person on two platforms is two chatters. New until their first
+message has been seen once; returning after that. The app's own messages are never a chatter's.
