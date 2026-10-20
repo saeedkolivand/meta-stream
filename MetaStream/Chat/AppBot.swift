@@ -263,7 +263,7 @@ final class AppBot: ObservableObject {
             let g = GoalStore.shared, c = g.config.currency
             return "\(Money(g.total, c).display) of \(Money(g.config.target, c).display) for \(g.config.title) (\(Int(g.progress * 100))%)"
         case "!donate", "!tip", "!support", "!donation":
-            let g = GoalStore.shared, c = g.config, url = DonatePagePublisher.shared.shortURL
+            let g = GoalStore.shared, c = g.config, url = DonatePagePublisher.shared.chatURL
             guard c.target > 0 else { return "Support the stream: \(url)" }
             return tpl("botTplDonate").replacingOccurrences(of: "{title}", with: c.title)
                 .replacingOccurrences(of: "{total}", with: Money(g.total, c.currency).display)

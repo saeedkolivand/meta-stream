@@ -27,12 +27,11 @@ final class DonatePagePublisher: ObservableObject {
     var token: String { keychain.string(forKey: "donatePageToken") ?? "" }
     var enabled: Bool { !token.isEmpty }
 
-    /// The page without its scheme and trailing slash, for chat ("donate.iamsaeed.dev").
-    var shortURL: String {
+    /// The page for chat, scheme kept ("https://donate.iamsaeed.dev"): Kick only makes a link tappable with it.
+    var chatURL: String {
         var u = pageURL.trimmingCharacters(in: .whitespaces)
-        for p in ["https://", "http://"] where u.lowercased().hasPrefix(p) { u = String(u.dropFirst(p.count)) }
         while u.hasSuffix("/") { u.removeLast() }
-        return u
+        return u.lowercased().hasPrefix("http") ? u : "https://" + u
     }
 
     /// The key is bound to the host it was saved for: pointing the URL at another site stops sending it until the
