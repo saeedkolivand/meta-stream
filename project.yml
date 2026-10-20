@@ -33,8 +33,10 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_BUNDLE_IDENTIFIER: com.saeedkolivand.metastream
         ARCHS: arm64
-        SWIFT_VERSION: "6.0"
-        SWIFT_STRICT_CONCURRENCY: minimal
+        SWIFT_VERSION: "6.0"   # Swift 6 mode: complete data-race checking, as errors (SWIFT_STRICT_CONCURRENCY is moot)
+        # Every warning fails the build; deprecations stay warnings (an SDK/HaishinKit update can deprecate with no
+        # replacement, e.g. Screen.isGPURendererEnabled). Order matters: -Wwarning has to come after.
+        OTHER_SWIFT_FLAGS: "$(inherited) -warnings-as-errors -Wwarning DeprecatedDeclaration"
         TARGETED_DEVICE_FAMILY: "1,2"   # iPad too: USB-C iPads take UVC cameras (DJI webcam mode)
         META_APP_ID: ""
         CLIENT_TOKEN: ""

@@ -47,8 +47,8 @@ final class ScreenPump: @unchecked Sendable {
     private var lastSeq: UInt32 = 0            // queue-confined from here down
     private var announced = false
     private var format: CMVideoFormatDescription?
-    private lazy var transcoder: Transcoder = Transcoder(transform: { [unowned self] pb in self.rotate(pb) },
-                                                         sink: { [unowned self] sb in self.sink.value?(sb) })
+    private lazy var transcoder: Transcoder = Transcoder(transform: { [weak self] pb in self?.rotate(pb) },   // weak: a late frame after deinit is dropped, not a crash
+                                                         sink: { [weak self] sb in self?.sink.value?(sb) })
 
     func observe() {
         let center = CFNotificationCenterGetDarwinNotifyCenter()

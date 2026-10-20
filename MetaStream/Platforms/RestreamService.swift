@@ -17,6 +17,8 @@ final class RestreamService: ObservableObject {
     }
 
     func connect() {
+        // The only `try` is inside codeFlow's exchange closure, which codeFlow catches and reports via status.
+        // swiftlint:disable:next unhandled_throwing_task
         Task {
             var c = URLComponents(string: "https://api.restream.io/login")!
             c.queryItems = [

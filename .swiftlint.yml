@@ -1,6 +1,8 @@
 # SwiftLint — MetaStream (Swift 6.0, XcodeGen, feature-based layout)
-# Run: swiftlint lint --strict  (CI). XcodeGen sources are globbed, so no
-# include/exclude of build/ derived data needed beyond defaults.
+# Run: swiftlint lint --strict --baseline .swiftlint-baseline.json  (CI, build.yml's lint job). The baseline holds
+# the violations that existed when CI started enforcing (2026-10-20); anything new fails, and so does an old one once
+# its line is edited, so the backlog shrinks as code is touched. After fixing old ones, refresh it with
+# --write-baseline .swiftlint-baseline.json (same command) so they can't come back.
 
 only_rules:
   # Correctness / safety (audit: force unwraps, unredacted logs, swallowed errors)
@@ -13,6 +15,10 @@ only_rules:
   - redundant_nil_coalescing
   - optional_enum_case_matching
   - discarded_notification_center_observer
+  - unhandled_throwing_task     # Task { try ... } with nobody awaiting it: the error vanishes
+  - weak_delegate
+  - unowned_variable_capture    # [unowned self] crashes if self is gone; use weak
+  - fatal_error_message
 
   # Complexity / size (audit: KISS + 300 code-line rule)
   - cyclomatic_complexity
@@ -32,10 +38,7 @@ only_rules:
   - trailing_whitespace
   - line_length
   - todo
-  - nslogger_tool
-  - print_using_os_log
   - private_over_fileprivate
-  - redundant_extension_access_modifier
   - sorted_imports
   - vertical_parameter_alignment_on_call
 
@@ -80,9 +83,6 @@ identifier_name:
     - x
     - y
     - e
-
-todo:
-  include: "^(TODO|FIXME|HACK)"
 
 excluded:
   - build

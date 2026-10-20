@@ -17,6 +17,8 @@ final class KickService: ObservableObject {
     }
 
     func connect() {
+        // The only `try` is inside codeFlow's exchange closure, which codeFlow catches and reports via status.
+        // swiftlint:disable:next unhandled_throwing_task
         Task {
             let verifier = PlatformNet.random(64)
             var c = URLComponents(string: "https://id.kick.com/oauth/authorize")!
