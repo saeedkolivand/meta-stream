@@ -2,7 +2,7 @@ import SwiftUI
 
 /// What the "+" menu can add. Each kind has one place that knows its defaults, so a new widget looks right immediately.
 enum NewWidget: CaseIterable {
-    case chat, alerts, events, goal, text, clock, liveTime, drive, socials, image, qr, web
+    case chat, alerts, events, goal, text, clock, liveTime, viewers, drive, socials, image, qr, web
 
     var title: String {
         switch self {
@@ -13,6 +13,7 @@ enum NewWidget: CaseIterable {
         case .text: "Text"
         case .clock: "Clock"
         case .liveTime: "Live time"
+        case .viewers: "Viewers"
         case .drive: "Drive"
         case .socials: "Socials"
         case .image: "Image or GIF"
@@ -30,6 +31,7 @@ enum NewWidget: CaseIterable {
         case .text: OverlayLayerType.text.icon
         case .clock: "clock.fill"
         case .liveTime: "record.circle"
+        case .viewers: "eye.fill"
         case .drive: "car.fill"
         case .socials: "person.2.fill"
         case .image: OverlayLayerType.image.icon
@@ -48,6 +50,7 @@ enum NewWidget: CaseIterable {
         case .text: textLayer()
         case .clock: preset("Clock", "🕒 {time}  {date}  {weather}", 0)
         case .liveTime: preset("Live time", "🔴 {uptime}", 2)
+        case .viewers: preset("Viewers", "👁 {viewers}", 2)
         case .drive: preset("Drive", "🚗 {speed}  🛣 {distance}", 6)
         case .socials: preset("Socials", "📷 IG @yourname\n🎵 TikTok @yourname\n✈️ TG @yourname", 8, rotate: true)
         case .qr: qrLayer()

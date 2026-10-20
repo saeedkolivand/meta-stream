@@ -7,6 +7,7 @@ struct HUDView: View {
     @EnvironmentObject var streamer: Streamer
     @EnvironmentObject var speaker: Speaker
     @EnvironmentObject var privacy: Privacy
+    @EnvironmentObject var platforms: Platforms
     @AppStorage("blurOn") var blurOn = false
     @AppStorage("bitrateKbps") var bitrateKbps = 4000
     @AppStorage("glassesEnabled") private var glassesEnabled = false
@@ -66,6 +67,8 @@ struct HUDView: View {
                              down ? "down " + elapsed(ctx.date) : elapsed(ctx.date),
                              down ? .orange : .red)
                     }
+                    // Same sum as the {viewers} widget token: Kick + Twitch + YouTube.
+                    StripStyles.pill("eye.fill", "\(platforms.kickViewers + platforms.twitchViewers + platforms.ytViewers)", .white)
                     LevelBar(meter: streamer.audioLevel)
                     StripStyles.stripButton(label: {
                         StripStyles.pill("waveform", "\(streamer.fps) fps · \(streamer.kbps) kbps", kbpsColor)
