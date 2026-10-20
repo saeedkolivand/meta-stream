@@ -70,6 +70,22 @@ final class DonationHub: ObservableObject {
     private var sockets: [Site: URLSessionWebSocketTask] = [:]
     private var logged: [Site: String] = [:]
     private var lastAt: [Site: Date] = [:]
+    /// Donation ids each site has already reported, kept across launches. "New" means new to the site's feed, never
+    /// "not in the goal": a reset empties the goal, and old donations must not then come back as live alerts.
+    private var seen: [Site: [String]] = Dictionary(uniqueKeysWithValues: Site.allCases.map {
+        ($0, UserDefaults.standard.stringArray(forKey: "donationSeen." + $0.rawValue) ?? [])
+    })
+
+    /// True the first time an id is seen; remembers it (the newest 500 per site).
+    private func firstSighting(_ site: Site, _ id: String) -> Bool {
+        var ids = seen[site] ?? []
+        guard !ids.contains(id) else { return false }
+        ids.append(id)
+        if ids.count > 500 { ids.removeFirst(ids.count - 500) }
+        seen[site] = ids
+        UserDefaults.standard.set(ids, forKey: "donationSeen." + site.rawValue)
+        return true
+    }
     private var loggedFields: Set<Site> = []
     private var loggedTypes: Set<String> = []   // StreamElements event types whose keys were logged this run
     private var channelIds: [Site: String] = [:]   // StreamElements channel id, shared by the poll and the socket's tip lookup
@@ -755,10 +771,14 @@ final class DonationHub: ObservableObject {
             case .refunded: GoalStore.shared.refund(key); continue
             case .paid: break
             }
+            // Only a donation the site never reported before is live; anything already seen (a repeat in the next poll,
+            // or an old one after a goal reset) is history and goes the missed way, at its own date.
+            let fresh = firstSighting(site, p.id)
+            let isLive = live && fresh
             // A live donation happened just now (some sites' timestamps carry an unknown time zone).
-            let at = live ? Date() : p.date
+            let at = isLive ? Date() : p.date
             lastAt[site] = max(lastAt[site] ?? .distantPast, at)
-            if live {
+            if isLive {
                 if GoalStore.shared.record(key: key, source: site.rawValue, money: p.money, at: at, note: [p.name, p.message].filter { !$0.isEmpty }.joined(separator: " · ")) {
                     if announce { chat.yield(ChatEvent(kind: .tip, user: p.name, text: p.message, money: p.money, origin: site.rawValue, id: p.id)) }
                     new += 1
