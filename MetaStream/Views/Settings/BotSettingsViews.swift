@@ -32,7 +32,7 @@ struct CommandsSettingsView: View {
             }
             KickSessionSection()
         }
-        .navigationTitle("Chat commands")
+        .navigationTitle("Commands")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { EditButton() }
         .onAppear { cmds = BotCommand.decode(raw) }
@@ -62,7 +62,7 @@ struct BotsSettingsView: View {
                 Text("A bot message with a trigger word (whole word, comma-separated) is an announcement: it buzzes your phone and is highlighted in chat, whatever the read setting.")
             }
         }
-        .navigationTitle("Chat bots")
+        .navigationTitle("Known bots")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

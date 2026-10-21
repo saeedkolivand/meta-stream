@@ -121,18 +121,3 @@ extension OverlayLayer {
         .widget(.browser, name: URL(string: url)?.host ?? "Web widget", layout: .inset(4), data: ["url": url, "width": "800", "height": "600"])
     }
 }
-
-struct AddWidgetMenu: View {
-    let pick: (NewWidget) -> Void
-
-    var body: some View {
-        Menu {
-            ForEach(NewWidget.allCases, id: \.self) { kind in
-                Button { pick(kind) } label: { Label(kind.title, systemImage: kind.icon) }
-            }
-        } label: {
-            Image(systemName: "plus.circle.fill")
-        }
-        .accessibilityLabel("Add widget")
-    }
-}

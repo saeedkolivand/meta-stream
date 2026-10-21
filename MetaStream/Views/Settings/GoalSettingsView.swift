@@ -1,16 +1,12 @@
 import SwiftUI
 
-/// Settings › Goal: the donation goal, the rates behind it, what subs/Bits are worth, manual and test donations,
-/// and the donation-site keys. Money is Decimal throughout (parsed from text, never Double).
+/// Settings › Goal: the donation goal, the rates behind it, what subs/Bits are worth, manual and test donations.
+/// The donation-site keys and the donate page have their own screens. Money is Decimal throughout (parsed from text, never Double).
 struct GoalSettingsView: View {
     @EnvironmentObject var chat: ChatFeed
     @ObservedObject private var goal = GoalStore.shared
     @ObservedObject private var rates = Rates.shared
-    @ObservedObject private var hub = DonationHub.shared
     @AppStorage("goalManualTomanPerEUR") private var manualRate = ""
-    @ObservedObject private var page = DonatePagePublisher.shared
-    @AppStorage("donatePageURL") private var pageURL = DonatePagePublisher.defaultURL
-    @State private var pageKey = ""
 
     @State private var title = ""
     @State private var target = ""
@@ -40,13 +36,10 @@ struct GoalSettingsView: View {
             valuesSection
             addSection
             testSection
-            sourcesSection
-            donatePageSection
             recentSection
         }
         .navigationTitle("Goal")
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: pageURL) { _, _ in page.request() }
         .onAppear {
             guard !loaded else { return }
             loaded = true
@@ -161,29 +154,6 @@ struct GoalSettingsView: View {
         }
     }
 
-    private var sourcesSection: some View {
-        Section {
-            ForEach(DonationHub.Site.allCases, id: \.self) { site in
-                SiteKeyRow(site: site, status: hub.status[site] ?? "")
-            }
-        } header: { Text("Donation sources") }
-    }
-
-    private var donatePageSection: some View {
-        Section {
-            TextField("Page URL", text: $pageURL).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-            // Never loaded back into the field: the saved key stays in the Keychain, the field only takes a new one.
-            SecureField(page.hasToken ? "Key saved (enter a new one to replace)" : "Page key", text: $pageKey)
-                .textInputAutocapitalization(.never).autocorrectionDisabled()
-            Button("Save") { page.setToken(pageKey); pageKey = ""; page.request() }.buttonStyle(.borderless).disabled(pageKey.isEmpty)
-            TimelineView(.periodic(from: .now, by: 5)) { _ in
-                Text(page.statusText).font(.footnote).foregroundStyle(.secondary)
-            }
-        } header: { Text("Donate page") } footer: {
-            Text("Your donate page shows this goal live. Set the same key on Cloudflare (GOAL_TOKEN).")
-        }
-    }
-
     private var recentSection: some View {
         Section("Recent donations") {
             if goal.entries.isEmpty { Text("None yet").foregroundStyle(.secondary) }
@@ -239,42 +209,5 @@ private struct PriceField: View {
         .onChange(of: text) { _, v in
             if let d = Decimal(string: v.replacingOccurrences(of: ",", with: ".")) { DonationPrices.set(key, d) }
         }
-    }
-}
-
-/// A donation site: status, its key (secure) and Save.
-private struct SiteKeyRow: View {
-    let site: DonationHub.Site
-    let status: String
-    @ObservedObject private var hub = DonationHub.shared
-    @State private var key = ""
-    @State private var widget = ""
-    @State private var overlay = ""
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(site.title).font(.headline)
-            if !status.isEmpty { Text(status).font(.footnote).foregroundStyle(.secondary) }
-            SecureField(site.keyLabel, text: $key).textInputAutocapitalization(.never).autocorrectionDisabled()
-            Text(site.help).font(.footnote).foregroundStyle(.secondary)
-            Button("Save") { DonationHub.shared.setKey(site, key) }.buttonStyle(.borderless)
-            if site == .donofa {
-                Divider()
-                if !hub.widgetStatus.isEmpty { Text("Widget: " + hub.widgetStatus).font(.footnote).foregroundStyle(.secondary) }
-                SecureField("Widget link (alerts)", text: $widget).textInputAutocapitalization(.never).autocorrectionDisabled()
-                Text("Paste a Donofa widget or widget-group link. Donofa then sends its alerts here (one at a time, like in OBS); real donations still count through your API key.")
-                    .font(.footnote).foregroundStyle(.secondary)
-                Button("Save") { DonationHub.shared.setDonofaWidget(widget) }.buttonStyle(.borderless)
-            }
-            if site == .reymit {
-                Divider()
-                if !hub.reymitOverlayStatus.isEmpty { Text(hub.reymitOverlayStatus).font(.footnote).foregroundStyle(.secondary) }
-                SecureField("Overlay link (test alerts)", text: $overlay).textInputAutocapitalization(.never).autocorrectionDisabled()
-                Text("Paste the Reymit overlay link. Reymit's test button only reaches the overlay; tests play the alert and never count.")
-                    .font(.footnote).foregroundStyle(.secondary)
-                Button("Save") { DonationHub.shared.setReymitOverlay(overlay) }.buttonStyle(.borderless)
-            }
-        }
-        .onAppear { key = DonationHub.shared.key(site); widget = DonationHub.shared.donofaWidget(); overlay = DonationHub.shared.reymitOverlay() }
     }
 }

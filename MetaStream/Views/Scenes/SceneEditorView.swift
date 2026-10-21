@@ -1,24 +1,24 @@
-import PhotosUI
 import SwiftUI
 
 /// Build one scene: arrange widgets on a live canvas, pick the camera it switches to, put it on stream.
-/// The canvas stays pinned while the form below scrolls, so every inspector change shows up immediately.
+/// iPhone: canvas on top, a bottom bar (layers, add, camera), the inspector in a sheet that leaves the canvas usable.
+/// iPad: layers | canvas | inspector side by side. State and actions are internal so SceneEditorActions.swift can extend it.
 struct SceneEditorView: View {
-    @EnvironmentObject private var streamer: Streamer
-    @ObservedObject private var store = OverlayStore.shared
+    @EnvironmentObject var streamer: Streamer
+    @ObservedObject var store = OverlayStore.shared
+    @Environment(\.horizontalSizeClass) private var sizeClass
     // Emotes is owned by ContentView and isn't an environment object; samples render fine without emote images.
     @StateObject private var emotes = Emotes()
-    @State private var name: String
-    @State private var draftName: String
-    @State private var layers: [OverlayLayer] = []
-    @State private var selected: Int?
+    @State var name: String
+    @State var draftName: String
+    @State var layers: [OverlayLayer] = []
+    @State var selected: Int?
+    @State var saveTask: Task<Void, Never>?
+    @State var showGallery = false
     @State private var portraitOverride: Bool?
-    @State private var saveTask: Task<Void, Never>?
-    @State private var showPhotos = false
-    @State private var photo: PhotosPickerItem?
-    @State private var showWeb = false
-    @State private var webURL = ""
-    @State private var webNote = ""
+    @State private var showLayers = false
+    @State private var showInspector = false
+    @State private var renaming = false
 
     init(name: String) {
         _name = State(initialValue: name)
@@ -33,125 +33,209 @@ struct SceneEditorView: View {
     }
 
     private var portrait: Bool { portraitOverride ?? (streamer.blurCanvasSize.height > streamer.blurCanvasSize.width) }
-    private var stored: [OverlayLayer] { store.scenes.first { $0.name == name }?.layers ?? [] }
+    private var regular: Bool { sizeClass == .regular }
+    var stored: [OverlayLayer] { store.scenes.first { $0.name == name }?.layers ?? [] }
     private var wantsLocation: Bool { layers.contains { $0.type == .text && WidgetVariables.needsLocation($0.data["text"] ?? "") } }
     private var camera: String { store.scenes.first { $0.name == name }?.camera ?? "" }
     private var role: String { store.scenes.first { $0.name == name }?.role ?? "" }
     /// On stream right now: edits wait as a draft until applied, so viewers never see a half-built scene.
-    private var liveLocked: Bool { streamer.live && store.scene == name }
+    var liveLocked: Bool { streamer.live && store.scene == name }
 
     var body: some View {
+        Group {
+            if regular { padLayout } else { phoneLayout }
+        }
+            .navigationTitle(name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { toolbar }
+            .modifier(SceneAddFlows(showGallery: $showGallery, add: append))
+            .sheet(isPresented: $showLayers) { layersSheet }
+            .sheet(isPresented: $showInspector) { inspectorSheet }
+            .alert("Rename scene", isPresented: $renaming) {
+                TextField("Name", text: $draftName)
+                Button("Rename", action: renameIfNeeded)
+                Button("Cancel", role: .cancel) { draftName = name }
+            } message: {
+                Text("Names must be unique.")
+            }
+            .onAppear { layers = stored }
+            .task(id: wantsLocation) {
+                // The editor preview resolves {speed}/{weather} itself, so it keeps GPS on while it shows them.
+                guard wantsLocation else { return }
+                WidgetLocation.shared.retain()
+                while !Task.isCancelled { try? await Task.sleep(for: .seconds(3600)) }
+                WidgetLocation.shared.release()
+            }
+            .onChange(of: layers) { scheduleSave() }
+            .onChange(of: selected) { if selected == nil { showInspector = false } }
+            .onDisappear { renameIfNeeded(); applyNow() }   // leaving is done: an unapplied live draft goes out too
+    }
+
+    // MARK: layouts
+
+    private var phoneLayout: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 10) {
-                Picker("Preview", selection: Binding(get: { portrait }, set: { portraitOverride = $0 })) {
-                    Text("Landscape").tag(false)
-                    Text("Portrait").tag(true)
-                }
-                .pickerStyle(.segmented)
-                SceneCanvasView(layers: layers, canvas: canvas, selected: $selected, emotes: emotes) { i, l in
-                    guard layers.indices.contains(i) else { return }
-                    layers[i] = l
-                    saveNow()
-                }
-                .frame(maxHeight: 300)
-                .frame(maxWidth: .infinity)
-            }
-            .padding([.horizontal, .top], 16)
-            .padding(.bottom, 8)
-            form
+            draftBanner
+            canvasView.padding([.horizontal, .top], 16).padding(.bottom, 8).frame(maxWidth: .infinity, maxHeight: .infinity)
+            bottomBar
         }
-        .navigationTitle(name)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar { ToolbarItem(placement: .primaryAction) { AddWidgetMenu(pick: add) } }
-        .photosPicker(isPresented: $showPhotos, selection: $photo, matching: .images)
-        .onChange(of: photo) { _, item in
-            guard let item else { return }
-            Task {
-                if let data = try? await item.loadTransferable(type: Data.self) { addImage(data) }
-                photo = nil
-            }
-        }
-        .alert("Web widget", isPresented: $showWeb) {
-            TextField("https://", text: $webURL).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-            Button("Add", action: addWeb)
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(webNote + "Paste a Streamlabs, StreamElements or BotRix widget link for alerts, goals or anything web-based.")
-        }
-        .onAppear { layers = stored }
-        .task(id: wantsLocation) {
-            // The editor preview resolves {speed}/{weather} itself, so it keeps GPS on while it shows them.
-            guard wantsLocation else { return }
-            WidgetLocation.shared.retain()
-            while !Task.isCancelled { try? await Task.sleep(for: .seconds(3600)) }
-            WidgetLocation.shared.release()
-        }
-        .onChange(of: layers) { scheduleSave() }
-        .onDisappear { renameIfNeeded(); applyNow() }   // leaving is done: an unapplied live draft goes out too
     }
 
-    // MARK: form
-
-    private var form: some View {
-        Form {
-            if liveLocked, layers != stored {
-                Section {
-                    Button("Apply to stream") { hapticTap(); applyNow() }
-                    Button("Discard", role: .destructive) { selected = nil; layers = stored }
-                } footer: {
-                    Text("This scene is on stream, so your changes wait here until you apply them.")
+    private var padLayout: some View {
+        VStack(spacing: 0) {
+            draftBanner
+            HStack(spacing: 0) {
+                VStack(spacing: 8) {
+                    SceneLayerList(layers: $layers, selected: $selected, delete: remove, reorder: reorder)
+                    Button { showGallery = true } label: {
+                        Label("Add widget", systemImage: "plus").frame(maxWidth: .infinity, minHeight: 32)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .padding([.horizontal, .bottom], 16)
                 }
-            }
-            Section {
-                TextField("Name", text: $draftName).onSubmit(renameIfNeeded)
-                Toggle("Show on stream", isOn: Binding(
-                    get: { store.scene == name },
-                    set: { streamer.selectScene($0 ? name : "") }))
-                Picker("Camera", selection: Binding(get: { camera }, set: { store.setCamera($0.isEmpty ? nil : $0, in: name) })) {
-                    ForEach(cameraOptions, id: \.0) { Text($0.1).tag($0.0) }
+                .frame(width: 250)
+                Divider()
+                canvasView.padding(16).frame(maxWidth: .infinity, maxHeight: .infinity)
+                Divider()
+                Group {
+                    if let idx = selected, layers.indices.contains(idx) {
+                        inspector(idx, close: nil)
+                    } else {
+                        Text("Select a widget to edit it.").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
                 }
-                Picker("Role", selection: Binding(get: { role }, set: { store.setRole($0.isEmpty ? nil : $0, in: name) })) {
-                    Text("None").tag("")
-                    Text("Starting").tag("starting")
-                    Text("BRB").tag("brb")
-                    Text("Ending").tag("ending")
-                }
-            } footer: {
-                Text("Switching to this scene also switches the camera, so one tap can go from the glasses to the back camera. A role lets the app pick this scene itself: Starting after going live, BRB when the connection is weak, Ending when you stop. One scene per role.")
-            }
-            Section("Layers") {
-                if layers.isEmpty {
-                    Text("Nothing here yet. Tap + to add chat, alerts, text, an image and more.").foregroundStyle(.secondary)
-                }
-                ForEach(Array(layers.indices.reversed()), id: \.self) { i in layerRow(i) }
-            }
-            if let i = selected, layers.indices.contains(i) {
-                WidgetInspectorView(layer: $layers[i], canMoveForward: i < layers.count - 1, canMoveBack: i > 0,
-                                    commit: saveNow, move: { move(i, $0) }, delete: { remove(i) })
+                .frame(width: 300)
             }
         }
     }
 
-    private func layerRow(_ i: Int) -> some View {
+    private var canvasView: some View {
+        SceneCanvasView(layers: layers, canvas: canvas, selected: $selected, emotes: emotes) { idx, layer in
+            guard layers.indices.contains(idx) else { return }
+            layers[idx] = layer
+            saveNow()
+        }
+        .selectionBar {
+            SceneSelectionBar(edit: regular ? nil : { showInspector = true }, duplicate: onSelected(duplicate),
+                              forward: onSelected { move($0, 1) }, hide: onSelected(hide), delete: onSelected(remove))
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    /// An action on whichever widget is selected when it runs (the canvas toolbar outlives selection changes).
+    private func onSelected(_ action: @escaping (Int) -> Void) -> () -> Void {
+        { if let idx = selected { action(idx) } }
+    }
+
+    private var bottomBar: some View {
         HStack {
-            Button { selected = i } label: {
-                HStack {
-                    Image(systemName: layers[i].type.icon).frame(width: 26).foregroundStyle(.tint)
-                    Text(layers[i].name).foregroundStyle(layers[i].visible ? .primary : .secondary)
-                    Spacer()
+            Button { showLayers = true } label: {
+                VStack(spacing: 2) {
+                    Image(systemName: "square.3.layers.3d")
+                    Text("Layers").font(.caption2)
                 }
-                .contentShape(Rectangle())
+                .frame(minWidth: 44, minHeight: 44)
             }
-            Button { layers[i].visible.toggle() } label: {
-                Image(systemName: layers[i].visible ? "eye" : "eye.slash")
+            .frame(maxWidth: .infinity)
+            Button { hapticTap(); showGallery = true } label: {
+                Image(systemName: "plus").font(.title2.weight(.bold)).foregroundStyle(.white)
+                    .frame(width: 56, height: 56).background(Color.accentColor, in: Circle())
             }
-            .accessibilityLabel(layers[i].visible ? "Hide \(layers[i].name)" : "Show \(layers[i].name)")
+            .accessibilityLabel("Add widget")
+            .frame(maxWidth: .infinity)
+            Menu {
+                Picker("Camera", selection: cameraBinding) { ForEach(cameraOptions, id: \.0) { Text($0.1).tag($0.0) } }
+            } label: {
+                VStack(spacing: 2) {
+                    Image(systemName: sceneCameraIcon(camera))
+                    Text(sceneCameraTitle(camera) ?? "Camera").font(.caption2).lineLimit(1)
+                }
+                .frame(minWidth: 44, minHeight: 44)
+            }
+            .accessibilityLabel("Camera")
+            .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.borderless)
-        .listRowBackground(selected == i ? Color.accentColor.opacity(0.2) : Color(.secondarySystemGroupedBackground))
-        .swipeActions {
-            Button(role: .destructive) { remove(i) } label: { Label("Delete", systemImage: "trash") }
+        .padding(.vertical, 6)
+        .background(.bar)
+    }
+
+    // MARK: chrome
+
+    @ToolbarContentBuilder private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            Menu {
+                Button { draftName = name; renaming = true } label: { Label("Rename", systemImage: "pencil") }
+                Menu("Camera") { Picker("Camera", selection: cameraBinding) { ForEach(cameraOptions, id: \.0) { Text($0.1).tag($0.0) } } }
+                Menu("Role") {
+                    Picker("Role", selection: roleBinding) {
+                        Text("None").tag("")
+                        Text("Starting").tag("starting")
+                        Text("BRB").tag("brb")
+                        Text("Ending").tag("ending")
+                    }
+                }
+                Toggle("Show on stream", isOn: Binding(get: { store.scene == name }, set: { streamer.selectScene($0 ? name : "") }))
+            } label: {
+                HStack(spacing: 4) {
+                    Text(name).font(.headline)
+                    Image(systemName: "chevron.down").font(.caption.weight(.semibold))
+                }
+                .frame(minHeight: 44)
+            }
+            .accessibilityLabel("Scene options for \(name)")
         }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button { portraitOverride = !portrait } label: { Image(systemName: portrait ? "rectangle.portrait" : "rectangle") }
+                .accessibilityLabel(portrait ? "Preview in landscape" : "Preview in portrait")
+        }
+    }
+
+    @ViewBuilder private var draftBanner: some View {
+        if liveLocked, layers != stored {
+            let count = max(1, zip(layers, stored).filter { $0 != $1 }.count + abs(layers.count - stored.count))
+            HStack {
+                Text(count == 1 ? "1 change waits until you apply it" : "\(count) changes wait until you apply them").font(.footnote)
+                Spacer()
+                Button("Discard", role: .destructive) { selected = nil; layers = stored }.frame(minHeight: 44)
+                Button("Apply") { hapticTap(); applyNow() }.buttonStyle(.borderedProminent).frame(minHeight: 44)
+            }
+            .padding(.horizontal, 16)
+            .background(Color.orange.opacity(0.18))
+        }
+    }
+
+    // MARK: sheets
+
+    private var layersSheet: some View {
+        SceneLayerList(layers: $layers, selected: Binding(get: { selected }, set: { selected = $0; showLayers = false }),
+                       delete: remove, reorder: reorder)
+            .padding(.top, 16)
+            .presentationDetents([.medium, .large])
+    }
+
+    private var inspectorSheet: some View {
+        Group {
+            if let idx = selected, layers.indices.contains(idx) { inspector(idx, close: { showInspector = false }) }
+        }
+        .padding(.top, 16)
+        .presentationDetents([.fraction(0.45), .large])
+        .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.45)))
+        .presentationDragIndicator(.visible)
+    }
+
+    private func inspector(_ idx: Int, close: (() -> Void)?) -> some View {
+        SceneInspectorPanel(layer: $layers[idx], canMoveForward: idx < layers.count - 1, canMoveBack: idx > 0,
+                            commit: saveNow, move: { move(idx, $0) }, delete: { remove(idx) }, close: close)
+    }
+
+    // MARK: camera and role
+
+    private var cameraBinding: Binding<String> {
+        Binding(get: { camera }, set: { store.setCamera($0.isEmpty ? nil : $0, in: name) })
+    }
+
+    private var roleBinding: Binding<String> {
+        Binding(get: { role }, set: { store.setRole($0.isEmpty ? nil : $0, in: name) })
     }
 
     /// Always lists the scene's current camera, even when it isn't available right now, so the picker never goes blank.
@@ -161,80 +245,5 @@ struct SceneEditorView: View {
         if Streamer.glassesConfigured || camera == "glasses" { o.append(("glasses", "Glasses")) }
         if camera == "auto" { o.append(("auto", "Auto")) }
         return o
-    }
-
-    // MARK: edits
-
-    private func add(_ kind: NewWidget) {
-        switch kind {
-        case .image: showPhotos = true
-        case .web: webNote = ""; webURL = ""; showWeb = true
-        default: if let l = kind.make() { append(l) }
-        }
-    }
-
-    private func append(_ l: OverlayLayer) {
-        layers.append(l)
-        selected = layers.count - 1
-        hapticTap()
-        saveNow()
-    }
-
-    private func addImage(_ data: Data) {
-        guard let file = store.saveImage(data) else { return }
-        append(.pickedImage(file: file))
-    }
-
-    private func addWeb() {
-        let s = webURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let u = URL(string: s), ["http", "https"].contains(u.scheme?.lowercased()), u.host != nil else {
-            webNote = "That isn't an http or https link. "
-            Task { showWeb = true }   // next turn: the alert is still dismissing while its button runs
-            return
-        }
-        append(.web(url: s))
-    }
-
-    private func remove(_ i: Int) {
-        guard layers.indices.contains(i) else { return }
-        layers.remove(at: i)
-        selected = nil
-        hapticTap()
-        saveNow()
-    }
-
-    private func move(_ i: Int, _ by: Int) {
-        let j = i + by
-        guard layers.indices.contains(i), layers.indices.contains(j) else { return }
-        layers.swapAt(i, j)
-        selected = j
-        saveNow()
-    }
-
-    private func renameIfNeeded() {
-        let t = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard t != name else { draftName = name; return }
-        if store.renameScene(name, to: t) { name = t; draftName = t } else { draftName = name }
-    }
-
-    /// Debounced: sliders, colour pickers and typing change the layers many times a second, and every save rebuilds
-    /// the scene on stream.
-    private func scheduleSave() {
-        saveTask?.cancel()
-        saveTask = Task {
-            try? await Task.sleep(for: .milliseconds(500))
-            if !Task.isCancelled { saveNow() }
-        }
-    }
-
-    /// Autosave path: skipped while this scene is on stream (the draft waits for "Apply to stream").
-    private func saveNow() {
-        saveTask?.cancel()
-        if !liveLocked { applyNow() }
-    }
-
-    private func applyNow() {
-        saveTask?.cancel()
-        if layers != stored { store.setLayers(layers, in: name) }
     }
 }

@@ -20,6 +20,23 @@ struct SceneCanvasView: View {
     @State private var snapKey = ""
 
     private let snapDistance: CGFloat = 12
+    /// Floating toolbar over the selected widget (set with `selectionBar`); its size is fixed so it can be placed.
+    private var bar: (() -> AnyView)?
+    static let barSize = CGSize(width: 236, height: 48)
+
+    /// Adds a toolbar that floats above the selected widget (below it when there is no room above).
+    func selectionBar<Bar: View>(@ViewBuilder _ make: @escaping () -> Bar) -> SceneCanvasView {
+        var copy = self
+        copy.bar = { AnyView(make()) }
+        return copy
+    }
+
+    private func barOffset(_ rect: CGRect, in size: CGSize) -> CGSize {
+        let width = Self.barSize.width, height = Self.barSize.height
+        let above = rect.minY - height - 6
+        let top = above >= 0 ? above : min(rect.maxY + 6, size.height - height)
+        return CGSize(width: min(max(rect.midX - width / 2, 0), max(size.width - width, 0)), height: max(top, 0))
+    }
 
     init(layers: [OverlayLayer], canvas: CGSize, selected: Binding<Int?>, emotes: Emotes, commit: @escaping (Int, OverlayLayer) -> Void) {
         self.layers = layers
@@ -33,24 +50,36 @@ struct SceneCanvasView: View {
         GeometryReader { geo in
             let k = geo.size.width / max(canvas.width, 1)
             ZStack(alignment: .topLeading) {
-                background(geo.size)
-                TimelineView(.periodic(from: .now, by: 1)) { _ in
-                    ZStack(alignment: .topLeading) {
-                        ForEach(layers.indices, id: \.self) { i in
-                            if layers[i].visible { layerView(i, k: k) }
+                ZStack(alignment: .topLeading) {
+                    background(geo.size)
+                    TimelineView(.periodic(from: .now, by: 1)) { _ in
+                        ZStack(alignment: .topLeading) {
+                            ForEach(layers.indices, id: \.self) { idx in
+                                if layers[idx].visible { layerView(idx, k: k) }
+                            }
                         }
                     }
+                    if let sel = selected, layers.indices.contains(sel), layers[sel].visible { outline(live(sel, k: k).rect) }
+                    if let act = active, layers.indices.contains(act) { guides(live(act, k: k), size: geo.size) }
                 }
-                if let s = selected, layers.indices.contains(s), layers[s].visible { outline(live(s, k: k).rect) }
-                if active != nil, let a = active, layers.indices.contains(a) { guides(live(a, k: k), size: geo.size) }
+                .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .contentShape(Rectangle())
+                .gesture(gesture(k: k))
+                // Outside the gesture's view, so its buttons get taps instead of starting a drag.
+                if active == nil, let sel = selected, layers.indices.contains(sel), layers[sel].visible {
+                    floatingBar(live(sel, k: k).rect, in: geo.size)
+                }
             }
-            .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .contentShape(Rectangle())
-            .gesture(gesture(k: k))
         }
         .aspectRatio(canvas.width / max(canvas.height, 1), contentMode: .fit)
         .accessibilityLabel("Scene canvas")
+    }
+
+    @ViewBuilder private func floatingBar(_ rect: CGRect, in size: CGSize) -> some View {
+        if let bar {
+            bar().frame(width: Self.barSize.width, height: Self.barSize.height).offset(barOffset(rect, in: size))
+        }
     }
 
     // MARK: drawing

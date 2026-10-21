@@ -165,7 +165,7 @@ struct ContentView: View {
         stage
         .preferredColorScheme(.dark)
         .statusBarHidden(false)
-        .sheet(isPresented: $showSettings) { SettingsView() }
+        .sheet(isPresented: $showSettings) { SettingsView().presentationSizing(.page) }
         .sheet(isPresented: $showManager) { StreamManagerView() }
         .sheet(isPresented: $showChat) {
             ChatSheetView(vm: vm, emotes: emotes, showChat: $showChat, showSettings: $showSettings, showManager: $showManager)

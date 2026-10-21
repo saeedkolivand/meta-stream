@@ -3,6 +3,8 @@ import SwiftUI
 
 struct ReadAloudSettingsView: View {
     @EnvironmentObject var platforms: Platforms
+    @AppStorage("chatOrigin") var chatOrigin = "kick"
+    @AppStorage("chatChannel") var chatChannel = ""
     @AppStorage("ttsVoiceID") var ttsVoiceID = ""
     @AppStorage("ttsMessagesOn") var ttsMessagesOn = true
     @AppStorage("ttsTipsOn") var ttsTipsOn = true
@@ -17,6 +19,8 @@ struct ReadAloudSettingsView: View {
     @AppStorage("voiceKick") var voiceKick = true
     @AppStorage("voiceTwitch") var voiceTwitch = true
     @AppStorage("voiceYouTube") var voiceYouTube = true
+
+    init() { ChatOriginKey.migrate() }
 
     /// Every voice actually installed on THIS device/iOS version, grouped and sorted by language --
     /// AVSpeechSynthesisVoice.speechVoices() enumerates the real set rather than a hardcoded list, so a
@@ -43,6 +47,11 @@ struct ReadAloudSettingsView: View {
 
     var body: some View {
         Form {
+            Section("Chat") {
+                Picker("Chat origin", selection: $chatOrigin) { Text("Kick").tag("kick"); Text("Twitch").tag("twitch") }
+                TextField("Channel name", text: $chatChannel).textInputAutocapitalization(.never).autocorrectionDisabled()
+            }
+
             Section {
                 Picker("Voice", selection: $ttsVoiceID) {
                     Text("Best installed").tag("")
@@ -103,7 +112,7 @@ struct ReadAloudSettingsView: View {
                 Text("Chat is spoken through whatever is playing audio, so the glasses' open-ear speakers when they are connected. The tts pill on the live screen silences chat and alerts; stream warnings such as a dropped connection always speak.\n\nWith the glasses microphone selected, the open-ear speakers can bleed back into your audio. Use the phone microphone if viewers hear an echo.")
             }
         }
-        .navigationTitle("Read aloud")
+        .navigationTitle("Chat & read aloud")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

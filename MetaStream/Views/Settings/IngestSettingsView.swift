@@ -7,14 +7,10 @@ struct IngestSettingsView: View {
     @AppStorage("codec") var codec = "auto"
     @AppStorage("bitrateKbps") var bitrateKbps = 4000
     @AppStorage("srtLatencyMs") var srtLatencyMs = 2000
-    @AppStorage("chatOrigin") var chatOrigin = "kick"
-    @AppStorage("chatChannel") var chatChannel = ""
     @AppStorage("srtlaWifi") var srtlaWifi = "main"
     @AppStorage("srtlaEthernet") var srtlaEthernet = "main"
     @AppStorage("srtlaCellular") var srtlaCellular = "backup"
     @State private var showKey = false
-
-    init() { ChatOriginKey.migrate() }
 
     // Ingest URLs. Instagram and TikTok hand out a per-stream URL in their own tools, so they stay "custom".
     private static let presets: [String: String] = [
@@ -93,13 +89,8 @@ struct IngestSettingsView: View {
                     Text("Bonding sends one stream over several connections to an SRTLA receiver (BELABOX Cloud, IRLHosting, your own srtla_rec). Cellular as backup only carries video when Wi-Fi can't keep up.")
                 }
             }
-
-            Section("Chat") {
-                Picker("Chat origin", selection: $chatOrigin) { Text("Kick").tag("kick"); Text("Twitch").tag("twitch") }
-                TextField("Channel name", text: $chatChannel).textInputAutocapitalization(.never).autocorrectionDisabled()
-            }
         }
-        .navigationTitle("Ingest & protocol")
+        .navigationTitle("Destination")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
