@@ -18,6 +18,7 @@ struct WidgetInspectorView: View {
         case .alerts: AlertWidgetStyle().data
         case .events: EventListStyle().data
         case .goal: GoalWidgetStyle().data
+        case .nowplaying: NowPlayingWidgetStyle().data
         case .qr: QRWidgetStyle().data
         case .text: TextWidgetStyle().data
         default: [:]
@@ -44,6 +45,7 @@ struct WidgetInspectorView: View {
             case .events: eventSection
             case .text: textSection
             case .goal: goalSection
+            case .nowplaying: nowPlayingSection
             case .qr: qrSection
             case .browser: webSection
             case .image, .media, .color, .slideshow: EmptyView()
@@ -163,6 +165,21 @@ struct WidgetInspectorView: View {
             ColorPicker("Background color", selection: color("backgroundColor"))
         } header: { Text("Goal") } footer: {
             Text("Title, target and currency are set in Settings.")
+        }
+    }
+
+    @ViewBuilder private var nowPlayingSection: some View {
+        Section {
+            Picker("Design", selection: str("design")) {
+                ForEach(NowPlayingDesign.allCases, id: \.rawValue) { Text($0.title).tag($0.rawValue) }
+            }
+            fontPicker
+            ColorPicker("Accent color", selection: color("accentColor"))
+            if raw("design") == NowPlayingDesign.popup.rawValue {
+                slider("Show for", num("popupSeconds"), 2...30, format: "%.0f s")
+            }
+        } header: { Text("Now playing") } footer: {
+            Text("Connect your account in Settings › Spotify.")
         }
     }
 

@@ -2,7 +2,7 @@ import SwiftUI
 
 /// What the "+" menu can add. Each kind has one place that knows its defaults, so a new widget looks right immediately.
 enum NewWidget: CaseIterable {
-    case chat, alerts, events, goal, text, clock, liveTime, viewers, drive, socials, image, qr, web
+    case chat, alerts, events, goal, nowPlaying, text, clock, liveTime, viewers, drive, socials, image, qr, web
 
     var title: String {
         switch self {
@@ -10,6 +10,7 @@ enum NewWidget: CaseIterable {
         case .alerts: "Alerts"
         case .events: "Event list"
         case .goal: "Goal"
+        case .nowPlaying: "Now playing"
         case .text: "Text"
         case .clock: "Clock"
         case .liveTime: "Live time"
@@ -28,6 +29,7 @@ enum NewWidget: CaseIterable {
         case .alerts: OverlayLayerType.alerts.icon
         case .events: OverlayLayerType.events.icon
         case .goal: OverlayLayerType.goal.icon
+        case .nowPlaying: OverlayLayerType.nowplaying.icon
         case .text: OverlayLayerType.text.icon
         case .clock: "clock.fill"
         case .liveTime: "record.circle"
@@ -47,6 +49,7 @@ enum NewWidget: CaseIterable {
         case .alerts: OverlayLayer.widget(.alerts, name: "Alerts", layout: .inset(1), data: AlertWidgetStyle().data)
         case .events: OverlayLayer.widget(.events, name: "Event list", layout: .inset(2), data: EventListStyle().data)
         case .goal: OverlayLayer.widget(.goal, name: "Goal", layout: .inset(1), data: GoalWidgetStyle().data)
+        case .nowPlaying: OverlayLayer.widget(.nowplaying, name: "Now playing", layout: .inset(0), data: NowPlayingWidgetStyle().data)
         case .text: textLayer()
         case .clock: preset("Clock", "🕒 {time}  {date}  {weather}", 0)
         case .liveTime: preset("Live time", "🔴 {uptime}", 2)
@@ -84,6 +87,7 @@ extension OverlayLayerType {
         case .alerts: "bell.badge.fill"
         case .events: "list.bullet.rectangle.fill"
         case .goal: "flag.checkered"
+        case .nowplaying: "music.note"
         case .text: "textformat"
         case .image: "photo.fill"
         case .media: "film.fill"

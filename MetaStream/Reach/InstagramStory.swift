@@ -23,8 +23,9 @@ enum InstagramStory {
     }
 
     /// Grabs the outgoing frame (only while live and blur isn't stalled, like the Live post), renders the card and opens
-    /// Instagram. Without a frame (glasses passthrough) the card is text on black.
+    /// Instagram. Without a frame (glasses passthrough) the card is text on black. Before GO LIVE it says "live soon".
     static func share(_ streamer: Streamer) async {
+        guard streamer.live else { await handOver(frame: nil, soon: true); return }
         var frame: UIImage?
         if let jpeg = await FrameGrab.shared.next(), streamer.live, streamer.privacy?.stalled != true {
             frame = UIImage(data: jpeg)
@@ -35,11 +36,11 @@ enum InstagramStory {
     /// Settings' test button: the same hand-over without a stream frame, to check it without going live.
     static func shareTest() async { await handOver(frame: nil) }
 
-    private static func handOver(frame: UIImage?) async {
+    private static func handOver(frame: UIImage?, soon: Bool = false) async {
         guard available, let scheme else { return }
         let post = LivePost.shared
         let link = post.slug.isEmpty ? "" : "https://kick.com/" + post.slug
-        let story = StoryCard(frame: frame, title: post.title, link: link, template: .current, theme: .current)
+        let story = StoryCard(frame: frame, title: post.title, link: link, template: .current, theme: .current, soon: soon)
         let renderer = ImageRenderer(content: story)
         renderer.scale = 3
         guard let image = renderer.uiImage, let card = image.jpegData(compressionQuality: 0.9) else { return }

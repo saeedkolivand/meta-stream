@@ -16,8 +16,13 @@ extension OverlayCompositor {
         let o = await OverlayScreen.makeImage(first.visible ?? CGRect(x: 0, y: 0, width: 1, height: 1), first.piece?.bitmap)
         let task = Task {
             let wantsLocation = WidgetVariables.needsLocation(template)
+            let wantsSpotify = WidgetVariables.needsSpotify(template)
             if wantsLocation { WidgetLocation.shared.retain() }
-            defer { if wantsLocation { WidgetLocation.shared.release() } }
+            if wantsSpotify { SpotifyNowPlaying.shared.retain() }
+            defer {
+                if wantsLocation { WidgetLocation.shared.release() }
+                if wantsSpotify { SpotifyNowPlaying.shared.release() }
+            }
             var shown = current()
             var rect = first.visible
             while !Task.isCancelled {

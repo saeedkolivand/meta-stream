@@ -8,11 +8,14 @@ enum WidgetVariables {
         ("{time}", "Time"), ("{date}", "Date"), ("{uptime}", "Live time"), ("{viewers}", "Viewers"), ("{bitrate}", "Bitrate"),
         ("{battery}", "Battery"), ("{speed}", "Speed"), ("{distance}", "Distance"), ("{city}", "City"), ("{weather}", "Weather"),
         ("{follower}", "Latest follower"), ("{sub}", "Latest sub"), ("{countdown}", "Starting countdown"),
+        ("{song}", "Spotify song"), ("{artist}", "Spotify artist"),
     ]
 
     static func needsLocation(_ template: String) -> Bool {
         ["{speed}", "{distance}", "{city}", "{weather}"].contains { template.contains($0) }
     }
+
+    static func needsSpotify(_ template: String) -> Bool { template.contains("{song}") || template.contains("{artist}") }
 
     /// Only tokens present in the template are evaluated, so e.g. battery monitoring stays off unless {battery} is used.
     static func resolve(_ template: String, _ ctx: WidgetContext) -> String {
@@ -44,6 +47,8 @@ enum WidgetVariables {
         case "{follower}": return clean(ctx.chat?.lastFollower ?? "")
         case "{sub}": return clean(ctx.chat?.lastSubscriber ?? "")
         case "{countdown}": return ctx.streamer?.countdownText ?? ""
+        case "{song}": return SpotifyNowPlaying.shared.track?.title ?? ""
+        case "{artist}": return SpotifyNowPlaying.shared.track?.artist ?? ""
         default: return token
         }
     }

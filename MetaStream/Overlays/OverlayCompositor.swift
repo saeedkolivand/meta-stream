@@ -163,7 +163,7 @@ final class OverlayCompositor {
                     b.objects.append(o)
                     b.stills.append((o, p))
                 }
-            case .chat, .alerts, .events, .qr, .goal:
+            case .chat, .alerts, .events, .qr, .goal, .nowplaying:
                 guard let w = await widget(l, canvas, goalBox: goalBox) else { b.failed += 1; continue }
                 b.objects.append(w.object)
                 if let t = w.task { b.tasks.append(t) }
@@ -255,6 +255,7 @@ final class OverlayCompositor {
         case .events: return await eventListWidget(l, box: rect, canvas: canvas)
         case .qr: return await qrWidget(l, box: rect, canvas: canvas)
         case .goal: return await goalWidget(l, box: rect, canvas: canvas)
+        case .nowplaying: return await nowPlayingWidget(l, box: rect, canvas: canvas)
         default: return nil
         }
     }

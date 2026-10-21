@@ -28,6 +28,7 @@ struct StoryCard: View {
     let link: String
     let template: StoryTemplate
     let theme: ColorTheme
+    var soon = false   // shared before GO LIVE: "live soon" wording, no stream frame
 
     var body: some View {
         Group {
@@ -74,7 +75,7 @@ struct StoryCard: View {
 
     private var minimal: some View {
         VStack(alignment: .leading, spacing: 16) {
-            pill("LIVE on Kick", 15)
+            pill(soon ? "LIVE SOON on Kick" : "LIVE on Kick", 15)
             shot(312, 175.5, 14)
             if !title.isEmpty { Text(title).font(.system(size: 24, weight: .bold)).lineLimit(3) }
             if !link.isEmpty { Text(shortLink).font(.system(size: 15)).foregroundStyle(muted) }
@@ -92,7 +93,7 @@ struct StoryCard: View {
             shot(360, 640, 0)
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 10) {
-                    pill("LIVE", 14)
+                    pill(soon ? "LIVE SOON" : "LIVE", 14)
                     if !title.isEmpty { Text(title).font(.system(size: 22, weight: .bold)).lineLimit(2) }
                 }
                 .padding(.top, 72).padding(.horizontal, 20).padding(.bottom, 20)
@@ -113,7 +114,7 @@ struct StoryCard: View {
 
     private var poster: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("LIVE\nNOW").font(.system(size: 76, weight: .black)).lineSpacing(-12)
+            Text(soon ? "LIVE\nSOON" : "LIVE\nNOW").font(.system(size: 76, weight: .black)).lineSpacing(-12)
             if !title.isEmpty { Text(title).font(.system(size: 17, weight: .semibold)).lineLimit(3) }
             shot(312, 176, 10)
             if !link.isEmpty { Text(shortLink).font(.system(size: 14, weight: .semibold)) }
@@ -128,9 +129,9 @@ struct StoryCard: View {
     private var bilingual: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                pill("LIVE", 15)
+                pill(soon ? "LIVE SOON" : "LIVE", 15)
                 Spacer()
-                Text("الان لایوم").font(persian("Bold", 18))
+                Text(soon ? "به‌زودی لایوم" : "الان لایوم").font(persian("Bold", 18))
             }
             shot(312, 175.5, 14)
             if !title.isEmpty { Text(title).font(.system(size: 24, weight: .bold)).lineLimit(3) }

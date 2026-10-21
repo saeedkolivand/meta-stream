@@ -260,6 +260,7 @@ final class OverlayStore: ObservableObject {
         case .alerts: return AlertWidgetStyle(l.data).natural
         case .qr: return QRWidgetStyle(l.data).natural
         case .goal: return GoalWidgetStyle(l.data).natural
+        case .nowplaying: return NowPlayingWidgetStyle(l.data).natural
         case .browser: return CGSize(width: dim("width", 800), height: dim("height", 600))
         case .color: return CGSize(width: dim("width", 1920), height: dim("height", 1080))
         case .media: return local(l.data["file"] ?? "").flatMap { mediaSize($0) }

@@ -28,6 +28,7 @@ struct SettingsView: View {
                     NavigationLink("Theme & story") { ThemeSettingsView() }
                     NavigationLink("Goal") { GoalSettingsView() }
                     NavigationLink("Telegram") { TelegramSettingsView() }
+                    NavigationLink("Spotify") { SpotifySettingsView() }
                     NavigationLink("Audio") { AudioSettingsView() }
                     NavigationLink("Read aloud") { ReadAloudSettingsView() }
                     NavigationLink("Chat commands") { CommandsSettingsView() }
