@@ -37,6 +37,7 @@ final class AppBot: ObservableObject {
     private var lastTimer: [String: Date] = [:]       // origin -> last timer post
     private var holdingGPS = false
     private var holdingSpotify = false
+    private var twitchLogin: Task<Void, Never>?       // the running device-code login, see connectTwitch
     private var brbAt: Date?                          // last weak-link notice
     private var brbOpen = false                       // that notice still waits for its "back" line
 
@@ -143,7 +144,10 @@ final class AppBot: ObservableObject {
     /// Device-code login like TwitchService.connect. The device flow has no account picker, so the account is whichever
     /// one is signed in on the activate page (use a private tab or log out first).
     func connectTwitch() {
-        Task {
+        // A second tap restarts the login instead of running two: the older poll could otherwise still finish and
+        // overwrite the bot's tokens with whatever account was signed in on its activate page.
+        twitchLogin?.cancel()
+        twitchLogin = Task {
             do {
                 let scopes = "user:read:chat user:write:chat user:bot"
                 let dev = try await PlatformNet.form("https://id.twitch.tv/oauth2/device", ["client_id": PlatformConfig.twitchID, "scopes": scopes])
@@ -169,6 +173,7 @@ final class AppBot: ObservableObject {
                     if (r["message"] as? String) != "authorization_pending" { throw PlatformNet.err("Twitch: \(r["message"] ?? r)") }
                 }
                 status = "Twitch login timed out"
+            } catch is CancellationError {   // replaced by a newer tap: that login owns the status line now
             } catch { status = error.localizedDescription }
         }
     }
@@ -200,7 +205,12 @@ final class AppBot: ObservableObject {
 
     /// From the chat.events loop: viewer commands, the timers' message count and thank-yous.
     func handle(_ e: ChatEvent) {
-        guard !e.flagged, active else { return }
+        guard !e.flagged, active else {
+            if e.kind == .message, e.text.hasPrefix("!") {
+                applog("bot", "\(e.origin) command ignored: not live (Test mode answers offline)")
+            }
+            return
+        }
         // A donation site's tip is thanked on every platform the bot is on; test donations never.
         if e.kind == .tip, ["donofa", "reymit", "streamelements", "donito"].contains(e.origin) { thank(e, "botTplTip", to: ["kick", "twitch"]); return }
         guard e.origin == "kick" || e.origin == "twitch" else { return }

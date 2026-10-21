@@ -20,7 +20,7 @@ enum SettingsReadiness {
     }
 
     static func issues(_ ctx: SettingsContext) -> [SettingsIssue] {
-        destination(ctx) + donations() + telegram() + bots() + remote()
+        destination(ctx) + donations() + telegram() + bots(ctx) + remote()
     }
 
     /// The ingest platform's account isn't connected (Kick/Twitch/YouTube/Restream), or a manual destination has no key.
@@ -49,8 +49,13 @@ enum SettingsReadiness {
         return [SettingsIssue(pageID: "telegram", message: "Telegram live post has no channel")]
     }
 
-    private static func bots() -> [SettingsIssue] {
-        guard defaults.bool(forKey: "botTwitch"), AppBot.shared.twitchBotName.isEmpty else { return [] }
+    private static func bots(_ ctx: SettingsContext) -> [SettingsIssue] {
+        guard defaults.bool(forKey: "botTwitch") else { return [] }
+        // The bot reads your chat through YOUR Twitch login and posts into your channel, so it needs both accounts.
+        if !ctx.platforms.twitchConnected {
+            return [SettingsIssue(pageID: "accounts", message: "App bot is on for Twitch but your Twitch account isn't connected")]
+        }
+        guard AppBot.shared.twitchBotName.isEmpty else { return [] }
         return [SettingsIssue(pageID: "accounts", message: "App bot is on for Twitch but has no bot account")]
     }
 
