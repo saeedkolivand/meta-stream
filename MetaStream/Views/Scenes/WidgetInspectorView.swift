@@ -89,6 +89,7 @@ struct WidgetInspectorView: View {
         }
         Section {
             DonationAlertPreview(style: AlertWidgetStyle(layer.data)).listRowInsets(EdgeInsets())
+                .fullScreenPreview { DonationAlertPreview(style: AlertWidgetStyle(layer.data)) }
         }
         Section {
             Picker("Donation style", selection: str("design")) {
@@ -128,6 +129,10 @@ struct WidgetInspectorView: View {
     }
 
     @ViewBuilder private var goalContent: some View {
+        Section {
+            GoalPreview(style: GoalWidgetStyle(layer.data)).listRowInsets(EdgeInsets())
+                .fullScreenPreview { GoalPreview(style: GoalWidgetStyle(layer.data)) }
+        }
         Section {
             Picker("Design", selection: str("design")) {
                 Text("Bar").tag("bar")

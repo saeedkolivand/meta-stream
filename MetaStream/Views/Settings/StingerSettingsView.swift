@@ -22,6 +22,7 @@ struct StingerSettingsView: View {
                 Section {
                     StingerPreview(kind: kind, style: style)
                         .aspectRatio(16 / 9, contentMode: .fit)
+                        .fullScreenPreview { StingerPreview(kind: kind, style: style) }
                         .listRowInsets(EdgeInsets())
                 } footer: {
                     Text("The scene switches underneath at the moment the screen is fully covered, exactly as on stream.")

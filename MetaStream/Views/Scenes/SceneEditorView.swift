@@ -19,6 +19,8 @@ struct SceneEditorView: View {
     @State private var showLayers = false
     @State private var showInspector = false
     @State private var renaming = false
+    /// Canvas only: the bottom bar, layers and inspector step aside (the floating selection bar stays).
+    @State private var fullScreen = false
 
     init(name: String) {
         _name = State(initialValue: name)
@@ -76,8 +78,9 @@ struct SceneEditorView: View {
     private var phoneLayout: some View {
         VStack(spacing: 0) {
             draftBanner
-            canvasView.padding([.horizontal, .top], 16).padding(.bottom, 8).frame(maxWidth: .infinity, maxHeight: .infinity)
-            bottomBar
+            canvasView.padding(.horizontal, fullScreen ? 4 : 16).padding(.top, fullScreen ? 0 : 16).padding(.bottom, fullScreen ? 0 : 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if !fullScreen { bottomBar }
         }
     }
 
@@ -85,28 +88,40 @@ struct SceneEditorView: View {
         VStack(spacing: 0) {
             draftBanner
             HStack(spacing: 0) {
-                VStack(spacing: 8) {
-                    SceneLayerList(layers: $layers, selected: $selected, delete: remove, reorder: reorder)
-                    Button { showGallery = true } label: {
-                        Label("Add widget", systemImage: "plus").frame(maxWidth: .infinity, minHeight: 32)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .padding([.horizontal, .bottom], 16)
+                if !fullScreen {
+                    layersPane
+                    Divider()
                 }
-                .frame(width: 250)
-                Divider()
-                canvasView.padding(16).frame(maxWidth: .infinity, maxHeight: .infinity)
-                Divider()
-                Group {
-                    if let idx = selected, layers.indices.contains(idx) {
-                        inspector(idx, close: nil)
-                    } else {
-                        Text("Select a widget to edit it.").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
+                canvasView.padding(fullScreen ? 4 : 16).frame(maxWidth: .infinity, maxHeight: .infinity)
+                if !fullScreen {
+                    Divider()
+                    inspectorPane
                 }
-                .frame(width: 300)
             }
         }
+    }
+
+    private var layersPane: some View {
+        VStack(spacing: 8) {
+            SceneLayerList(layers: $layers, selected: $selected, delete: remove, reorder: reorder)
+            Button { showGallery = true } label: {
+                Label("Add widget", systemImage: "plus").frame(maxWidth: .infinity, minHeight: 32)
+            }
+            .buttonStyle(.borderedProminent)
+            .padding([.horizontal, .bottom], 16)
+        }
+        .frame(width: 250)
+    }
+
+    private var inspectorPane: some View {
+        Group {
+            if let idx = selected, layers.indices.contains(idx) {
+                inspector(idx, close: nil)
+            } else {
+                Text("Select a widget to edit it.").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .frame(width: 300)
     }
 
     private var canvasView: some View {
@@ -183,6 +198,15 @@ struct SceneEditorView: View {
                 .frame(minHeight: 44)
             }
             .accessibilityLabel("Scene options for \(name)")
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                fullScreen.toggle()
+                if fullScreen { showLayers = false; showInspector = false }
+            } label: {
+                Image(systemName: fullScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+            }
+            .accessibilityLabel(fullScreen ? "Exit full screen editing" : "Full screen editing")
         }
         ToolbarItem(placement: .topBarTrailing) {
             Button { portraitOverride = !portrait } label: { Image(systemName: portrait ? "rectangle.portrait" : "rectangle") }

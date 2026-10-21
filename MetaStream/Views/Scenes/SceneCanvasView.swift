@@ -18,6 +18,10 @@ struct SceneCanvasView: View {
     @State private var drag: CGSize = .zero
     @State private var pinch: CGFloat = 1
     @State private var snapKey = ""
+    /// Zoom and pan of the whole canvas (empty-canvas pinch / drag); `base` is its value when the current gesture began.
+    @State private var zoom = CanvasZoom()
+    @State private var base = CanvasZoom()
+    @State private var began = false
 
     private let snapDistance: CGFloat = 12
     /// Floating toolbar over the selected widget (set with `selectionBar`); its size is fixed so it can be placed.
@@ -48,32 +52,60 @@ struct SceneCanvasView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let k = geo.size.width / max(canvas.width, 1)
+            let ratio = geo.size.width / max(canvas.width, 1)
             ZStack(alignment: .topLeading) {
-                ZStack(alignment: .topLeading) {
-                    background(geo.size)
-                    TimelineView(.periodic(from: .now, by: 1)) { _ in
-                        ZStack(alignment: .topLeading) {
-                            ForEach(layers.indices, id: \.self) { idx in
-                                if layers[idx].visible { layerView(idx, k: k) }
-                            }
-                        }
-                    }
-                    if let sel = selected, layers.indices.contains(sel), layers[sel].visible { outline(live(sel, k: k).rect) }
-                    if let act = active, layers.indices.contains(act) { guides(live(act, k: k), size: geo.size) }
-                }
-                .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .contentShape(Rectangle())
-                .gesture(gesture(k: k))
+                content(geo.size, ratio: ratio)
+                    .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .scaleEffect(zoom.scale, anchor: .topLeading)
+                    .offset(zoom.pan)
+                    .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .contentShape(Rectangle())
+                    .gesture(gesture(ratio: ratio, size: geo.size))
+                    .simultaneousGesture(SpatialTapGesture(count: 2).onEnded { tap in
+                        if hitTest(zoom.toView(tap.location), ratio: ratio) == nil { resetZoom() }
+                    })
                 // Outside the gesture's view, so its buttons get taps instead of starting a drag.
                 if active == nil, let sel = selected, layers.indices.contains(sel), layers[sel].visible {
-                    floatingBar(live(sel, k: k).rect, in: geo.size)
+                    floatingBar(zoom.toScreen(live(sel, ratio: ratio).rect), in: geo.size)
                 }
+                zoomBadge
             }
+            .onChange(of: geo.size) { zoom = CanvasZoom() }
         }
         .aspectRatio(canvas.width / max(canvas.height, 1), contentMode: .fit)
         .accessibilityLabel("Scene canvas")
+    }
+
+    /// The canvas at 1x, in view points; the zoom is applied on top of this.
+    private func content(_ size: CGSize, ratio: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            background(size)
+            TimelineView(.periodic(from: .now, by: 1)) { _ in
+                ZStack(alignment: .topLeading) {
+                    ForEach(layers.indices, id: \.self) { idx in
+                        if layers[idx].visible { layerView(idx, ratio: ratio) }
+                    }
+                }
+            }
+            if let sel = selected, layers.indices.contains(sel), layers[sel].visible { outline(live(sel, ratio: ratio).rect) }
+            if let act = active, layers.indices.contains(act) { guides(live(act, ratio: ratio), size: size) }
+        }
+    }
+
+    private func resetZoom() { withAnimation(.snappy) { zoom = CanvasZoom() } }
+
+    @ViewBuilder private var zoomBadge: some View {
+        if zoom.isZoomed {
+            Button(action: resetZoom) {
+                Text(String(format: "%.1f×", zoom.scale)).font(.caption.monospacedDigit().weight(.semibold))
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(.black.opacity(0.6), in: Capsule())
+                    .frame(minWidth: 44, minHeight: 44)
+            }
+            .accessibilityLabel("Zoom \(String(format: "%.1f", zoom.scale)) times, reset to fit")
+        }
     }
 
     @ViewBuilder private func floatingBar(_ rect: CGRect, in size: CGSize) -> some View {
@@ -97,19 +129,21 @@ struct SceneCanvasView: View {
         }
     }
 
-    @ViewBuilder private func layerView(_ i: Int, k: CGFloat) -> some View {
-        let r = live(i, k: k).rect
-        let e = effective(layers[i])
-        LayerPreview(layer: e, natural: natural(e), size: r.size, emotes: emotes, chat: chat.recent)
-            .offset(x: r.minX, y: r.minY)
+    @ViewBuilder private func layerView(_ idx: Int, ratio: CGFloat) -> some View {
+        let rect = live(idx, ratio: ratio).rect
+        let shown = effective(layers[idx])
+        LayerPreview(layer: shown, natural: natural(shown), size: rect.size, emotes: emotes, chat: chat.recent)
+            .offset(x: rect.minX, y: rect.minY)
     }
 
+    /// Strokes and handles keep their screen size at any zoom.
     private func outline(_ r: CGRect) -> some View {
-        ZStack(alignment: .topLeading) {
-            Rectangle().stroke(Color.accentColor, lineWidth: 1.5)
+        let inv = 1 / zoom.scale
+        return ZStack(alignment: .topLeading) {
+            Rectangle().stroke(Color.accentColor, lineWidth: 1.5 * inv)
             ForEach(0..<4, id: \.self) { c in
-                Circle().fill(Color.accentColor).frame(width: 8, height: 8)
-                    .offset(x: (c % 2 == 0 ? 0 : r.width) - 4, y: (c < 2 ? 0 : r.height) - 4)
+                Circle().fill(Color.accentColor).frame(width: 8 * inv, height: 8 * inv)
+                    .offset(x: (c % 2 == 0 ? 0 : r.width) - 4 * inv, y: (c < 2 ? 0 : r.height) - 4 * inv)
             }
         }
         .frame(width: r.width, height: r.height, alignment: .topLeading)
@@ -119,8 +153,8 @@ struct SceneCanvasView: View {
 
     private func guides(_ l: (rect: CGRect, gx: [CGFloat], gy: [CGFloat]), size: CGSize) -> some View {
         ZStack(alignment: .topLeading) {
-            ForEach(l.gx, id: \.self) { x in Rectangle().fill(.yellow).frame(width: 1, height: size.height).offset(x: x) }
-            ForEach(l.gy, id: \.self) { y in Rectangle().fill(.yellow).frame(width: size.width, height: 1).offset(y: y) }
+            ForEach(l.gx, id: \.self) { x in Rectangle().fill(.yellow).frame(width: 1 / zoom.scale, height: size.height).offset(x: x) }
+            ForEach(l.gy, id: \.self) { y in Rectangle().fill(.yellow).frame(width: size.width, height: 1 / zoom.scale).offset(y: y) }
         }
         .allowsHitTesting(false)
     }
@@ -160,80 +194,95 @@ struct SceneCanvasView: View {
     }
 
     /// View-pt rect of layer `i` including the in-flight drag/pinch, snapped, plus the guide lines that snapped.
-    private func live(_ i: Int, k: CGFloat) -> (rect: CGRect, gx: [CGFloat], gy: [CGFloat]) {
-        let b = baseRect(layers[i])
-        var r = CGRect(x: b.minX * k, y: b.minY * k, width: b.width * k, height: b.height * k)
-        guard i == active else { return (r, [], []) }
-        let m = multiplier(layers[i]).m
-        r = CGRect(x: r.midX - r.width * m / 2, y: r.midY - r.height * m / 2, width: r.width * m, height: r.height * m)
-            .offsetBy(dx: drag.width, dy: drag.height)
-        return snap(r, k: k)
+    private func live(_ idx: Int, ratio: CGFloat) -> (rect: CGRect, gx: [CGFloat], gy: [CGFloat]) {
+        let box = baseRect(layers[idx])
+        var rect = CGRect(x: box.minX * ratio, y: box.minY * ratio, width: box.width * ratio, height: box.height * ratio)
+        guard idx == active else { return (rect, [], []) }
+        let mul = multiplier(layers[idx]).m
+        let size = CGSize(width: rect.width * mul, height: rect.height * mul)
+        rect = CGRect(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2, width: size.width, height: size.height)
+            .offsetBy(dx: drag.width / zoom.scale, dy: drag.height / zoom.scale)   // finger points -> view points
+        return snap(rect, ratio: ratio)
     }
 
     /// Edges and centre against canvas edges, the safe inset and the centre lines, nearest within snapDistance.
-    private func snap(_ r: CGRect, k: CGFloat) -> (rect: CGRect, gx: [CGFloat], gy: [CGFloat]) {
-        let w = canvas.width * k, h = canvas.height * k
+    private func snap(_ rect: CGRect, ratio: CGFloat) -> (rect: CGRect, gx: [CGFloat], gy: [CGFloat]) {
+        let wide = canvas.width * ratio, high = canvas.height * ratio
+        let reach = snapDistance / zoom.scale   // a constant pull in screen points
         func axis(_ edges: [CGFloat], _ targets: [CGFloat]) -> (delta: CGFloat, guide: [CGFloat]) {
             var best: (d: CGFloat, t: CGFloat)?
-            for e in edges { for t in targets where abs(t - e) <= snapDistance && abs(t - e) < abs(best?.d ?? .infinity) { best = (t - e, t) } }
-            guard let b = best else { return (delta: 0, guide: []) }
-            return (delta: b.d, guide: [b.t])
+            for edge in edges {
+                for target in targets where abs(target - edge) <= reach && abs(target - edge) < abs(best?.d ?? .infinity) {
+                    best = (target - edge, target)
+                }
+            }
+            guard let box = best else { return (delta: 0, guide: []) }
+            return (delta: box.d, guide: [box.t])
         }
-        let sx = axis([r.minX, r.midX, r.maxX], [0, w * 0.025, w / 2, w * 0.975, w])
-        let sy = axis([r.minY, r.midY, r.maxY], [0, h * 0.04, h / 2, h * 0.96, h])
-        return (r.offsetBy(dx: sx.delta, dy: sy.delta), sx.guide, sy.guide)
+        let sx = axis([rect.minX, rect.midX, rect.maxX], [0, wide * 0.025, wide / 2, wide * 0.975, wide])
+        let sy = axis([rect.minY, rect.midY, rect.maxY], [0, high * 0.04, high / 2, high * 0.96, high])
+        return (rect.offsetBy(dx: sx.delta, dy: sy.delta), sx.guide, sy.guide)
     }
 
     // MARK: gestures
 
-    private func gesture(k: CGFloat) -> some Gesture {
+    /// A touch that starts on a widget moves / resizes it; one that starts on empty canvas zooms and pans the view.
+    /// Locations are in the untransformed container, so `zoom.toView` maps them into canvas space.
+    private func gesture(ratio: CGFloat, size: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 0).simultaneously(with: MagnifyGesture())
             .onChanged { v in
-                if active == nil, let start = v.first?.startLocation {
-                    let hit = hitTest(start, k: k)
-                    selected = hit
-                    active = hit
+                if !began, let start = v.first?.startLocation {
+                    began = true
+                    base = zoom
+                    active = hitTest(zoom.toView(start), ratio: ratio)
+                    if active != nil { selected = active }
                 }
-                guard active != nil else { return }
+                guard began else { return }
                 drag = v.first?.translation ?? .zero
                 pinch = v.second?.magnification ?? 1
-                if let a = active, layers.indices.contains(a) {
-                    let key = live(a, k: k).gx.description + live(a, k: k).gy.description
-                    if key != snapKey, key != "[][]" { hapticTap() }
-                    snapKey = key
+                guard let hit = active, layers.indices.contains(hit) else {
+                    zoom = base.applying(magnification: pinch, translation: drag, origin: v.first?.startLocation ?? .zero, in: size)
+                    return
                 }
+                let key = live(hit, ratio: ratio).gx.description + live(hit, ratio: ratio).gy.description
+                if key != snapKey, key != "[][]" { hapticTap() }
+                snapKey = key
             }
-            .onEnded { _ in finish(k: k) }
+            .onEnded { _ in finish(ratio: ratio) }
     }
 
     /// Topmost visible layer under the point; the selected one wins ties so overlapping widgets stay grabbable.
-    private func hitTest(_ p: CGPoint, k: CGFloat) -> Int? {
-        func hit(_ i: Int) -> Bool {
-            let b = baseRect(layers[i])
-            return CGRect(x: b.minX * k, y: b.minY * k, width: b.width * k, height: b.height * k).insetBy(dx: -8, dy: -8).contains(p)
+    private func hitTest(_ point: CGPoint, ratio: CGFloat) -> Int? {
+        func hit(_ idx: Int) -> Bool {
+            let box = baseRect(layers[idx])
+            let rect = CGRect(x: box.minX * ratio, y: box.minY * ratio, width: box.width * ratio, height: box.height * ratio)
+            return rect.insetBy(dx: -8 / zoom.scale, dy: -8 / zoom.scale).contains(point)
         }
-        if let s = selected, layers.indices.contains(s), layers[s].visible, hit(s) { return s }
+        if let sel = selected, layers.indices.contains(sel), layers[sel].visible, hit(sel) { return sel }
         return layers.indices.reversed().first { layers[$0].visible && hit($0) }
     }
 
-    private func finish(k: CGFloat) {
-        defer { active = nil; drag = .zero; pinch = 1; snapKey = "" }
-        guard let i = active, layers.indices.contains(i), hypot(drag.width, drag.height) > 3 || abs(pinch - 1) > 0.01 else { return }
-        let l = layers[i]
-        let r = live(i, k: k).rect
-        let out = CGRect(x: r.minX / k, y: r.minY / k, width: r.width / k, height: r.height / k)
-        let (m, scale) = multiplier(l)
-        var n = l
-        if l.layout != nil {
-            n.layout = widgetLayout(for: out, natural: natural(effective(l)), canvas: canvas, scale: scale)
-        } else if let f = fit() {
+    private func finish(ratio: CGFloat) {
+        let moved = hypot(drag.width, drag.height) > 3 || abs(pinch - 1) > 0.01
+        defer { active = nil; began = false; drag = .zero; pinch = 1; snapKey = "" }
+        // A tap on empty canvas deselects; a pan or zoom keeps the selection.
+        if active == nil, began, !moved { selected = nil }
+        guard let idx = active, layers.indices.contains(idx), moved else { return }
+        let lay = layers[idx]
+        let rect = live(idx, ratio: ratio).rect
+        let out = CGRect(x: rect.minX / ratio, y: rect.minY / ratio, width: rect.width / ratio, height: rect.height / ratio)
+        let (mul, scale) = multiplier(lay)
+        var result = lay
+        if lay.layout != nil {
+            result.layout = widgetLayout(for: out, natural: natural(effective(lay)), canvas: canvas, scale: scale)
+        } else if let fitted = fit() {
             // ponytail: OBS layers move by the rect's centre and scale about their own anchor; exact for centred
             // anchors, a few px off for corner-anchored ones. Imports are a legacy path; widgets are exact.
-            let b = baseRect(l)
-            n.x += (out.midX - b.midX) / f.scale
-            n.y += (out.midY - b.midY) / f.scale
-            if l.boundsType != 0 { n.bw *= m; n.bh *= m } else { n.sx *= m; n.sy *= m }
+            let box = baseRect(lay)
+            result.x += (out.midX - box.midX) / fitted.scale
+            result.y += (out.midY - box.midY) / fitted.scale
+            if lay.boundsType != 0 { result.bw *= mul; result.bh *= mul } else { result.sx *= mul; result.sy *= mul }
         }
-        commit(i, n)
+        commit(idx, result)
     }
 }

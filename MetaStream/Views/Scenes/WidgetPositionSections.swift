@@ -13,6 +13,13 @@ extension WidgetInspectorView {
                 Text("Snaps the widget to that spot with the standard safe margin. Drag it on the canvas for anything in between.")
             }
         }
+        if layer.layout != nil {
+            Section {
+                NudgePad(step: nudge, commit: commit)
+            } header: { Text("Nudge") } footer: {
+                Text("Hold an arrow to keep moving. Each step is a quarter of a percent of the canvas.")
+            }
+        }
         Section("Size") {
             slider("Size", sizeBinding, 0.05...4, format: "%.2f×")
         }
@@ -55,6 +62,15 @@ extension WidgetInspectorView {
         .buttonStyle(.borderless)
         .accessibilityLabel(Self.anchorNames[anchor])
         .accessibilityAddTraits(anchor == current ? .isSelected : [])
+    }
+
+    /// dx/dy are fractions of the canvas added to the anchored origin (see widgetRect), so one step moves the widget the
+    /// same way for every anchor. The editor's debounced save keeps up while held; NudgePad commits on release.
+    private func nudge(_ delta: CGSize) {
+        guard var lay = layer.layout else { return }
+        lay.dx = min(max(lay.dx + delta.width, -1), 1)
+        lay.dy = min(max(lay.dy + delta.height, -1), 1)
+        layer.layout = lay
     }
 
     var sizeBinding: Binding<Double> {
