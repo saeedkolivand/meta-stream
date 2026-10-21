@@ -30,7 +30,12 @@ struct ThemeSettingsView: View {
                     Text("Preview without a stream frame").font(.footnote).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
-            } header: { Text("Instagram story") }
+                Button("Test share to Instagram") { Task { await InstagramStory.shareTest() } }
+                    .disabled(!InstagramStory.available)
+            } header: { Text("Instagram story") } footer: {
+                Text(InstagramStory.available ? "Opens Instagram with this card and the Kick link copied, without going live."
+                     : "Needs Instagram installed and a Meta app ID in the build.")
+            }
         }
         .navigationTitle("Theme & story")
         .navigationBarTitleDisplayMode(.inline)

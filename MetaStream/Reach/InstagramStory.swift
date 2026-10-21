@@ -26,11 +26,19 @@ enum InstagramStory {
     /// Grabs the outgoing frame (only while live and blur isn't stalled, like the Live post), renders the card and opens
     /// Instagram. Without a frame (glasses passthrough) the card is text on black.
     static func share(_ streamer: Streamer) async {
-        guard available, let scheme else { return }
         var frame: UIImage?
         if let jpeg = await FrameGrab.shared.next(), streamer.live, streamer.privacy?.stalled != true {
             frame = UIImage(data: jpeg)
         }
+        await handOver(frame: frame)
+    }
+
+    /// Settings' test button: the same hand-over without a stream frame, so the App ID and the pasted link can be
+    /// checked without going live.
+    static func shareTest() async { await handOver(frame: nil) }
+
+    private static func handOver(frame: UIImage?) async {
+        guard available, let scheme else { return }
         let post = LivePost.shared
         let link = post.slug.isEmpty ? "" : "https://kick.com/" + post.slug
         let renderer = ImageRenderer(content: StoryCard(frame: frame, title: post.title, link: link, template: .current, theme: .current))
