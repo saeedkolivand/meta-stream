@@ -5,28 +5,27 @@ import CoreGraphics
 enum SceneTemplate: String, CaseIterable {
     case mono = "Mono", ticker = "Ticker"
 
-    static let kickGreen: UInt32 = 0xFF53_FC18
-    private static let ink: UInt32 = 0xFF0B_0B0C, grey: UInt32 = 0xFFA3_A3A0, white: UInt32 = 0xFFF2_F1EC
-
-    /// `channel` is the Kick name (empty = no channel line or QR code).
-    @MainActor func scenes(channel: String, accent: UInt32 = kickGreen) -> [OverlayScene] {
+    /// `channel` is the Kick name (empty = no channel line or QR code). The colours come from `theme`; they are baked into
+    /// the layers, so changing the theme later doesn't touch scenes already made.
+    @MainActor func scenes(channel: String, theme: ColorTheme = .current) -> [OverlayScene] {
         let url = channel.isEmpty ? "" : "kick.com/\(channel.lowercased())"
         switch self {
-        case .mono: return Self.mono(url, accent)
-        case .ticker: return Self.ticker(url, accent)
+        case .mono: return Self.mono(url, theme)
+        case .ticker: return Self.ticker(url, theme)
         }
     }
 
     // MARK: Mono: dark, type only, chat on the right
 
-    @MainActor private static func mono(_ url: String, _ accent: UInt32) -> [OverlayScene] {
+    @MainActor private static func mono(_ url: String, _ theme: ColorTheme) -> [OverlayScene] {
+        let (accent, white, grey) = (theme.accent, theme.text, theme.muted)
         func frame(_ label: String, _ headline: String, _ footer: String) -> [OverlayLayer] {
-            [fill(ink, 4000, 4000, at(4, 0, 0)),
+            [fill(theme.bg, 4000, 4000, at(4, 0, 0)),
              text(label, 28, accent, at(0, 96, 96)),
              text(headline, headline.contains("{countdown}") ? 300 : 200, white, at(3, 96, -70)),
              text(footer, 28, grey, at(6, 96, -96))]
         }
-        let chatBox = chat(width: 560, height: 760, card: 0xFF18_181A, at(8, -96, -96))
+        let chatBox = chat(width: 560, height: 760, card: theme.surface, at(8, -96, -96))
         let place = url.isEmpty ? "{weather}" : "{weather}  ·  \(url)"
         var ending = frame("THAT'S A WRAP", "Thanks for\nwatching", "New follower {follower}  ·  New sub {sub}  ·  Live for {uptime}")
         ending.append(text("Next stream: day · time", 28, grey, at(2, -96, 96)))
@@ -42,10 +41,11 @@ enum SceneTemplate: String, CaseIterable {
 
     // MARK: Ticker: a backdrop (swap in your photo) with a bottom bar
 
-    @MainActor private static func ticker(_ url: String, _ accent: UInt32) -> [OverlayScene] {
+    @MainActor private static func ticker(_ url: String, _ theme: ColorTheme) -> [OverlayScene] {
+        let (accent, white, grey, ink) = (theme.accent, theme.text, theme.muted, theme.bg)
         let bar: CGFloat = 180
         func frame(_ label: String, _ title: String, _ sub: String, _ right: String) -> [OverlayLayer] {
-            let tag = text(label, 40, onColor(accent), .inset(6))
+            let tag = text(label, 40, theme.onAccent, .inset(6))
             let block = (OverlayStore.shared.naturalSize(tag)?.width ?? 400) + 112
             // Anchor 6/8 puts a widget's bottom on the frame's bottom; dy lifts its centre to `fromBottom`.
             func mid(_ l: OverlayLayer, _ x: CGFloat, _ fromBottom: CGFloat, _ anchor: Int = 6) -> OverlayLayer {
@@ -54,7 +54,7 @@ enum SceneTemplate: String, CaseIterable {
                 l.layout = at(anchor, x, h / 2 - fromBottom)
                 return l
             }
-            var layers = [fill(0xFF2B_3138, 4000, 4000, at(4, 0, 0)),
+            var layers = [fill(theme.backdrop, 4000, 4000, at(4, 0, 0)),
                           fill(ink, 4000, bar, at(7, 0, 0)),
                           fill(accent, block, bar, at(6, 0, 0)),
                           mid(tag, 56, bar / 2),
@@ -103,11 +103,5 @@ enum SceneTemplate: String, CaseIterable {
         var q = QRWidgetStyle()
         q.text = "https://\(url)"; q.caption = url
         return .widget(.qr, name: "QR code", layout: layout, data: q.data)
-    }
-
-    /// Near-black on light accents (Kick green), white on dark ones (Twitch purple).
-    static func onColor(_ argb: UInt32) -> UInt32 {
-        let r = Double((argb >> 16) & 0xFF), g = Double((argb >> 8) & 0xFF), b = Double(argb & 0xFF)
-        return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? ink : 0xFFFF_FFFF
     }
 }

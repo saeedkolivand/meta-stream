@@ -27,7 +27,7 @@ enum InstagramStory {
         }
         let post = LivePost.shared
         let link = post.slug.isEmpty ? "" : "https://kick.com/" + post.slug
-        let renderer = ImageRenderer(content: StoryCard(frame: frame, title: post.title, link: link))
+        let renderer = ImageRenderer(content: StoryCard(frame: frame, title: post.title, link: link, template: .current, theme: .current))
         renderer.scale = 3
         guard let card = renderer.uiImage?.jpegData(compressionQuality: 0.9) else { return }
         var item: [String: Any] = ["com.instagram.sharedSticker.backgroundImage": card]
@@ -37,37 +37,5 @@ enum InstagramStory {
         UIPasteboard.general.setItems([item], options: [.expirationDate: Date().addingTimeInterval(300)])
         _ = await UIApplication.shared.open(scheme)
         applog("reach", "instagram story card handed over (frame: \(frame != nil))")
-    }
-}
-
-/// The story card, designed at 360x640 points (9:16), rendered at scale 3. Flat and minimal: black, the stream frame as a
-/// 16:9 card, a red LIVE pill, title and link; the bottom third stays empty for the Link sticker.
-private struct StoryCard: View {
-    let frame: UIImage?
-    let title: String
-    let link: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("● LIVE on Kick")
-                .font(.system(size: 15, weight: .bold))
-                .padding(.horizontal, 12).padding(.vertical, 6)
-                .background(Color.red, in: Capsule())
-            if let frame {
-                Image(uiImage: frame).resizable().aspectRatio(16 / 9, contentMode: .fill)
-                    .frame(width: 312, height: 175.5).clipShape(RoundedRectangle(cornerRadius: 14))
-            }
-            if !title.isEmpty { Text(title).font(.system(size: 24, weight: .bold)).lineLimit(3) }
-            if !link.isEmpty {
-                Text(link.replacingOccurrences(of: "https://", with: "")).font(.system(size: 15)).foregroundStyle(.gray)
-            }
-            Spacer(minLength: 0)   // the Link sticker goes here
-        }
-        .foregroundStyle(.white)
-        .padding(24)
-        .padding(.top, 60)
-        .frame(width: 360, height: 640, alignment: .topLeading)
-        .background(Color.black)
-        .environment(\.layoutDirection, .leftToRight)
     }
 }
