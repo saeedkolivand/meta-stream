@@ -91,7 +91,7 @@ enum NowPlayingPlayer {
         /// What the music did since the last pass.
         func react(to spotify: SpotifyNowPlaying, _ now: Date) {
             guard let live = spotify.track else { songGone(now); return }
-            if live.id == current?.id {
+            if live.id == current?.track.id {
                 waiting = nil
                 current?.track = live   // newest poll, so elapsed time and progress stay in step with Spotify
                 if current?.art == nil, let art = spotify.art { current?.art = art }
