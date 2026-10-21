@@ -245,21 +245,6 @@ final class OverlayCompositor {
         return widgetRect(layout, natural: natural, canvas: canvas)
     }
 
-    /// Chat / alerts / event list / QR: always frame-relative; a layer without a layout gets the default one.
-    private func widget(_ l: OverlayLayer, _ canvas: CGSize, goalBox: CGRect?) async -> WidgetBuild? {
-        let natural = OverlayStore.shared.naturalSize(l) ?? CGSize(width: 400, height: 200)
-        let rect = widgetRect(l.layout ?? WidgetLayout(), natural: natural, canvas: canvas)
-        switch l.type {
-        case .chat: return await chatWidget(l, box: rect, canvas: canvas)
-        case .alerts: return await alertWidget(l, box: rect, canvas: canvas, goalBox: goalBox)
-        case .events: return await eventListWidget(l, box: rect, canvas: canvas)
-        case .qr: return await qrWidget(l, box: rect, canvas: canvas)
-        case .goal: return await goalWidget(l, box: rect, canvas: canvas)
-        case .nowplaying: return await nowPlayingWidget(l, box: rect, canvas: canvas)
-        default: return nil
-        }
-    }
-
     /// Text with {tokens} and animated GIFs are redrawn over time instead of being a one-off still; nil falls back to the still.
     private func dynamicBuild(_ l: OverlayLayer, _ fit: Fit, _ canvas: CGSize) async -> WidgetBuild? {
         switch l.type {
@@ -365,6 +350,23 @@ final class OverlayCompositor {
                 let hot = ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
                 try? await Task.sleep(for: .milliseconds(hot ? 250 : 100))
             }
+        }
+    }
+}
+
+extension OverlayCompositor {
+    /// Chat / alerts / event list / QR: always frame-relative; a layer without a layout gets the default one.
+    private func widget(_ l: OverlayLayer, _ canvas: CGSize, goalBox: CGRect?) async -> WidgetBuild? {
+        let natural = OverlayStore.shared.naturalSize(l) ?? CGSize(width: 400, height: 200)
+        let rect = widgetRect(l.layout ?? WidgetLayout(), natural: natural, canvas: canvas)
+        switch l.type {
+        case .chat: return await chatWidget(l, box: rect, canvas: canvas)
+        case .alerts: return await alertWidget(l, box: rect, canvas: canvas, goalBox: goalBox)
+        case .events: return await eventListWidget(l, box: rect, canvas: canvas)
+        case .qr: return await qrWidget(l, box: rect, canvas: canvas)
+        case .goal: return await goalWidget(l, box: rect, canvas: canvas)
+        case .nowplaying: return await nowPlayingWidget(l, box: rect, canvas: canvas)
+        default: return nil
         }
     }
 }

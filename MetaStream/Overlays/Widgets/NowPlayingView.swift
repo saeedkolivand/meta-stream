@@ -32,8 +32,8 @@ struct NPContext {
     var line: String { track.artist.isEmpty ? track.title : "\(track.title) · \(track.artist)" }
 
     static func mmss(_ ms: Int) -> String {
-        let s = max(0, ms) / 1000
-        return "\(s / 60):" + String(format: "%02d", s % 60)
+        let secs = max(0, ms) / 1000
+        return "\(secs / 60):" + String(format: "%02d", secs % 60)
     }
 
     func cover(_ size: CGFloat, radius: CGFloat) -> some View { NPCover(art: art, accent: accent, size: size, radius: radius) }
@@ -49,7 +49,7 @@ struct NowPlayingView: View {
 
     var body: some View {
         let x = NPContext(style: style, track: track, art: art, pose: pose, clock: clock, now: now)
-        let n = style.natural
+        let size = style.natural
         Group {
             switch style.design {
             case .slab: NPSlab(x: x)
@@ -63,7 +63,7 @@ struct NowPlayingView: View {
             }
         }
         .opacity(pose.alpha)
-        .frame(width: n.width, height: n.height, alignment: .topLeading)
+        .frame(width: size.width, height: size.height, alignment: .topLeading)
     }
 
     /// Editor preview: a settled card for a made-up song.
@@ -104,20 +104,20 @@ struct NPWipe: Shape {
     var reveal: CGFloat
     var trail: CGFloat = 0
 
-    func path(in r: CGRect) -> Path {
-        let right = shut + (r.width - shut) * reveal
-        let left = r.width * trail
-        return Path(CGRect(x: r.minX + left, y: r.minY, width: max(0, right - left), height: r.height))
+    func path(in rect: CGRect) -> Path {
+        let right = shut + (rect.width - shut) * reveal
+        let left = rect.width * trail
+        return Path(CGRect(x: rect.minX + left, y: rect.minY, width: max(0, right - left), height: rect.height))
     }
 }
 
 extension View {
     /// One animated element of the pose (offset, scale, flip, spin, opacity).
-    func npLane(_ l: NowPlayingLane) -> some View {
-        scaleEffect(x: max(0.001, l.scale * l.scaleX), y: max(0.001, l.scale))
-            .rotationEffect(.degrees(l.rot))
-            .offset(x: l.dx, y: l.dy)
-            .opacity(l.alpha)
+    func npLane(_ lane: NowPlayingLane) -> some View {
+        scaleEffect(x: max(0.001, lane.scale * lane.scaleX), y: max(0.001, lane.scale))
+            .rotationEffect(.degrees(lane.rot))
+            .offset(x: lane.dx, y: lane.dy)
+            .opacity(lane.alpha)
     }
 
     /// The text widgets' drop shadow (0, 2, blur 4, black 80%).
@@ -126,19 +126,19 @@ extension View {
 
 /// One run of text. Persian/Arabic flows right-to-left, but the direction is set on the Text alone (GoalView's rule), so the
 /// frames and stacks around it stay left-anchored and the card layout never mirrors.
-@MainActor func npText(_ s: String, font: Font, color: Color) -> some View {
-    Text(s).font(font).foregroundColor(color).lineLimit(1)
-        .environment(\.layoutDirection, WidgetFonts.isRTL(s) ? .rightToLeft : .leftToRight)
+@MainActor func npText(_ text: String, font: Font, color: Color) -> some View {
+    Text(text).font(font).foregroundColor(color).lineLimit(1)
+        .environment(\.layoutDirection, WidgetFonts.isRTL(text) ? .rightToLeft : .leftToRight)
 }
 
 /// Several styled runs on one line ("Title · Artist" with a dim dot). Direction follows the first run.
 @MainActor func npRuns(_ parts: [(text: String, font: Font, color: Color)]) -> some View {
     var out = AttributedString()
-    for p in parts {
-        var a = AttributedString(p.text)
-        a.font = p.font
-        a.foregroundColor = p.color
-        out += a
+    for part in parts {
+        var run = AttributedString(part.text)
+        run.font = part.font
+        run.foregroundColor = part.color
+        out += run
     }
     return Text(out).lineLimit(1)
         .environment(\.layoutDirection, WidgetFonts.isRTL(parts.first?.text ?? "") ? .rightToLeft : .leftToRight)

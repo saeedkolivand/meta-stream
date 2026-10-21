@@ -48,7 +48,8 @@ struct NPTwoLine: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 12) {
                     Text("🎵").font(x.font(32)).lineLimit(1)
-                    npText(x.track.title, font: x.font(32), color: .white).frame(maxWidth: .infinity, alignment: .leading).npLane(x.pose.line1)
+                    npText(x.track.title, font: x.font(32), color: .white)
+                        .frame(maxWidth: .infinity, alignment: .leading).npLane(x.pose.line1)
                 }
                 npText(x.track.artist, font: x.font(26, .semibold), color: .white)
                     .frame(maxWidth: .infinity, alignment: .leading)

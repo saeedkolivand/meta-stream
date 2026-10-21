@@ -53,22 +53,35 @@ final class SpotifyNowPlaying: ObservableObject {
     // MARK: login
 
     func connect() {
+        // The only `try` is inside codeFlow's exchange closure, which codeFlow catches and reports via status.
+        // swiftlint:disable:next unhandled_throwing_task
         Task {
             let verifier = PlatformNet.random(64)
-            var c = URLComponents(string: "https://accounts.spotify.com/authorize")!
-            c.queryItems = [
+            guard var comps = URLComponents(string: "https://accounts.spotify.com/authorize") else {
+                status = "Spotify login failed: bad URL"
+                return
+            }
+            comps.queryItems = [
                 .init(name: "response_type", value: "code"), .init(name: "client_id", value: Self.clientID),
                 .init(name: "redirect_uri", value: PlatformConfig.webRedirect),
                 .init(name: "scope", value: "user-read-currently-playing user-read-playback-state"),
                 .init(name: "code_challenge", value: PlatformNet.s256(verifier)), .init(name: "code_challenge_method", value: "S256"),
-                .init(name: "state", value: PlatformNet.random(16)),
+                .init(name: "state", value: PlatformNet.random(16))
             ]
-            await PlatformFlow.codeFlow(name: "Spotify", authURL: c.url!, scheme: "metastream",
+            guard let authURL = comps.url else {
+                status = "Spotify login failed: bad URL"
+                return
+            }
+            await PlatformFlow.codeFlow(
+                name: "Spotify",
+                authURL: authURL,
+                scheme: "metastream",
                 authorize: auth.authorize,
                 exchange: { code in try await PlatformNet.form("https://accounts.spotify.com/api/token", [
                     "grant_type": "authorization_code", "client_id": Self.clientID, "redirect_uri": PlatformConfig.webRedirect,
                     "code_verifier": verifier, "code": code]) },
-                prefix: "spotify", store: store,
+                prefix: "spotify",
+                store: store,
                 status: { self.status = $0 },
                 after: {
                     self.connected = true
@@ -112,27 +125,29 @@ final class SpotifyNowPlaying: ObservableObject {
             set(nil)   // 204: nothing playing
             return 3
         }
-        let t = Self.parse(json, at: Date())
-        set(t)
-        guard let t else { return 3 }
-        let left = Double(t.durationMs - t.progressMs) / 1000
+        let playing = Self.parse(json, at: Date())
+        set(playing)
+        guard let playing else { return 3 }
+        let left = Double(playing.durationMs - playing.progressMs) / 1000
         return left > 0.5 && left < 3 ? left + 0.4 : 3
     }
 
-    private func set(_ t: NowPlayingTrack?) {
-        if t?.id != track?.id { applog("spotify", t.map { "now playing: \($0.title) · \($0.artist)" } ?? "nothing playing") }
-        track = t
-        guard let url = t?.artURL, url != artFor else { return }
+    private func set(_ next: NowPlayingTrack?) {
+        if next?.id != track?.id { applog("spotify", next.map { "now playing: \($0.title) · \($0.artist)" } ?? "nothing playing") }
+        track = next
+        guard let url = next?.artURL, url != artFor else { return }
         artFor = url; art = nil
         Task {
-            guard let u = URL(string: url), let r = try? await URLSession.shared.data(from: u), artFor == url else { return }
-            art = UIImage(data: r.0)
+            guard let coverURL = URL(string: url), let result = try? await URLSession.shared.data(from: coverURL),
+                  artFor == url else { return }
+            art = UIImage(data: result.0)
         }
     }
 
     /// GET with the access token, one refresh + retry on 401. Successful polls are not logged (one every 3 s).
     private func get(_ url: String, retried: Bool = false) async throws -> (Data, Int, Double?) {
-        var req = URLRequest(url: URL(string: url)!)
+        guard let endpoint = URL(string: url) else { throw PlatformNet.err("bad URL") }
+        var req = URLRequest(url: endpoint)
         req.setValue("Bearer \(store.string(forKey: "spotifyAccess") ?? "")", forHTTPHeaderField: "Authorization")
         let (data, resp) = try await URLSession.shared.data(for: req)
         let http = resp as? HTTPURLResponse
@@ -167,9 +182,9 @@ final class SpotifyNowPlaying: ObservableObject {
         let json: [String: Any] = ["is_playing": true, "currently_playing_type": "track", "progress_ms": 1000,
             "item": ["id": "x", "name": "Song", "duration_ms": 10000, "artists": [["name": "A"], ["name": "B"]],
                      "album": ["images": [["url": "big", "width": 640], ["url": "mid", "width": 300], ["url": "small", "width": 64]]]]]
-        let t = parse(json, at: t0)
-        assert(t?.artist == "A, B" && t?.artURL == "mid" && t?.title == "Song")
-        assert(t?.elapsedMs(t0.addingTimeInterval(2)) == 3000 && t?.elapsedMs(t0.addingTimeInterval(60)) == 10000)
+        let parsed = parse(json, at: t0)
+        assert(parsed?.artist == "A, B" && parsed?.artURL == "mid" && parsed?.title == "Song")
+        assert(parsed?.elapsedMs(t0.addingTimeInterval(2)) == 3000 && parsed?.elapsedMs(t0.addingTimeInterval(60)) == 10000)
         var paused = json; paused["is_playing"] = false
         assert(parse(paused, at: t0) == nil)
         var ad = json; ad["currently_playing_type"] = "ad"

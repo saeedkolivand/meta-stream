@@ -19,10 +19,10 @@ struct NPSlab: View {
             }
             HStack(spacing: 20) {
                 Text(x.elapsed)
-                GeometryReader { g in
+                GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule().fill(Color.npTrack)
-                        Capsule().fill(x.accent).frame(width: g.size.width * x.progress)
+                        Capsule().fill(x.accent).frame(width: geo.size.width * x.progress)
                     }
                 }
                 .frame(height: 8)
@@ -41,10 +41,10 @@ struct NPSlab: View {
 struct NPIsland: View {
     let x: NPContext
     private let openW: CGFloat = 840   // the spring overshoots past this by ~5% of the travel; the 880 natural width leaves room
-    private let h: CGFloat = 152
+    private let height: CGFloat = 152
 
     var body: some View {
-        let w = min(880, max(h, h + (openW - h) * x.pose.reveal))
+        let width = min(880, max(height, height + (openW - height) * x.pose.reveal))
         HStack(spacing: 28) {
             x.cover(112, radius: 56).npLane(x.pose.cover)
             VStack(alignment: .leading, spacing: 6) {
@@ -54,9 +54,9 @@ struct NPIsland: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .opacity(x.pose.line1.alpha)
             HStack(alignment: .bottom, spacing: 6) {
-                ForEach(0..<3, id: \.self) { i in
+                ForEach(0..<3, id: \.self) { index in
                     RoundedRectangle(cornerRadius: 4).fill(x.accent).frame(width: 8, height: 44)
-                        .scaleEffect(y: NowPlayingMotion.eq(x.clock, period: 0.9, offset: 0.3 * Double(i), low: 0.35), anchor: .bottom)
+                        .scaleEffect(y: NowPlayingMotion.eq(x.clock, period: 0.9, offset: 0.3 * Double(index), low: 0.35), anchor: .bottom)
                 }
             }
             .frame(height: 44)
@@ -64,8 +64,8 @@ struct NPIsland: View {
             .opacity(x.pose.line1.alpha)
         }
         .padding(20)
-        .frame(width: openW, height: h, alignment: .leading)
-        .frame(width: w, height: h, alignment: .leading)
+        .frame(width: openW, height: height, alignment: .leading)
+        .frame(width: width, height: height, alignment: .leading)
         .background(Capsule().fill(Color.npIsland))
         .clipShape(Capsule())
     }
@@ -77,9 +77,9 @@ struct NPDisc: View {
     let x: NPContext
 
     private var discLane: NowPlayingLane {
-        var l = x.pose.cover
-        l.rot += NowPlayingMotion.spin(x.clock)
-        return l
+        var lane = x.pose.cover
+        lane.rot += NowPlayingMotion.spin(x.clock)
+        return lane
     }
 
     var body: some View {
@@ -119,13 +119,14 @@ struct NPTicker: View {
         HStack(spacing: 24) {
             x.cover(72, radius: 12).npLane(x.pose.cover)
             HStack(alignment: .bottom, spacing: 4) {
-                ForEach(0..<3, id: \.self) { i in
+                ForEach(0..<3, id: \.self) { index in
                     Rectangle().fill(x.accent).frame(width: 6, height: 32)
-                        .scaleEffect(y: NowPlayingMotion.eq(x.clock, period: 0.8, offset: 0.25 * Double(i), low: 0.3), anchor: .bottom)
+                        .scaleEffect(y: NowPlayingMotion.eq(x.clock, period: 0.8, offset: 0.25 * Double(index), low: 0.3), anchor: .bottom)
                 }
             }
             .frame(height: 32)
-            npRuns([(x.track.title, x.font(32), .white), (" · ", x.font(32, .regular), .npDim), (x.track.artist, x.font(32, .regular), .npGrey)])
+            npRuns([(x.track.title, x.font(32), .white), (" · ", x.font(32, .regular), .npDim),
+                    (x.track.artist, x.font(32, .regular), .npGrey)])
                 .frame(maxWidth: 720, alignment: .leading)
                 .clipShape(NPWipe(shut: 0, reveal: x.pose.reveal, trail: x.pose.trail))
         }

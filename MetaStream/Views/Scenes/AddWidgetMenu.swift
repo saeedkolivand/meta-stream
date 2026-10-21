@@ -51,13 +51,21 @@ enum NewWidget: CaseIterable {
         case .goal: OverlayLayer.widget(.goal, name: "Goal", layout: .inset(1), data: GoalWidgetStyle().data)
         case .nowPlaying: OverlayLayer.widget(.nowplaying, name: "Now playing", layout: .inset(0), data: NowPlayingWidgetStyle().data)
         case .text: textLayer()
+        case .clock, .liveTime, .viewers, .drive, .socials: presetLayer()
+        case .qr: qrLayer()
+        case .image, .web: nil
+        }
+    }
+
+    /// The ready-made text widgets.
+    private func presetLayer() -> OverlayLayer? {
+        switch self {
         case .clock: preset("Clock", "🕒 {time}  {date}  {weather}", 0)
         case .liveTime: preset("Live time", "🔴 {uptime}", 2)
         case .viewers: preset("Viewers", "👁 {viewers}", 2)
         case .drive: preset("Drive", "🚗 {speed}  🛣 {distance}", 6)
         case .socials: preset("Socials", "📷 IG @yourname\n🎵 TikTok @yourname\n✈️ TG @yourname", 8, rotate: true)
-        case .qr: qrLayer()
-        case .image, .web: nil
+        default: nil
         }
     }
 

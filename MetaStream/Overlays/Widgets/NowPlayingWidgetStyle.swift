@@ -42,13 +42,13 @@ struct NowPlayingWidgetStyle: Equatable, Sendable {
     var popupSeconds = 6   // Pop-up only: how long it stays after each song change
 
     init() {}
-    init(_ d: [String: String]) {
-        let o = NowPlayingWidgetStyle()
-        design = d["design"].flatMap(NowPlayingDesign.init(rawValue:)) ?? o.design
-        accentColor = d["accentColor"].flatMap { UInt32($0) } ?? o.accentColor
-        face = d["face"] ?? o.face
+    init(_ data: [String: String]) {
+        let defaults = NowPlayingWidgetStyle()
+        design = data["design"].flatMap(NowPlayingDesign.init(rawValue:)) ?? defaults.design
+        accentColor = data["accentColor"].flatMap { UInt32($0) } ?? defaults.accentColor
+        face = data["face"] ?? defaults.face
         // The slider may store "6.0"; keep it in the editor's range.
-        popupSeconds = min(30, max(2, d["popupSeconds"].flatMap { Double($0) }.map { Int($0.rounded()) } ?? o.popupSeconds))
+        popupSeconds = min(30, max(2, data["popupSeconds"].flatMap { Double($0) }.map { Int($0.rounded()) } ?? defaults.popupSeconds))
     }
 
     /// Artboard size x 2 (the mockups are half of a 1920x1080 canvas). Text-box designs hug their text inside this area.

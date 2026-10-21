@@ -9,7 +9,7 @@ struct SpotifySettingsView: View {
             Section {
                 if spotify.connected {
                     Text("Connected")
-                    if let t = spotify.track { Text("Playing: \(t.title) · \(t.artist)").foregroundStyle(.secondary) }
+                    if let song = spotify.track { Text("Playing: \(song.title) · \(song.artist)").foregroundStyle(.secondary) }
                     Button("Disconnect", role: .destructive) { spotify.disconnect() }
                 } else {
                     Button("Connect Spotify") { spotify.connect() }

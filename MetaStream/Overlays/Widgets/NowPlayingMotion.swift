@@ -37,14 +37,14 @@ struct Cubic: Sendable {
     func at(_ x: Double) -> Double {
         guard x > 0 else { return 0 }
         guard x < 1 else { return 1 }
-        var lo = 0.0, hi = 1.0, t = x
+        var lo = 0.0, hi = 1.0, param = x
         for _ in 0..<30 {
-            let u = 1 - t
-            if 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t < x { lo = t } else { hi = t }
-            t = (lo + hi) / 2
+            let inv = 1 - param
+            if 3 * inv * inv * param * x1 + 3 * inv * param * param * x2 + param * param * param < x { lo = param } else { hi = param }
+            param = (lo + hi) / 2
         }
-        let u = 1 - t
-        return 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t
+        let inv = 1 - param
+        return 3 * inv * inv * param * y1 + 3 * inv * param * param * y2 + param * param * param
     }
 
     static let standard = Cubic(0.2, 0.8, 0.2, 1)     // slide / wipe in
@@ -65,8 +65,8 @@ struct Cubic: Sendable {
 enum NowPlayingMotion {
     /// `switchAt`: seconds into a change when the new song replaces the old (= the out half's length).
     /// `inLen`: seconds from the switch until the in half has settled.
-    static func timing(_ d: NowPlayingDesign) -> (switchAt: Double, inLen: Double) {
-        switch d {
+    static func timing(_ design: NowPlayingDesign) -> (switchAt: Double, inLen: Double) {
+        switch design {
         case .slab: (0.32, 0.67)
         case .island: (0.42, 0.78)
         case .disc: (0.38, 0.68)
@@ -79,25 +79,25 @@ enum NowPlayingMotion {
     }
 
     /// A song change from start to settled; an enter (first appearance) and an exit (song gone) are one half each.
-    static func total(_ d: NowPlayingDesign) -> Double { timing(d).switchAt + timing(d).inLen }
-    static func enterTotal(_ d: NowPlayingDesign) -> Double { timing(d).inLen }
-    static func exitTotal(_ d: NowPlayingDesign) -> Double { timing(d).switchAt }
+    static func total(_ design: NowPlayingDesign) -> Double { timing(design).switchAt + timing(design).inLen }
+    static func enterTotal(_ design: NowPlayingDesign) -> Double { timing(design).inLen }
+    static func exitTotal(_ design: NowPlayingDesign) -> Double { timing(design).switchAt }
 
-    static func change(_ d: NowPlayingDesign, t: Double) -> NowPlayingPose {
-        let sw = timing(d).switchAt
-        return t < sw ? out(d, t) : inHalf(d, t - sw)
+    static func change(_ design: NowPlayingDesign, t time: Double) -> NowPlayingPose {
+        let sw = timing(design).switchAt
+        return time < sw ? out(design, time) : inHalf(design, time - sw)
     }
 
-    static func enter(_ d: NowPlayingDesign, t: Double) -> NowPlayingPose { inHalf(d, t) }
+    static func enter(_ design: NowPlayingDesign, t time: Double) -> NowPlayingPose { inHalf(design, time) }
 
     /// The out half on the song that is leaving, then a fade of the whole widget over its second half (the card or the
     /// note left behind by the wipes would otherwise pop off).
-    static func exit(_ d: NowPlayingDesign, t: Double) -> NowPlayingPose {
-        var p = out(d, t)
-        p.useNew = true
-        let sw = timing(d).switchAt
-        p.alpha = 1 - CGFloat(min(1, max(0, (t - sw / 2) / (sw / 2))))
-        return p
+    static func exit(_ design: NowPlayingDesign, t time: Double) -> NowPlayingPose {
+        var pose = out(design, time)
+        pose.useNew = true
+        let sw = timing(design).switchAt
+        pose.alpha = 1 - CGFloat(min(1, max(0, (time - sw / 2) / (sw / 2))))
+        return pose
     }
 
     /// Pop-up: true once it has been open for its hold time and should start closing.
@@ -117,101 +117,104 @@ enum NowPlayingMotion {
 
     // MARK: the two halves
 
-    private static func ease(_ c: Cubic, _ t: Double, _ dur: Double, _ delay: Double = 0) -> CGFloat { CGFloat(c.at((t - delay) / dur)) }
+    private static func ease(_ curve: Cubic, _ time: Double, _ dur: Double, _ delay: Double = 0) -> CGFloat {
+        CGFloat(curve.at((time - delay) / dur))
+    }
     /// Exact at both ends (a*(1-p) + b*p, not a + (b-a)*p), so a settled pose compares equal to .settled.
-    private static func mix(_ a: CGFloat, _ b: CGFloat, _ p: CGFloat) -> CGFloat { a * (1 - p) + b * p }
+    private static func mix(_ from: CGFloat, _ to: CGFloat, _ frac: CGFloat) -> CGFloat { from * (1 - frac) + to * frac }
 
     /// The old song leaving; `t` seconds from the change.
-    private static func out(_ d: NowPlayingDesign, _ t: Double) -> NowPlayingPose {
-        var p = NowPlayingPose()
-        p.useNew = false
-        switch d {
+    private static func out(_ design: NowPlayingDesign, _ time: Double) -> NowPlayingPose {
+        var pose = NowPlayingPose()
+        pose.useNew = false
+        switch design {
         case .slab:
-            let m = ease(.slideOut, t, 0.30), o = ease(.easeIn, t, 0.26)
-            p.cover = NowPlayingLane(alpha: 1 - o, scale: mix(1, 0.82, m))
-            p.line1 = NowPlayingLane(dy: -32 * m, alpha: 1 - o)
-            p.line2 = p.line1
+            let move = ease(.slideOut, time, 0.30), fade = ease(.easeIn, time, 0.26)
+            pose.cover = NowPlayingLane(alpha: 1 - fade, scale: mix(1, 0.82, move))
+            pose.line1 = NowPlayingLane(dy: -32 * move, alpha: 1 - fade)
+            pose.line2 = pose.line1
         case .island:
-            let w = ease(.easeIn, t, 0.38)
-            p.reveal = 1 - ease(.collapse, t, 0.38)
-            p.cover = NowPlayingLane(alpha: mix(1, 0.4, w), scale: mix(1, 0.6, w))
-            p.line1 = NowPlayingLane(alpha: 1 - ease(.easeIn, t, 0.14))
-            p.line2 = p.line1
+            let wide = ease(.easeIn, time, 0.38)
+            pose.reveal = 1 - ease(.collapse, time, 0.38)
+            pose.cover = NowPlayingLane(alpha: mix(1, 0.4, wide), scale: mix(1, 0.6, wide))
+            pose.line1 = NowPlayingLane(alpha: 1 - ease(.easeIn, time, 0.14))
+            pose.line2 = pose.line1
         case .disc:
-            let m = ease(.dropOut, t, 0.36)
-            p.cover = NowPlayingLane(dy: 240 * m, rot: Double(120 * m))
-            p.line1 = NowPlayingLane(dx: -48 * ease(.easeIn, t, 0.30), alpha: 1 - ease(.easeIn, t, 0.24))
+            let move = ease(.dropOut, time, 0.36)
+            pose.cover = NowPlayingLane(dy: 240 * move, rot: Double(120 * move))
+            pose.line1 = NowPlayingLane(dx: -48 * ease(.easeIn, time, 0.30), alpha: 1 - ease(.easeIn, time, 0.24))
         case .ticker:
-            p.trail = ease(.tickerOut, t, 0.28)
-            p.cover = NowPlayingLane(scaleX: 1 - ease(.easeIn, t, 0.15))
+            pose.trail = ease(.tickerOut, time, 0.28)
+            pose.cover = NowPlayingLane(scaleX: 1 - ease(.easeIn, time, 0.15))
         case .text, .popup:
-            p.reveal = 1 - ease(.wipeOut, t, 0.32)
+            pose.reveal = 1 - ease(.wipeOut, time, 0.32)
         case .twoLine:
-            let m = ease(.slideOut, t, 0.28), o = ease(.easeIn, t, 0.24)
-            p.line1 = NowPlayingLane(dy: -24 * m, alpha: 1 - o)
-            p.line2 = p.line1
+            let move = ease(.slideOut, time, 0.28), fade = ease(.easeIn, time, 0.24)
+            pose.line1 = NowPlayingLane(dy: -24 * move, alpha: 1 - fade)
+            pose.line2 = pose.line1
         case .cover:
-            p.reveal = 1 - ease(.wipeOut, t, 0.32)
-            p.cover = NowPlayingLane(scaleX: 1 - ease(.easeIn, t, 0.16, 0.16))
+            pose.reveal = 1 - ease(.wipeOut, time, 0.32)
+            pose.cover = NowPlayingLane(scaleX: 1 - ease(.easeIn, time, 0.16, 0.16))
         }
-        return p
+        return pose
     }
 
     /// The new song arriving; `u` seconds from the switch (u <= 0 is the pre-roll pose: everything hidden / off to the side).
-    private static func inHalf(_ d: NowPlayingDesign, _ u: Double) -> NowPlayingPose {
-        var p = NowPlayingPose()
-        switch d {
+    private static func inHalf(_ design: NowPlayingDesign, _ since: Double) -> NowPlayingPose {
+        var pose = NowPlayingPose()
+        switch design {
         case .slab:
-            let v = u - 0.04   // the mockup waits 40 ms before the "in" transitions start
-            p.cover = NowPlayingLane(alpha: ease(.easeOut, v, 0.42), scale: mix(1.12, 1, ease(.standard, v, 0.52)))
-            p.line1 = NowPlayingLane(dy: mix(32, 0, ease(.standard, v, 0.52, 0.04)), alpha: ease(.easeOut, v, 0.42, 0.04))
-            p.line2 = NowPlayingLane(dy: mix(32, 0, ease(.standard, v, 0.52, 0.11)), alpha: ease(.easeOut, v, 0.42, 0.11))
+            let shifted = since - 0.04   // the mockup waits 40 ms before the "in" transitions start
+            pose.cover = NowPlayingLane(alpha: ease(.easeOut, shifted, 0.42), scale: mix(1.12, 1, ease(.standard, shifted, 0.52)))
+            pose.line1 = NowPlayingLane(dy: mix(32, 0, ease(.standard, shifted, 0.52, 0.04)), alpha: ease(.easeOut, shifted, 0.42, 0.04))
+            pose.line2 = NowPlayingLane(dy: mix(32, 0, ease(.standard, shifted, 0.52, 0.11)), alpha: ease(.easeOut, shifted, 0.42, 0.11))
         case .island:
             // The cover pops back in over the closed capsule (160 ms), then the capsule springs open and the text fades in.
-            p.cover = NowPlayingLane(alpha: mix(0.4, 1, ease(.easeOut, u, 0.12)), scale: mix(0.6, 1, ease(.pop, u, 0.16)))
-            p.reveal = ease(.spring, u, 0.62, 0.16)
-            p.line1 = NowPlayingLane(alpha: ease(.easeOut, u, 0.32, 0.42))
-            p.line2 = p.line1
+            pose.cover = NowPlayingLane(alpha: mix(0.4, 1, ease(.easeOut, since, 0.12)), scale: mix(0.6, 1, ease(.pop, since, 0.16)))
+            pose.reveal = ease(.spring, since, 0.62, 0.16)
+            pose.line1 = NowPlayingLane(alpha: ease(.easeOut, since, 0.32, 0.42))
+            pose.line2 = pose.line1
         case .disc:
-            let v = u - 0.04
-            let m = ease(.dropIn, v, 0.64)
-            p.cover = NowPlayingLane(dy: mix(-240, 0, m), rot: Double(mix(-120, 0, m)))
-            p.line1 = NowPlayingLane(dx: mix(48, 0, ease(.standard, v, 0.52, 0.12)), alpha: ease(.easeOut, v, 0.40, 0.12))
+            let shifted = since - 0.04
+            let move = ease(.dropIn, shifted, 0.64)
+            pose.cover = NowPlayingLane(dy: mix(-240, 0, move), rot: Double(mix(-120, 0, move)))
+            pose.line1 = NowPlayingLane(dx: mix(48, 0, ease(.standard, shifted, 0.52, 0.12)), alpha: ease(.easeOut, shifted, 0.40, 0.12))
         case .ticker:
-            let v = u - 0.04
-            p.reveal = ease(.standard, v, 0.56, 0.06)
-            p.cover = NowPlayingLane(scaleX: ease(.flip, v, 0.30))
+            let shifted = since - 0.04
+            pose.reveal = ease(.standard, shifted, 0.56, 0.06)
+            pose.cover = NowPlayingLane(scaleX: ease(.flip, shifted, 0.30))
         case .text:
-            p.reveal = ease(.standard, u - 0.06, 0.56)
+            pose.reveal = ease(.standard, since - 0.06, 0.56)
         case .popup:
-            p.reveal = ease(.standard, u - 0.06, 0.60)
+            pose.reveal = ease(.standard, since - 0.06, 0.60)
         case .twoLine:
-            let v = u - 0.04
-            p.line1 = NowPlayingLane(dy: mix(24, 0, ease(.standard, v, 0.48)), alpha: ease(.easeOut, v, 0.38))
-            p.line2 = NowPlayingLane(dy: mix(24, 0, ease(.standard, v, 0.48, 0.08)), alpha: ease(.easeOut, v, 0.38, 0.08))
+            let shifted = since - 0.04
+            pose.line1 = NowPlayingLane(dy: mix(24, 0, ease(.standard, shifted, 0.48)), alpha: ease(.easeOut, shifted, 0.38))
+            pose.line2 = NowPlayingLane(dy: mix(24, 0, ease(.standard, shifted, 0.48, 0.08)), alpha: ease(.easeOut, shifted, 0.38, 0.08))
         case .cover:
-            let v = u - 0.06
-            p.reveal = ease(.standard, v, 0.56, 0.12)
-            p.cover = NowPlayingLane(scaleX: ease(.flip, v, 0.26))
+            let shifted = since - 0.06
+            pose.reveal = ease(.standard, shifted, 0.56, 0.12)
+            pose.cover = NowPlayingLane(scaleX: ease(.flip, shifted, 0.26))
         }
-        return p
+        return pose
     }
 
     #if DEBUG
     static func demo() {
-        for d in NowPlayingDesign.allCases {
-            let sw = timing(d).switchAt
+        for design in NowPlayingDesign.allCases {
+            let sw = timing(design).switchAt
             // A change starts on the old song, settled as it was, switches to the new one at switchAt and ends settled.
-            var start = change(d, t: 0)
+            var start = change(design, t: 0)
             assert(!start.useNew)
             start.useNew = true
-            assert(start == .settled, "\(d) change start")
-            assert(!change(d, t: sw - 0.001).useNew && change(d, t: sw).useNew, "\(d) switch point")
+            assert(start == .settled, "\(design) change start")
+            assert(!change(design, t: sw - 0.001).useNew && change(design, t: sw).useNew, "\(design) switch point")
             // +1 ms: the last curve reaches exactly 1 only a rounding error past its nominal end
-            assert(change(d, t: total(d) + 0.001) == .settled && change(d, t: total(d) + 5) == .settled, "\(d) change end")
+            assert(change(design, t: total(design) + 0.001) == .settled
+                   && change(design, t: total(design) + 5) == .settled, "\(design) change end")
             // The first appearance starts off-screen/hidden and ends settled; an exit starts settled and ends invisible.
-            assert(enter(d, t: 0) != .settled && enter(d, t: enterTotal(d) + 0.001) == .settled, "\(d) enter")
-            assert(exit(d, t: 0) == .settled && exit(d, t: exitTotal(d)).alpha == 0, "\(d) exit")
+            assert(enter(design, t: 0) != .settled && enter(design, t: enterTotal(design) + 0.001) == .settled, "\(design) enter")
+            assert(exit(design, t: 0) == .settled && exit(design, t: exitTotal(design)).alpha == 0, "\(design) exit")
         }
         // Pop-up: closes only after the hold, and is shut when its exit is over.
         assert(!popupExitDue(openFor: 5.9, hold: 6) && popupExitDue(openFor: 6, hold: 6))

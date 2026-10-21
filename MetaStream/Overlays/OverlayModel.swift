@@ -2,7 +2,9 @@
 import CoreGraphics
 import Foundation
 
-enum OverlayLayerType: String, Codable, Sendable { case browser, image, media, text, color, slideshow, chat, alerts, events, qr, goal, nowplaying }
+enum OverlayLayerType: String, Codable, Sendable {
+    case browser, image, media, text, color, slideshow, chat, alerts, events, qr, goal, nowplaying
+}
 
 /// Frame-relative placement for in-app widgets, so one layout works in portrait, landscape and any resolution.
 /// anchor: 0..8 row-major (0 TL, 1 TC, 2 TR, 3 ML, 4 C, 5 MR, 6 BL, 7 BC, 8 BR).

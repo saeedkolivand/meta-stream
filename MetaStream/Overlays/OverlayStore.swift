@@ -251,22 +251,31 @@ final class OverlayStore: ObservableObject {
         case .image:
             guard let url = local(l.data["file"] ?? ""), let img = OverlayRaster.load(url) else { return nil }
             return OverlayRaster.croppedSize(img, l.crop)
-        case .text:
-            let t = TextWidgetStyle(l.data)
-            if l.layout != nil { return OverlayRaster.textNatural(t) }
-            return OverlayRaster.textSize(t.text, OverlayRaster.textAttributes(face: t.face, bold: t.bold, px: t.size, argb: t.color))
-        case .chat: return ChatWidgetStyle(l.data).natural
-        case .events: return EventListStyle(l.data).natural
-        case .alerts: return AlertWidgetStyle(l.data).natural
-        case .qr: return QRWidgetStyle(l.data).natural
-        case .goal: return GoalWidgetStyle(l.data).natural
-        case .nowplaying: return NowPlayingWidgetStyle(l.data).natural
+        case .text, .chat, .events, .alerts, .qr, .goal, .nowplaying: return widgetNaturalSize(l)
         case .browser: return CGSize(width: dim("width", 800), height: dim("height", 600))
         case .color: return CGSize(width: dim("width", 1920), height: dim("height", 1080))
         case .media: return local(l.data["file"] ?? "").flatMap { mediaSize($0) }
         case .slideshow:
             guard let f = l.files.first, let url = local(f), let img = OverlayRaster.load(url) else { return nil }
             return img.size
+        }
+    }
+
+    /// The text and in-app widget layers, whose size comes from their own style.
+    private func widgetNaturalSize(_ layer: OverlayLayer) -> CGSize? {
+        switch layer.type {
+        case .text:
+            let text = TextWidgetStyle(layer.data)
+            if layer.layout != nil { return OverlayRaster.textNatural(text) }
+            return OverlayRaster.textSize(
+                text.text, OverlayRaster.textAttributes(face: text.face, bold: text.bold, px: text.size, argb: text.color))
+        case .chat: return ChatWidgetStyle(layer.data).natural
+        case .events: return EventListStyle(layer.data).natural
+        case .alerts: return AlertWidgetStyle(layer.data).natural
+        case .qr: return QRWidgetStyle(layer.data).natural
+        case .goal: return GoalWidgetStyle(layer.data).natural
+        case .nowplaying: return NowPlayingWidgetStyle(layer.data).natural
+        default: return nil
         }
     }
 

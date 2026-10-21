@@ -8,7 +8,7 @@ enum WidgetVariables {
         ("{time}", "Time"), ("{date}", "Date"), ("{uptime}", "Live time"), ("{viewers}", "Viewers"), ("{bitrate}", "Bitrate"),
         ("{battery}", "Battery"), ("{speed}", "Speed"), ("{distance}", "Distance"), ("{city}", "City"), ("{weather}", "Weather"),
         ("{follower}", "Latest follower"), ("{sub}", "Latest sub"), ("{countdown}", "Starting countdown"),
-        ("{song}", "Spotify song"), ("{artist}", "Spotify artist"),
+        ("{song}", "Spotify song"), ("{artist}", "Spotify artist")
     ]
 
     static func needsLocation(_ template: String) -> Bool {
@@ -40,6 +40,13 @@ enum WidgetVariables {
             UIDevice.current.isBatteryMonitoringEnabled = true
             let level = UIDevice.current.batteryLevel
             return level < 0 ? "--" : "\(Int((level * 100).rounded()))%"
+        default: return socialValue(token, ctx)
+        }
+    }
+
+    /// The location, weather, chat and Spotify tokens.
+    private static func socialValue(_ token: String, _ ctx: WidgetContext) -> String {
+        switch token {
         case "{speed}": return WidgetLocation.shared.speedText
         case "{distance}": return WidgetLocation.shared.distanceText(since: ctx.streamer?.liveSince)
         case "{city}": return WidgetLocation.shared.cityText
