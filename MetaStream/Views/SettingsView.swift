@@ -23,6 +23,8 @@ struct SettingsView: View {
             if hSize == .regular { splitLayout } else { stackLayout }
         }
         .preferredColorScheme(.dark)
+        // Pulling down from the top of a long list kept closing the sheet by accident; Done is the only way out.
+        .interactiveDismissDisabled()
         .onAppear { wrappedPending = WrappedStore.pendingMonth(records: SessionLog.all()) != nil }
         // Debounced: a slider in a detail screen writes defaults continuously, and issue checks read the Keychain.
         .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
