@@ -102,8 +102,9 @@ struct StreamChatView: View {
         }
     }
 
+    /// One row on its own: the GPU chat widget rasterises each row once with this (ChatRows.swift).
     @ViewBuilder
-    private func row(_ e: ChatEvent, animate: Bool) -> some View {
+    func row(_ e: ChatEvent, animate: Bool) -> some View {
         Group {
             if e.kind == .message { messageCard(e, animate: animate) } else { eventPill(e) }
         }
@@ -279,21 +280,23 @@ struct EventListView: View {
         Array(events.filter { $0.kind != .message && style.shows($0.kind) && !$0.offensive }.suffix(Int(style.maxEvents)).reversed())
     }
 
+    /// One event on its own (the GPU event list rasterises each once, see EventRows.swift).
+    func row(_ e: ChatEvent) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: eventSymbol(e.kind).name).foregroundColor(eventSymbol(e.kind).color)
+            Text(DisplayNames.eventSummary(e)).foregroundColor(argbColor(style.textColor)).lineLimit(2).multilineTextAlignment(.leading)
+                .rowDirection(WidgetFonts.isRTL(DisplayNames.eventSummary(e)))
+        }
+        .font(WidgetFonts.font(face: style.face, size: CGFloat(style.fontSize), weight: .semibold))
+        .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 1)
+        .padding(.horizontal, 10).padding(.vertical, 5)
+        .background { if style.background { RoundedRectangle(cornerRadius: 10).fill(argbColor(style.backgroundColor)) } }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     var body: some View {
-        let size = CGFloat(style.fontSize)
         VStack(alignment: .leading, spacing: 6) {
-            ForEach(Array(Self.rows(events, style).enumerated()), id: \.offset) { _, e in
-                HStack(spacing: 8) {
-                    Image(systemName: eventSymbol(e.kind).name).foregroundColor(eventSymbol(e.kind).color)
-                    Text(DisplayNames.eventSummary(e)).foregroundColor(argbColor(style.textColor)).lineLimit(2).multilineTextAlignment(.leading)
-                        .rowDirection(WidgetFonts.isRTL(DisplayNames.eventSummary(e)))
-                }
-                .font(WidgetFonts.font(face: style.face, size: size, weight: .semibold))
-                .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 1)
-                .padding(.horizontal, 10).padding(.vertical, 5)
-                .background { if style.background { RoundedRectangle(cornerRadius: 10).fill(argbColor(style.backgroundColor)) } }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            ForEach(Array(Self.rows(events, style).enumerated()), id: \.offset) { _, e in row(e) }
         }
         .padding(8)
         .frame(width: CGFloat(style.width), height: CGFloat(style.height), alignment: .topLeading)

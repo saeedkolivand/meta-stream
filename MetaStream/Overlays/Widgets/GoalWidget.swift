@@ -1,4 +1,4 @@
-// Native goal bar: title, "€312 / €800", a flat progress bar. Redrawn only when the total, the goal or the celebration changes.
+// Goal bar preview: title, "€312 / €800", a flat progress bar (the in-app editor's LayerPreview; the stream draws it on the GPU, GoalArt).
 import HaishinKit
 import SwiftUI
 
@@ -52,80 +52,15 @@ struct GoalView: View {
 }
 
 extension OverlayCompositor {
+    /// The goal on the GPU (GoalArt.swift): the task in GoalPlayer.swift hands the GPU object a scene when the goal changes.
     func goalWidget(_ l: OverlayLayer, box: CGRect, canvas: CGSize) async -> WidgetBuild? {
         guard let rect = OverlayRaster.visible(box, in: canvas) else { return nil }
         let style = GoalWidgetStyle(l.data)
-        let natural = style.natural
-        let o = await OverlayScreen.makeImage(rect, nil)
-        let design = style.design
-        let secs = GoalDesignView.reactionSeconds(design)
-        let task = Task {
-            var last = ""
-            var wasReached = GoalStore.shared.reached
-            var reachedAt: Date?
-            var shownTotal = GoalStore.shared.total   // what the new designs show; a rise above it plays a reaction
-            var shownP = GoalStore.shared.progress
-            while !Task.isCancelled {
-                let store = GoalStore.shared
-                let cfg = store.config
-                if store.reached != wasReached { wasReached = store.reached; reachedAt = store.reached ? Date() : nil }
-                let celebrating = store.reached && (reachedAt.map { Date().timeIntervalSince($0) < 6 } ?? false)
-                let sig = "\(store.total)|\(cfg.target)|\(cfg.title)|\(cfg.currency)|\(store.reached)|\(celebrating)"
-                if sig != last {
-                    last = sig
-                    if design == "bar" {
-                        let other = ["IRT", "USD", "EUR"].filter { $0 != cfg.currency }.compactMap { code in
-                            Rates.shared.convert(Money(store.total, cfg.currency), to: code).map { Money($0, code).display }
-                        }
-                        let view = GoalView(style: style, title: cfg.title, totalText: Money(store.total, cfg.currency).display,
-                                            targetText: Money(cfg.target, cfg.currency).display, progress: store.progress,
-                                            otherText: other.isEmpty ? "" : "≈ " + other.joined(separator: " · "), celebrating: celebrating)
-                        let piece = WidgetRaster.piece(view, natural: natural, box: box, canvas: canvas)
-                        await OverlayScreen.setImage(o, piece?.bitmap)
-                    } else {
-                        let title = celebrating ? "Goal reached!" : cfg.title
-                        let pins = [25, 50, 75].map { Money(cfg.target * Decimal($0) / 100, cfg.currency).display }
-                        @MainActor func draw(_ a: Decimal, _ b: Decimal, _ fromP: Double, _ toP: Double, _ t: Double) async {
-                            let view = GoalDesignView(style: style, title: title, beforeText: Money(a, cfg.currency).display,
-                                                      afterText: Money(b, cfg.currency).display,
-                                                      targetText: Money(cfg.target, cfg.currency).display, from: fromP, to: toP,
-                                                      deltaText: b > a ? Money(b - a, cfg.currency).display : "", t: t,
-                                                      pins: pins, celebrating: celebrating)
-                            let piece = WidgetRaster.piece(view, natural: natural, box: box, canvas: canvas)
-                            await OverlayScreen.setImage(o, piece?.bitmap)
-                        }
-                        let total = store.total
-                        if total > shownTotal {
-                            // A donation arrived: play the reaction (t 0...1 over `secs`: 1.6 s, the island pill 2.4 s). If the total moves again, restart from what is shown.
-                            var fromTotal = shownTotal, fromP = shownP
-                            var toTotal = total, toP = store.progress
-                            var t0 = Date()
-                            while !Task.isCancelled {
-                                let now = store.total
-                                if now < toTotal { break }   // refund mid-reaction: the next poll redraws statically
-                                if now != toTotal {
-                                    let t = min(1, Date().timeIntervalSince(t0) / secs)
-                                    fromP += (toP - fromP) * GoalMotion.move(t)
-                                    if t >= 0.5 { fromTotal = toTotal }
-                                    toTotal = now; toP = store.progress; t0 = Date()
-                                }
-                                let t = min(1, Date().timeIntervalSince(t0) / secs)
-                                await draw(fromTotal, toTotal, fromP, toP, t)
-                                if t >= 1 { break }
-                                try? await Task.sleep(for: WidgetRaster.pause(33))
-                            }
-                            shownTotal = toTotal; shownP = toP
-                            if store.total != toTotal { last = "" }
-                        } else {
-                            shownTotal = total; shownP = store.progress
-                            await draw(total, total, shownP, shownP, 1)
-                        }
-                    }
-                }
-                try? await Task.sleep(for: WidgetRaster.pause(500))
-            }
-        }
-        let object: ScreenObject = o
+        let screen = await OverlayScreen.makeGPU(rect)
+        // The box inside the widget's (visible) rect, in the rect's top-left coordinates.
+        let local = CGRect(x: box.minX - rect.minX, y: box.minY - rect.minY, width: box.width, height: box.height)
+        let task = Task { await GoalPlayer.run(style, on: screen, local: local) }
+        let object: ScreenObject = screen
         return WidgetBuild(object: object, task: task)
     }
 }

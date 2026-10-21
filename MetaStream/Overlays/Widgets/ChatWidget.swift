@@ -1,4 +1,5 @@
-// Native chat widget: one bitmap, re-rendered only when the chat, the loaded emotes or an in-progress fade changes.
+// Native chat widget on the GPU: each message row is rasterised once when it arrives (ChatRows.swift); stacking, the entry
+// slide and the fade-out run on the GPU as functions of time. The loop only decides WHICH rows to show.
 import HaishinKit
 import SwiftUI
 import UIKit
@@ -25,31 +26,31 @@ enum WidgetRaster {
     }
 }
 
-/// Chat burst: many messages arriving at once. The widget then skips the entry slide and caps redraws.
+/// Chat burst: many messages arriving at once. The widget then skips the entry slide (rows just appear).
 enum ChatBurst {
-    // ponytail: 3 messages within 1 s counts as a burst; redraws then coalesce to one per 100 ms (10 fps).
+    // ponytail: 3 messages within 1 s counts as a burst. Rows no longer coalesce: each costs one raster either way.
     static let messages = 3
     static let window: TimeInterval = 1
-    static let minGap: TimeInterval = 0.1
 
     static func isBurst(_ times: [Date], now: Date) -> Bool {
         times.lazy.filter { now.timeIntervalSince($0) <= window }.count >= messages
     }
 }
 
-/// Render timing for the log: one "perf" line per 10 s, only when something rendered.
+/// Raster timing for the log: one "perf" line per 10 s, only when a row was rasterised.
 private struct ChatRenderStats {
     private var since = Date()
     private var count = 0
     private var total = 0.0
     private var peak = 0.0
 
-    mutating func add(ms: Double) { count += 1; total += ms; peak = max(peak, ms) }
+    mutating func add(rows: Int, ms: Double) { count += rows; total += ms; peak = max(peak, ms) }
 
     mutating func flush(now: Date, burst: Bool) {
         guard now.timeIntervalSince(since) >= 10 else { return }
         if count > 0 {
-            applog("perf", "chat widget: \(count) renders/10s, avg \(String(format: "%.1f", total / Double(count))) ms, max \(String(format: "%.1f", peak)) ms, burst \(burst ? "on" : "off")")
+            applog("perf", "chat widget: \(count) row rasters/10s, avg \(String(format: "%.1f", total / Double(count))) ms/row, "
+                + "max pass \(String(format: "%.1f", peak)) ms, burst \(burst ? "on" : "off")")
         }
         self = ChatRenderStats()
     }
@@ -59,47 +60,87 @@ extension OverlayCompositor {
     func chatWidget(_ l: OverlayLayer, box: CGRect, canvas: CGSize) async -> WidgetBuild? {
         guard let rect = OverlayRaster.visible(box, in: canvas) else { return nil }
         let style = ChatWidgetStyle(l.data)
-        let natural = CGSize(width: CGFloat(style.width), height: CGFloat(style.height))
+        // The box inside the widget's (visible) rect, in the rect's top-left coordinates.
+        let spec = ChatStackSpec(scale: box.width / max(1, style.width), origin: CGPoint(x: box.minX - rect.minX, y: box.minY - rect.minY),
+                                 size: style.natural, gap: style.fontSize * 0.32, enters: style.fontSize * 0.7,
+                                 fadeSeconds: Double(style.fadeSeconds), topFade: true)
+        let screen = await OverlayScreen.makeGPU(rect)
         let ctx = context
-        let o = await OverlayScreen.makeImage(rect, nil)
-        let task = Task {
-            var last = ""
-            var entering = false
-            var animating = false
-            var burst = false
-            var lastRender = Date.distantPast
-            var stats = ChatRenderStats()
-            while !Task.isCancelled {
-                if let chat = ctx.chat, let emotes = ctx.emotes {
-                    let now = Date()
-                    let rows = StreamChatView.rows(chat.visible, style, now: now)
-                    burst = ChatBurst.isBurst(rows.filter { $0.kind == .message }.map(\.at), now: now)
-                    // Time only enters the signature while something moves: ~20 fps for a new row's 0.32 s entry,
-                    // 4 fps inside a fade-out ramp. Otherwise the picture is static and never re-rendered.
-                    // In a burst rows skip the entry slide, so nothing is "entering".
-                    entering = !burst && rows.contains { StreamChatView.appear($0, now: now) < 1 }
-                    let ramping = rows.contains { StreamChatView.opacity($0, style, now: now) < 1 }
-                    // ponytail: animated emotes tick at 10 fps; Emotes.animates is false when the phone runs hot (frozen).
-                    animating = rows.suffix(StreamChatView.animatedRows).contains { $0.kind == .message && emotes.animates($0.text) }
-                    let t = now.timeIntervalSinceReferenceDate
-                    let sig = "\(chat.serial)|\(chat.clears)|\(rows.count)|\(emotes.images.count)|\(entering ? Int(t * 20) : animating ? Int(t * 10) : ramping ? Int(t * 4) : 0)"
-                    // Burst: a change that arrives inside the gap waits; the next pass renders the latest state once.
-                    if sig != last, !burst || now.timeIntervalSince(lastRender) >= ChatBurst.minGap {
-                        last = sig
-                        lastRender = now
-                        let piece = rows.isEmpty ? nil : WidgetRaster.piece(
-                            StreamChatView(events: chat.visible, style: style, emotes: emotes,
-                                           channel: UserDefaults.standard.string(forKey: "chatChannel") ?? "", now: now, burst: burst),
-                            natural: natural, box: box, canvas: canvas)
-                        stats.add(ms: Date().timeIntervalSince(now) * 1000)
-                        await OverlayScreen.setImage(o, piece?.bitmap)
-                    }
-                    stats.flush(now: now, burst: burst)
-                }
-                try? await Task.sleep(for: WidgetRaster.pause(entering ? 50 : animating || burst ? 100 : 200))
-            }
-        }
-        let object: ScreenObject = o
+        let task = Task { await ChatPlayer.run(style, spec: spec, ctx: ctx, screen: screen) }
+        let object: ScreenObject = screen
         return WidgetBuild(object: object, task: task)
+    }
+}
+
+/// The loop's state between passes. A pass picks the rows to show, rasterises the new ones and re-shows the scene only when
+/// its row set (or whether it moves) changed.
+@MainActor
+final class ChatPlayer {
+    private let style: ChatWidgetStyle
+    private let base: ChatStackSpec
+    private let screen: GPUWidgetScreenObject
+    private let cache = ChatRowCache()
+    private var shown = "start"   // the row keys on the object and whether its scene moves; "" = blank
+    private var stats = ChatRenderStats()
+
+    init(_ style: ChatWidgetStyle, spec: ChatStackSpec, screen: GPUWidgetScreenObject) {
+        self.style = style
+        base = spec
+        self.screen = screen
+    }
+
+    static func run(_ style: ChatWidgetStyle, spec: ChatStackSpec, ctx: WidgetContext, screen: GPUWidgetScreenObject) async {
+        let player = ChatPlayer(style, spec: spec, screen: screen)
+        while !Task.isCancelled {
+            if let chat = ctx.chat, let emotes = ctx.emotes { await player.pass(chat.visible, emotes) }
+            try? await Task.sleep(for: WidgetRaster.pause(100))
+        }
+    }
+
+    private func pass(_ visible: [ChatEvent], _ emotes: Emotes) async {
+        let now = Date()
+        let events = StreamChatView.rows(visible, style, now: now)
+        let burst = ChatBurst.isBurst(events.filter { $0.kind == .message }.map(\.at), now: now)
+        var spec = base
+        if burst { spec.enters = 0 }
+        let moving = ChatMotion.moving(events.map(\.at), spec, now: now)
+        let before = cache.made
+        let built = items(events, spec: spec, emotes: emotes, now: now)
+        cache.keep(Set(built.keys))
+        if cache.made > before { stats.add(rows: cache.made - before, ms: Date().timeIntervalSince(now) * 1000) }
+        stats.flush(now: now, burst: burst)
+        let sig = built.rows.isEmpty ? "" : built.keys.joined(separator: ";") + (moving ? "|moving" : "")
+        guard sig != shown else { return }
+        shown = sig
+        await OverlayScreen.show(screen, built.rows.isEmpty ? nil : ChatScene.make(built.rows, spec, moving: moving))
+    }
+
+    /// The rows to show now with their rasters (cached per message), and the keys that identify them.
+    private func items(_ events: [ChatEvent], spec: ChatStackSpec, emotes: Emotes, now: Date) -> (rows: [ChatRowItem], keys: [String]) {
+        let channel = UserDefaults.standard.string(forKey: "chatChannel") ?? ""
+        let host = StreamChatView(events: [], style: style, emotes: emotes, channel: channel, now: now, burst: true)
+        let width = style.width - 2 * spec.pad
+        var rows: [ChatRowItem] = []
+        var keys: [String] = []
+        for (index, e) in events.enumerated() {
+            // ponytail: only the newest rows play animated emotes (10 fps: a fresh raster of that row per tick); others hold frame 0.
+            let animate = e.kind == .message && index >= events.count - StreamChatView.animatedRows && emotes.animates(e.text)
+            let frame = animate ? "|\(Int(now.timeIntervalSinceReferenceDate * 10))" : ""
+            let key = ChatRowCache.key(e) + "|" + Self.emoteState(e, emotes) + frame
+            keys.append(key)
+            let made = cache.item(key, born: e.at, scale: spec.scale, pad: spec.pad) { host.row(e, animate: animate).frame(width: width) }
+            if let row = made { rows.append(row) }
+        }
+        return (rows, keys)
+    }
+
+    /// "emotes in the text . how many of them have loaded": a row is rasterised again when a late emote lands.
+    private static func emoteState(_ e: ChatEvent, _ emotes: Emotes) -> String {
+        guard e.kind == .message else { return "" }
+        let urls = Emotes.tokenize(e.text, byName: emotes.byName).compactMap { run -> URL? in
+            if case .emote(let url) = run { return url }
+            return nil
+        }
+        return "\(urls.count).\(urls.filter { emotes.images[$0] != nil }.count)"
     }
 }
