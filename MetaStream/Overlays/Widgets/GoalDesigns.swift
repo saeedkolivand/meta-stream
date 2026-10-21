@@ -361,7 +361,7 @@ struct GoalDesignView: View {
     var celebrating = false
 
     /// The designs are laid out in 1280-wide board units (the previews); a stream canvas is 1920 wide, so draw 1.5x.
-    static let scale: CGFloat = 1.5
+    nonisolated static let scale: CGFloat = 1.5   // read by the GPU goal art off the main actor
 
     var body: some View {
         // The box is fixed; variable-width designs hug one side of it (laid out in board units, then scaled).
