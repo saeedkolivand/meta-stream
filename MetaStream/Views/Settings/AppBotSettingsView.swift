@@ -11,7 +11,6 @@ struct AppBotSettingsView: View {
     @AppStorage("botHideLocation") var hideLocation = false
     @AppStorage("botTimersOn") var timersOn = false
     @AppStorage("botTimers") var rawTimers = "[]"
-    @State private var timers: [AppTimer] = []
 
     var body: some View {
         Form {
@@ -21,78 +20,50 @@ struct AppBotSettingsView: View {
                 Toggle("Test mode", isOn: $testMode)
                 if !bot.status.isEmpty { Text(bot.status).font(.footnote).foregroundStyle(.secondary) }
             } footer: {
-                Text("Posts only while you are live, never as you. Test mode lets it answer you and your mods (no one else) and post notices while offline, so you can try it from your own chat (timers still wait for live); turn it off when done. Kick: create the bot once in your Kick developer app settings. Twitch: connect a second account below (make it a mod of your channel).")
+                Text("Posts only while you are live, never as you. Test mode lets it answer you and your mods (no one else) "
+                     + "and post notices while offline; turn it off when done.")
             }
-            Section("Twitch bot account") {
+            Section {
                 if bot.twitchBotName.isEmpty {
                     Button("Connect bot account") { bot.connectTwitch() }
                 } else {
                     Text("Connected as \(bot.twitchBotName)")
                     Button("Disconnect", role: .destructive) { bot.disconnectTwitch() }
                 }
+            } header: { Text("Twitch bot account") } footer: {
+                Text("Kick: create the bot once in your Kick developer app settings. Twitch: connect a second account here "
+                     + "(make it a mod of your channel).")
             }
-            Section {
-                Toggle("Scene notices", isOn: $notices)
-                template("BRB starts", "botTplBrbOn")
-                template("BRB ends", "botTplBrbOff")
-                template("Starting scene", "botTplStartingOn")
-                template("Starting ends (live)", "botTplStartingOff")
-                template("Ending scene", "botTplEndingOn")
-            } footer: { Text("Empty = don't post. With no scene set to the BRB role, a weak connection only posts the BRB lines "
-                     + "and the stream stays on camera. The BRB line goes out at most once per 2 min.") }
             Section {
                 ForEach(["Location", "Speed", "Distance", "Weather", "Battery", "Uptime", "Goal", "Donate", "Song", "Commands"],
                         id: \.self) { command in
                     CommandToggle(name: command)
                 }
                 Toggle("Hide location", isOn: $hideLocation)
-                template("Donate answer", "botTplDonate")
             } header: { Text("Viewer commands") } footer: {
                 Text("Once per 30 s per command and platform; mods and you skip that. !location says region and country only. "
-                     + "!commands lists the ones switched on. !song posts the Spotify song with its link (Settings › Spotify). "
-                     + "!donate (also !tip, !support, !donation) answers with the donate answer: "
-                     + "{title}, {total}, {target}, {percent} and {url}.")
+                     + "!song posts the Spotify song with its link (Settings › Spotify). The !donate answer is in Messages.")
             }
             Section {
-                Toggle("Thank-yous", isOn: $thanks)
-                template("Follow", "botTplFollow")
-                template("Sub", "botTplSub")
-                template("Gifted subs", "botTplGift")
-                template("Raid", "botTplRaid")
-                template("Donation", "botTplTip")
-            } footer: { Text("{user}, {count} and (donations) {amount}. Empty = don't post.") }
-            Section {
-                Toggle("Timers", isOn: $timersOn)
-                ForEach($timers) { $t in
-                    VStack(alignment: .leading) {
-                        TextField("Message", text: $t.text)
-                        Stepper("Every \(t.minutes) min", value: $t.minutes, in: 5...120, step: 5)
-                    }
-                }
-                .onDelete { timers.remove(atOffsets: $0) }
-                Button("Add timer") { timers.append(AppTimer(text: "")) }
+                NavigationLink { AppBotMessagesView() } label: { LabeledContent("Messages", value: messagesValue) }
+                NavigationLink { AppBotTimersView() } label: { LabeledContent("Timers", value: timersValue) }
             } footer: {
-                Text("A timer posts when its interval has passed and at least 5 viewers chatted since its last post; never more than one per 5 min per platform, and not during BRB.")
+                Text("What the bot posts for scene changes, donate questions and thank-yous, and repeating timers.")
             }
         }
         .navigationTitle("App bot")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar { EditButton() }
-        .onAppear { timers = AppTimer.decode(rawTimers) }
-        .onChange(of: timers) { _, v in rawTimers = AppTimer.encode(v) }
     }
 
-    /// One editable message; shows the default until it is changed.
-    private func template(_ title: String, _ key: String) -> some View {
-        TemplateField(title: title, key: key)
+    private var messagesValue: String {
+        let count = [notices, thanks].filter { $0 }.count
+        return count == 0 ? "Off" : "\(count) on"
     }
-}
 
-private struct TemplateField: View {
-    let title: String
-    @AppStorage private var text: String
-    init(title: String, key: String) { self.title = title; _text = AppStorage(wrappedValue: AppBot.defaults[key] ?? "", key) }
-    var body: some View { TextField(title, text: $text) }
+    private var timersValue: String {
+        let count = AppTimer.decode(rawTimers).count
+        return timersOn && count > 0 ? "\(count)" : "Off"
+    }
 }
 
 private struct CommandToggle: View {

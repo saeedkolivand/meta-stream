@@ -28,6 +28,20 @@ final class SessionLog: ObservableObject {
 
     // MARK: pure decisions
 
+    /// The camera going out at the first sample: the UVC camera's own name, else which phone camera, glasses or screen.
+    static func cameraName(_ streamer: Streamer) -> String? {
+        switch streamer.source {
+        case "screen": return "Screen share"
+        case "glasses": return "Glasses"
+        default:
+            switch streamer.manualSource {
+            case "external": return streamer.externalCameraName ?? "External camera"
+            case "front": return "Front camera"
+            default: return "Back camera"
+            }
+        }
+    }
+
     /// A chat spike: at least 20 messages this minute and 3x the mean of up to the previous 10 minutes (needs 3 of them).
     static func isSpike(_ count: Int, previous: [Int]) -> Bool {
         let prev = Array(previous.suffix(10))
@@ -51,6 +65,7 @@ final class SessionLog: ObservableObject {
     func begin(title: String) {
         registry = Self.load([String: Known].self, from: Self.chattersFile) ?? [:]
         current = SessionRecord(start: Date(), title: title, currency: GoalStore.shared.config.currency, trackingStarted: registry.isEmpty)
+        current?.platform = PlatformAdapter.all[UserDefaults.standard.string(forKey: "platform") ?? "kick"]?.name
         lastDonation = nil
         minuteChat = 0
         minuteDonations = 0
@@ -66,6 +81,7 @@ final class SessionLog: ObservableObject {
         guard var rec = current else { return }
         let now = Date()
         guard Int(now.timeIntervalSince(rec.start)) / 60 > rec.samples.count else { return }
+        if rec.camera == nil { rec.camera = Self.cameraName(streamer) }
         let previous = rec.samples.suffix(10).map(\.chat)
         rec.samples.append(SessionSample(
             minute: rec.samples.count + 1, viewers: viewers, chat: minuteChat, kbps: streamer.kbps,

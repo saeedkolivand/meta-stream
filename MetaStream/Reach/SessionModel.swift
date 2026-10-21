@@ -51,6 +51,9 @@ struct SessionRecord: Codable {
     var cities: [String]?
     /// Public donor name to total in `currency`; anonymous placeholders excluded.
     var donors: [String: Decimal]?
+    /// Ingest platform name ("Kick") and the camera that was live; nil in older files.
+    var platform: String?
+    var camera: String?
 
     var peakViewers: Int { samples.map(\.viewers).max() ?? 0 }
 

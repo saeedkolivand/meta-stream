@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// Settings › Goal: the donation goal, the rates behind it, what subs/Bits are worth, manual and test donations.
+/// Settings › Goal: the donation goal, manual and test donations; rates and the donation list are one level down.
 /// The donation-site keys and the donate page have their own screens. Money is Decimal throughout (parsed from text, never Double).
 struct GoalSettingsView: View {
     @EnvironmentObject var chat: ChatFeed
     @ObservedObject private var goal = GoalStore.shared
     @ObservedObject private var rates = Rates.shared
-    @AppStorage("goalManualTomanPerEUR") private var manualRate = ""
 
     @State private var title = ""
     @State private var target = ""
@@ -32,11 +31,9 @@ struct GoalSettingsView: View {
         Form {
             goalSection
             statusSection
-            ratesSection
-            valuesSection
             addSection
             testSection
-            recentSection
+            subScreensSection
         }
         .navigationTitle("Goal")
         .navigationBarTitleDisplayMode(.inline)
@@ -49,6 +46,19 @@ struct GoalSettingsView: View {
     }
 
     // MARK: sections
+
+    private var subScreensSection: some View {
+        Section {
+            NavigationLink { GoalRatesView() } label: {
+                LabeledContent("Rates", value: rates.tomanPerEuro.map { Money($0, "IRT").display } ?? "")
+            }
+            NavigationLink { GoalRecentView() } label: {
+                LabeledContent("Recent donations", value: "\(goal.entries.count)")
+            }
+        } footer: {
+            Text("Exchange rates, what subs and Bits are worth, and the donation list.")
+        }
+    }
 
     private var goalSection: some View {
         Section {
@@ -70,11 +80,13 @@ struct GoalSettingsView: View {
                 .disabled(parse(target) == nil || parse(start) == nil)
             }
             Button("Reset goal", role: .destructive) {
-                goal.reset(title: title, target: parse(target) ?? goal.config.target, currency: goal.config.currency, start: parse(start) ?? 0)
+                goal.reset(title: title, target: parse(target) ?? goal.config.target,
+                           currency: goal.config.currency, start: parse(start) ?? 0)
                 currency = goal.config.currency
             }
         } header: { Text("Goal") } footer: {
-            Text("Donations are counted in the goal's currency when they arrive and keep that value. Another currency starts a new goal; reset clears the list.")
+            Text("Donations are counted in the goal's currency when they arrive and keep that value. "
+                     + "Another currency starts a new goal; reset clears the list.")
         }
     }
 
@@ -85,33 +97,6 @@ struct GoalSettingsView: View {
             if goal.pendingCount > 0 {
                 LabeledContent("Waiting for a rate", value: "\(goal.pendingCount)")
             }
-        }
-    }
-
-    private var ratesSection: some View {
-        Section {
-            LabeledContent("Toman rate", value: rates.tomanSource)
-            LabeledContent("₮ per €", value: tomanPerEuro.map { Money($0, "IRT").display } ?? "No rate")
-            TextField("Your rate (₮ per €)", text: $manualRate).keyboardType(.decimalPad)
-            Button("Refresh rates") { Task { await rates.refresh() } }
-        } header: { Text("Rates") } footer: {
-            Text("Toman from Nobitex, euro from the ECB. Your rate replaces Nobitex; empty = Nobitex.")
-        }
-    }
-
-    private var tomanPerEuro: Decimal? {
-        if rates.manualTomanPerEUR > 0 { return rates.manualTomanPerEUR }
-        guard let t = rates.tomanRate(), let e = rates.usdPerEUR?.value else { return nil }
-        return t * e
-    }
-
-    private var valuesSection: some View {
-        Section {
-            ForEach([("kickSub", "Kick sub"), ("twitchTier1", "Twitch Tier 1 / Prime"), ("twitchTier2", "Twitch Tier 2"),
-                     ("twitchTier3", "Twitch Tier 3"), ("youtubeMember", "YouTube membership"), ("bit", "Bit"), ("kick", "KICK")],
-                    id: \.0) { PriceField(key: $0.0, label: $0.1) }
-        } header: { Text("Values (US dollars)") } footer: {
-            Text("What each counts for in the goal.")
         }
     }
 
@@ -151,63 +136,6 @@ struct GoalSettingsView: View {
             }
         } header: { Text("Test donation") } footer: {
             Text("Moves the bar for 10 seconds and shows the alert. Bits sends 100 Bits. Not counted.")
-        }
-    }
-
-    private var recentSection: some View {
-        Section("Recent donations") {
-            if goal.entries.isEmpty { Text("None yet").foregroundStyle(.secondary) }
-            ForEach(goal.entries.prefix(50)) { e in
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text(e.original.display).font(.body.weight(.semibold))
-                        if let v = e.value, e.original.inToman.currency != goal.config.currency {
-                            Text("= \(money(v))").foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        badges(e)
-                    }
-                    if !e.note.isEmpty { Text(e.note).font(.subheadline).lineLimit(2) }   // who, what (sub, KICKs, bits...) and their message
-                    Text("\(e.source.capitalized) · \(e.at.formatted(date: .abbreviated, time: .shortened))")
-                        .font(.footnote).foregroundStyle(.secondary)
-                }
-                .swipeActions {   // a test that counted, a mistake: out of the total, kept in the list as refunded
-                    if e.state == .counted || e.state == .pending {
-                        Button("Remove", role: .destructive) { goal.refund(e.id) }
-                    }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder private func badges(_ e: GoalStore.Entry) -> some View {
-        HStack(spacing: 4) {
-            if e.state == .pending { badge("pending", .orange) }
-            if e.state == .refunded { badge("refunded", .red) }
-            if e.state == .test { badge("test", .blue) }
-            if e.missed { badge("missed", .gray) }
-        }
-    }
-
-    private func badge(_ text: String, _ color: Color) -> some View {
-        Text(text).font(.caption2.weight(.semibold)).foregroundStyle(color)
-            .padding(.horizontal, 6).padding(.vertical, 2).background(color.opacity(0.15), in: Capsule())
-    }
-}
-
-/// One editable dollar price (DonationPrices); saves as soon as the text is a number.
-private struct PriceField: View {
-    let key: String
-    let label: String
-    @State private var text = ""
-
-    var body: some View {
-        LabeledContent(label) {
-            TextField("0", text: $text).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
-        }
-        .onAppear { text = "\(DonationPrices.price(key))" }
-        .onChange(of: text) { _, v in
-            if let d = Decimal(string: v.replacingOccurrences(of: ",", with: ".")) { DonationPrices.set(key, d) }
         }
     }
 }

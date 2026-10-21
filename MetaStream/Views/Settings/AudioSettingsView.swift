@@ -10,9 +10,7 @@ struct AudioSettingsView: View {
     @AppStorage("volSound") var volSound = 1.0
     @AppStorage("alertSound") var alertSound = ""      // file in Documents/sounds; "" = built-in chime
     @AppStorage("sounds") var soundsRaw = "[]"          // soundboard, JSON [Sound]
-    @State private var sounds: [Sound] = []
     @State private var importing = false
-    @State private var importingForAlert = false
 
     var body: some View {
         Form {
@@ -34,41 +32,33 @@ struct AudioSettingsView: View {
                 slider("Clip audio", $volClip)
                 slider("Sounds", $volSound)
             } header: { Text("Mix volume") } footer: {
-                Text("The mix is what viewers hear. Alert sounds, clip audio and sounds play on stream only, never through the phone speaker, and a limiter keeps a loud file from drowning your voice. They go quiet while the microphone is muted.")
+                Text("The mix is what viewers hear. Alerts, clips and sounds play on stream only, never through the phone speaker, "
+                     + "and go quiet while the microphone is muted.")
             }
             Section {
                 LabeledContent("Alert sound", value: alertSound.isEmpty ? "Chime" : String(alertSound.dropFirst(9)))
-                Button("Choose file…") { importingForAlert = true; importing = true }
+                Button("Choose file…") { importing = true }
                 if !alertSound.isEmpty { Button("Use the chime") { alertSound = "" } }
             } header: { Text("Alert sound") }
             Section {
-                ForEach($sounds) { $s in TextField("Name", text: $s.name) }
-                    .onDelete { offsets in
-                        for i in offsets { try? FileManager.default.removeItem(at: Sound.url(sounds[i].file)) }
-                        sounds.remove(atOffsets: offsets)
-                    }
-                Button("Add sound…") { importingForAlert = false; importing = true }
-                    .disabled(sounds.count >= Sound.maxCount)
-            } header: { Text("Soundboard") } footer: {
-                Text("Up to \(Sound.maxCount) short sounds. While live, a music note button appears in the controls; tap a name to play it into the mix. Swipe to delete.")
+                NavigationLink { SoundboardView() } label: {
+                    LabeledContent("Soundboard", value: "\(Sound.decode(soundsRaw).count)")
+                }
+            } footer: {
+                Text("Short sounds you can play into the mix while live.")
             }
         }
         .navigationTitle("Audio")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { streamer.refreshMics(); sounds = Sound.decode(soundsRaw) }
-        .onChange(of: sounds) { _, v in soundsRaw = Sound.encode(v) }
+        .onAppear { streamer.refreshMics() }
         .onChange(of: [volMic, volAlert, volClip, volSound]) { _, _ in
             SoundMix.shared.applyVolumes()
             Task { await streamer.applyAudioMix() }
         }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.audio]) { result in
             guard case .success(let url) = result, let file = Sound.importFile(url) else { return }
-            if importingForAlert {
-                if !alertSound.isEmpty { try? FileManager.default.removeItem(at: Sound.url(alertSound)) }
-                alertSound = file
-            } else {
-                sounds.append(Sound(name: url.deletingPathExtension().lastPathComponent, file: file))
-            }
+            if !alertSound.isEmpty { try? FileManager.default.removeItem(at: Sound.url(alertSound)) }
+            alertSound = file
         }
     }
 
@@ -76,6 +66,38 @@ struct AudioSettingsView: View {
         HStack {
             Text(title)
             Slider(value: value, in: 0...1)
+        }
+    }
+}
+
+/// Settings › Audio › Soundboard: short sounds played into the mix from the live controls.
+struct SoundboardView: View {
+    @AppStorage("sounds") var soundsRaw = "[]"          // soundboard, JSON [Sound]
+    @State private var sounds: [Sound] = []
+    @State private var importing = false
+
+    var body: some View {
+        Form {
+            Section {
+                ForEach($sounds) { $s in TextField("Name", text: $s.name) }
+                    .onDelete { offsets in
+                        for idx in offsets { try? FileManager.default.removeItem(at: Sound.url(sounds[idx].file)) }
+                        sounds.remove(atOffsets: offsets)
+                    }
+                Button("Add sound…") { importing = true }
+                    .disabled(sounds.count >= Sound.maxCount)
+            } footer: {
+                Text("Up to \(Sound.maxCount) short sounds. While live, a music note button appears in the controls; "
+                     + "tap a name to play it into the mix. Swipe to delete. They go quiet while the microphone is muted.")
+            }
+        }
+        .navigationTitle("Soundboard")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear { sounds = Sound.decode(soundsRaw) }
+        .onChange(of: sounds) { _, v in soundsRaw = Sound.encode(v) }
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.audio]) { result in
+            guard case .success(let url) = result, let file = Sound.importFile(url) else { return }
+            sounds.append(Sound(name: url.deletingPathExtension().lastPathComponent, file: file))
         }
     }
 }

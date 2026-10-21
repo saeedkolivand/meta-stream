@@ -88,6 +88,9 @@ struct WidgetInspectorView: View {
             slider("Show for", num("holdSeconds"), 3...15, format: "%.0f s")
         }
         Section {
+            DonationAlertPreview(style: AlertWidgetStyle(layer.data)).listRowInsets(EdgeInsets())
+        }
+        Section {
             Picker("Donation style", selection: str("design")) {
                 ForEach(DonationAlertKind.allCases, id: \.rawValue) { Text($0.title).tag($0.rawValue) }
             }
