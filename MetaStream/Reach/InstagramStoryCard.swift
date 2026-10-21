@@ -43,6 +43,9 @@ struct StoryCard: View {
         .environment(\.layoutDirection, .leftToRight)
     }
 
+    /// The colour at the card's outer edge, for Instagram's background layer around it.
+    var edge: UInt32 { template == .poster ? theme.accent : theme.bg }
+
     private var text: Color { theme.color(theme.text) }
     private var muted: Color { theme.color(theme.muted) }
     private var shortLink: String { link.replacingOccurrences(of: "https://", with: "") }

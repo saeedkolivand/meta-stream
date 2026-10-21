@@ -41,15 +41,25 @@ enum InstagramStory {
         guard available, let scheme else { return }
         let post = LivePost.shared
         let link = post.slug.isEmpty ? "" : "https://kick.com/" + post.slug
-        let renderer = ImageRenderer(content: StoryCard(frame: frame, title: post.title, link: link, template: .current, theme: .current))
+        let story = StoryCard(frame: frame, title: post.title, link: link, template: .current, theme: .current)
+        let renderer = ImageRenderer(content: story)
         renderer.scale = 3
         guard let card = renderer.uiImage?.jpegData(compressionQuality: 0.9) else { return }
-        var item: [String: Any] = ["com.instagram.sharedSticker.backgroundImage": card]
-        // ponytail: the link rides the same pasteboard item as plain text, so pasting into the Link sticker works if
-        // Instagram leaves the pasteboard alone; the card shows the link too, for typing it when it doesn't.
-        if !link.isEmpty { item["public.utf8-plain-text"] = link }
+        // Sent as a sticker on a background layer of the card's own edge colour: Instagram places a shared image as a
+        // resizable layer either way, and a matching background makes the margin around it disappear.
+        let edge = ColorTheme.hex(story.edge)
+        let item: [String: Any] = ["com.instagram.sharedSticker.stickerImage": card,
+                                   "com.instagram.sharedSticker.backgroundTopColor": edge,
+                                   "com.instagram.sharedSticker.backgroundBottomColor": edge]
         UIPasteboard.general.setItems([item], options: [.expirationDate: Date().addingTimeInterval(300)])
         _ = await UIApplication.shared.open(scheme)
         applog("reach", "instagram story card handed over (frame: \(frame != nil))")
+        guard !link.isEmpty else { return }
+        // FOUND BUG: a link on the pasteboard at hand-over got pasted into the story by Instagram itself. It's copied
+        // once Instagram has taken the card instead, for the Link sticker (a background task keeps this app awake).
+        let task = UIApplication.shared.beginBackgroundTask(withName: "story link", expirationHandler: nil)
+        try? await Task.sleep(for: .seconds(3))
+        UIPasteboard.general.string = link
+        UIApplication.shared.endBackgroundTask(task)
     }
 }

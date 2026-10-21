@@ -55,6 +55,9 @@ enum ColorTheme: String, CaseIterable, Identifiable {
     /// The Ticker scene's photo-stand-in backdrop: Kick keeps its slate grey, the rest use their surface.
     var backdrop: UInt32 { self == .kick ? 0xFF2B_3138 : surface }
 
+    /// "#RRGGBB", for Instagram's background layer colours.
+    static func hex(_ argb: UInt32) -> String { String(format: "#%06X", argb & 0xFF_FFFF) }
+
     func color(_ argb: UInt32) -> Color {
         Color(.sRGB, red: Double((argb >> 16) & 0xFF) / 255, green: Double((argb >> 8) & 0xFF) / 255,
               blue: Double(argb & 0xFF) / 255, opacity: 1)
