@@ -33,7 +33,7 @@ struct ThemeSettingsView: View {
                 Button("Test share to Instagram") { Task { await InstagramStory.shareTest() } }
                     .disabled(!InstagramStory.available)
             } header: { Text("Instagram story") } footer: {
-                Text(InstagramStory.available ? "Opens Instagram with this card and the Kick link copied, without going live."
+                Text(InstagramStory.available ? "Opens Instagram with this card, without going live. Add the Link sticker there."
                      : "Needs Instagram installed and a Meta app ID in the build.")
             }
         }

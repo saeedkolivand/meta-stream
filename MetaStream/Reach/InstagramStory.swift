@@ -2,8 +2,7 @@ import SwiftUI
 
 /// "Share to Instagram story" while live: a 9:16 card (a frame from the stream, LIVE, the title and the Kick link) handed
 /// to Instagram's story editor through the pasteboard, per Meta's Sharing to Stories (iOS). The tappable link can't be
-/// pre-placed by an app, so the Kick URL also goes on the clipboard: Link sticker, paste, post. The card leaves the lower
-/// third empty for that sticker.
+/// pre-placed by an app, so the card shows the Kick URL and leaves the lower third empty for the Link sticker.
 @MainActor
 enum InstagramStory {
     /// The Facebook App ID Instagram requires (developers.facebook.com, no review needed for sharing). Public, not a secret.
@@ -33,8 +32,7 @@ enum InstagramStory {
         await handOver(frame: frame)
     }
 
-    /// Settings' test button: the same hand-over without a stream frame, so the App ID and the pasted link can be
-    /// checked without going live.
+    /// Settings' test button: the same hand-over without a stream frame, to check it without going live.
     static func shareTest() async { await handOver(frame: nil) }
 
     private static func handOver(frame: UIImage?) async {
@@ -56,17 +54,8 @@ enum InstagramStory {
         UIPasteboard.general.setItems([item], options: [.expirationDate: Date().addingTimeInterval(300)])
         _ = await UIApplication.shared.open(scheme)
         applog("reach", "instagram story card handed over (frame: \(frame != nil))")
-        guard !link.isEmpty else { return }
-        // FOUND BUG: a link on the pasteboard at hand-over got pasted into the story by Instagram itself. It's copied
-        // once Instagram has taken the card instead, for the Link sticker (a background task keeps this app awake).
-        // Twice, at 6 and 15 s: Instagram reads (and seemingly clears) the pasteboard some seconds after opening, so a
-        // single early copy got wiped; one of these lands after it. ponytail: timings are a guess, tune from the log.
-        let task = UIApplication.shared.beginBackgroundTask(withName: "story link", expirationHandler: nil)
-        for wait in [6, 9] {
-            try? await Task.sleep(for: .seconds(wait))
-            UIPasteboard.general.string = link
-            applog("reach", "story link copied (pasteboard holds it: \(UIPasteboard.general.hasStrings))")
-        }
-        UIApplication.shared.endBackgroundTask(task)
+        // No link on the clipboard, by experiment: one in the shared item got pasted into the story by Instagram (and
+        // shrank the card into a layer), and iOS drops writes from an app in the background (logged hasStrings false
+        // after copies at 6 and 15 s, iPad and iPhone). The link is printed on the card; the Link sticker is typed.
     }
 }
