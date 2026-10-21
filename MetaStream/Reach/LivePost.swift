@@ -57,7 +57,7 @@ final class LivePost: ObservableObject {
 
     var title: String { platforms?.kickTitle ?? "" }
 
-    private var slug: String {
+    var slug: String {
         let chosen = (defaults.string(forKey: "chatChannel") ?? "").trimmingCharacters(in: .whitespaces)
         return chosen.isEmpty ? (platforms?.kickUser ?? "").lowercased() : chosen
     }

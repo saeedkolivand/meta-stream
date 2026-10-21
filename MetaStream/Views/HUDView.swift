@@ -115,6 +115,11 @@ struct HUDView: View {
                 .disabled(streamer.glassesShort != "streaming")
                 .opacity(streamer.glassesShort == "streaming" ? 1 : 0.4)
                 if livePost.enabled, !streamer.live, livePost.phase != .live { announcePill }
+                if streamer.live, InstagramStory.available {
+                    StripStyles.stripButton(label: {
+                        StripStyles.pill("camera.circle.fill", "IG story", .pink)
+                    }, action: { hapticTap(); Task { await InstagramStory.share(streamer) } })
+                }
                 StripStyles.stripButton(label: {
                     StripStyles.pill("slider.horizontal.3", "manage", .cyan)
                 }, action: { hapticTap(); showManager = true })

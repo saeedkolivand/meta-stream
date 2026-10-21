@@ -99,6 +99,7 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>fb-viewapp</string>
+		<string>instagram-stories</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>
