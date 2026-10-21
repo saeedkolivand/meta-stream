@@ -44,13 +44,15 @@ enum InstagramStory {
         let story = StoryCard(frame: frame, title: post.title, link: link, template: .current, theme: .current)
         let renderer = ImageRenderer(content: story)
         renderer.scale = 3
-        guard let card = renderer.uiImage?.jpegData(compressionQuality: 0.9) else { return }
-        // Sent as a sticker on a background layer of the card's own edge colour: Instagram places a shared image as a
-        // resizable layer either way, and a matching background makes the margin around it disappear.
+        guard let image = renderer.uiImage, let card = image.jpegData(compressionQuality: 0.9) else { return }
+        // The full-screen background (Meta: >= 720x1280, 9:16), plus the background layer in the card's own edge colour:
+        // where Instagram shows the image as a shrunken, resizable layer instead (seen on the iPad app), the margin
+        // around it then matches the card. Spotify and X send a sticker on purpose; a live card should fill the story.
         let edge = ColorTheme.hex(story.edge)
-        let item: [String: Any] = ["com.instagram.sharedSticker.stickerImage": card,
+        let item: [String: Any] = ["com.instagram.sharedSticker.backgroundImage": card,
                                    "com.instagram.sharedSticker.backgroundTopColor": edge,
                                    "com.instagram.sharedSticker.backgroundBottomColor": edge]
+        applog("reach", "instagram story card \(Int(image.size.width * image.scale))x\(Int(image.size.height * image.scale)) px")
         UIPasteboard.general.setItems([item], options: [.expirationDate: Date().addingTimeInterval(300)])
         _ = await UIApplication.shared.open(scheme)
         applog("reach", "instagram story card handed over (frame: \(frame != nil))")
