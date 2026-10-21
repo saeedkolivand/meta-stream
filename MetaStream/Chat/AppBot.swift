@@ -36,10 +36,12 @@ final class AppBot: ObservableObject {
     private var marks: [String: (at: Date, msgs: Int)] = [:]   // "timer|origin" -> state at its last post
     private var lastTimer: [String: Date] = [:]       // origin -> last timer post
     private var holdingGPS = false
+    private var brbAt: Date?                          // last weak-link notice
+    private var brbOpen = false                       // that notice still waits for its "back" line
 
     static let defaults = [
         "botTplBrbOn": "Connection's weak, back in a moment", "botTplBrbOff": "We're back!",
-        "botTplStartingOn": "Starting soon!", "botTplEndingOn": "Thanks for watching!",
+        "botTplStartingOn": "Starting soon!", "botTplStartingOff": "We're live, welcome in!", "botTplEndingOn": "Thanks for watching!",
         "botTplFollow": "{user}, thanks for the follow!", "botTplSub": "{user}, thanks for subscribing!",
         "botTplGift": "{user}, thanks for the {count} gifted subs!", "botTplRaid": "{user}, thanks for the raid with {count} viewers!",
         "botTplTip": "{user} donated {amount}, thank you!",
@@ -66,6 +68,10 @@ final class AppBot: ObservableObject {
         now.timeIntervalSince(since) >= Double(max(minutes, 5) * 60) && msgs >= 5
             && lastAny.map { now.timeIntervalSince($0) >= 300 } ?? true
     }
+
+    /// A flapping link (BRB on/off every 20-40 s on cellular) posts its weak notice at most once per 2 min; the "back"
+    /// line only follows a notice that went out.
+    static func brbNoticeDue(last: Date?, now: Date) -> Bool { last.map { now.timeIntervalSince($0) >= 120 } ?? true }
 
     static func switchKey(_ cmd: String) -> String { "botCmd" + (donateAliases.contains(cmd) ? "Donate" : cmd.dropFirst().capitalized) }
 
@@ -166,9 +172,19 @@ final class AppBot: ObservableObject {
 
     // MARK: hooks
 
-    /// From Streamer.sceneRole: BRB on/off, Starting, Ending. An empty template posts nothing.
+    /// From Streamer.sceneRole: BRB on/off, Starting on/off, Ending. An empty template posts nothing.
     func role(_ role: String, on: Bool) {
         guard flag("botNotices") else { return }
+        if role == "brb" {
+            let now = Date()
+            if on {
+                guard Self.brbNoticeDue(last: brbAt, now: now) else { return }
+                brbAt = now; brbOpen = true
+            } else {
+                guard brbOpen else { return }
+                brbOpen = false
+            }
+        }
         let text = tpl("botTpl" + role.capitalized + (on ? "On" : "Off"))
         ["kick", "twitch"].forEach { say($0, text) }
     }
@@ -292,7 +308,7 @@ final class AppBot: ObservableObject {
             if wantGPS { WidgetLocation.shared.retain() } else { WidgetLocation.shared.release() }
         }
         if wantGPS, flag("botCmdWeather") { _ = WidgetWeather.shared.plainText }   // reading it is what turns the fetch on
-        guard live else { msgs = [:]; marks = [:]; lastTimer = [:]; return }
+        guard live else { msgs = [:]; marks = [:]; lastTimer = [:]; brbAt = nil; brbOpen = false; return }
         guard flag("botTimersOn", false), streamer?.roleActive != "brb" else { return }
         let now = Date()
         for t in AppTimer.decode(UserDefaults.standard.string(forKey: "botTimers") ?? "[]") where !t.text.isEmpty {
@@ -322,6 +338,8 @@ final class AppBot: ObservableObject {
         assert(!timerDue(since: t, minutes: 10, msgs: 9, lastAny: later.addingTimeInterval(-299), now: later))   // another timer just posted
         assert(timerDue(since: t, minutes: 10, msgs: 9, lastAny: later.addingTimeInterval(-300), now: later))
         assert(fill("{user}: {count} subs", user: "bob", count: 5) == "bob: 5 subs")
+        assert(brbNoticeDue(last: nil, now: t) && !brbNoticeDue(last: t, now: t.addingTimeInterval(119)))
+        assert(brbNoticeDue(last: t, now: t.addingTimeInterval(120)))
         assert(switchKey("!tip") == "botCmdDonate" && switchKey("!donate") == "botCmdDonate" && switchKey("!goal") == "botCmdGoal")
         applog("chat", "AppBot.demo() passed")
     }

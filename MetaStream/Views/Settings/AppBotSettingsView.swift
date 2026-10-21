@@ -36,8 +36,9 @@ struct AppBotSettingsView: View {
                 template("BRB starts", "botTplBrbOn")
                 template("BRB ends", "botTplBrbOff")
                 template("Starting scene", "botTplStartingOn")
+                template("Starting ends (live)", "botTplStartingOff")
                 template("Ending scene", "botTplEndingOn")
-            } footer: { Text("Empty = don't post.") }
+            } footer: { Text("Empty = don't post. With no scene set to the BRB role, a weak connection only posts the BRB lines and the stream stays on camera. The BRB line goes out at most once per 2 min.") }
             Section {
                 ForEach(["Location", "Speed", "Distance", "Weather", "Battery", "Uptime", "Goal", "Donate", "Commands"], id: \.self) { c in
                     CommandToggle(name: c)

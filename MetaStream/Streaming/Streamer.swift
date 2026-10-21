@@ -267,6 +267,7 @@ final class Streamer: ObservableObject {
     var roleTask: Task<Void, Never>?             // Starting countdown / Ending hold
     var countdownEnd: Date?                      // Starting countdown, for {countdown}
     var weakTicks = 0, goodTicks = 0             // consecutive seconds of weak / healthy throughput
+    var weakNoticed = false                      // weak link announced in chat without a BRB scene
     @Published var endingIn: Int?                // seconds left of the Ending hold, for the Go Live button
     var stingerTarget: String?                   // scene the running stinger will cut to
 

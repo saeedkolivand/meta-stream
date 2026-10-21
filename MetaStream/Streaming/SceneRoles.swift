@@ -72,9 +72,10 @@ extension Streamer {
     // MARK: BRB
 
     /// Called from the 1 s tick. A dropped link or over 2 s of video stuck in the uplink queue for 5 s puts the BRB
-    /// scene up; connected with under 0.5 s queued for 10 s takes it down.
+    /// scene up; connected with under 0.5 s queued for 10 s takes it down. With no BRB scene the stream stays as it is
+    /// and only the app bot's chat notice goes out (weakNoticed pairs its "back" line).
     func checkBRB() {
-        guard live, roleActive == nil || roleActive == "brb" else { weakTicks = 0; goodTicks = 0; return }
+        guard live, roleActive == nil || roleActive == "brb" else { weakTicks = 0; goodTicks = 0; weakNoticed = false; return }
         // Backlog, not throughput: a still BRB card encodes far below target, so "sent >= 70% of target" would never
         // come true and BRB would stick. Seconds of video waiting in the uplink queue reads the link the same either way.
         let backlog = Double(hot.queueBytesOut * 8) / Double(max(currentBitrateKbps, 500) * 1000)
@@ -82,10 +83,12 @@ extension Streamer {
         let good = downSince == nil && backlog < 0.5
         weakTicks = weak ? weakTicks + 1 : 0
         goodTicks = good ? goodTicks + 1 : 0
-        if roleActive == nil, weakTicks >= 5 {
-            roleSelect("brb")
-        } else if roleActive == "brb", goodTicks >= 10 {
+        if roleActive == nil, !weakNoticed, weakTicks >= 5 {
+            if !roleSelect("brb") { weakNoticed = true; sceneRole("brb", on: true) }
+        } else if goodTicks >= 10, roleActive == "brb" {
             roleEnd()
+        } else if goodTicks >= 10, weakNoticed {
+            weakNoticed = false; sceneRole("brb", on: false)
         }
     }
 
