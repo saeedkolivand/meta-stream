@@ -158,11 +158,16 @@ final class AppBot: ObservableObject {
                 let interval = max(dev["interval"] as? Int ?? 5, 5)
                 for _ in 0..<(900 / interval) {                        // ponytail: 15 min ceiling
                     try await Task.sleep(for: .seconds(interval))
-                    let r = try await PlatformNet.form("https://id.twitch.tv/oauth2/token", [
-                        "client_id": PlatformConfig.twitchID, "scopes": scopes, "device_code": deviceCode,
-                        "grant_type": "urn:ietf:params:oauth:grant-type:device_code"], allowError: true)
-                    if r["access_token"] != nil {
-                        try store.saveTokens(r, prefix: "twitchBot")
+                    let reply: [String: Any]
+                    do {
+                        reply = try await PlatformNet.form("https://id.twitch.tv/oauth2/token", [
+                            "client_id": PlatformConfig.twitchID, "scopes": scopes, "device_code": deviceCode,
+                            "grant_type": "urn:ietf:params:oauth:grant-type:device_code"], allowError: true)
+                    } catch let failure where PlatformNet.isTransient(failure) && !Task.isCancelled {
+                        continue   // paused while the user was in Safari entering the code: just ask again
+                    }
+                    if reply["access_token"] != nil {
+                        try store.saveTokens(reply, prefix: "twitchBot")
                         let u = ((try await twitchAPI().call("GET", "/users"))["data"] as? [[String: Any]])?.first
                         UserDefaults.standard.set(u?["id"] as? String, forKey: "botTwitchID")
                         twitchBotName = u?["display_name"] as? String ?? ""
@@ -170,7 +175,9 @@ final class AppBot: ObservableObject {
                         status = "Twitch bot connected as \(twitchBotName)"
                         return
                     }
-                    if (r["message"] as? String) != "authorization_pending" { throw PlatformNet.err("Twitch: \(r["message"] ?? r)") }
+                    if (reply["message"] as? String) != "authorization_pending" {
+                        throw PlatformNet.err("Twitch: \(reply["message"] ?? reply)")
+                    }
                 }
                 status = "Twitch login timed out"
             } catch is CancellationError {   // replaced by a newer tap: that login owns the status line now
@@ -321,23 +328,6 @@ final class AppBot: ObservableObject {
         }
     }
 
-    /// !song: "Artist - Song" and its open.spotify.com link (Kick and Twitch make it clickable).
-    private static func songAnswer() -> String {
-        let spotify = SpotifyNowPlaying.shared
-        guard spotify.connected else { return "Spotify isn't connected" }
-        guard let song = spotify.track else { return "Nothing's playing right now" }
-        let name = song.artist.isEmpty ? song.title : "\(song.artist) - \(song.title)"
-        return song.url.isEmpty ? name : "\(name) \(song.url)"
-    }
-
-    /// Polls Spotify while !song could be asked, so the answer is the song playing now, not one from minutes ago.
-    private func holdSpotify() {
-        let want = active && (platformOn("kick") || platformOn("twitch")) && flag("botCmdSong") && SpotifyNowPlaying.shared.connected
-        guard want != holdingSpotify else { return }
-        holdingSpotify = want
-        if want { SpotifyNowPlaying.shared.retain() } else { SpotifyNowPlaying.shared.release() }
-    }
-
     /// From Streamer's 1 s tick: keeps the GPS on while location commands are possible, runs the timers.
     func tick() {
         let live = streamer?.live == true
@@ -385,4 +375,24 @@ final class AppBot: ObservableObject {
         applog("chat", "AppBot.demo() passed")
     }
     #endif
+}
+
+// Same file, so it keeps access to the class's private state; kept out of the class body for its 300-line budget.
+extension AppBot {
+    /// !song: "Artist - Song" and its open.spotify.com link (Kick and Twitch make it clickable).
+    private static func songAnswer() -> String {
+        let spotify = SpotifyNowPlaying.shared
+        guard spotify.connected else { return "Spotify isn't connected" }
+        guard let song = spotify.track else { return "Nothing's playing right now" }
+        let name = song.artist.isEmpty ? song.title : "\(song.artist) - \(song.title)"
+        return song.url.isEmpty ? name : "\(name) \(song.url)"
+    }
+
+    /// Polls Spotify while !song could be asked, so the answer is the song playing now, not one from minutes ago.
+    private func holdSpotify() {
+        let want = active && (platformOn("kick") || platformOn("twitch")) && flag("botCmdSong") && SpotifyNowPlaying.shared.connected
+        guard want != holdingSpotify else { return }
+        holdingSpotify = want
+        if want { SpotifyNowPlaying.shared.retain() } else { SpotifyNowPlaying.shared.release() }
+    }
 }

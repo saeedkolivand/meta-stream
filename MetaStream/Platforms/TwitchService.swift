@@ -6,6 +6,7 @@ import UIKit
 @MainActor
 final class TwitchService: ObservableObject {
     unowned let p: Platforms
+    private var login: Task<Void, Never>?   // the running device-code login; a second Connect replaces it
     init(owner: Platforms) { p = owner }
 
     // Read scopes the chat feed's EventSub subscriptions need, keyed by the feature name the UI shows.
@@ -64,7 +65,8 @@ final class TwitchService: ObservableObject {
     }
 
     func connect() {
-        Task {
+        login?.cancel()
+        login = Task {
             do {
                 let scopes = "channel:manage:broadcast channel:read:stream_key user:write:chat user:read:chat moderator:read:followers channel:read:subscriptions bits:read clips:edit channel:read:ads channel:manage:ads channel:edit:commercial moderator:manage:chat_settings moderator:manage:announcements channel:manage:raids moderator:manage:chat_messages moderator:manage:banned_users"
                 let dev = try await PlatformNet.form("https://id.twitch.tv/oauth2/device", ["client_id": PlatformConfig.twitchID, "scopes": scopes])
@@ -76,19 +78,27 @@ final class TwitchService: ObservableObject {
                 if let u = URL(string: p.twitchVerifyURL) { await UIApplication.shared.open(u) }
                 for _ in 0..<(900 / interval) {                        // ponytail: 15 min ceiling
                     try await Task.sleep(for: .seconds(interval))
-                    let r = try await PlatformNet.form("https://id.twitch.tv/oauth2/token", [
-                        "client_id": PlatformConfig.twitchID, "scopes": scopes, "device_code": deviceCode,
-                        "grant_type": "urn:ietf:params:oauth:grant-type:device_code"], allowError: true)
-                    if r["access_token"] != nil {
-                        if let granted = try p.store.saveTokens(r, prefix: "twitch") { p.twitchScopes = Set(granted) }
+                    let reply: [String: Any]
+                    do {
+                        reply = try await PlatformNet.form("https://id.twitch.tv/oauth2/token", [
+                            "client_id": PlatformConfig.twitchID, "scopes": scopes, "device_code": deviceCode,
+                            "grant_type": "urn:ietf:params:oauth:grant-type:device_code"], allowError: true)
+                    } catch let failure where PlatformNet.isTransient(failure) && !Task.isCancelled {
+                        continue   // paused while the user was in Safari entering the code: just ask again
+                    }
+                    if reply["access_token"] != nil {
+                        if let granted = try p.store.saveTokens(reply, prefix: "twitch") { p.twitchScopes = Set(granted) }
                         p.twitchUserCode = ""
                         p.status = "Twitch connected"
                         await refresh()
                         return
                     }
-                    if (r["message"] as? String) != "authorization_pending" { throw PlatformNet.err("Twitch: \(r["message"] ?? r)") }
+                    if (reply["message"] as? String) != "authorization_pending" {
+                        throw PlatformNet.err("Twitch: \(reply["message"] ?? reply)")
+                    }
                 }
                 p.status = "Twitch login timed out"
+            } catch is CancellationError {   // replaced by a newer Connect tap, which owns the code and status now
             } catch { p.status = error.localizedDescription; p.twitchUserCode = "" }
         }
     }

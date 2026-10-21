@@ -79,6 +79,13 @@ enum PlatformNet {
         return String((0..<n).map { _ in chars.randomElement()! })
     }
 
+    /// A request that failed because iOS paused the app (the user went to Safari to enter a login code) or the network
+    /// blinked: a login poll retries these instead of giving up.
+    static func isTransient(_ error: Error) -> Bool {
+        guard let url = error as? URLError else { return false }
+        return [.cancelled, .networkConnectionLost, .notConnectedToInternet, .timedOut, .cannotConnectToHost].contains(url.code)
+    }
+
     static func err(_ s: String) -> NSError { applog("api", "error: \(s)", error: true); return NSError(domain: "Platforms", code: 1, userInfo: [NSLocalizedDescriptionKey: s]) }
 }
 
