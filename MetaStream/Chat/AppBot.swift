@@ -27,7 +27,7 @@ final class AppBot: ObservableObject {
     @Published var twitchBotName = UserDefaults.standard.string(forKey: "botTwitchName") ?? ""
 
     private let store: TokenStore = UserDefaults.standard
-    private var queue: [String: [String]] = [:]       // origin -> messages waiting for their turn
+    private var queue: [String: [(text: String, replyTo: String)]] = [:]   // origin -> messages waiting for their turn
     private var draining: Set<String> = []
     private var sent: [String] = []                   // our last texts: chat echoes them back, they are not viewers
     private var ownNames: Set<String> = []            // "origin|name" of the bot accounts, learned from those echoes
@@ -36,6 +36,7 @@ final class AppBot: ObservableObject {
     private var marks: [String: (at: Date, msgs: Int)] = [:]   // "timer|origin" -> state at its last post
     private var lastTimer: [String: Date] = [:]       // origin -> last timer post
     private var holdingGPS = false
+    private var holdingSpotify = false
     private var brbAt: Date?                          // last weak-link notice
     private var brbOpen = false                       // that notice still waits for its "back" line
 
@@ -48,7 +49,8 @@ final class AppBot: ObservableObject {
         "botTplDonate": "{title}: {total} / {target} ({percent}%) · {url}",
     ]
     private static let donateAliases = ["!tip", "!support", "!donation"]   // share the "Donate" switch
-    private static let commands = ["!location", "!speed", "!distance", "!weather", "!battery", "!uptime", "!goal", "!donate", "!commands"] + donateAliases
+    private static let commands = ["!location", "!speed", "!distance", "!weather", "!battery", "!uptime", "!goal", "!donate", "!song",
+                                    "!commands"] + donateAliases
 
     private func flag(_ key: String, _ fallback: Bool = true) -> Bool { UserDefaults.standard.object(forKey: key) as? Bool ?? fallback }
 
@@ -89,34 +91,41 @@ final class AppBot: ObservableObject {
     }
 
     /// Queues `text` for `origin`: one message per 1.5 s per platform (Twitch allows 20 per 30 s to a non-mod), delayed, never dropped.
-    private func say(_ origin: String, _ text: String) {
+    /// `replyTo`: the chat message id this answers, so it shows as a reply to the viewer who asked.
+    private func say(_ origin: String, _ text: String, replyTo: String = "") {
         guard active, platformOn(origin), !text.isEmpty else { return }
-        queue[origin, default: []].append(String(text.prefix(500)))   // Kick's limit
+        queue[origin, default: []].append((String(text.prefix(500)), replyTo))   // Kick's limit
         guard draining.insert(origin).inserted else { return }
         Task {
-            while let t = queue[origin]?.first {
+            while let next = queue[origin]?.first {
                 queue[origin]?.removeFirst()
-                await post(origin, t)
+                await post(origin, next.text, replyTo: next.replyTo)
                 try? await Task.sleep(for: .seconds(1.5))
             }
             draining.remove(origin)
         }
     }
 
-    private func post(_ origin: String, _ text: String) async {
+    private func post(_ origin: String, _ text: String, replyTo: String) async {
         guard let p = platforms else { return }
         sent.append(text); if sent.count > 20 { sent.removeFirst() }
         do {
             if origin == "kick" {
                 // type "bot" posts as the app's bot account of the token owner's channel; never fall back to "user".
-                _ = try await p.kick.api().call("POST", "/public/v1/chat", body: ["content": text, "type": "bot"])
+                var body: [String: Any] = ["content": text, "type": "bot"]
+                if !replyTo.isEmpty { body["reply_to_message_id"] = replyTo }
+                _ = try await p.kick.api().call("POST", "/public/v1/chat", body: body)
             } else {
-                _ = try await twitchAPI().call("POST", "/chat/messages", body: [
-                    "broadcaster_id": p.twitchUserID, "sender_id": UserDefaults.standard.string(forKey: "botTwitchID") ?? "", "message": text])
+                var body: [String: Any] = ["broadcaster_id": p.twitchUserID, "message": text,
+                                           "sender_id": UserDefaults.standard.string(forKey: "botTwitchID") ?? ""]
+                if !replyTo.isEmpty { body["reply_parent_message_id"] = replyTo }
+                _ = try await twitchAPI().call("POST", "/chat/messages", body: body)
             }
         } catch {
             applog("chat", "app bot \(origin) send failed: \(error.localizedDescription)", error: true)
             status = "\(origin == "kick" ? "Kick" : "Twitch"): \(error.localizedDescription)"
+            // The question was deleted (or the id is unknown): answer without the reply rather than not at all.
+            if !replyTo.isEmpty { await post(origin, text, replyTo: "") }
         }
     }
 
@@ -252,7 +261,11 @@ final class AppBot: ObservableObject {
         guard Self.cooldownOK(last: answered[key], now: now, privileged: privileged) else { applog("bot", "\(cmd) ignored: cooldown"); return }
         answered[key] = now
         let name = (e.origin == "kick" ? platforms?.kickUser : platforms?.twitchUser) ?? ""
-        if let a = answer(cmd, name.isEmpty ? "The streamer" : name) { say(e.origin, a) } else { applog("bot", "\(cmd): value not known yet, staying silent") }
+        guard let reply = answer(cmd, name.isEmpty ? "The streamer" : name) else {
+            applog("bot", "\(cmd): value not known yet, staying silent")
+            return
+        }
+        say(e.origin, reply, replyTo: e.id)
     }
 
     /// Offline (test mode) the health monitor isn't tracking the battery: read it directly. Monitoring stays on until the
@@ -294,8 +307,25 @@ final class AppBot: ObservableObject {
             guard let since = streamer?.liveSince else { return "\(name) isn't live right now" }
             let m = max(0, Int(Date().timeIntervalSince(since))) / 60
             return "\(name) has been live for \(m >= 60 ? "\(m / 60) h " : "")\(m % 60) min"
-        default: return nil
+        default: return cmd == "!song" ? Self.songAnswer() : nil
         }
+    }
+
+    /// !song: "Artist - Song" and its open.spotify.com link (Kick and Twitch make it clickable).
+    private static func songAnswer() -> String {
+        let spotify = SpotifyNowPlaying.shared
+        guard spotify.connected else { return "Spotify isn't connected" }
+        guard let song = spotify.track else { return "Nothing's playing right now" }
+        let name = song.artist.isEmpty ? song.title : "\(song.artist) - \(song.title)"
+        return song.url.isEmpty ? name : "\(name) \(song.url)"
+    }
+
+    /// Polls Spotify while !song could be asked, so the answer is the song playing now, not one from minutes ago.
+    private func holdSpotify() {
+        let want = active && (platformOn("kick") || platformOn("twitch")) && flag("botCmdSong") && SpotifyNowPlaying.shared.connected
+        guard want != holdingSpotify else { return }
+        holdingSpotify = want
+        if want { SpotifyNowPlaying.shared.retain() } else { SpotifyNowPlaying.shared.release() }
     }
 
     /// From Streamer's 1 s tick: keeps the GPS on while location commands are possible, runs the timers.
@@ -308,6 +338,7 @@ final class AppBot: ObservableObject {
             if wantGPS { WidgetLocation.shared.retain() } else { WidgetLocation.shared.release() }
         }
         if wantGPS, flag("botCmdWeather") { _ = WidgetWeather.shared.plainText }   // reading it is what turns the fetch on
+        holdSpotify()
         guard live else { msgs = [:]; marks = [:]; lastTimer = [:]; brbAt = nil; brbOpen = false; return }
         guard flag("botTimersOn", false), streamer?.roleActive != "brb" else { return }
         let now = Date()

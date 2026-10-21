@@ -41,13 +41,17 @@ struct AppBotSettingsView: View {
             } footer: { Text("Empty = don't post. With no scene set to the BRB role, a weak connection only posts the BRB lines "
                      + "and the stream stays on camera. The BRB line goes out at most once per 2 min.") }
             Section {
-                ForEach(["Location", "Speed", "Distance", "Weather", "Battery", "Uptime", "Goal", "Donate", "Commands"], id: \.self) { c in
-                    CommandToggle(name: c)
+                ForEach(["Location", "Speed", "Distance", "Weather", "Battery", "Uptime", "Goal", "Donate", "Song", "Commands"],
+                        id: \.self) { command in
+                    CommandToggle(name: command)
                 }
                 Toggle("Hide location", isOn: $hideLocation)
                 template("Donate answer", "botTplDonate")
             } header: { Text("Viewer commands") } footer: {
-                Text("Once per 30 s per command and platform; mods and you skip that. !location says region and country only. !commands lists the ones switched on. !donate (also !tip, !support, !donation) answers with the donate answer: {title}, {total}, {target}, {percent} and {url}.")
+                Text("Once per 30 s per command and platform; mods and you skip that. !location says region and country only. "
+                     + "!commands lists the ones switched on. !song posts the Spotify song with its link (Settings › Spotify). "
+                     + "!donate (also !tip, !support, !donation) answers with the donate answer: "
+                     + "{title}, {total}, {target}, {percent} and {url}.")
             }
             Section {
                 Toggle("Thank-yous", isOn: $thanks)

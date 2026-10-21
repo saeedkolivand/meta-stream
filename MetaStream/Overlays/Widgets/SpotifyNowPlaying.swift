@@ -13,6 +13,7 @@ struct NowPlayingTrack: Equatable, Sendable {
     var durationMs: Int
     var progressMs: Int
     var at: Date              // when progressMs was read
+    var url = ""              // open.spotify.com link, for the app bot's !song
 
     /// Playback position now, extrapolated from the last poll (the poll only says where it was).
     func elapsedMs(_ now: Date = Date()) -> Int { min(durationMs, progressMs + Int(now.timeIntervalSince(at) * 1000)) }
@@ -173,7 +174,8 @@ final class SpotifyNowPlaying: ObservableObject {
         // The smallest cover that is still sharp at widget size (Spotify sends 64, 300 and 640 px).
         let cover = images.first { ($0["width"] as? Int ?? 0) >= 300 } ?? images.last
         return NowPlayingTrack(id: id, title: name, artist: artists.joined(separator: ", "), artURL: cover?["url"] as? String ?? "",
-                               durationMs: item["duration_ms"] as? Int ?? 0, progressMs: json["progress_ms"] as? Int ?? 0, at: at)
+                               durationMs: item["duration_ms"] as? Int ?? 0, progressMs: json["progress_ms"] as? Int ?? 0, at: at,
+                               url: (item["external_urls"] as? [String: Any])?["spotify"] as? String ?? "")
     }
 
     #if DEBUG
