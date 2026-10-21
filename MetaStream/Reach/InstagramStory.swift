@@ -7,7 +7,10 @@ import SwiftUI
 @MainActor
 enum InstagramStory {
     /// The Facebook App ID Instagram requires (developers.facebook.com, no review needed for sharing). Public, not a secret.
-    static let facebookAppID = ""
+    /// ponytail: the Meta Wearables app's ID (Meta Wearables Developer Center), on trial as Instagram's source app, since
+    /// Meta's developer SMS never arrived. If Instagram says the app doesn't support sharing to Stories, a dedicated
+    /// Facebook app's ID goes here instead.
+    static let facebookAppID = "1637224104509913"
 
     private static var scheme: URL? { URL(string: "instagram-stories://share?source_application=" + facebookAppID) }
 
