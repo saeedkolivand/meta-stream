@@ -66,7 +66,10 @@ struct LayerPreview: View {
         let d = layer.data
         let px = CGFloat(Double(d["size"] ?? "") ?? 64)
         let boxed = d["background"] == "true"
-        return Text(d["text"] ?? "")
+        let lines = TextRuns.lines(d["text"] ?? "")
+        return VStack(alignment: .leading, spacing: 0) {
+            ForEach(lines.indices, id: \.self) { Self.line(lines[$0]) }
+        }
             .font(WidgetFonts.font(face: d["face"] ?? "", size: px, weight: d["bold"] == "false" ? .regular : .bold))
             .foregroundStyle(Color(uiColor: OverlayRaster.color(argb: UInt32(d["color"] ?? "") ?? 0xFFFFFFFF)))
             .shadow(color: d["shadow"] == "false" ? .clear : .black.opacity(0.8), radius: px / 16, x: 0, y: px / 32)
@@ -74,6 +77,17 @@ struct LayerPreview: View {
             .background(boxed ? Color(uiColor: OverlayRaster.color(argb: UInt32(d["backgroundColor"] ?? "") ?? 0x8C000000)) : .clear,
                         in: RoundedRectangle(cornerRadius: px / 4))
             .fixedSize()
+    }
+
+    /// One text line with its {i:symbol} tokens drawn as inline symbols (interpolated, not the deprecated Text + Text).
+    private static func line(_ runs: [TextRun]) -> Text {
+        guard !runs.isEmpty else { return Text(" ") }
+        return runs.reduce(Text("")) { partial, run in
+            switch run {
+            case .text(let str): Text("\(partial)\(Text(str))")
+            case .icon(let name): Text("\(partial)\(Text(Image(systemName: name)))")
+            }
+        }
     }
 
     private func placeholder(_ icon: String) -> some View {

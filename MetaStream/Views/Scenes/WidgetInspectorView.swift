@@ -174,11 +174,17 @@ struct WidgetInspectorView: View {
                     Button(t.label) { layer.data["text"] = (layer.data["text"] ?? "") + t.token }
                 }
             }
+            Menu("Icon") {
+                ForEach(TextRuns.palette, id: \.self) { name in
+                    Button { layer.data["text"] = (layer.data["text"] ?? "") + "{i:\(name)}" } label: { Label(name, systemImage: name) }
+                }
+            }
             Toggle("Rotate lines", isOn: flag("rotate"))
             slider("Seconds per line", num("rotateSeconds"), 3...15, format: "%.0f")
         } header: { Text("Text") } footer: {
             Text("Values like {time} or {viewers} update on stream every second. Speed, distance, city and weather ask for location "
-                 + "access. Rotate lines shows one line at a time, for socials.")
+                 + "access. Rotate lines shows one line at a time, for socials. "
+                 + "Icon adds an {i:symbol} token that draws an SF Symbol inline.")
         }
     }
 

@@ -2,9 +2,11 @@ import XCTest
 @testable import MetaStream
 
 final class LiveWidgetsTests: XCTestCase {
-    func testWeatherEmoji() {
-        let cases: [(Int, String)] = [(0, "☀️"), (2, "🌤️"), (3, "☁️"), (61, "🌧️"), (75, "❄️"), (81, "🌦️"), (95, "⛈️"), (1000, "🌡️")]
-        for (code, emoji) in cases { XCTAssertEqual(WidgetWeather.emoji(code), emoji, "code \(code)") }
+    func testWeatherSymbol() {
+        let cases: [(Int, String)] = [(0, "sun.max.fill"), (2, "cloud.sun.fill"), (3, "cloud.fill"), (61, "cloud.rain.fill"),
+                                      (75, "snowflake"), (81, "cloud.sun.rain.fill"), (95, "cloud.bolt.rain.fill"),
+                                      (1000, "thermometer.medium")]
+        for (code, name) in cases { XCTAssertEqual(WidgetWeather.symbol(code), name, "code \(code)") }
     }
 
     func testRotatingLine() {

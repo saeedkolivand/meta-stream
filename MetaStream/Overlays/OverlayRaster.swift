@@ -103,44 +103,12 @@ enum OverlayRaster {
         ctx.restoreGState()
     }
 
-    // MARK: in-app text (layout != nil): sized for a 1080 short side, optional shadow and rounded background
+    // MARK: in-app text (layout != nil): sized for a 1080 short side; drawn on the GPU (GPUTextWidget.swift)
 
-    /// Breathing room around the glyphs: a backdrop needs a margin, a shadow needs room to fall into the bitmap.
-    private static func textPad(_ s: TextWidgetStyle) -> CGFloat { s.background ? s.size * 0.3 : s.shadow ? s.size * 0.1 : 0 }
-
-    private static func textAttributes(_ s: TextWidgetStyle) -> [NSAttributedString.Key: Any] {
-        var a = textAttributes(face: s.face, bold: s.bold, px: s.size, argb: s.color)
-        if s.shadow {
-            let sh = NSShadow()
-            sh.shadowColor = UIColor.black.withAlphaComponent(0.6)
-            sh.shadowOffset = CGSize(width: 0, height: s.size * 0.04)
-            sh.shadowBlurRadius = s.size * 0.08
-            a[.shadow] = sh
-        }
-        return a
-    }
-
-    /// Natural size of an in-app text widget, padding included (the compositor and the store both size from this).
+    /// Natural size of an in-app text widget, backdrop margin included: the same runs the GPU widget measures (TextRuns.plan).
     static func textNatural(_ s: TextWidgetStyle) -> CGSize {
-        let t = textSize(s.text, textAttributes(s))
-        let pad = textPad(s)
-        return CGSize(width: t.width + 2 * pad, height: t.height + 2 * pad)
-    }
-
-    /// In-app text stretched from its natural size into `box`: backdrop first, then the glyphs inset by the padding.
-    static func drawWidgetText(_ s: TextWidgetStyle, natural: CGSize, in box: CGRect) {
-        guard natural.width > 0, natural.height > 0, let ctx = UIGraphicsGetCurrentContext() else { return }
-        let pad = textPad(s)
-        ctx.saveGState()
-        ctx.translateBy(x: box.minX, y: box.minY)
-        ctx.scaleBy(x: box.width / natural.width, y: box.height / natural.height)
-        if s.background {
-            color(argb: s.backgroundColor).setFill()
-            UIBezierPath(roundedRect: CGRect(origin: .zero, size: natural), cornerRadius: s.size * 0.25).fill()
-        }
-        let inner = CGRect(x: pad, y: pad, width: natural.width - 2 * pad, height: natural.height - 2 * pad)
-        (s.text as NSString).draw(with: inner, options: .usesLineFragmentOrigin, attributes: textAttributes(s), context: nil)
-        ctx.restoreGState()
+        TextRuns.plan(s.text.allSatisfy(\.isWhitespace) ? " " : s.text, face: s.face, bold: s.bold, px: s.size,
+                      pad: s.background ? s.size * 0.3 : 0).size
     }
 
     /// `b` redrawn at opacity `a` (ScreenObject has no alpha, so fades re-draw the stored full-opacity bitmap). nil = invisible.

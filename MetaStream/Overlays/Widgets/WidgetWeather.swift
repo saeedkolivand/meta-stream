@@ -15,7 +15,7 @@ private struct Forecast: Decodable {
 final class WidgetWeather {
     static let shared = WidgetWeather()
 
-    /// "☁️ 17°", "--" until the first successful fetch; a failed refresh keeps the last value.
+    /// "{i:cloud.fill} 17°" (an inline icon token, see TextRuns), "--" until the first fetch succeeds; a failed refresh keeps it.
     /// Reading it is what turns fetching on, so location never goes to Open-Meteo unless a widget shows {weather}.
     var text: String { wanted = true; return value }
     /// "18°C, clear": no place name, for the app bot's !weather. Reading it turns fetching on too.
@@ -40,7 +40,7 @@ final class WidgetWeather {
             defer { fetching = false }
             guard let url, let data = try? await URLSession.shared.data(from: url).0,
                   let now = (try? JSONDecoder().decode(Forecast.self, from: data))?.current else { lastFail = Date(); return }
-            value = "\(Self.emoji(now.code)) \(Int(now.temperature.rounded()))°"
+            value = "{i:\(Self.symbol(now.code))} \(Int(now.temperature.rounded()))°"
             plain = "\(Int(now.temperature.rounded()))°\(unit == "celsius" ? "C" : "F"), \(Self.words(now.code))"
             lastOK = (Date(), loc)
             lastFail = nil
@@ -63,19 +63,19 @@ final class WidgetWeather {
         }
     }
 
-    /// WMO weather code -> emoji.
-    nonisolated static func emoji(_ code: Int) -> String {
+    /// WMO weather code -> SF Symbol name.
+    nonisolated static func symbol(_ code: Int) -> String {
         switch code {
-        case 0: "☀️"
-        case 1, 2: "🌤️"
-        case 3: "☁️"
-        case 45, 48: "🌫️"
-        case 51...67: "🌧️"
-        case 71...77: "❄️"
-        case 80...82: "🌦️"
-        case 85, 86: "🌨️"
-        case 95...99: "⛈️"
-        default: "🌡️"
+        case 0: "sun.max.fill"
+        case 1, 2: "cloud.sun.fill"
+        case 3: "cloud.fill"
+        case 45, 48: "cloud.fog.fill"
+        case 51...67: "cloud.rain.fill"
+        case 71...77: "snowflake"
+        case 80...82: "cloud.sun.rain.fill"
+        case 85, 86: "cloud.snow.fill"
+        case 95...99: "cloud.bolt.rain.fill"
+        default: "thermometer.medium"
         }
     }
 }

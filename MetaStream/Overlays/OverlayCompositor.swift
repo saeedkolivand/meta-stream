@@ -245,10 +245,11 @@ final class OverlayCompositor {
         return widgetRect(layout, natural: natural, canvas: canvas)
     }
 
-    /// Text with {tokens} and animated GIFs are redrawn over time instead of being a one-off still; nil falls back to the still.
+    /// In-app text (GPU), OBS text with {tokens} and animated GIFs are redrawn over time, not a one-off still; nil falls back to it.
     private func dynamicBuild(_ l: OverlayLayer, _ fit: Fit, _ canvas: CGSize) async -> WidgetBuild? {
         switch l.type {
         case .text:
+            if let layout = l.layout { return await gpuTextWidget(l, layout: layout, canvas: canvas) }   // every in-app text: GPU
             guard (l.data["text"] ?? "").contains("{") else { return nil }
             return await liveTextWidget(l, canvas: canvas)
         case .image:
@@ -267,11 +268,7 @@ final class OverlayCompositor {
             let rect = box(l, OverlayRaster.croppedSize(img, l.crop), fit, canvas)
             return OverlayRaster.render(rect, canvas: canvas) { OverlayRaster.drawImage(img, crop: l.crop, in: $0) }
         case .text:
-            if l.layout != nil {   // in-app text: sized for a 1080 short side, with its own shadow/backdrop
-                let t = TextWidgetStyle(l.data)
-                guard !t.text.allSatisfy(\.isWhitespace), let natural = OverlayStore.shared.naturalSize(l) else { return nil }
-                return OverlayRaster.render(box(l, natural, fit, canvas), canvas: canvas) { OverlayRaster.drawWidgetText(t, natural: natural, in: $0) }
-            }
+            if l.layout != nil { return nil }   // in-app text is a GPU widget (dynamicBuild); only blank text lands here
             let text = l.data["text"] ?? ""
             guard !text.allSatisfy(\.isWhitespace) else { return nil }
             let px = CGFloat(Double(l.data["size"] ?? "") ?? 36) * fit.scale

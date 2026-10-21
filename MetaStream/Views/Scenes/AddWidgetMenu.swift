@@ -60,11 +60,12 @@ enum NewWidget: CaseIterable {
     /// The ready-made text widgets.
     private func presetLayer() -> OverlayLayer? {
         switch self {
-        case .clock: preset("Clock", "🕒 {time}  {date}  {weather}", 0)
-        case .liveTime: preset("Live time", "🔴 {uptime}", 2)
-        case .viewers: preset("Viewers", "👁 {viewers}", 2)
-        case .drive: preset("Drive", "🚗 {speed}  🛣 {distance}", 6)
-        case .socials: preset("Socials", "📷 IG @yourname\n🎵 TikTok @yourname\n✈️ TG @yourname", 8, rotate: true)
+        case .clock: preset("Clock", "{i:clock} {time}  {date}  {weather}", 0)
+        case .liveTime: preset("Live time", "{i:record.circle} {uptime}", 2)
+        case .viewers: preset("Viewers", "{i:eye} {viewers}", 2)
+        case .drive: preset("Drive", "{i:car.fill} {speed}  {i:road.lanes} {distance}", 6)
+        case .socials:
+            preset("Socials", "{i:camera} IG @yourname\n{i:music.note} TikTok @yourname\n{i:paperplane} TG @yourname", 8, rotate: true)
         default: nil
         }
     }

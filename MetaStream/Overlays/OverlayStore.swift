@@ -43,6 +43,14 @@ final class OverlayStore: ObservableObject {
         rotateSeconds = d.object(forKey: "sceneRotateSeconds") as? Int ?? 60
         scene = UserDefaults.standard.string(forKey: "overlayScene") ?? ""
         if let data = try? Data(contentsOf: packURL) { pack = try? JSONDecoder().decode(OverlayPack.self, from: data) }
+        // One-time: emoji in saved text widgets become icon tokens (icons, never emoji, on stream).
+        if !d.bool(forKey: "textIconsMigrated") {
+            d.set(true, forKey: "textIconsMigrated")
+            if let old = pack, let moved = TextRuns.iconized(old) {
+                pack = moved
+                _ = persist()
+            }
+        }
     }
 
     var activeScene: OverlayScene? { pack?.scenes.first { $0.name == scene } }

@@ -25,21 +25,21 @@ struct NPBox<Content: View>: View {
     }
 }
 
-/// "🎵 Title · Artist"; a song change wipes the box back to just the note, then open again.
+/// "Note + Title · Artist"; a song change wipes the box back to just the note, then open again.
 struct NPText: View {
     let x: NPContext
 
     var body: some View {
         NPBox(x: x, shut: 62, maxWidth: 920) {
             HStack(spacing: 12) {
-                Text("🎵").font(x.font(32)).lineLimit(1).npShadow()
+                Image(systemName: "music.note").font(x.font(30)).npShadow()
                 npText(x.line, font: x.font(32), color: .white).npShadow()
             }
         }
     }
 }
 
-/// "🎵 Title" over the artist, a thin progress line along the bottom; the lines slide up one after the other.
+/// "Note + Title" over the artist, a thin progress line along the bottom; the lines slide up one after the other.
 struct NPTwoLine: View {
     let x: NPContext
 
@@ -47,7 +47,7 @@ struct NPTwoLine: View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 12) {
-                    Text("🎵").font(x.font(32)).lineLimit(1)
+                    Image(systemName: "music.note").font(x.font(30))
                     npText(x.track.title, font: x.font(32), color: .white)
                         .frame(maxWidth: .infinity, alignment: .leading).npLane(x.pose.line1)
                 }
@@ -86,14 +86,14 @@ struct NPCornerCover: View {
     }
 }
 
-/// "🎵 Now playing: Title · Artist" wipes open on each song change; the widget task closes it after the hold time.
+/// "Note + Now playing: Title · Artist" wipes open on each song change; the widget task closes it after the hold time.
 struct NPPopup: View {
     let x: NPContext
 
     var body: some View {
         NPBox(x: x, shut: 0, maxWidth: 1040) {
             HStack(spacing: 12) {
-                Text("🎵").font(x.font(32)).lineLimit(1).npShadow()
+                Image(systemName: "music.note").font(x.font(30)).npShadow()
                 npRuns([("Now playing: ", x.font(32, .semibold), .white), (x.line, x.font(32), .white)]).npShadow()
             }
         }
