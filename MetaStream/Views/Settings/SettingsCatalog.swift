@@ -47,14 +47,16 @@ struct SettingsItem: Identifiable {
     var path = ""
     var key: String?
     var defaultOn = false
+    var sub: String?          // the sub-screen it sits on ("Pro controls"), for the breadcrumb
 
-    init(_ title: String, _ pageID: String, _ keywords: String = "", key: String? = nil, on: Bool = false) {
+    init(_ title: String, _ pageID: String, _ keywords: String = "", key: String? = nil, on: Bool = false, sub: String? = nil) {
         self.id = pageID + "/" + title
         self.title = title
         self.pageID = pageID
         self.keywords = keywords
         self.key = key
         self.defaultOn = on
+        self.sub = sub
     }
 }
 
@@ -134,7 +136,7 @@ enum SettingsCatalog {
         return SettingsItems.all.compactMap { item in
             guard let page = byID[item.pageID] else { return nil }   // e.g. glasses items when glasses aren't configured
             var out = item
-            out.path = page.group.title + " › " + page.title
+            out.path = page.group.title + " › " + page.title + (item.sub.map { " › " + $0 } ?? "")
             return out
         }
     }
