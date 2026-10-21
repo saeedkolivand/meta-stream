@@ -59,9 +59,14 @@ enum InstagramStory {
         guard !link.isEmpty else { return }
         // FOUND BUG: a link on the pasteboard at hand-over got pasted into the story by Instagram itself. It's copied
         // once Instagram has taken the card instead, for the Link sticker (a background task keeps this app awake).
+        // Twice, at 6 and 15 s: Instagram reads (and seemingly clears) the pasteboard some seconds after opening, so a
+        // single early copy got wiped; one of these lands after it. ponytail: timings are a guess, tune from the log.
         let task = UIApplication.shared.beginBackgroundTask(withName: "story link", expirationHandler: nil)
-        try? await Task.sleep(for: .seconds(3))
-        UIPasteboard.general.string = link
+        for wait in [6, 9] {
+            try? await Task.sleep(for: .seconds(wait))
+            UIPasteboard.general.string = link
+            applog("reach", "story link copied (pasteboard holds it: \(UIPasteboard.general.hasStrings))")
+        }
         UIApplication.shared.endBackgroundTask(task)
     }
 }
