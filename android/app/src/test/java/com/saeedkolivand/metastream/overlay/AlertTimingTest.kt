@@ -21,6 +21,14 @@ class AlertTimingTest {
     }
 
     @Test
+    fun splitsNumberAndUnit() {
+        assertEquals(AmountParts("\$12.50", ""), alertAmountParts(ev(Kind.Tip, 1250)))
+        assertEquals(AmountParts("120", " viewers"), alertAmountParts(ev(Kind.Raid, count = 120)))
+        assertEquals(AmountParts("300", " bits"), alertAmountParts(ev(Kind.Cheer, count = 300)))
+        assertEquals(AmountParts("", ""), alertAmountParts(ev(Kind.Follow)))
+    }
+
+    @Test
     fun bigTier() {
         assertTrue(alertIsBig(ev(Kind.Tip, 1000)))
         assertTrue(alertIsBig(ev(Kind.Raid, count = 50)))

@@ -10,7 +10,7 @@ import com.pedro.library.view.GlInterface
  */
 class FilterSink(private val gl: GlInterface) {
     private val mine = mutableListOf<BaseFilterRender>()
-    private val fading = mutableListOf<BaseObjectFilterRender>()
+    private val fading = mutableListOf<BaseFilterRender>()
 
     /** Scene-wide opacity for the scene transition; kept so filters built mid-fade start at the same level. */
     var alpha = 1f
@@ -22,16 +22,23 @@ class FilterSink(private val gl: GlInterface) {
     }
 
     /** A scene layer: like [addFilter], but it follows [setAlpha] (the face-cam and privacy blur must not fade). */
-    fun addLayer(f: BaseObjectFilterRender) {
+    fun addLayer(f: BaseFilterRender) {
         fading += f
-        f.alpha = alpha
+        fade(f, alpha)
         addFilter(f)
     }
 
     // ponytail: overwrites a widget's own alpha (alert fade) for the ~360 ms of a scene switch; blending needs a second multiplier.
     fun setAlpha(a: Float) {
         alpha = a
-        fading.forEach { it.alpha = a }
+        fading.forEach { fade(it, a) }
+    }
+
+    private fun fade(f: BaseFilterRender, a: Float) {
+        when (f) {
+            is BaseObjectFilterRender -> f.alpha = a
+            is SpriteFilter -> f.setAlpha(a)
+        }
     }
 
     /** Ahead of everything already in the chain (the privacy blur included). */

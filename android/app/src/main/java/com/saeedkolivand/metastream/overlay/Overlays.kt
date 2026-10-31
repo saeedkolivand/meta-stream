@@ -6,6 +6,7 @@ import android.media.MediaPlayer
 import android.os.Handler
 import android.os.Looper
 import android.view.Surface
+import com.pedro.encoder.input.gl.render.filters.BaseFilterRender
 import com.pedro.encoder.input.gl.render.filters.`object`.BaseObjectFilterRender
 import com.pedro.encoder.input.gl.render.filters.`object`.ImageFilterRender
 import com.pedro.encoder.input.gl.render.filters.`object`.SurfaceFilterRender
@@ -29,7 +30,7 @@ private const val MAX_SLIDES = 30
 private val IDENTITY = Fit(1f, 0f, 0f)
 
 /** A live widget: its filter, plus the coroutine that keeps its bitmap current (null for render-once widgets). */
-internal class WidgetBuild(val filter: BaseObjectFilterRender, val job: Job?)
+internal class WidgetBuild(val filter: BaseFilterRender, val job: Job?)
 
 /** RootEncoder object filters take position and size as percent of the output, top-left based. [box] is in output px. */
 internal fun <T : BaseObjectFilterRender> T.placeIn(box: Box, outW: Int, outH: Int, rotation: Float = 0f): T {

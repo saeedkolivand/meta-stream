@@ -82,12 +82,20 @@ internal fun alertLabel(e: ChatEvent) = when (e.kind) {
 
 internal fun alertIsBig(e: ChatEvent) = (e.kind == Kind.Tip && e.amountCents >= 1000) || (e.kind == Kind.Raid && e.count >= 50)
 
-/** The right-hand amount at count-up [progress] (1 = final); empty for follows and subs. */
-internal fun alertAmount(e: ChatEvent, progress: Float = 1f): String = when (e.kind) {
-    Kind.Tip -> (e.amountCents * progress).roundToInt().let {
-        if (it % 100 == 0) "$${it / 100}" else "$" + String.format(Locale.US, "%.2f", it / 100.0)
-    }
-    Kind.Cheer -> "${(e.count * progress).roundToInt()} bits"
-    Kind.Raid -> "${(e.count * progress).roundToInt()} viewers"
-    else -> ""
+/** The right-hand amount at count-up [progress], split so the digits and their unit can be drawn separately. */
+internal data class AmountParts(val number: String, val suffix: String)
+
+internal fun alertAmountParts(e: ChatEvent, progress: Float = 1f): AmountParts = when (e.kind) {
+    Kind.Tip -> AmountParts(
+        (e.amountCents * progress).roundToInt().let {
+            if (it % 100 == 0) "$${it / 100}" else "$" + String.format(Locale.US, "%.2f", it / 100.0)
+        },
+        ""
+    )
+    Kind.Cheer -> AmountParts("${(e.count * progress).roundToInt()}", " bits")
+    Kind.Raid -> AmountParts("${(e.count * progress).roundToInt()}", " viewers")
+    else -> AmountParts("", "")
 }
+
+/** The right-hand amount at count-up [progress] (1 = final); empty for follows and subs. */
+internal fun alertAmount(e: ChatEvent, progress: Float = 1f): String = alertAmountParts(e, progress).let { it.number + it.suffix }
