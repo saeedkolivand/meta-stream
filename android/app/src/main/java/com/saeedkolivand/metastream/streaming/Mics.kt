@@ -48,9 +48,11 @@ object Mics {
         Prefs.put("micId", key)
     }
 
-    /** Null selection (or an unplugged device) leaves the source on the system default. */
+    /** Null selection (or an unplugged device) leaves the source on the system default. Also the mix: volume and sounds. */
     fun apply(context: Context, mic: MicrophoneSource) {
         val device = if (selected.isEmpty()) null else available(context).firstOrNull { key(it) == selected }
         mic.setPreferredDevice(device)
+        mic.microphoneVolume = AudioMix.micGain
+        mic.setAudioEffect(AudioMix.effect)
     }
 }

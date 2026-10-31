@@ -39,8 +39,10 @@ import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.privacy.BlurState
 import com.saeedkolivand.metastream.privacy.Privacy
+import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Recording
+import com.saeedkolivand.metastream.streaming.Soundboard
 import com.saeedkolivand.metastream.streaming.Source
 import kotlinx.coroutines.delay
 
@@ -77,6 +79,7 @@ private fun RecordButton(granted: Boolean, size: Dp) {
 private fun QuickControls(granted: Boolean, size: Dp) {
     RecordButton(granted, size) // tap on Glasses explains why it can't record instead of hiding the button
     if (Engine.source == Source.Glasses) return
+    SoundboardButton(size)
     RoundButton(
         if (Engine.muted) R.drawable.ic_car_mic_off else R.drawable.ic_car_mic,
         false,
@@ -112,6 +115,24 @@ private fun QuickControls(granted: Boolean, size: Dp) {
             BlurState.Protecting -> "Blur on"
         }
     ) { Privacy.updateOn(!Privacy.on) }
+}
+
+/** iOS soundboard (music note): while live with sounds saved, a menu that plays one into the mix. */
+@Composable
+private fun SoundboardButton(size: Dp) {
+    if (!Engine.live || Soundboard.sounds.isEmpty()) return
+    var open by remember { mutableStateOf(false) }
+    Box {
+        RoundButton(R.drawable.ic_music_note, false, size, label = "Sounds") { open = true }
+        DropdownMenu(open, { open = false }) {
+            Soundboard.sounds.forEach { s ->
+                DropdownMenuItem({ Text(s.name) }, {
+                    AudioMix.playSound(s)
+                    open = false
+                })
+            }
+        }
+    }
 }
 
 @Composable

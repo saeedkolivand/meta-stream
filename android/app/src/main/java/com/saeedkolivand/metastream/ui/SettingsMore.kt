@@ -23,28 +23,6 @@ import com.saeedkolivand.metastream.chat.ChatFlood
 import com.saeedkolivand.metastream.core.AppSettings
 import com.saeedkolivand.metastream.core.LogBuffer
 import com.saeedkolivand.metastream.streaming.Engine
-import com.saeedkolivand.metastream.streaming.Mics
-
-/** iOS AudioSettingsView: microphone picker and mute. */
-@Composable
-internal fun AudioPage() {
-    val context = LocalContext.current
-    // Re-read each time the page opens, so a freshly plugged USB or Bluetooth mic shows up (iOS refreshMics onAppear).
-    val mics = remember { Mics.available(context).filter { it.isSource } }
-    Section("Microphone") {
-        RadioRow("Default", Mics.selected.isEmpty()) {
-            Mics.select("")
-            Engine.refreshMic()
-        }
-        mics.forEach {
-            RadioRow(Mics.label(it), Mics.selected == Mics.key(it)) {
-                Mics.select(Mics.key(it))
-                Engine.refreshMic()
-            }
-        }
-        SwitchRow("Mute microphone", Engine.muted) { if (it != Engine.muted) Engine.toggleMute() }
-    }
-}
 
 /** iOS GlassesVideoSettingsView. Sizes are what the Meta DAT camera stream offers (VideoQuality LOW/MEDIUM/HIGH). */
 @Composable

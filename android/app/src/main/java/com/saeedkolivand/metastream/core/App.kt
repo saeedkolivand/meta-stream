@@ -9,8 +9,10 @@ import com.saeedkolivand.metastream.overlay.Scenes
 import com.saeedkolivand.metastream.overlay.WidgetFonts
 import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.speech.Speaker
+import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Mics
+import com.saeedkolivand.metastream.streaming.Soundboard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -27,6 +29,8 @@ class App : Application() {
         WidgetFonts.init(this)
         AppSettings.init()
         Mics.init()
+        Soundboard.init(this)
+        AudioMix.init()
         Speaker.init(this)
         OverlayStore.init(this)
         Overlays.init(this)

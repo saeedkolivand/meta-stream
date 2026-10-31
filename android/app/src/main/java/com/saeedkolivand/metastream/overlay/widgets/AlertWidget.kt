@@ -3,6 +3,7 @@ package com.saeedkolivand.metastream.overlay
 import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.speech.offensive
+import com.saeedkolivand.metastream.streaming.AudioMix
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -37,6 +38,7 @@ internal fun alertWidget(l: Layer, box: Box, outW: Int, outH: Int, scope: Corout
                 continue
             }
             val art = alertGpu(next, style, scale, hold)
+            AudioMix.playAlert() // into the mix with the banner; ignored unless live
             val start = System.nanoTime()
             val moving = art.scene(start, moving = true)
             // The GPU animates the entry and the exit from one time origin; the CPU only swaps scenes at the phase edges.

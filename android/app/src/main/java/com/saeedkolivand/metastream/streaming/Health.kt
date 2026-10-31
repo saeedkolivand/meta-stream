@@ -139,6 +139,7 @@ object Health {
                     speak("phone getting hot")
                 }
                 escalate(now)
+                DeadAir.tick(now, speak)
             }
         }
     }
@@ -158,6 +159,7 @@ object Health {
         downSince = null
         lastEscalation = 0
         outKbps = 0
+        DeadAir.reset()
     }
 
     private fun updateBattery() {

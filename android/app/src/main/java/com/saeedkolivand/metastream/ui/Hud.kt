@@ -60,6 +60,7 @@ internal fun Hud() {
     Row(Modifier.horizontalScroll(rememberScrollState()).padding(top = 4.dp), Arrangement.spacedBy(8.dp)) {
         if (Engine.live) {
             TimerPill()
+            LevelBar()
             val rate = if (Health.fps > 0) "${Health.fps} fps · ${Health.kbps} kbps" else "${Health.kbps} kbps"
             val tint = when (level(NetStats.samples)) {
                 Level.Ok -> Color.White

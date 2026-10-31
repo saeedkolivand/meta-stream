@@ -14,6 +14,7 @@ import com.pedro.library.view.GlInterface
 import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.core.applog
 import com.saeedkolivand.metastream.privacy.Privacy
+import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 import java.io.File
@@ -146,6 +147,7 @@ object Overlays {
         browser = null
         players.forEach { it.release() }
         players.clear()
+        AudioMix.stopClips()
         widgetJobs.forEach { it.cancel() }
         widgetJobs.clear()
         widgetScope?.cancel()
@@ -230,7 +232,8 @@ object Overlays {
         g.addLayer(imageFilter(bmp, place(l, bmp.width / fit.scale, bmp.height / fit.scale), fit, l))
     }
 
-    // ponytail: the media player is muted and a rotated phone video isn't corrected; sizes come from the container metadata.
+    // The player is muted: its audio goes into the stream's mix (AudioMix) instead of the phone speaker.
+    // ponytail: a rotated phone video isn't corrected; sizes come from the container metadata.
     private fun addMedia(g: FilterSink, l: Layer, f: File, fit: Fit) {
         val (w, h) = mediaSize(f) ?: return
         val mp = MediaPlayer()
@@ -238,6 +241,7 @@ object Overlays {
         mp.setDataSource(f.path)
         mp.isLooping = l.data["loop"] == "true"
         mp.setVolume(0f, 0f)
+        AudioMix.playClip(f, mp.isLooping)
         g.addLayer(
             SurfaceFilterRender { st ->
                 runCatching {
