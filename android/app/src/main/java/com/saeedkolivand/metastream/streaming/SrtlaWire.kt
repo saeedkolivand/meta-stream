@@ -13,6 +13,7 @@ internal object SrtlaWire {
     const val REG_NAK = 0x9212
     const val SRT_ACK = 0x8002
     const val SRT_NAK = 0x8003
+    const val SRT_HANDSHAKE = 0x8000
     const val ID_LEN = 256
 
     // srtla_send.c: PKT_LOG_SZ, CONN_TIMEOUT, REG2/3_TIMEOUT, IDLE_TIME (seconds), WINDOW_* x WINDOW_MULT(1000)
@@ -45,5 +46,69 @@ internal object SrtlaWire {
         val room = mains.any { c[it].inFlight * 1000 < c[it].window }
         val pool = if (room && !cut) mains else c.indices.filter { c[it].up }
         return pool.maxByOrNull { c[it].window / (c[it].inFlight + 1) }
+    }
+}
+
+/** conn_t: one bonding link's socket and congestion state (srtla thread only). */
+internal class SrtlaLink(
+    val network: android.net.Network,
+    val label: String,
+    val backup: Boolean,
+    val ch: java.nio.channels.DatagramChannel
+) {
+    var lastRcvd = 0L
+    var lastSent = 0L
+    var window = SrtlaWire.WIN_DEF
+    var inFlight = 0
+    var idx = 0
+    var sent = 0
+    var share = 0
+    val log = IntArray(SrtlaWire.LOG_SIZE) { -1 }
+    fun up(now: Long) = lastRcvd + SrtlaWire.CONN_TIMEOUT >= now // !conn_timed_out
+}
+
+internal fun List<SrtlaLink>.ack(a: Int) { // register_srt_ack: everything below is delivered
+    for (c in this) {
+        var n = 0
+        for (i in c.log.indices) if (c.log[i] < a) c.log[i] = -1 else n++
+        c.inFlight = n
+    }
+}
+
+/** A NAK range checks each link's 256-entry log instead of walking it: a broken receiver could name two billion numbers. */
+internal fun List<SrtlaLink>.nak(b: ByteArray, n: Int) {
+    var i = 16
+    while (i + 4 <= n) {
+        val v = SrtlaWire.be32(b, i)
+        i += 4
+        var first = v
+        var last = v
+        if (v and 0x80000000L != 0L && i + 4 <= n) { // a range: the first has the high bit, the next is the last lost
+            first = v and 0x7FFFFFFF
+            last = SrtlaWire.be32(b, i)
+            i += 4
+        }
+        for (c in this) {
+            for (j in c.log.indices) {
+                if (c.log[j] >= 0 && c.log[j] >= first && c.log[j] <= last) { // register_nak: shrink the carrier's window
+                    c.log[j] = -1
+                    c.window = maxOf(c.window - SrtlaWire.WIN_DECR, SrtlaWire.WIN_MIN)
+                }
+            }
+        }
+    }
+}
+
+internal fun List<SrtlaLink>.srtlaAck(s: Int) { // register_srtla_ack
+    var found = false
+    for (c in this) {
+        val i = if (found) -1 else c.log.indexOf(s)
+        if (i >= 0) {
+            found = true
+            c.log[i] = -1
+            if (c.inFlight > 0) c.inFlight--
+            if (c.inFlight * 1000 > c.window) c.window += SrtlaWire.WIN_INCR - 1
+        }
+        if (c.lastRcvd != 0L) c.window = minOf(c.window + 1, SrtlaWire.WIN_MAX)
     }
 }

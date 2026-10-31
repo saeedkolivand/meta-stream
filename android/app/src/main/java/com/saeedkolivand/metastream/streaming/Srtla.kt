@@ -20,24 +20,14 @@ import java.nio.channels.Selector
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.random.Random
 
+private const val PEER_QUIET_MS = 2000L
+
 /**
  * Bonding (iOS Srtla): RootEncoder's SRT client talks to a loopback UDP socket; this proxy sends those packets to the SRTLA
  * receiver over one UDP socket per network (Wi-Fi, cellular, Ethernet; requested so cellular stays up beside Wi-Fi) and
  * merges the replies back. All link state lives on the "srtla" thread; network callbacks post onto it.
  */
 internal class Srtla(private val host: String, private val port: Int, context: Context, private val onStats: (List<LinkStat>) -> Unit) {
-    private class Link(val network: Network, val label: String, val backup: Boolean, val ch: DatagramChannel) {
-        var lastRcvd = 0L
-        var lastSent = 0L
-        var window = W.WIN_DEF
-        var inFlight = 0
-        var idx = 0
-        var sent = 0
-        var share = 0
-        val log = IntArray(W.LOG_SIZE) { -1 }
-        fun up(now: Long) = lastRcvd + W.CONN_TIMEOUT >= now // !conn_timed_out
-    }
-
     private val cm = context.getSystemService(ConnectivityManager::class.java)
     private val selector = Selector.open()
     private val local = DatagramChannel.open().apply {
@@ -45,13 +35,19 @@ internal class Srtla(private val host: String, private val port: Int, context: C
         configureBlocking(false)
     }
     val localPort = (local.localAddress as InetSocketAddress).port
-    private var peer: SocketAddress? = null // libsrt reconnects from a fresh socket: the newest sender is the peer
+
+    // Other apps share loopback, so the peer is pinned: a new sender takes over only with an SRT handshake after the
+    // current one has been quiet for PEER_QUIET_MS (libsrt reconnecting from a fresh socket). Anything else is dropped.
+    // ponytail: an app that races libsrt's reconnect handshake could still win that one window; an in-process transport
+    // would close it, but RootEncoder's SRT client only speaks UDP.
+    private var peer: SocketAddress? = null
+    private var peerAt = 0L
     private val tasks = ConcurrentLinkedQueue<() -> Unit>()
     private val callbacks = mutableListOf<ConnectivityManager.NetworkCallback>()
-    private val links = mutableListOf<Link>()
+    private val links = mutableListOf<SrtlaLink>()
     private val buf = ByteBuffer.allocate(2048)
     private var id = Random.nextBytes(W.ID_LEN) // srtla_id
-    private var pending: Link? = null // pending_reg2_conn
+    private var pending: SrtlaLink? = null // pending_reg2_conn
     private var pendingUntil = 0L
     private var active = 0
     private var ticks = 0
@@ -105,7 +101,7 @@ internal class Srtla(private val host: String, private val port: Int, context: C
                 while (keys.hasNext()) {
                     val k = keys.next()
                     keys.remove()
-                    val l = k.attachment() as Link?
+                    val l = k.attachment() as SrtlaLink?
                     if (l == null) readLocal() else readLink(l)
                 }
                 val t = SystemClock.elapsedRealtime()
@@ -131,7 +127,7 @@ internal class Srtla(private val host: String, private val port: Int, context: C
             network.bindSocket(ch.socket())
             ch.configureBlocking(false)
             ch.connect(InetSocketAddress(addr, port))
-            val l = Link(network, label, backup, ch)
+            val l = SrtlaLink(network, label, backup, ch)
             ch.register(selector, SelectionKey.OP_READ, l)
             links += l
             applog("stream", "srtla: $label link added (${if (backup) "backup" else "main"})")
@@ -148,7 +144,7 @@ internal class Srtla(private val host: String, private val port: Int, context: C
         applog("stream", "srtla: ${l.label} link removed")
     }
 
-    private fun send(l: Link, b: ByteBuffer) {
+    private fun send(l: SrtlaLink, b: ByteBuffer) {
         try {
             l.ch.write(b)
         } catch (e: IOException) {
@@ -156,7 +152,12 @@ internal class Srtla(private val host: String, private val port: Int, context: C
         }
     }
 
-    private fun sendReg(l: Link, type: Int) = send(l, ByteBuffer.allocate(2 + W.ID_LEN).putShort(type.toShort()).put(id).also { it.flip() })
+    private fun sendReg(l: SrtlaLink, type: Int) = send(
+        l,
+        ByteBuffer.allocate(2 + W.ID_LEN).putShort(type.toShort()).put(id).also {
+            it.flip()
+        }
+    )
 
     private fun housekeeping() { // connection_housekeeping()
         val t = now()
@@ -196,8 +197,15 @@ internal class Srtla(private val host: String, private val port: Int, context: C
     private fun readLocal() { // handle_srt_data
         while (true) {
             buf.clear()
-            peer = local.receive(buf) ?: return
+            val from = local.receive(buf) ?: return
             buf.flip()
+            val ms = SystemClock.elapsedRealtime()
+            if (from != peer) {
+                val quiet = peer == null || ms - peerAt > PEER_QUIET_MS
+                if (!quiet || W.kind(buf.array(), buf.limit()) != W.SRT_HANDSHAKE) continue
+                peer = from
+            }
+            peerAt = ms
             val t = now()
             val i = W.pick(links.map { W.Cand(it.up(t), it.window, it.inFlight, it.backup) }, cut) ?: continue // none up: SRT retransmits
             val l = links[i]
@@ -213,7 +221,7 @@ internal class Srtla(private val host: String, private val port: Int, context: C
         }
     }
 
-    private fun readLink(l: Link) { // handle_srtla_data
+    private fun readLink(l: SrtlaLink) { // handle_srtla_data
         while (true) {
             buf.clear()
             val n = try {
@@ -228,7 +236,7 @@ internal class Srtla(private val host: String, private val port: Int, context: C
     }
 
     /** True when the packet goes on to libsrt. */
-    private fun fromReceiver(l: Link, b: ByteArray, n: Int): Boolean {
+    private fun fromReceiver(l: SrtlaLink, b: ByteArray, n: Int): Boolean {
         val t = now()
         when (val k = W.kind(b, n)) {
             W.NGP -> { // the receiver doesn't know our group: REG1 on this link, only when nothing else is going on
@@ -257,12 +265,12 @@ internal class Srtla(private val host: String, private val port: Int, context: C
         }
         l.lastRcvd = t
         when (W.kind(b, n)) {
-            W.SRT_ACK -> if (n >= 20) ack(W.be32(b, 16).toInt())
-            W.SRT_NAK -> nak(b, n)
+            W.SRT_ACK -> if (n >= 20) links.ack(W.be32(b, 16).toInt())
+            W.SRT_NAK -> links.nak(b, n)
             W.ACK -> { // SRTLA ACK: a list of acknowledged sequence numbers
                 var i = 4
                 while (i + 4 <= n) {
-                    srtlaAck(W.be32(b, i).toInt())
+                    links.srtlaAck(W.be32(b, i).toInt())
                     i += 4
                 }
                 return false
@@ -275,51 +283,5 @@ internal class Srtla(private val host: String, private val port: Int, context: C
             }
         }
         return true
-    }
-
-    private fun ack(a: Int) { // register_srt_ack: everything below is delivered
-        for (c in links) {
-            var n = 0
-            for (i in c.log.indices) if (c.log[i] < a) c.log[i] = -1 else n++
-            c.inFlight = n
-        }
-    }
-
-    /** A NAK range checks each link's 256-entry log instead of walking it: a broken receiver could name two billion numbers. */
-    private fun nak(b: ByteArray, n: Int) {
-        var i = 16
-        while (i + 4 <= n) {
-            val v = W.be32(b, i)
-            i += 4
-            var first = v
-            var last = v
-            if (v and 0x80000000L != 0L && i + 4 <= n) { // a range: the first has the high bit, the next is the last lost
-                first = v and 0x7FFFFFFF
-                last = W.be32(b, i)
-                i += 4
-            }
-            for (c in links) {
-                for (j in c.log.indices) {
-                    if (c.log[j] >= 0 && c.log[j] >= first && c.log[j] <= last) { // register_nak: shrink the carrier's window
-                        c.log[j] = -1
-                        c.window = maxOf(c.window - W.WIN_DECR, W.WIN_MIN)
-                    }
-                }
-            }
-        }
-    }
-
-    private fun srtlaAck(s: Int) { // register_srtla_ack
-        var found = false
-        for (c in links) {
-            val i = if (found) -1 else c.log.indexOf(s)
-            if (i >= 0) {
-                found = true
-                c.log[i] = -1
-                if (c.inFlight > 0) c.inFlight--
-                if (c.inFlight * 1000 > c.window) c.window += W.WIN_INCR - 1
-            }
-            if (c.lastRcvd != 0L) c.window = minOf(c.window + 1, W.WIN_MAX)
-        }
     }
 }
