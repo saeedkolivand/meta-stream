@@ -56,14 +56,14 @@ uniform float uAlpha;
 uniform vec2 uBoxPx;
 uniform float uTopFade;
 
-float sdRound(vec2 p, vec2 half, float r) {
-  vec2 d = abs(p) - half + vec2(r);
+float sdRound(vec2 p, vec2 hs, float r) {
+  vec2 d = abs(p) - hs + vec2(r);
   return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r;
 }
 
 void main() {
-  vec2 half = uSizePx * 0.5;
-  float a = clamp(0.5 - sdRound(vLocal - half, half, uRadius), 0.0, 1.0);
+  vec2 hs = uSizePx * 0.5;
+  float a = clamp(0.5 - sdRound(vLocal - hs, hs, uRadius), 0.0, 1.0);
   if (uClip.z > 0.0) {
     vec2 ch = uClip.zw * 0.5;
     a *= clamp(0.5 - sdRound(vLocal - uClip.xy - ch, ch, uClipRadius), 0.0, 1.0);
