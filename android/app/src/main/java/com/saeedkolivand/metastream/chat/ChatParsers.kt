@@ -89,3 +89,23 @@ private val kickEmote = Regex("""\[emote:\d+:([^\]]*)]""")
 // ponytail: Kick emotes shown by name; iOS draws the images (Emotes.swift). Upgrade path: Coil inline images.
 /** Chat text for display: Kick's `[emote:id:name]` tokens become `name`. Read-aloud strips them instead (sanitize). */
 internal fun displayText(text: String) = kickEmote.replace(text, "$1")
+
+/** A moderator's action seen in chat (iOS ChatFeed.remove/clear): the feed drops the same lines the platform did. */
+sealed interface Moderation {
+    data object Clear : Moderation
+
+    /** One message by [msgId], or every message of a banned / timed-out user by [userId] or [login]. */
+    data class Remove(val msgId: String = "", val userId: String = "", val login: String = "") : Moderation
+}
+
+/** Kick's Pusher moderation events (captured 2026-10-19); null for anything else. */
+internal fun parseKickModeration(event: String, data: String): Moderation? = runCatching {
+    when (event) {
+        """App\Events\ChatroomClearEvent""" -> Moderation.Clear
+        """App\Events\MessageDeletedEvent""" -> Moderation.Remove(msgId = JSONObject(data).getJSONObject("message").getString("id"))
+        """App\Events\UserBannedEvent""" -> JSONObject(data).getJSONObject("user").let {
+            Moderation.Remove(userId = it.opt("id")?.toString().orEmpty(), login = it.optString("username"))
+        }
+        else -> null
+    }
+}.getOrNull()

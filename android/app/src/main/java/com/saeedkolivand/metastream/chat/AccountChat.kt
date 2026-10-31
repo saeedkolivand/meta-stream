@@ -31,6 +31,7 @@ suspend fun twitchEventSub(emit: (ChatEvent) -> Unit): Unit = coroutineScope {
                         ws.cancel() // the old socket is done; cancel surfaces as an IOException below
                     }
                     is EventSubFrame.Notification -> emit(f.event)
+                    is EventSubFrame.Mod -> ChatFeed.moderate("twitch", f.action)
                     EventSubFrame.Ignored -> Unit
                 }
             })

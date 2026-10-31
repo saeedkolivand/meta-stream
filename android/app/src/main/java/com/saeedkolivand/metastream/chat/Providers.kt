@@ -102,6 +102,7 @@ suspend fun kickChat(slug: String, emit: (ChatEvent) -> Unit) {
             } else {
                 val name = kickEventName(text).orEmpty()
                 val o = JSONObject(text)
+                parseKickModeration(name, o.optString("data"))?.let { ChatFeed.moderate("kick", it) }
                 val e = if (name == KICK_MESSAGE) parseKickFrame(text) else parseKickRule(rules, name, o.optString("data"))
                 logKickEvent(name, o)
                 e?.let(emit)

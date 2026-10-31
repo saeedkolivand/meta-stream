@@ -73,6 +73,22 @@ object ChatFeed {
     /** Drops [origin]'s lines after a /clear. */
     fun clear(origin: String) = _chat.update { list -> list.filter { it.platform != origin } }
 
+    /** A moderator cleared chat, deleted a message, or banned / timed out a user: the app drops the same lines. */
+    fun moderate(origin: String, m: Moderation) {
+        if (m == Moderation.Clear) return clear(origin)
+        val r = m as Moderation.Remove
+        _chat.update { list ->
+            list.filterNot { e ->
+                e.platform == origin &&
+                    e.kind == Kind.Message &&
+                    when {
+                        r.msgId.isNotEmpty() -> e.msgId == r.msgId
+                        else -> (r.userId.isNotEmpty() && e.userId == r.userId) || (r.login.isNotEmpty() && e.user.equals(r.login, true))
+                    }
+            }
+        }
+    }
+
     private fun launchSource(label: String, wait: Long, work: suspend () -> Unit) = scope.launch {
         delay(wait)
         backoff(label, work)

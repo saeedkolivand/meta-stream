@@ -228,16 +228,15 @@ object Twitch : Account("Twitch", "twitch") {
         val subs = buildList {
             add(Triple("channel.raid", "1", mapOf("to_broadcaster_user_id" to me)))
             if (hasScopes(setOf("user:read:chat"))) {
-                add(
-                    Triple(
-                        "channel.chat.message",
-                        "1",
-                        mapOf(
-                            "broadcaster_user_id" to me,
-                            "user_id" to me
-                        )
-                    )
-                )
+                // the message stream plus the three moderation types that keep the app's chat in step with the channel's
+                for (t in listOf(
+                    "channel.chat.message",
+                    "channel.chat.clear",
+                    "channel.chat.message_delete",
+                    "channel.chat.clear_user_messages"
+                )) {
+                    add(Triple(t, "1", mapOf("broadcaster_user_id" to me, "user_id" to me)))
+                }
             }
             if (hasScopes(setOf("moderator:read:followers"))) {
                 add(Triple("channel.follow", "2", mapOf("broadcaster_user_id" to me, "moderator_user_id" to me)))

@@ -10,6 +10,8 @@ sealed interface EventSubFrame {
 
     data class Notification(val event: ChatEvent) : EventSubFrame
 
+    data class Mod(val action: Moderation) : EventSubFrame
+
     data object Ignored : EventSubFrame
 }
 
@@ -21,8 +23,17 @@ internal fun parseEventSubFrame(text: String): EventSubFrame = runCatching {
     when (meta.getString("message_type")) {
         "session_welcome" -> EventSubFrame.Welcome(payload.getJSONObject("session").getString("id"))
         "session_reconnect" -> EventSubFrame.Reconnect(payload.getJSONObject("session").getString("reconnect_url"))
-        "notification" -> parseEventSubEvent(meta.getString("subscription_type"), payload.getJSONObject("event"))
-            ?.let { EventSubFrame.Notification(it) } ?: EventSubFrame.Ignored
+        "notification" -> {
+            val e = payload.getJSONObject("event")
+            when (val type = meta.getString("subscription_type")) {
+                "channel.chat.clear" -> EventSubFrame.Mod(Moderation.Clear)
+                "channel.chat.message_delete" -> EventSubFrame.Mod(Moderation.Remove(msgId = e.getString("message_id")))
+                // a ban or timeout clears that user's messages
+                "channel.chat.clear_user_messages" ->
+                    EventSubFrame.Mod(Moderation.Remove(userId = e.optString("target_user_id"), login = e.optString("target_user_login")))
+                else -> parseEventSubEvent(type, e)?.let { EventSubFrame.Notification(it) } ?: EventSubFrame.Ignored
+            }
+        }
         else -> EventSubFrame.Ignored
     }
 }.getOrDefault(EventSubFrame.Ignored)
