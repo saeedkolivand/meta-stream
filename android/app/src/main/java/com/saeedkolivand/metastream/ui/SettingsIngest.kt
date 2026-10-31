@@ -8,6 +8,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.saeedkolivand.metastream.core.AppSettings
@@ -16,11 +20,14 @@ import com.saeedkolivand.metastream.core.KBPS_STEP
 import com.saeedkolivand.metastream.core.Lock
 import com.saeedkolivand.metastream.core.MAX_KBPS
 import com.saeedkolivand.metastream.core.MIN_KBPS
+import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.RESOLUTIONS
 import com.saeedkolivand.metastream.core.snapKbps
+import com.saeedkolivand.metastream.streaming.BONDING_TRANSPORTS
 import com.saeedkolivand.metastream.streaming.Engine
 
 /** iOS IngestSettingsView: the destination plus resolution, fps, codec, bitrate, orientation lock and SRT buffer. */
+
 @Composable
 internal fun IngestPage() {
     val c = AppSettings.ingest
@@ -55,7 +62,7 @@ internal fun IngestPage() {
             valueRange = MIN_KBPS.toFloat()..MAX_KBPS.toFloat(),
             steps = (MAX_KBPS - MIN_KBPS) / KBPS_STEP - 1
         )
-        if (Engine.url.lowercase().startsWith("srt://")) {
+        if (Engine.url.lowercase().startsWith("srt")) { // srt:// and srtla://
             Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
                 Text("SRT buffer")
                 Text("${c.srtLatencyMs} ms")
@@ -70,8 +77,21 @@ internal fun IngestPage() {
         }
         Footnote(
             "Applied when you go live. Adaptive bitrate lowers the encoder bitrate on congestion or heat and never goes above " +
-                "the bitrate set here. Paste an srt:// URL to publish over SRT, with the key in its streamid."
+                "the bitrate set here. Paste an srt:// URL to publish over SRT, with the key in its streamid, or srtla:// to bond."
         )
+        if (Engine.url.lowercase().startsWith("srtla://")) {
+            for ((_, key, label, def) in BONDING_TRANSPORTS) {
+                var role by remember { mutableStateOf(Prefs.string(key, def)) }
+                Choice(label, listOf("main" to "Main", "backup" to "Backup", "off" to "Off"), role, idle) {
+                    role = it
+                    Prefs.put(key, it)
+                }
+            }
+            Footnote(
+                "Bonding sends one stream over several connections to an SRTLA receiver (BELABOX Cloud, IRLHosting, your own " +
+                    "srtla_rec). Cellular as backup only carries video when Wi-Fi can't keep up."
+            )
+        }
         OutlinedButton({ AppSettings.restoreIngestDefaults() }, enabled = idle) { Text("Restore defaults") }
     }
 }

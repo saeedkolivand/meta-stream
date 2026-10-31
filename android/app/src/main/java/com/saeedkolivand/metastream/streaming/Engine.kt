@@ -254,7 +254,7 @@ object Engine {
             return
         }
         Overlays.refresh() // before the encoder starts, so the privacy blur is already in the chain for the first frame
-        val full = url.trimEnd('/') + "/" + key
+        val full = Bonding.target(app, url.trimEnd('/') + "/" + key) // srtla:// goes through the bonding proxy
         if (s == null) glasses.start(full, askWearables) else startStream(s, full)
         // Glasses passthrough has no encoder knob, so Health only watches it.
         Health.start(AppSettings.ingest.bitrateKbps, s?.getStreamClient()) { s?.setVideoBitrateOnFly(it * 1000) }
@@ -263,6 +263,7 @@ object Engine {
 
     fun stop(reason: String = "idle") {
         Health.stop()
+        Bonding.stop()
         SceneRoles.end() // a Starting countdown, BRB or Ending still up: back to the scene before it
         if (source == Source.Glasses) glasses.stop() else stream?.stopStream()
         live = false

@@ -141,6 +141,7 @@ object Health {
                 }
                 escalate(now)
                 DeadAir.tick(now, speak)
+                Bonding.setCut(capKbps in 1 until ceiling * 7 / 10)
                 SceneRoles.checkBrb(downSince != null, client?.getQueueBytesOut() ?: 0, capKbps.takeIf { it > 0 } ?: ceiling)
             }
         }
