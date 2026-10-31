@@ -112,6 +112,14 @@ object Overlays {
         if (!web.isEmpty) g.addLayer(web.filter())
     }
 
+    /** The output size when there's a chain for a stinger to draw in: prepared, and not glasses passthrough (no GL). */
+    fun stingerCanvas(): Pair<Int, Int>? = if (sink != null && Engine.source != Source.Glasses) outW to outH else null
+
+    /** The stinger above the whole scene; null takes it away. */
+    fun showStinger(f: BaseFilterRender?) {
+        sink?.setTail(f)
+    }
+
     /** Scene-transition opacity for everything the scene drew (not the privacy blur or face-cam). */
     fun setAlpha(a: Float) {
         sink?.setAlpha(a)

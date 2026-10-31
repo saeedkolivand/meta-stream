@@ -1,9 +1,11 @@
 package com.saeedkolivand.metastream.overlay
 
 import com.saeedkolivand.metastream.camera.Cam
+import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -20,6 +22,7 @@ private const val MIN_ROTATE_SECONDS = 5
 object Scenes {
     private lateinit var scope: CoroutineScope
     private var rotation: Job? = null
+    private var stingerTarget: String? = null // main thread: the scene a running stinger cuts to
 
     // Switches queue instead of overlapping, so two fades never fight over the alpha.
     private val switching = Mutex()
@@ -42,8 +45,18 @@ object Scenes {
     internal fun apply(name: String) = switchTo(name)
 
     private fun switchTo(name: String) {
+        if (stingerTarget != null) {
+            stingerTarget = name // a stinger is mid-flight: it cuts to the latest pick
+            return
+        }
         scope.launch {
             switching.withLock {
+                val kind = StingerKind.of(Prefs.string("stingerKind", StingerKind.Lens.id))
+                val canvas = Overlays.stingerCanvas()
+                if (OverlayStore.transition == "stinger" && kind != null && canvas != null && name != OverlayStore.scene) {
+                    stinger(kind, canvas, name)
+                    return@withLock
+                }
                 val fade = OverlayStore.transition == "fade" && name != OverlayStore.scene
                 try {
                     if (fade) ramp(1f, 0f)
@@ -55,6 +68,37 @@ object Scenes {
                     Overlays.setAlpha(1f)
                 }
             }
+        }
+    }
+
+    /** Settings' "Play on preview": the stinger over the current scene, no switch. */
+    fun previewStinger() {
+        val kind = StingerKind.of(Prefs.string("stingerKind", StingerKind.Lens.id)) ?: return
+        val canvas = Overlays.stingerCanvas() ?: return
+        if (stingerTarget == null) scope.launch { switching.withLock { stinger(kind, canvas, OverlayStore.scene) } }
+    }
+
+    /**
+     * iOS applyScene with a built-in stinger: its art is rasterised off the main thread, it plays over everything, and the
+     * scene changes underneath at the moment the frame is fully covered. ponytail: the next scene is built at the cut, not
+     * ahead of it; RootEncoder adds one filter a frame, so a scene of more than ~15 layers can still be landing as it uncovers.
+     */
+    private suspend fun stinger(kind: StingerKind, canvas: Pair<Int, Int>, name: String) {
+        stingerTarget = name
+        val style = StingerStyle.load()
+        try {
+            val f = withContext(Dispatchers.Default) { StingerFilter.build(kind, style, canvas.first, canvas.second) }
+            val began = System.currentTimeMillis()
+            Overlays.showStinger(f)
+            delay((kind.cutSeconds(style) * 1000).toLong())
+            val to = stingerTarget ?: name
+            stingerTarget = null
+            if (to != OverlayStore.scene) OverlayStore.select(to)
+            applyCamera(to)
+            delay((kind.seconds(style) * 1000).toLong() + 150 - (System.currentTimeMillis() - began)) // a beat past the end
+        } finally {
+            stingerTarget = null
+            Overlays.showStinger(null)
         }
     }
 

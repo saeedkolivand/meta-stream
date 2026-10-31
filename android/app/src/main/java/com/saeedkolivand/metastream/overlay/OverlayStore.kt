@@ -34,7 +34,7 @@ object OverlayStore {
     var message by mutableStateOf("")
         private set
 
-    /** "fade" or "cut"; applied by [Scenes.select]. */
+    /** "fade", "cut" or "stinger"; applied by [Scenes.select]. */
     var transition by mutableStateOf("fade")
         private set
     var rotateOn by mutableStateOf(false)

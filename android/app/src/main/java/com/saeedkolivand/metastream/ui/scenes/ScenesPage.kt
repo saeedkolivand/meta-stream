@@ -61,8 +61,14 @@ internal fun ScenesPage() {
     }
     if (OverlayStore.scenes.size >= 2) RotationSection()
     Section("Transition") {
-        Choice("Between scenes", listOf("cut" to "Cut", "fade" to "Fade"), OverlayStore.transition, onSelect = OverlayStore::setTransition)
+        Choice(
+            "Between scenes",
+            listOf("cut" to "Cut", "fade" to "Fade", "stinger" to "Stinger"),
+            OverlayStore.transition,
+            onSelect = OverlayStore::setTransition
+        )
     }
+    if (OverlayStore.transition == "stinger") StingerSettings()
     Section("Scene roles") {
         Seconds("Starting countdown", "startCountdown", 60, 0..300, 5)
         Seconds("Ending hold", "endingHold", 10, 0..60, 1)

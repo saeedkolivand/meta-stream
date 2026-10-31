@@ -139,6 +139,9 @@ object Privacy : BlurFeed {
         }
     }
 
+    /** Whether the blur filter is in (or queued into) the chain. */
+    val inChain get() = filter != null
+
     /** The GL pipeline was replaced, so the old filter is already gone. */
     fun forget() {
         filter = null
