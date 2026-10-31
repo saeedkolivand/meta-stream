@@ -52,8 +52,10 @@ object Overlays {
     private val main = Handler(Looper.getMainLooper())
     private var gl: GlInterface? = null
     private var sink: FilterSink? = null
-    private var outW = 0
-    private var outH = 0
+    var outW = 0
+        private set
+    var outH = 0
+        private set
     private var browser: BrowserOverlay? = null
     private val players = mutableListOf<MediaPlayer>()
     private var widgetScope: CoroutineScope? = null

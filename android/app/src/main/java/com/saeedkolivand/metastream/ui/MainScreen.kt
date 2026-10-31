@@ -156,6 +156,7 @@ internal fun MainScreen() {
                 }
             }
         }
+        if (inPip) return@Box // the PiP window is the preview alone; no controls fit there
         val unregistered = Engine.source == Source.Glasses && Engine.glasses.registration != RegistrationState.REGISTERED
         if (unregistered) {
             Box(Modifier.fillMaxSize(), Alignment.Center) {
@@ -191,6 +192,7 @@ internal fun MainScreen() {
         )
         ChatPanel(args) { settingsOpen = true }
     }
+    if (inPip) return
     if (settingsOpen) SettingsSheet { settingsOpen = false }
     StreamManager()
     NetworkSheet()
