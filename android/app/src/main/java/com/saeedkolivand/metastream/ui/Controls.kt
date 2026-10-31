@@ -189,7 +189,7 @@ private fun GoLive(enabled: Boolean, size: Dp) {
             .clip(CircleShape).background(color)
             .clickable(enabled) {
                 haptic(true)
-                if (Engine.live) SceneRoles.requestStop() else Engine.goLive()
+                if (Engine.live) SceneRoles.requestStop() else GoLiveSheet.goLive()
             },
         Alignment.Center
     ) {

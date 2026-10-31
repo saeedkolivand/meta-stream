@@ -196,4 +196,5 @@ internal fun MainScreen() {
     if (settingsOpen) SettingsSheet { settingsOpen = false }
     StreamManager()
     NetworkSheet()
+    GoLiveSheet.Sheet()
 }

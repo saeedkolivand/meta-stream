@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
 internal fun cleanTags(raw: String) = raw.split(',').map(String::trim).filter(String::isNotEmpty)
 
 @Composable
-private fun CategoryPicker(selected: Category?, search: suspend (String) -> List<Category>, onPick: (Category) -> Unit) {
+internal fun CategoryPicker(selected: Category?, search: suspend (String) -> List<Category>, onPick: (Category) -> Unit) {
     var q by remember { mutableStateOf("") }
     var results by remember { mutableStateOf(emptyList<Category>()) }
     // Debounced so typing doesn't fire a request per keystroke.
