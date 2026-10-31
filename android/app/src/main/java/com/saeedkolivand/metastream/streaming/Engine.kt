@@ -207,7 +207,7 @@ object Engine {
     }
 
     fun pick(next: Source) {
-        if (next == source) return
+        if (next == source && next != Source.Screen) return // Screen again = a new projection to swap in
         if (live && (next == Source.Glasses || source == Source.Glasses)) {
             status = "stop the stream to switch to or from glasses"
             return

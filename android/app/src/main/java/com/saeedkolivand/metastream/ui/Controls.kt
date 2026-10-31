@@ -164,7 +164,7 @@ private fun SourcePicker(size: Dp) {
                     { Text(name) },
                     {
                         if (s == Source.Screen &&
-                            Engine.source != Source.Screen
+                            !ScreenShare.sharing
                         ) {
                             consent.launch(ScreenShare.consentIntent(context))
                         } else {

@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import androidx.compose.runtime.snapshotFlow
 import com.pedro.encoder.input.sources.video.Camera2Source
+import com.pedro.encoder.input.sources.video.NoVideoSource
 import com.pedro.encoder.input.sources.video.ScreenSource
 import com.pedro.encoder.input.sources.video.VideoSource
 import com.saeedkolivand.metastream.core.applog
@@ -27,6 +28,7 @@ import kotlinx.coroutines.launch
  */
 object ScreenShare {
     private var projection: MediaProjection? = null
+    val sharing get() = projection != null
     private var watch: Job? = null
     private val main = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -67,8 +69,13 @@ object ScreenShare {
         }
     }
 
-    /** Engine's video source for Screen; the camera when there's no projection (a fresh stream after a restart). */
-    internal fun source(context: Context): VideoSource = projection?.let { ScreenSource(context, it) } ?: Camera2Source(context)
+    /**
+     * Engine's video source for Screen. Without a projection (a fresh stream after a restart) it's a blank frame, never
+     * the camera: the user chose to show their screen, so falling back to the camera would film them unannounced.
+     */
+    internal fun source(context: Context): VideoSource = projection?.let { ScreenSource(context, it) } ?: NoVideoSource().also {
+        applog("screen", "no projection, sending a blank frame; pick Screen again to share")
+    }
 
     fun stop() {
         watch?.cancel()
