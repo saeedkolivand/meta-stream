@@ -2,6 +2,7 @@ package com.saeedkolivand.metastream.streaming
 
 import android.Manifest
 import android.app.Application
+import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.hardware.usb.UsbManager
@@ -137,6 +138,12 @@ object Engine {
         return s
     }
 
+    /** The prepared stream local recording writes from; it shares the preview's instance. */
+    internal fun recorder(): GenericStream? = ensure()?.takeIf { matchSettings(it) }
+
+    /** Application context for helpers outside Engine (recording's cache dir and gallery save). */
+    internal val appContext: Context get() = app
+
     private var preview: SurfaceView? = null
     private var prepared: Pair<VideoParams, Boolean>? = null
 
@@ -146,6 +153,7 @@ object Engine {
 
     /** Applies the saved ingest settings; an upright phone with no lock = 720x1280 out (rotation 90, as RootEncoder's sample). */
     private fun prepare(s: GenericStream): Boolean {
+        if (Recording.since != null) Recording.stop() // re-preparing drops the encoders; save the file first
         val want = wanted()
         val (p, h265) = want
         val ok = try {
@@ -166,6 +174,7 @@ object Engine {
     // autoHandleOrientation instead of re-encoding. Re-preparing needs a released stream, so the preview restarts.
     private fun matchSettings(s: GenericStream): Boolean {
         if (wanted() == prepared) return true
+        if (Recording.since != null) Recording.stop() // release() below would drop the running recording
         Overlays.unbind() // the re-prepare drops the GL filters; prepare() binds again and goLive refreshes
         s.release()
         val ok = prepare(s)
@@ -211,6 +220,7 @@ object Engine {
         }
         val s = stream
         if (s != null && next != Source.Glasses && (next == Source.Usb) != (s.videoSource is UvcSource)) {
+            if (Recording.since != null) Recording.stop() // swapping the source re-creates the encoder
             try {
                 s.changeVideoSource(video(next))
                 Cam.attach(s)
@@ -220,6 +230,7 @@ object Engine {
             }
         }
         source = next
+        if (next == Source.Glasses) Recording.checkSource()
         Overlays.refresh()
     }
 
