@@ -63,11 +63,23 @@ class StreamingService : Service() {
         when (intent?.action) {
             ACTION_MUTE -> Engine.toggleMute()
             ACTION_STOP -> Engine.stop()
+            ACTION_SCREEN -> if (running) {
+                // Android 14+: the media-projection type must be on before the projection is created.
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification(this, currentNotice()),
+                    TYPES or ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+                )
+                intent.getParcelableExtra(EXTRA_DATA, Intent::class.java)?.let {
+                    ScreenShare.granted(this, intent.getIntExtra(EXTRA_CODE, 0), it)
+                }
+                return START_NOT_STICKY
+            }
             else -> {
                 startForeground(
                     NOTIFICATION_ID,
                     notification(this, currentNotice()),
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                    TYPES
                 )
                 running = true
                 return START_NOT_STICKY
@@ -83,6 +95,11 @@ class StreamingService : Service() {
     }
 
     companion object {
+        private const val TYPES = ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        const val ACTION_SCREEN = "com.saeedkolivand.metastream.SCREEN"
+        const val EXTRA_CODE = "code"
+        const val EXTRA_DATA = "data"
+
         @Volatile
         var running = false
             private set

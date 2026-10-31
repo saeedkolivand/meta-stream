@@ -19,7 +19,6 @@ import com.pedro.common.StreamingStatsReport
 import com.pedro.common.VideoCodec
 import com.pedro.encoder.input.sources.audio.MicrophoneSource
 import com.pedro.encoder.input.sources.video.Camera2Source
-import com.pedro.encoder.input.sources.video.VideoSource
 import com.pedro.encoder.utils.gl.AspectRatioMode
 import com.pedro.library.generic.GenericStream
 import com.pedro.library.util.streamclient.SrtStreamClient
@@ -38,7 +37,7 @@ import com.saeedkolivand.metastream.privacy.Privacy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-enum class Source { Phone, Usb, Glasses }
+enum class Source { Phone, Usb, Glasses, Screen }
 
 const val DEFAULT_INGEST_URL = "rtmp://100.124.231.50:1935/live"
 
@@ -118,8 +117,6 @@ object Engine {
         askWearables = ask ?: DENY_WEARABLES
     }
 
-    private fun video(s: Source): VideoSource = if (s == Source.Usb) UvcSource() else Camera2Source(app)
-
     /** Creates the stream on first use (needs CAMERA + RECORD_AUDIO); callable without any activity. */
     private fun ensure(): GenericStream? {
         stream?.let { return it }
@@ -130,7 +127,7 @@ object Engine {
             return null
         }
         val mic = MicrophoneSource().also { Mics.apply(app, it) }
-        val s = GenericStream(app, checker, video(source), mic)
+        val s = GenericStream(app, checker, videoSource(app, source), mic)
         s.getGlInterface().autoHandleOrientation = true // output follows device rotation
         s.getGlInterface().setAspectRatioMode(AspectRatioMode.Fill) // the preview crops to fill the screen like iOS
         s.getStreamClient().setReTries(10) // RootEncoder's built-in reconnect, driven from onConnectionFailed
@@ -220,10 +217,10 @@ object Engine {
             return
         }
         val s = stream
-        if (s != null && next != Source.Glasses && (next == Source.Usb) != (s.videoSource is UvcSource)) {
+        if (s != null && next != Source.Glasses && s.videoSource.javaClass != sourceClass(next)) {
             if (Recording.since != null) Recording.stop() // swapping the source re-creates the encoder
             try {
-                s.changeVideoSource(video(next))
+                s.changeVideoSource(videoSource(app, next))
                 Cam.attach(s)
             } catch (e: IllegalArgumentException) {
                 status = "source unsupported: ${e.message}"

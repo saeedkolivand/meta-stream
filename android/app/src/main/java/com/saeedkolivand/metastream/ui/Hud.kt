@@ -81,6 +81,7 @@ internal fun Hud() {
             Source.Phone -> R.drawable.ic_phone to "Phone"
             Source.Usb -> R.drawable.ic_usb to "USB"
             Source.Glasses -> R.drawable.ic_glasses to "Glasses"
+            Source.Screen -> R.drawable.ic_screen to "Screen"
         }
         Pill(icon, name, Color.White)
         ScenePill()

@@ -29,6 +29,7 @@ object Looks {
     fun key(): String = when {
         Engine.source == Source.Usb -> "external"
         Engine.source == Source.Glasses -> "glasses"
+        Engine.source == Source.Screen -> "screen"
         Cam.facingBack() -> "back"
         else -> "front"
     }

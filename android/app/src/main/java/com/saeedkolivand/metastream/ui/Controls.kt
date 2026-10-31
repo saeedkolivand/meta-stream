@@ -1,5 +1,8 @@
 package com.saeedkolivand.metastream.ui
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -43,6 +47,7 @@ import com.saeedkolivand.metastream.privacy.Privacy
 import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Recording
+import com.saeedkolivand.metastream.streaming.ScreenShare
 import com.saeedkolivand.metastream.streaming.Soundboard
 import com.saeedkolivand.metastream.streaming.Source
 import kotlinx.coroutines.delay
@@ -51,6 +56,7 @@ private fun sourceIcon(s: Source) = when (s) {
     Source.Phone -> R.drawable.ic_phone
     Source.Usb -> R.drawable.ic_usb
     Source.Glasses -> R.drawable.ic_glasses
+    Source.Screen -> R.drawable.ic_screen
 }
 
 /** Record is independent of Go Live; the elapsed time is its accessibility label, so it stays a plain round button. */
@@ -139,14 +145,31 @@ private fun SoundboardButton(size: Dp) {
 @Composable
 private fun SourcePicker(size: Dp) {
     var open by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    // Screen asks Android first; the share starts once the service has taken the consent (ScreenShare).
+    val consent = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        val data = r.data
+        if (r.resultCode == Activity.RESULT_OK && data != null) ScreenShare.consent(context, r.resultCode, data)
+    }
     Box {
         RoundButton(sourceIcon(Engine.source), false, size) { open = true }
         DropdownMenu(open, { open = false }) {
-            listOf(Source.Phone to "Phone", Source.Usb to "USB camera", Source.Glasses to "Glasses").forEach { (s, name) ->
+            listOf(
+                Source.Phone to "Phone",
+                Source.Usb to "USB camera",
+                Source.Glasses to "Glasses",
+                Source.Screen to "Screen"
+            ).forEach { (s, name) ->
                 DropdownMenuItem(
                     { Text(name) },
                     {
-                        Engine.pick(s)
+                        if (s == Source.Screen &&
+                            Engine.source != Source.Screen
+                        ) {
+                            consent.launch(ScreenShare.consentIntent(context))
+                        } else {
+                            Engine.pick(s)
+                        }
                         open = false
                     },
                     leadingIcon = { Icon(painterResource(sourceIcon(s)), null, Modifier.size(20.dp)) }
