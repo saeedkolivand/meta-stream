@@ -1,6 +1,7 @@
 package com.saeedkolivand.metastream.core
 
 import android.app.Application
+import com.saeedkolivand.metastream.bot.AppBot
 import com.saeedkolivand.metastream.camera.Looks
 import com.saeedkolivand.metastream.car.Notify
 import com.saeedkolivand.metastream.chat.ChatFeed
@@ -17,6 +18,7 @@ import com.saeedkolivand.metastream.streaming.Soundboard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /** Creates the process-wide singletons and wires them together; this is the only place that knows all of them. */
 class App : Application() {
@@ -37,7 +39,11 @@ class App : Application() {
         OverlayStore.init(this)
         Overlays.init(this)
         Accounts.init(this, scope)
-        ChatFeed.init(scope, onMessage = Speaker::speakChat)
+        ChatFeed.init(scope) {
+            Speaker.speakChat(it)
+            scope.launch { AppBot.handle(it) } // providers call from their socket thread; the bot's state is main-thread
+        }
+        AppBot.init()
         Engine.init(this, scope, speak = Speaker::speakSystem, alert = { Notify.alert(this, it) })
         Scenes.init(scope)
         Scenes.updateRotation()

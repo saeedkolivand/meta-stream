@@ -3,6 +3,7 @@ package com.saeedkolivand.metastream.overlay
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.saeedkolivand.metastream.bot.AppBot
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.applog
 import com.saeedkolivand.metastream.streaming.Engine
@@ -44,7 +45,10 @@ object SceneRoles {
     val countdownText: String
         get() = countdownEnd?.let { duration(it - System.currentTimeMillis() + 999) }.orEmpty()
 
-    private fun log(role: String, on: Boolean) = applog("overlay", "role $role ${if (on) "on" else "off"} -> ${OverlayStore.scene}")
+    private fun log(role: String, on: Boolean) {
+        applog("overlay", "role $role ${if (on) "on" else "off"} -> ${OverlayStore.scene}")
+        AppBot.role(role, on)
+    }
 
     /** Selects the role's scene, remembering where to come back to. False when no scene has that role. */
     private fun select(role: String): Boolean {
@@ -110,7 +114,7 @@ object SceneRoles {
         goodTicks = if (!down && backlog < 0.5) goodTicks + 1 else 0
         when {
             active == null && !weakNoticed && weakTicks >= 5 -> if (!select(BRB)) {
-                weakNoticed = true // no BRB scene: the stream stays as it is (the app bot's notice would go here)
+                weakNoticed = true // no BRB scene: the stream stays as it is, only the app bot's notice goes out
                 log(BRB, true)
             }
             goodTicks >= 10 && active == BRB -> end()

@@ -39,6 +39,7 @@ private enum class Page(val title: String, val parent: Page?) {
     Glasses("Video (glasses)", Root),
     Camera("Camera", Root),
     ReadAloud("Read aloud", Root),
+    AppBot("App bot", Root),
     Privacy("Privacy", Root),
     Scenes("Scenes & widgets", Root),
     Diagnostics("Diagnostics & about", Root),
@@ -64,6 +65,7 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
                 Page.Audio -> AudioPage()
                 Page.Camera -> CameraSettingsContent()
                 Page.ReadAloud -> ReadAloudSettings()
+                Page.AppBot -> AppBotPage()
                 Page.Privacy -> PrivacySettings()
                 Page.Scenes -> ScenesPage()
                 Page.Glasses -> GlassesVideoPage()
@@ -82,6 +84,7 @@ private fun RootPage(go: (Page) -> Unit) {
     NavRow(Page.Camera.title) { go(Page.Camera) }
     NavRow(Page.Audio.title) { go(Page.Audio) }
     NavRow(Page.ReadAloud.title) { go(Page.ReadAloud) }
+    NavRow(Page.AppBot.title) { go(Page.AppBot) }
     NavRow(Page.Scenes.title) { go(Page.Scenes) }
     NavRow(Page.Privacy.title) { go(Page.Privacy) }
     NavRow(Page.Glasses.title) { go(Page.Glasses) }

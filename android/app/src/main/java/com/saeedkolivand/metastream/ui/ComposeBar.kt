@@ -87,6 +87,7 @@ internal fun ComposeBar(expanded: Boolean, onFocus: () -> Unit) {
                 }
             }
         }
+        if (target != null) BotCommandsBar { notice = it }
         if (notice.isNotEmpty()) Text(notice, color = Orange, fontSize = 12.sp, maxLines = 3)
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
