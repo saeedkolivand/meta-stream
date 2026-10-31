@@ -3,6 +3,7 @@ package com.saeedkolivand.metastream.overlay
 import com.pedro.encoder.input.gl.render.filters.BaseFilterRender
 import com.pedro.encoder.input.gl.render.filters.`object`.BaseObjectFilterRender
 import com.pedro.library.view.GlInterface
+import com.saeedkolivand.metastream.camera.Looks
 import com.saeedkolivand.metastream.privacy.Privacy
 
 /**
@@ -20,10 +21,10 @@ class FilterSink(private val gl: GlInterface) {
     /** On top of everything the scene draws (the stinger); layers added while it's up go in just below it. */
     private var tail: BaseFilterRender? = null
 
-    // Chain order is face-cam, privacy blur, layers, tail. Ops apply in order, one a frame, so counting what's queued ahead
+    // Chain order is face-cam, look, privacy blur, layers, tail. Ops apply in order, one a frame, so counting what's queued ahead
     // gives the slot right under the tail. ponytail: a blur toggle mid-stinger can shift that slot by one for that one scene.
     fun addFilter(f: BaseFilterRender) {
-        val below = (if (Privacy.inChain) 1 else 0) + mine.size
+        val below = (if (Privacy.inChain) 1 else 0) + (if (Looks.inChain) 1 else 0) + mine.size
         mine += f
         if (tail == null) gl.addFilter(f) else gl.addFilter(below, f)
     }

@@ -302,5 +302,8 @@ object FaceCam {
     /** The main camera is about to switch lens; the front sensor can't serve two openers, so let go of it first. */
     fun beforeFlip() = closeAll()
 
-    fun afterFlip() = Overlays.syncFaceCam()
+    fun afterFlip() {
+        Overlays.syncFaceCam()
+        Overlays.syncLook() // front and back keep their own look
+    }
 }

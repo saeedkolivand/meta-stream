@@ -12,6 +12,7 @@ import com.pedro.encoder.input.gl.render.filters.`object`.ImageFilterRender
 import com.pedro.encoder.input.gl.render.filters.`object`.SurfaceFilterRender
 import com.pedro.library.view.GlInterface
 import com.saeedkolivand.metastream.camera.FaceCam
+import com.saeedkolivand.metastream.camera.Looks
 import com.saeedkolivand.metastream.core.applog
 import com.saeedkolivand.metastream.privacy.Privacy
 import com.saeedkolivand.metastream.streaming.AudioMix
@@ -66,6 +67,7 @@ object Overlays {
     fun bind(gl: GlInterface, w: Int, h: Int) {
         release()
         Privacy.forget() // a new pipeline starts with an empty chain
+        Looks.forget()
         this.gl = gl
         sink = FilterSink(gl)
         outW = w
@@ -76,6 +78,7 @@ object Overlays {
         release()
         FaceCam.stop()
         Privacy.forget()
+        Looks.forget()
         gl = null
         sink = null
     }
@@ -92,6 +95,7 @@ object Overlays {
         // Chain order is face-cam -> blur -> overlays: the blur must see (and hide faces in) the face-cam window, while
         // alerts stay sharp. Privacy keeps its filter across refreshes; the face-cam goes back in at index 0, ahead of it.
         Privacy.install(glNow)
+        Looks.install(glNow) // the grade goes ahead of the blur and the overlays, so only the camera is graded
         FaceCam.install(g, outW, outH)
         val pack = OverlayStore.pack
         val scene = OverlayStore.active()?.takeIf { pack != null && Engine.source != Source.Glasses }
@@ -137,6 +141,12 @@ object Overlays {
         val glNow = gl ?: return
         // In a live chain the face-cam window sits at 0, so the blur slots in at 1; without it, at 0, like a fresh rebuild.
         Privacy.install(glNow, if (FaceCam.inChain) 1 else 0)
+    }
+
+    /** A look edit, a camera flip or a source switch: only the look filter changes. */
+    fun syncLook() {
+        if (Looks.key() == "glasses") return
+        main.post { gl?.let(Looks::install) }
     }
 
     fun syncFaceCam() {

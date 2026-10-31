@@ -1,6 +1,7 @@
 package com.saeedkolivand.metastream.core
 
 import android.app.Application
+import com.saeedkolivand.metastream.camera.Looks
 import com.saeedkolivand.metastream.car.Notify
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.overlay.OverlayStore
@@ -30,6 +31,7 @@ class App : Application() {
         AppSettings.init()
         Mics.init()
         Soundboard.init(this)
+        Looks.init(this)
         AudioMix.init()
         Speaker.init(this)
         OverlayStore.init(this)

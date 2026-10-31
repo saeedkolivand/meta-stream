@@ -178,6 +178,7 @@ fun CameraSettingsContent() {
     val s = Cam.settings
     val c = Cam.caps
     Column(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+        LookSection()
         Group("Live control strip", "Choose which controls the cam button shows over the preview, and their order.") { CamCustomize() }
         Group("Lens & zoom") {
             if (c.lenses.isNotEmpty()) {
