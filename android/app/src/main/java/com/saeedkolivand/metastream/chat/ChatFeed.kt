@@ -70,6 +70,9 @@ object ChatFeed {
         onMessage(e)
     }
 
+    /** Drops [origin]'s lines after a /clear. */
+    fun clear(origin: String) = _chat.update { list -> list.filter { it.platform != origin } }
+
     private fun launchSource(label: String, wait: Long, work: suspend () -> Unit) = scope.launch {
         delay(wait)
         backoff(label, work)

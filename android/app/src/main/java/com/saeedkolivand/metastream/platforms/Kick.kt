@@ -25,9 +25,10 @@ object Kick : Account("Kick", "kick") {
     var slug by mutableStateOf("")
         private set
     private var streamUrl = ""
-    private var userId = 0
+    internal var userId = 0
+        private set
 
-    private val api = Endpoint("https://api.kick.com", "kickAccess") {
+    internal val api = Endpoint("https://api.kick.com", "kickAccess") {
         saveTokens(
             Net.form(
                 TOKEN_URL,
@@ -48,7 +49,10 @@ object Kick : Account("Kick", "kick") {
             .addQueryParameter("response_type", "code")
             .addQueryParameter("client_id", BuildConfig.KICK_CLIENT_ID)
             .addQueryParameter("redirect_uri", PlatformConfig.WEB_REDIRECT)
-            .addQueryParameter("scope", "user:read channel:read channel:write chat:write streamkey:read")
+            .addQueryParameter(
+                "scope",
+                "user:read channel:read channel:write chat:write streamkey:read moderation:ban moderation:chat_message:manage ads:write"
+            )
             .addQueryParameter("code_challenge", Pkce.s256(verifier))
             .addQueryParameter("code_challenge_method", "S256")
             .addQueryParameter("state", state)

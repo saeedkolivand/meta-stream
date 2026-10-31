@@ -20,6 +20,9 @@ data class ChatEvent(
     val kind: Kind = Kind.Message,
     val amountCents: Int = 0,
     val count: Int = 0,
+    // Platform message id and sender id (Kick/Twitch chat messages): what the moderation slash commands act on.
+    val msgId: String = "",
+    val userId: String = "",
     // Unique per message, set by ChatFeed so the LazyColumn can key its rows.
     val id: Long = 0
 )
@@ -54,7 +57,9 @@ internal fun parseKickFrame(frame: String): ChatEvent? {
             sender.getString("username"),
             d.getString("content"),
             color = identity?.optString("color")?.ifEmpty { null },
-            badges = normalizeRoles(types)
+            badges = normalizeRoles(types),
+            msgId = d.optString("id"),
+            userId = sender.opt("id")?.toString().orEmpty()
         )
     }.getOrNull()
 }
@@ -73,7 +78,9 @@ internal fun parseTwitchLine(line: String): ChatEvent? {
         tags["display-name"].orEmpty().ifEmpty { m[2] },
         m[3],
         color = tags["color"]?.ifEmpty { null },
-        badges = normalizeRoles(roles.asSequence())
+        badges = normalizeRoles(roles.asSequence()),
+        msgId = tags["id"].orEmpty(),
+        userId = tags["user-id"].orEmpty()
     )
 }
 

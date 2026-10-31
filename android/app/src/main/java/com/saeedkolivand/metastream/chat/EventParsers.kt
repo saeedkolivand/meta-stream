@@ -41,7 +41,15 @@ internal fun parseEventSubEvent(type: String, event: JSONObject): ChatEvent? = w
         } else {
             val badges = event.optJSONArray("badges")
             val ids = (0 until (badges?.length() ?: 0)).asSequence().map { badges!!.getJSONObject(it).optString("set_id") }
-            ChatEvent("twitch", user, text, color = hexOrNull(event.optString("color")), badges = normalizeRoles(ids))
+            ChatEvent(
+                "twitch",
+                user,
+                text,
+                color = hexOrNull(event.optString("color")),
+                badges = normalizeRoles(ids),
+                msgId = event.optString("message_id"),
+                userId = event.optString("chatter_user_id")
+            )
         }
     }
     "channel.follow" -> alert(event, "user_name", Kind.Follow)

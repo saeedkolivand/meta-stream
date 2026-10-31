@@ -38,6 +38,7 @@ import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.platforms.Accounts
+import com.saeedkolivand.metastream.platforms.Slash
 import kotlinx.coroutines.launch
 
 private val NAMES = mapOf("kick" to "Kick", "twitch" to "Twitch", "youtube" to "YouTube")
@@ -58,6 +59,10 @@ internal fun ComposeBar(expanded: Boolean, onFocus: () -> Unit) {
         if (t.isEmpty()) return
         text = ""
         scope.launch {
+            Slash.parse(t)?.let { (name, args) ->
+                notice = Slash.run(to, name, args) // never posted, whatever the outcome
+                return@launch
+            }
             val before = Accounts.status
             Accounts.send(to, t)
             // Successful sends leave the status alone, so a changed status after a send is the failure reason.
@@ -82,7 +87,7 @@ internal fun ComposeBar(expanded: Boolean, onFocus: () -> Unit) {
                 }
             }
         }
-        if (notice.isNotEmpty()) Text(notice, color = Orange, fontSize = 12.sp)
+        if (notice.isNotEmpty()) Text(notice, color = Orange, fontSize = 12.sp, maxLines = 3)
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 text,
