@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.camera.FaceCam
+import com.saeedkolivand.metastream.overlay.SceneRoles
 import com.saeedkolivand.metastream.privacy.BlurState
 import com.saeedkolivand.metastream.privacy.Privacy
 import com.saeedkolivand.metastream.streaming.AudioMix
@@ -165,12 +166,12 @@ private fun GoLive(enabled: Boolean, size: Dp) {
             .clip(CircleShape).background(color)
             .clickable(enabled) {
                 haptic(true)
-                if (Engine.live) Engine.stop() else Engine.goLive()
+                if (Engine.live) SceneRoles.requestStop() else Engine.goLive()
             },
         Alignment.Center
     ) {
         Text(
-            if (Engine.live) "END" else "GO\nLIVE",
+            if (Engine.live) SceneRoles.endingIn?.let { "Ending\n${it}s" } ?: "END" else "GO\nLIVE",
             color = Color.White,
             fontSize = if (size < 80.dp) 13.sp else 15.sp,
             fontWeight = FontWeight.ExtraBold,

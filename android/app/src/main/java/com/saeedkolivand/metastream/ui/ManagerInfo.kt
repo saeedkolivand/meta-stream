@@ -62,7 +62,7 @@ private fun Choice(options: List<Pair<String, String>>, value: String, onPick: (
 }
 
 @Composable
-private fun Stepper(label: String, value: Int, step: Int, range: IntRange, onChange: (Int) -> Unit) {
+internal fun Stepper(label: String, value: Int, step: Int, range: IntRange, onChange: (Int) -> Unit) {
     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
         Text(label)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

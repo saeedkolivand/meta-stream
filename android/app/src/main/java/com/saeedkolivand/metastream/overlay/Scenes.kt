@@ -35,7 +35,11 @@ object Scenes {
             updateRotation()
         }
         switchTo(name)
+        SceneRoles.clear() // the streamer's pick always wins over a role
     }
+
+    /** A switch that keeps any role up (the roles' own switches). */
+    internal fun apply(name: String) = switchTo(name)
 
     private fun switchTo(name: String) {
         scope.launch {
@@ -78,7 +82,7 @@ object Scenes {
     fun updateRotation() {
         rotation?.cancel()
         rotation = null
-        if (!OverlayStore.rotateOn || validRotation().size < 2) return
+        if (SceneRoles.active != null || !OverlayStore.rotateOn || validRotation().size < 2) return
         val every = maxOf(MIN_ROTATE_SECONDS, OverlayStore.rotateSeconds) * 1000L
         rotation = scope.launch {
             while (true) {

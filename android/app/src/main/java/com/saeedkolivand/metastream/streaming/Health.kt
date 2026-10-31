@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import com.pedro.library.util.streamclient.StreamBaseClient
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.overlay.SceneRoles
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -140,6 +141,7 @@ object Health {
                 }
                 escalate(now)
                 DeadAir.tick(now, speak)
+                SceneRoles.checkBrb(downSince != null, client?.getQueueBytesOut() ?: 0, capKbps.takeIf { it > 0 } ?: ceiling)
             }
         }
     }

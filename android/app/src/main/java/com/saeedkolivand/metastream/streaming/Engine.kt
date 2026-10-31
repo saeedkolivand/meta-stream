@@ -33,6 +33,7 @@ import com.saeedkolivand.metastream.core.redactFromLogs
 import com.saeedkolivand.metastream.core.toVideoParams
 import com.saeedkolivand.metastream.glasses.Glasses
 import com.saeedkolivand.metastream.overlay.Overlays
+import com.saeedkolivand.metastream.overlay.SceneRoles
 import com.saeedkolivand.metastream.privacy.Privacy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -262,6 +263,7 @@ object Engine {
 
     fun stop(reason: String = "idle") {
         Health.stop()
+        SceneRoles.end() // a Starting countdown, BRB or Ending still up: back to the scene before it
         if (source == Source.Glasses) glasses.stop() else stream?.stopStream()
         live = false
         connected = false
@@ -323,7 +325,7 @@ object Engine {
                 Health.markUp()
                 if (live) {
                     connected = true
-                    if (liveSince == null) liveSince = System.currentTimeMillis()
+                    if (liveSince == null) liveSince = System.currentTimeMillis().also { SceneRoles.startRole() }
                 }
                 status = "connected"
                 speak("stream connected")

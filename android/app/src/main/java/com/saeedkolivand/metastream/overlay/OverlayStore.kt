@@ -174,6 +174,19 @@ object OverlayStore {
     /** [camera] is "back"|"front"|"external"|"glasses"|"auto", or null to keep whatever is current. */
     fun setCamera(scene: String, camera: String?) = mapScene(scene) { it.copy(camera = camera) }
 
+    /** One scene per role: giving [scene] a role takes it off whichever scene had it. */
+    fun setRole(scene: String, role: String?) {
+        val p = pack ?: return
+        val scenes = p.scenes.map {
+            when {
+                it.name == scene -> it.copy(role = role)
+                role != null && it.role == role -> it.copy(role = null)
+                else -> it
+            }
+        }
+        commit(p.copy(scenes = scenes))
+    }
+
     /** Copies a picked image into app storage as img-uuid.ext (extension sniffed from the bytes); returns the name for data["file"]. */
     fun saveImage(uri: Uri): String? {
         val bytes = runCatching {

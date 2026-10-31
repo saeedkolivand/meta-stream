@@ -58,7 +58,8 @@ data class Layer(
 )
 
 /** [camera] is "back"|"front"|"external"|"glasses"|"auto", or null to keep whatever is current. */
-data class Scene(val name: String, val layers: List<Layer>, val camera: String? = null)
+/** [role] is "starting"|"brb"|"ending" (see SceneRoles), one scene per role; null = none. */
+data class Scene(val name: String, val layers: List<Layer>, val camera: String? = null, val role: String? = null)
 
 /** A visible in-app widget with neutral OBS fields; placement comes from [layout]. */
 fun widgetLayer(type: LayerType, name: String, layout: WidgetLayout, data: Map<String, String>) = Layer(
@@ -95,7 +96,8 @@ data class Pack(val canvasW: Int, val canvasH: Int, val scenes: List<Scene>, val
                     Scene(
                         s.getString("name"),
                         s.getJSONArray("layers").objects().map(::layerOf),
-                        s.optString("cam").takeIf { it.isNotEmpty() }
+                        s.optString("cam").takeIf { it.isNotEmpty() },
+                        s.optString("role").takeIf { it.isNotEmpty() }
                     )
                 },
                 sk.keys().asSequence().associateWith { sk.getInt(it) }
@@ -108,6 +110,7 @@ private fun JSONArray.objects() = (0 until length()).map { getJSONObject(it) }
 
 private fun sceneJson(s: Scene) = JSONObject().put("name", s.name).put("layers", JSONArray(s.layers.map(::layerJson))).apply {
     s.camera?.let { put("cam", it) }
+    s.role?.let { put("role", it) }
 }
 
 private fun layerJson(l: Layer) = JSONObject().put("t", l.type.name).put("n", l.name).put("v", l.visible)

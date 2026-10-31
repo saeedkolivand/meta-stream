@@ -22,6 +22,7 @@ internal object WidgetVariables {
         "{uptime}" to "Live time",
         "{viewers}" to "Viewers",
         "{bitrate}" to "Bitrate",
+        "{countdown}" to "Starting countdown",
         "{battery}" to "Battery",
         "{speed}" to "Speed",
         "{distance}" to "Distance",
@@ -47,6 +48,7 @@ internal object WidgetVariables {
         "{uptime}" -> uptime(Engine.liveSince)
         "{viewers}" -> (Kick.viewers + Twitch.viewers + YouTube.viewers).toString()
         "{bitrate}" -> "${Health.bitrateKbps} kbps"
+        "{countdown}" -> SceneRoles.countdownText
         "{battery}" -> battery()
         "{speed}" -> WidgetLocation.speedText
         "{distance}" -> WidgetLocation.distanceText(Engine.liveSince)

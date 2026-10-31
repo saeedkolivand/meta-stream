@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -28,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.Scene
 import com.saeedkolivand.metastream.overlay.Scenes
@@ -37,6 +39,7 @@ import com.saeedkolivand.metastream.ui.Green
 import com.saeedkolivand.metastream.ui.ObsImportSection
 import com.saeedkolivand.metastream.ui.Red
 import com.saeedkolivand.metastream.ui.Section
+import com.saeedkolivand.metastream.ui.Stepper
 import com.saeedkolivand.metastream.ui.SwitchRow
 
 private val Intervals = listOf(15 to "15 s", 30 to "30 s", 60 to "1 min", 120 to "2 min", 300 to "5 min")
@@ -59,6 +62,15 @@ internal fun ScenesPage() {
     if (OverlayStore.scenes.size >= 2) RotationSection()
     Section("Transition") {
         Choice("Between scenes", listOf("cut" to "Cut", "fade" to "Fade"), OverlayStore.transition, onSelect = OverlayStore::setTransition)
+    }
+    Section("Scene roles") {
+        Seconds("Starting countdown", "startCountdown", 60, 0..300, 5)
+        Seconds("Ending hold", "endingHold", 10, 0..60, 1)
+        Footnote(
+            "Give a scene a role in its editor. Starting shows after going live for the countdown (use {countdown} in a " +
+                "text widget), BRB while the connection is too weak, Ending for the hold after you tap END (tap again to " +
+                "stop at once). Picking a scene by hand cancels the role."
+        )
     }
     Section("Import from OBS (optional)") { ObsImportSection() }
     editing?.let { SceneEditor(it) { editing = null } }
@@ -168,5 +180,15 @@ private fun RotationSection() {
             }
         }
         Footnote("Needs at least two scenes ticked. Picking a scene by hand that isn't in the rotation turns it off.")
+    }
+}
+
+/** A seconds setting in Prefs [key]; 0 reads "off". */
+@Composable
+private fun Seconds(title: String, key: String, default: Int, range: IntRange, step: Int) {
+    var v by remember { mutableIntStateOf(Prefs.int(key, default)) }
+    Stepper("$title: ${if (v == 0) "off" else "$v s"}", v, step, range) {
+        v = it
+        Prefs.put(key, it)
     }
 }
