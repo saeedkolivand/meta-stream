@@ -17,6 +17,7 @@ import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.platforms.Spotify
 import com.saeedkolivand.metastream.reach.LivePost
 import com.saeedkolivand.metastream.reach.SessionLog
+import com.saeedkolivand.metastream.remote.ObsServer
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
@@ -62,6 +63,7 @@ class App : Application() {
         DonatePage.start(scope)
         SessionLog.init(this)
         LivePost.start(scope)
+        ObsServer.sync(scope)
         GoalStore.onReached = {
             Speaker.speakSystem("Goal reached")
             AppBot.goalReached(GoalStore.config.title)
