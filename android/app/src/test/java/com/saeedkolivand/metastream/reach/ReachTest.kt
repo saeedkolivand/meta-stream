@@ -108,3 +108,11 @@ class SpotifyParseTest {
         assertEquals(null, com.saeedkolivand.metastream.platforms.Spotify.parse(JSONObject(json.replace("\"track\"", "\"ad\"")), 0))
     }
 }
+
+class BitrateRecoveryTest {
+    @Test
+    fun climbsFastWellBelowWhereItFailed() {
+        assertEquals(5, com.saeedkolivand.metastream.streaming.cleanSecondsBeforeUp(2000, 4000))
+        assertEquals(15, com.saeedkolivand.metastream.streaming.cleanSecondsBeforeUp(3500, 4000))
+    }
+}
