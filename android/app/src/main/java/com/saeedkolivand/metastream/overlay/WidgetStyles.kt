@@ -223,6 +223,9 @@ data class NowPlayingStyle(
         "twoLine" -> 520f to 98f
         "cover" -> 920f to 60f
         "popup" -> 1040f to 58f
+        "island" -> 880f to 152f
+        "disc" -> 860f to 224f
+        "ticker" -> 920f to 96f
         else -> 840f to 256f
     }
 

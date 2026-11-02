@@ -258,7 +258,16 @@ private fun DataKeys.GoalSection() = Section("Donation goal") {
 
 @Composable
 private fun DataKeys.NowPlayingSection() = Section("Now playing") {
-    val designs = listOf("slab" to "Slab", "text" to "Text", "twoLine" to "Two lines", "cover" to "Text with cover", "popup" to "Pop-up")
+    val designs = listOf(
+        "slab" to "Slab",
+        "island" to "Island",
+        "disc" to "Disc",
+        "ticker" to "Ticker",
+        "text" to "Text",
+        "twoLine" to "Two lines",
+        "cover" to "Text with cover",
+        "popup" to "Pop-up"
+    )
     Choice("Design", designs, str("design").takeIf { d -> designs.any { it.first == d } } ?: "slab") { put("design", it) }
     Swatches("accentColor", "Accent color")
     FontPicker()

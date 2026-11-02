@@ -17,8 +17,9 @@ private const val ART_WAIT_MS = 1200L
 /**
  * The Now playing (Spotify) widget on the GPU (iOS NowPlayingPlayer / NowPlayingArt). Holds a still scene while a song
  * plays, re-shown only when the second, the bar's pixel width or the cover changes; a song change plays the old card out
- * and the new one in as one moving scene. ponytail: five designs (slab, text, two lines, text with cover, pop-up), one
- * fade-and-slide motion; iOS's island, disc and ticker fall back to slab.
+ * and the new one in as one moving scene. Eight designs as on iOS (slab, island, disc, ticker, text, two lines, text with
+ * cover, pop-up). ponytail: one fade-and-slide motion for all of them, and the disc and equaliser bars hold still (iOS spins
+ * and bounces them); animate them with a moving scene if a still card ever reads as frozen.
  */
 internal fun nowPlayingWidget(l: Layer, box: Box, scope: CoroutineScope): WidgetBuild? {
     val style = NowPlayingStyle.from(l.data)
@@ -70,8 +71,15 @@ internal fun nowPlayingWidget(l: Layer, box: Box, scope: CoroutineScope): Widget
                         filter.show(null)
                         hidden = true
                     }
-                    val next = "${live.id}|${shown.second != null}|${if (style.design == "slab") live.elapsedMs(now) / 1000 else 0}|" +
-                        (live.progress(now) * box.w).toInt()
+                    val next =
+                        "${live.id}|${shown.second != null}|${if (style.design == "slab" || style.design == "disc") {
+                            live.elapsedMs(
+                                now
+                            ) / 1000
+                        } else {
+                            0
+                        }}|" +
+                            (live.progress(now) * box.w).toInt()
                     if (!hidden && next != sig) {
                         sig = next
                         filter.show(art(live, shown.second).scene())
@@ -105,16 +113,44 @@ private class NowPlayingArt(
         return Item(RectF(r.left / scale, r.top / scale, r.right / scale, r.bottom / scale), bmp, alpha = alpha)
     }
 
-    private val line = if (st.design == "slab" ||
-        st.design == "twoLine"
-    ) {
-        null
-    } else {
-        t("${tr.title} · ${tr.artist}".trimEnd(' ', '·'), h * 0.5f, 600, 0xFFFFFFFF.toInt())
+    private val card = 0xFF141518.toInt()
+    private val grey = 0xFFA9ADB5.toInt()
+    private val trackBar = 0xFF2C2F35.toInt()
+    private val big = st.design in setOf("slab", "island", "disc")
+
+    private val line = when (st.design) {
+        "slab", "twoLine", "island", "disc" -> null
+        else -> t("${tr.title} · ${tr.artist}".trimEnd(' ', '·'), if (st.design == "ticker") 32f else h * 0.5f, 600, 0xFFFFFFFF.toInt())
     }
-    private val title = t(tr.title, if (st.design == "slab") 44f else 30f, 700, 0xFFFFFFFF.toInt())
-    private val artist = t(tr.artist, if (st.design == "slab") 32f else 24f, 500, dim)
-    private val time = if (st.design == "slab") t("${clock(tr.elapsedMs())} / ${clock(tr.durationMs)}", 24f, 500, dim) else null
+    private val title = t(
+        tr.title,
+        if (st.design == "slab") {
+            44f
+        } else if (big) {
+            39f
+        } else {
+            30f
+        },
+        700,
+        0xFFFFFFFF.toInt()
+    )
+    private val artist = t(
+        tr.artist,
+        if (st.design == "slab") {
+            32f
+        } else if (big) {
+            29f
+        } else {
+            24f
+        },
+        500,
+        if (big) grey else dim
+    )
+    private val time = if (st.design == "slab" || st.design == "disc") {
+        t("${clock(tr.elapsedMs())} / ${clock(tr.durationMs)}", 24f, 500, if (st.design == "disc") grey else dim)
+    } else {
+        null
+    }
 
     /** enter: fade in rising 12 units; exit: fade out rising; neither: settled. */
     fun scene(enter: Boolean = false, exit: Boolean = false) = GpuScene(w, h, enter || exit) { s ->
@@ -160,6 +196,39 @@ private class NowPlayingArt(
                 artist?.let { out += it.put(x, 126f, -1, textA, maxW) }
                 bar(RectF(x, 182f, x + maxW, 190f), out)
                 time?.let { out += it.put(w - 28f, 220f, 1, textA, maxW) }
+            }
+            "island" -> {
+                out += Item(RectF(0f, 0f, w, h), color = 0xFF111214.toInt(), radius = h / 2)
+                art(RectF(20f, 20f, 132f, 132f), 56f, out)
+                title?.let { out += it.put(160f, 56f, -1, textA, 568f) }
+                artist?.let { out += it.put(160f, 102f, -1, textA, 568f) }
+                eq(756f, 76f, 44f, out)
+            }
+            "disc" -> {
+                out += Item(RectF(0f, 0f, w, h), color = card, radius = 36f)
+                val cx = 116f
+                val cy = 112f
+                out += Item(RectF(cx - 90f, cy - 90f, cx + 90f, cy + 90f), color = trackBar, radius = 90f)
+                out += Item(RectF(cx - 82f, cy - 82f, cx + 82f, cy + 82f), color = card, radius = 82f)
+                // The progress ring: dots round the circle from 12 o'clock, overlapping into a stroke (rects only on the GPU).
+                for (k in 0..(96 * tr.progress()).toInt()) {
+                    val a = -Math.PI / 2 + 2 * Math.PI * k / 96
+                    val x = cx + 86f * kotlin.math.cos(a).toFloat()
+                    val y = cy + 86f * kotlin.math.sin(a).toFloat()
+                    out += Item(RectF(x - 4f, y - 4f, x + 4f, y + 4f), color = st.accentColor, radius = 4f)
+                }
+                art(RectF(42f, 38f, 190f, 186f), 74f, out)
+                out += Item(RectF(cx - 8f, cy - 8f, cx + 8f, cy + 8f), color = card, radius = 8f)
+                title?.let { out += it.put(240f, 72f, -1, textA, 584f) }
+                artist?.let { out += it.put(240f, 122f, -1, textA, 584f) }
+                time?.let { out += it.put(240f, 162f, -1, textA, 584f) }
+            }
+            "ticker" -> {
+                val textW = minOf(720f, (line?.w ?: 0f) / scale)
+                out += Item(RectF(0f, 0f, minOf(w, 158f + textW + 32f), h), color = card, radius = 20f)
+                art(RectF(12f, 12f, 84f, 84f), 12f, out)
+                eq(108f, 48f, 32f, out)
+                line?.let { out += it.put(158f, 48f, -1, textA, 720f) }
             }
             "twoLine" -> {
                 out += Item(RectF(0f, 0f, w, h), color = box, radius = 12f)
