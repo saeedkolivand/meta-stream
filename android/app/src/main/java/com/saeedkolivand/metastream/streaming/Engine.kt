@@ -228,6 +228,7 @@ object Engine {
             }
         }
         source = next
+        syncAudio()
         if (next == Source.Glasses) Recording.checkSource()
         Overlays.refresh()
     }
@@ -301,15 +302,16 @@ object Engine {
     }
 
     /** Re-applies the picked microphone to the running source (a new choice from Settings). */
-    fun refreshMic() {
-        (stream?.audioSource as? MicrophoneSource)?.let { Mics.apply(app, it) }
-    }
+    fun refreshMic() = stream?.audioSource?.let { Mics.apply(app, it) }
 
     fun toggleMute() {
-        val mic = stream?.audioSource as? MicrophoneSource ?: return
+        val src = stream?.audioSource ?: return
         muted = !muted
-        if (muted) mic.mute() else mic.unMute()
+        Mics.mute(src, muted)
     }
+
+    /** Screen share mixes the apps' audio with the mic (see [Mics.sync]); every other source is the mic alone. */
+    fun syncAudio() = stream?.let { Mics.sync(app, it, source == Source.Screen, muted) }
 
     // Callbacks run on RootEncoder threads: decide there, then mutate state on the main scope.
     private val checker = object : ConnectChecker {

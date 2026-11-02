@@ -7,6 +7,7 @@ import android.media.projection.MediaProjectionManager
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.runtime.snapshotFlow
+import com.pedro.encoder.input.sources.audio.MixAudioSource
 import com.pedro.encoder.input.sources.video.Camera2Source
 import com.pedro.encoder.input.sources.video.NoVideoSource
 import com.pedro.encoder.input.sources.video.ScreenSource
@@ -24,7 +25,7 @@ import kotlinx.coroutines.launch
  * wants the consent first, then the foreground service promoted to the media-projection type, then the projection, so the
  * consent result travels to [StreamingService], which calls [granted]. Leaving the source ends the share.
  * ponytail: one capture per consent (Android 14+ allows one virtual display per projection), so a re-prepare while
- * sharing (a resolution change) needs the share started again; app audio isn't captured, only the mic.
+ * sharing (a resolution change) needs the share started again. App audio rides along with the mic (Engine.syncAudio).
  */
 object ScreenShare {
     private var projection: MediaProjection? = null
@@ -76,6 +77,9 @@ object ScreenShare {
     internal fun source(context: Context): VideoSource = projection?.let { ScreenSource(context, it) } ?: NoVideoSource().also {
         applog("screen", "no projection, sending a blank frame; pick Screen again to share")
     }
+
+    /** The apps' audio mixed with the mic, from the current projection; null without one. */
+    internal fun appAudio(): MixAudioSource? = projection?.let { MixAudioSource(it, object : MediaProjection.Callback() {}) }
 
     fun stop() {
         watch?.cancel()

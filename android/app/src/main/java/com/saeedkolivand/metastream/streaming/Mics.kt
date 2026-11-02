@@ -7,7 +7,10 @@ import android.media.AudioManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.pedro.encoder.input.sources.audio.AudioSource
 import com.pedro.encoder.input.sources.audio.MicrophoneSource
+import com.pedro.encoder.input.sources.audio.MixAudioSource
+import com.pedro.library.generic.GenericStream
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.applog
 
@@ -72,10 +75,46 @@ object Mics {
     }
 
     /** Null selection (or an unplugged device) leaves the source on the system default. Also the mix: volume and sounds. */
-    fun apply(context: Context, mic: MicrophoneSource) {
+    fun apply(context: Context, src: AudioSource) {
         val device = if (selected.isEmpty()) null else available(context).firstOrNull { key(it) == selected }
-        mic.setPreferredDevice(device)
-        mic.microphoneVolume = AudioMix.micGain
-        mic.setAudioEffect(AudioMix.effect)
+        when (src) {
+            is MicrophoneSource -> {
+                src.setPreferredDevice(device)
+                src.microphoneVolume = AudioMix.micGain
+                src.setAudioEffect(AudioMix.effect)
+            }
+            is MixAudioSource -> { // screen share: the mic mixed with the apps' own audio
+                src.setPreferredDevice(device)
+                src.microphoneVolume = AudioMix.micGain
+                src.setAudioEffect(AudioMix.effect)
+            }
+        }
+    }
+
+    /** Mute or unmute whichever source the stream holds. */
+    fun mute(src: AudioSource, on: Boolean) {
+        when (src) {
+            is MicrophoneSource -> if (on) src.mute() else src.unMute()
+            is MixAudioSource -> if (on) src.mute() else src.unMute()
+        }
+    }
+
+    /**
+     * Screen share with a projection carries the apps' audio mixed with the mic (AudioPlaybackCapture; apps that opt out stay
+     * silent) unless Settings › Audio turns it off. Swaps only when that changes; mute and the mix carry over.
+     */
+    fun sync(context: Context, s: GenericStream, screen: Boolean, muted: Boolean) {
+        val mix = if (screen && Prefs.bool("screenAppAudio", true)) ScreenShare.appAudio() else null
+        if ((mix != null) == (s.audioSource is MixAudioSource)) return
+        val next = mix ?: MicrophoneSource()
+        try {
+            s.changeAudioSource(next)
+        } catch (e: IllegalArgumentException) {
+            applog("audio", "can't swap audio source: ${e.message}")
+            return
+        }
+        apply(context, next)
+        mute(next, muted)
+        applog("audio", if (mix != null) "screen share: app audio + mic" else "mic only")
     }
 }

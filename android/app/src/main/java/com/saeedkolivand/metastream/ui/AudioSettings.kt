@@ -44,6 +44,12 @@ internal fun AudioPage() {
             }
         }
         SwitchRow("Mute microphone", Engine.muted) { if (it != Engine.muted) Engine.toggleMute() }
+        var appAudio by remember { mutableStateOf(Prefs.bool("screenAppAudio", true)) }
+        SwitchRow("App audio when sharing the screen", appAudio) {
+            appAudio = it
+            Prefs.put("screenAppAudio", it)
+            Engine.syncAudio()
+        }
     }
     Section("Mix volume") {
         Volume("Microphone", "volMic")
