@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.camera.FaceCam
+import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.overlay.SceneRoles
 import com.saeedkolivand.metastream.privacy.BlurState
 import com.saeedkolivand.metastream.privacy.Privacy
@@ -159,7 +160,7 @@ private fun SourcePicker(size: Dp) {
                 Source.Usb to "USB camera",
                 Source.Glasses to "Glasses",
                 Source.Screen to "Screen"
-            ).forEach { (s, name) ->
+            ).filter { it.first != Source.Glasses || Prefs.bool("glassesEnabled") }.forEach { (s, name) ->
                 DropdownMenuItem(
                     { Text(name) },
                     {

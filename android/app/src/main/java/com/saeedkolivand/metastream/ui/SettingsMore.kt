@@ -12,7 +12,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -22,11 +25,23 @@ import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.chat.ChatFlood
 import com.saeedkolivand.metastream.core.AppSettings
 import com.saeedkolivand.metastream.core.LogBuffer
+import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.streaming.Engine
+import com.saeedkolivand.metastream.streaming.Source
 
 /** iOS GlassesVideoSettingsView. Sizes are what the Meta DAT camera stream offers (VideoQuality LOW/MEDIUM/HIGH). */
 @Composable
 internal fun GlassesVideoPage() {
+    var on by remember { mutableStateOf(Prefs.bool("glassesEnabled")) }
+    Section("Meta glasses") {
+        SwitchRow("Use Meta glasses", on) {
+            on = it
+            Prefs.put("glassesEnabled", it)
+            if (!it && Engine.source == Source.Glasses) Engine.pick(Source.Phone)
+        }
+        Footnote("Shows Glasses as a camera source. Off hides every glasses control.")
+    }
+    if (!on) return
     Section("Glasses video") {
         val opts = listOf("low" to "360x640", "medium" to "504x896", "high" to "720x1280")
         Choice("Resolution", opts, AppSettings.glassesResolution, !Engine.live) { AppSettings.updateGlasses(resolution = it) }

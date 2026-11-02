@@ -118,7 +118,7 @@ object Scenes {
                 if (Engine.source == Source.Phone && Cam.facingBack() != (cam == "back")) Engine.switchCamera()
             }
             "external" -> Engine.pick(Source.Usb)
-            "glasses" -> Engine.pick(Source.Glasses)
+            "glasses" -> if (Prefs.bool("glassesEnabled")) Engine.pick(Source.Glasses)
         }
     }
 
