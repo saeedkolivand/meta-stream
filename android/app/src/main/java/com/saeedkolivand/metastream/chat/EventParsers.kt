@@ -64,16 +64,25 @@ internal fun parseEventSubEvent(type: String, event: JSONObject): ChatEvent? = w
         }
     }
     "channel.follow" -> alert(event, "user_name", Kind.Follow)
-    "channel.subscribe" -> alert(event, "user_name", Kind.Subscribe)
+    // Recipients of a gift arrive here too (is_gift); channel.subscription.gift already counts them.
+    "channel.subscribe" -> if (event.optBoolean(
+            "is_gift"
+        )
+    ) {
+        null
+    } else {
+        alert(event, "user_name", Kind.Subscribe)?.copy(tier = twitchTier(event))
+    }
     "channel.subscription.gift" -> ChatEvent(
         "twitch",
         if (event.optBoolean("is_anonymous")) "Anonymous" else event.optString("user_name").ifEmpty { "Anonymous" },
         "",
         kind = Kind.Subscribe,
-        count = event.optInt("total")
+        count = maxOf(event.optInt("total"), 1),
+        tier = twitchTier(event)
     )
     "channel.subscription.message" -> alert(event, "user_name", Kind.Subscribe)
-        ?.copy(text = event.optJSONObject("message")?.optString("text").orEmpty())
+        ?.copy(text = event.optJSONObject("message")?.optString("text").orEmpty(), tier = twitchTier(event))
     "channel.raid" -> alert(event, "from_broadcaster_user_name", Kind.Raid, count = event.optInt("viewers"))
     "channel.cheer" -> ChatEvent(
         "twitch",
@@ -124,3 +133,6 @@ private fun youtubeRoles(author: JSONObject) = sequence {
     if (author.optBoolean("isChatSponsor")) yield("subscriber")
     if (author.optBoolean("isVerified")) yield("verified")
 }
+
+/** Twitch's "1000" / "2000" / "3000" as 1-3. */
+private fun twitchTier(event: JSONObject) = (event.optString("tier").toIntOrNull() ?: 1000) / 1000

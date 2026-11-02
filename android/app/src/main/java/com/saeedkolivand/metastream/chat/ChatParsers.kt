@@ -23,6 +23,9 @@ data class ChatEvent(
     // Platform message id and sender id (Kick/Twitch chat messages): what the moderation slash commands act on.
     val msgId: String = "",
     val userId: String = "",
+    // A tip's exact amount in its own currency (donation sites); Twitch sub tier 1-3.
+    val money: com.saeedkolivand.metastream.goal.Money? = null,
+    val tier: Int = 0,
     // Unique per message, set by ChatFeed so the LazyColumn can key its rows.
     val id: Long = 0
 )

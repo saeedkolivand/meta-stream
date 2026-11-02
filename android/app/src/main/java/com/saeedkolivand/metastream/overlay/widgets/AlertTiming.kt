@@ -2,6 +2,7 @@ package com.saeedkolivand.metastream.overlay
 
 import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.goal.tipCents
 import java.util.Locale
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -80,18 +81,20 @@ internal fun alertLabel(e: ChatEvent) = when (e.kind) {
     Kind.Message -> ""
 }
 
-internal fun alertIsBig(e: ChatEvent) = (e.kind == Kind.Tip && e.amountCents >= 1000) || (e.kind == Kind.Raid && e.count >= 50)
+internal fun alertIsBig(e: ChatEvent) = (e.kind == Kind.Tip && e.tipCents >= 1000) || (e.kind == Kind.Raid && e.count >= 50)
 
 /** The right-hand amount at count-up [progress], split so the digits and their unit can be drawn separately. */
 internal data class AmountParts(val number: String, val suffix: String)
 
 internal fun alertAmountParts(e: ChatEvent, progress: Float = 1f): AmountParts = when (e.kind) {
-    Kind.Tip -> AmountParts(
-        (e.amountCents * progress).roundToInt().let {
-            if (it % 100 == 0) "$${it / 100}" else "$" + String.format(Locale.US, "%.2f", it / 100.0)
-        },
-        ""
-    )
+    // A donation site's tip counts up in its own currency ("₮500,000", "€5").
+    Kind.Tip -> e.money?.let { m -> AmountParts(m.copy(amount = m.amount * java.math.BigDecimal(progress.toDouble())).display, "") }
+        ?: AmountParts(
+            (e.amountCents * progress).roundToInt().let {
+                if (it % 100 == 0) "$${it / 100}" else "$" + String.format(Locale.US, "%.2f", it / 100.0)
+            },
+            ""
+        )
     Kind.Cheer -> AmountParts("${(e.count * progress).roundToInt()}", " bits")
     Kind.Raid -> AmountParts("${(e.count * progress).roundToInt()}", " viewers")
     else -> AmountParts("", "")

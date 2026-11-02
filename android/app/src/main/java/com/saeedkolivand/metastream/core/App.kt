@@ -5,6 +5,8 @@ import com.saeedkolivand.metastream.bot.AppBot
 import com.saeedkolivand.metastream.camera.Looks
 import com.saeedkolivand.metastream.car.Notify
 import com.saeedkolivand.metastream.chat.ChatFeed
+import com.saeedkolivand.metastream.goal.GoalStore
+import com.saeedkolivand.metastream.goal.countDonation
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.overlay.Scenes
@@ -41,9 +43,18 @@ class App : Application() {
         Accounts.init(this, scope)
         ChatFeed.init(scope) {
             Speaker.speakChat(it)
-            scope.launch { AppBot.handle(it) } // providers call from their socket thread; the bot's state is main-thread
+            // providers call from their socket thread; the bot and the goal are main-thread
+            scope.launch {
+                countDonation(it)
+                AppBot.handle(it)
+            }
         }
         AppBot.init()
+        GoalStore.init(this, scope)
+        GoalStore.onReached = {
+            Speaker.speakSystem("Goal reached")
+            AppBot.goalReached(GoalStore.config.title)
+        }
         Engine.init(this, scope, speak = Speaker::speakSystem, alert = { Notify.alert(this, it) })
         Scenes.init(scope)
         Scenes.updateRotation()

@@ -8,6 +8,7 @@ import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.Kind
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.goal.GoalStore
 import com.saeedkolivand.metastream.overlay.SceneRoles
 import com.saeedkolivand.metastream.overlay.WidgetLocation
 import com.saeedkolivand.metastream.overlay.WidgetWeather
@@ -28,7 +29,7 @@ import org.json.JSONObject
 /**
  * The app's own chat account on Kick and Twitch (iOS AppBot): scene notices, viewer commands, timers and thank-yous.
  * Never posts as the streamer. One paced queue per platform, and everything only while live (or in test mode).
- * ponytail: !goal, !donate and !song join the command list with the goal store and Spotify; settings are plain Prefs keys.
+ * ponytail: !donate and !song join the command list with the goal store and Spotify; settings are plain Prefs keys.
  */
 object AppBot {
     var status by mutableStateOf("")
@@ -40,7 +41,7 @@ object AppBot {
         "botTplFollow" to "{user}, thanks for the follow!", "botTplSub" to "{user}, thanks for subscribing!",
         "botTplGift" to "{user}, thanks for the {count} gifted subs!", "botTplRaid" to "{user}, thanks for the raid with {count} viewers!"
     )
-    val commands = listOf("!location", "!speed", "!distance", "!weather", "!battery", "!uptime", "!commands")
+    val commands = listOf("!location", "!speed", "!distance", "!weather", "!battery", "!uptime", "!goal", "!commands")
 
     private val queues = HashMap<String, Channel<Pair<String, String>>>() // origin -> (text, replyTo), drained 1 per 1.5 s
 
@@ -135,6 +136,11 @@ object AppBot {
         listOf("kick", "twitch").forEach { say(it, text) }
     }
 
+    /** From GoalStore.onReached. */
+    fun goalReached(title: String) {
+        if (flag("botNotices")) listOf("kick", "twitch").forEach { say(it, "Goal reached: $title!") }
+    }
+
     /** Every chat event: viewer commands, the timers' message count and thank-yous. */
     fun handle(e: ChatEvent) {
         if (e.offensive || !active || (e.platform != "kick" && e.platform != "twitch")) return
@@ -195,6 +201,9 @@ object AppBot {
         "!distance" -> "$name has travelled ${WidgetLocation.distanceText(Engine.liveSince)} today"
         "!weather" -> WidgetWeather.text.takeIf { it != "--" }?.let { "It's $it where $name is" } ?: "The weather there isn't known yet"
         "!battery" -> battery()?.let { "$name's phone is at $it%" }
+        "!goal" -> GoalStore.config.let { c ->
+            "${GoalStore.money(GoalStore.total)} of ${GoalStore.money(c.target)} for ${c.title} (${(GoalStore.progress * 100).toInt()}%)"
+        }
         "!uptime" -> Engine.liveSince?.let {
             val m = maxOf(0L, System.currentTimeMillis() - it) / 60_000
             "$name has been live for ${if (m >= 60) "${m / 60} h " else ""}${m % 60} min"
