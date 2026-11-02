@@ -49,7 +49,8 @@ object LivePostText {
         "wild" to "چت ترکوند", "from" to "از طرف", "raid" to "رید از", "newChatters" to "چتر جدید", "chatters" to "چتر",
         "thanks" to "ممنون از همه", "cancelled" to "امروز لغو شد",
         "pingWild" to "چت الان ترکونده", "pingDonation" to "دونیت بزرگ از طرف", "pingThanks" to "بیا تشکر کن",
-        "pingRaid" to "رید از", "pingWith" to "با", "pingViewers" to "بیننده"
+        "pingRaid" to "رید از", "pingWith" to "با", "pingViewers" to "بیننده",
+        "wrappedWild" to "چت ترکوند", "wrappedMsgs" to "پیام در دقیقه"
     )
     private val en = mapOf(
         "soon" to "Going live soon", "live" to "LIVE", "watching" to "watching", "goal" to "Goal", "of" to "of", "for" to "for",
@@ -59,7 +60,8 @@ object LivePostText {
         "wild" to "chat went wild", "from" to "from", "raid" to "raid from", "newChatters" to "new chatters", "chatters" to "chatters",
         "thanks" to "thanks everyone", "cancelled" to "Cancelled for today",
         "pingWild" to "Chat's going wild right now", "pingDonation" to "Big donation from", "pingThanks" to "come say thanks",
-        "pingRaid" to "Raid from", "pingWith" to "with", "pingViewers" to "viewers"
+        "pingRaid" to "Raid from", "pingWith" to "with", "pingViewers" to "viewers",
+        "wrappedWild" to "chat went wild", "wrappedMsgs" to "messages/min"
     )
 
     fun tr(key: String, lang: String) = (if (lang == "en") en else fa)[key] ?: key

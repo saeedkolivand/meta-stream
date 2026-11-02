@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.saeedkolivand.metastream.reach.Heatmap
 import com.saeedkolivand.metastream.reach.LivePostText
 import com.saeedkolivand.metastream.reach.SessionLog
+import com.saeedkolivand.metastream.reach.WrappedStore
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -31,6 +32,14 @@ internal fun StreamsPage() {
     // Re-read when the report sheet closes (a report may have been deleted there).
     val records = remember(SessionLog.justEnded) { SessionLog.all() }
     if (records.isEmpty()) return Note("No streams recorded yet")
+    var review by remember { mutableStateOf<String?>(null) }
+    review?.let { return WrappedReview(it, records) { review = null } }
+    WrappedStore.pendingMonth(records)?.let { m ->
+        NavRow("${WrappedStore.monthName(m)} Wrapped is ready: review before it goes on your page") {
+            review =
+                m
+        }
+    }
     Section("When your viewers show up") {
         if (records.size < Heatmap.MIN_STREAMS) {
             Footnote("The best-time heatmap appears after ${Heatmap.MIN_STREAMS} streams (${records.size} so far).")
@@ -42,6 +51,7 @@ internal fun StreamsPage() {
             Footnote("Rows Monday to Sunday, columns 0–23 h. Gray: fewer than 2 streams in that slot, not enough to compare.")
         }
     }
+    Section("Wrapped") { WrappedStore.allMonths(records).forEach { m -> NavRow(WrappedStore.monthName(m)) { review = m } } }
     val month = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val day = SimpleDateFormat("EEE d, HH:mm", Locale.getDefault())
     for ((name, list) in records.groupBy { month.format(Date(it.start)) }) {

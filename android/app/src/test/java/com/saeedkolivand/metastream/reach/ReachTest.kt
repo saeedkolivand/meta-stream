@@ -62,3 +62,33 @@ class HeatmapTest {
         assertEquals(900.0, Heatmap.cells(recs, Heatmap.Metric.Donations, utc).single().value, 1e-9) // 60 over 4 samples, per hour
     }
 }
+
+class WrappedTest {
+    @Test
+    fun buildsMonth() {
+        val utc = java.util.TimeZone.getTimeZone("UTC")
+        val base = 1_704_067_200_000L // 2024-01-01 00:00 UTC
+        val first = SessionRecord(base, "a", "EUR").apply {
+            end = base + 3_600_000
+            chatterCounts += mapOf("k|1" to 5, "k|2" to 3, "k|3" to 9)
+            chatterNames += mapOf("k|1" to "Ann", "k|2" to "Bob", "k|3" to "")
+        }
+        val second = SessionRecord(base + 86_400_000, "b", "EUR").apply {
+            end = start + 7_200_000
+            chatterCounts["k|1"] = 4
+            chatterNames["k|1"] = "Annie"
+        }
+        val other = SessionRecord(base + 40 * 86_400_000L, "c", "EUR").apply { end = start }
+        assertEquals(null, WrappedBuilder.build("2023-12", listOf(first), "en", utc))
+        val d = WrappedBuilder.build("2024-01", listOf(second, first, other), "en", utc)!!
+        assertEquals(2, d.streams)
+        assertEquals(3.0, d.hours, 1e-9)
+        assertEquals(null, d.km)
+        assertEquals(listOf("Annie" to 9, "Bob" to 3), d.topChatters)
+        val json = d.toJson()
+        assertEquals(13, json.length())
+        assertTrue(json.isNull("km") && json.isNull("donations") && json.isNull("bestMoment"))
+        second.distanceMeters = 1234.0
+        assertEquals(1.2, WrappedBuilder.build("2024-01", listOf(second, first), "en", utc)!!.km!!, 1e-9)
+    }
+}

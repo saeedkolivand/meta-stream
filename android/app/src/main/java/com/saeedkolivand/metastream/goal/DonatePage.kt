@@ -99,11 +99,17 @@ object DonatePage {
             .put("live", live).put("updatedAt", at.toString()).toString()
     }
 
+    /** [path] on the page; null unless https and the host the key was saved for (the key is a bearer secret). */
+    internal fun endpoint(path: String): String? {
+        val url = pageURL.trim().trim('/') + path
+        return url.takeIf {
+            it.lowercase().startsWith("https://") && host(it) != null && host(it) == Prefs.string("donatePageTokenHost", "")
+        }
+    }
+
     private suspend fun send() {
         val key = TokenStore.get("donatePageToken").orEmpty().ifEmpty { return }
-        val url = pageURL.trim().trim('/') + "/api/goal"
-        val saved = Prefs.string("donatePageTokenHost", "")
-        if (!url.lowercase().startsWith("https://") || host(url) == null || host(url) != saved) {
+        val url = endpoint("/api/goal") ?: run {
             status = "Needs an https:// URL, and the key saved for that address"
             return
         }

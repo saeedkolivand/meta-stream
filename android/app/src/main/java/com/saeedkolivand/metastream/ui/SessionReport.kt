@@ -120,7 +120,7 @@ private fun momentText(m: Moment) = when (m.kind) {
 }
 
 @Composable
-private fun Stat(label: String, value: String) = Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), Arrangement.SpaceBetween) {
+internal fun Stat(label: String, value: String) = Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), Arrangement.SpaceBetween) {
     Text(label, color = Color.White.copy(alpha = 0.7f))
     Text(value)
 }
