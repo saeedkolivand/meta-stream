@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -45,12 +44,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.meta.wearable.dat.core.types.RegistrationState
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.chat.ChatFeed
-import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
-import com.saeedkolivand.metastream.streaming.Source
 import com.saeedkolivand.metastream.ui.scenes.ScenesPage
 
 private val Cyan = Color(0xFF40C8E0)
@@ -62,6 +58,7 @@ private val Grey = Color(0xFF8E8E93)
 /** Sub-pages of settings, like iOS NavigationLinks; [parent] is where Back goes; icon/tint are the iOS catalog's tile. */
 private enum class Page(val title: String, val parent: Page?, val icon: Int? = null, val tint: Color = Grey) {
     Root("Settings", null),
+    Accounts("Accounts", Root, R.drawable.ic_person, SystemBlue),
     Ingest("Ingest & protocol", Root, R.drawable.ic_antenna, Red),
     Audio("Audio", Root, R.drawable.ic_car_mic, Pink),
     Glasses("Video (glasses)", Root, R.drawable.ic_glasses, Indigo),
@@ -116,6 +113,7 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
 @Composable
 private fun PageContent(p: Page, go: (Page) -> Unit) = when (p) {
     Page.Root -> RootPage(go)
+    Page.Accounts -> AccountsPage()
     Page.Ingest -> IngestPage()
     Page.Audio -> AudioPage()
     Page.Camera -> CameraSettingsContent()
@@ -139,6 +137,7 @@ private fun PageContent(p: Page, go: (Page) -> Unit) = when (p) {
  * inside one shows its path (iOS 5e953c7): "Camera › Face cam".
  */
 private val Catalog = listOf(
+    Triple("Accounts", Page.Accounts, "Channels: kick twitch channel chat login"),
     Triple(
         "Streaming",
         Page.Ingest,
@@ -220,37 +219,22 @@ private fun RootPage(go: (Page) -> Unit) {
         }
     }
     if (hits.isEmpty()) Note("Nothing matches \"$query\"")
-    if (query.isNotBlank()) return
-    Section("Stream") {
-        OutlinedTextField(Engine.url, Engine::updateUrl, Modifier.fillMaxWidth(), label = {
-            Text("RTMP / SRT URL")
-        }, singleLine = true, enabled = !Engine.live)
-        OutlinedTextField(
-            Engine.key,
-            Engine::updateKey,
-            Modifier.fillMaxWidth(),
-            label = { Text("Stream key") },
-            singleLine = true,
-            enabled = !Engine.live,
-            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
-        )
-    }
-    Section("Chat") {
+}
+
+/** iOS AccountsSettingsView: the channels chat reads (the stream URL and key live on Ingest & protocol). */
+@Composable
+private fun AccountsPage() {
+    Section("Channels") {
         OutlinedTextField(ChatFeed.kickSlug, ChatFeed::setKick, Modifier.fillMaxWidth(), label = {
             Text("Kick channel")
         }, singleLine = true)
-        OutlinedTextField(ChatFeed.twitchChannel, ChatFeed::setTwitch, Modifier.fillMaxWidth(), label = {
-            Text("Twitch channel")
-        }, singleLine = true)
-        SwitchRow("Read chat aloud", Speaker.readAloud, onChange = Speaker::updateReadAloud)
-    }
-    if (Engine.source == Source.Glasses) {
-        Section("Glasses") {
-            val registered = Engine.glasses.registration == RegistrationState.REGISTERED
-            OutlinedButton({ if (registered) Engine.glasses.unregister(activity) else Engine.glasses.register(activity) }) {
-                Text(if (registered) "Unregister" else "Register with Meta AI")
-            }
-            SwitchRow("Mock glasses", Engine.glasses.mock, onChange = Engine.glasses::enableMock)
-        }
+        OutlinedTextField(
+            ChatFeed.twitchChannel,
+            ChatFeed::setTwitch,
+            Modifier.fillMaxWidth(),
+            label = { Text("Twitch channel") },
+            singleLine = true
+        )
+        Footnote("Chat, alerts and the Kick QR code use these. Sign-ins for posting live in Stream Manager.")
     }
 }

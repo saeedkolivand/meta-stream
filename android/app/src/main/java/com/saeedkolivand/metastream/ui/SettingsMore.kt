@@ -2,6 +2,7 @@ package com.saeedkolivand.metastream.ui
 
 import android.content.ClipData
 import android.content.Intent
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.meta.wearable.dat.core.types.RegistrationState
 import com.saeedkolivand.metastream.chat.ChatFlood
 import com.saeedkolivand.metastream.core.AppSettings
 import com.saeedkolivand.metastream.core.LogBuffer
@@ -42,6 +44,14 @@ internal fun GlassesVideoPage() {
         Footnote("Shows Glasses as a camera source. Off hides every glasses control.")
     }
     if (!on) return
+    val activity = requireNotNull(LocalActivity.current)
+    Section("Meta AI app") {
+        val registered = Engine.glasses.registration == RegistrationState.REGISTERED
+        OutlinedButton({ if (registered) Engine.glasses.unregister(activity) else Engine.glasses.register(activity) }) {
+            Text(if (registered) "Unregister" else "Register with Meta AI")
+        }
+        SwitchRow("Mock glasses", Engine.glasses.mock, onChange = Engine.glasses::enableMock)
+    }
     Section("Glasses video") {
         val opts = listOf("low" to "360x640", "medium" to "504x896", "high" to "720x1280")
         Choice("Resolution", opts, AppSettings.glassesResolution, !Engine.live) { AppSettings.updateGlasses(resolution = it) }

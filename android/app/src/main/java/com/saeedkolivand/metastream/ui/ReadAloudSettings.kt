@@ -69,6 +69,7 @@ internal fun ReadAloudSettings() {
     // The engine is created on demand; opening this sheet is a demand, so the picker has voices to show.
     LaunchedEffect(Unit) { Speaker.prepare() }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SwitchRow("Read chat aloud", Speaker.readAloud, onChange = Speaker::updateReadAloud)
         VoicePicker()
         Note(
             "The highest-quality voices sound the most human. Add one in system Settings > Text-to-speech output > " +
