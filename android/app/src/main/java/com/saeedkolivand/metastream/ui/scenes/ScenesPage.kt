@@ -40,6 +40,7 @@ import com.saeedkolivand.metastream.ui.Choice
 import com.saeedkolivand.metastream.ui.Footnote
 import com.saeedkolivand.metastream.ui.Green
 import com.saeedkolivand.metastream.ui.ObsImportSection
+import com.saeedkolivand.metastream.ui.RadioRow
 import com.saeedkolivand.metastream.ui.Red
 import com.saeedkolivand.metastream.ui.Section
 import com.saeedkolivand.metastream.ui.Stepper
@@ -209,9 +210,12 @@ private fun TemplatesSection() {
     var theme by remember { mutableStateOf(ColorTheme.current) }
     var open by remember { mutableStateOf(false) }
     Section("Templates") {
-        Choice("Theme", ColorTheme.entries.map { it to it.title }, theme) {
-            theme = it
-            ColorTheme.select(it)
+        Text("Theme") // six names don't fit a segmented row
+        for (t in ColorTheme.entries) {
+            RadioRow(t.title, t == theme) {
+                theme = t
+                ColorTheme.select(t)
+            }
         }
         Box {
             OutlinedButton({ open = true }) { Text("Add Starting, BRB & Ending scenes") }
