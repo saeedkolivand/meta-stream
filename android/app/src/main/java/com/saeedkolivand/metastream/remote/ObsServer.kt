@@ -134,6 +134,7 @@ object ObsServer {
     private fun accept(ws: WsConn, sock: java.net.Socket) {
         // At most 2 clients mid-login at once, so guesses can't run in parallel; logged-in controllers don't count.
         if (!WsConn.isLocal(ws.peer) ||
+            !onLan(sock) ||
             clients.size >= 8 ||
             clients.count { !it.ok } >= 2 ||
             System.currentTimeMillis() - lastFail < 2000
@@ -167,6 +168,20 @@ object ObsServer {
             delay(10_000)
             if (cl.alive && !cl.ok) close(cl, 4009)
         }
+    }
+
+    /** Arrived on Wi-Fi, this phone's hotspot or loopback, never a cellular interface (a carrier address can be public). */
+    private fun onLan(sock: java.net.Socket): Boolean {
+        val local = sock.localAddress
+        if (local.isLoopbackAddress) return true
+        val name = runCatching { NetworkInterface.getByInetAddress(local)?.name }.getOrNull() ?: return false
+        return listOf("wlan", "ap", "swlan", "eth").any { name.startsWith(it) }
+    }
+
+    /** The password changed: every controller logs in again with the new one. */
+    fun revokeSessions() {
+        if (clients.isNotEmpty()) applog("remote", "sessions revoked (password changed)")
+        clients.toList().forEach { close(it, 4009) }
     }
 
     private fun drop(cl: Client) {

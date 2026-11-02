@@ -36,10 +36,12 @@ internal fun RemotePage() {
         Field("Password", password, {
             password = it
             Prefs.put("obsPassword", it)
+            ObsServer.revokeSessions()
         })
         OutlinedButton({
             password = ObsServer.randomPassword()
             Prefs.put("obsPassword", password)
+            ObsServer.revokeSessions()
         }) { Text("Regenerate") }
         if (password.length < 8) Note("Use at least 8 characters: shorter passwords are refused.", Color(0xFFFF9F0A))
     }
