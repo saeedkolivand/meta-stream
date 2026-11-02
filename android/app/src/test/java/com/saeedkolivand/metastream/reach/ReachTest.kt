@@ -116,3 +116,14 @@ class BitrateRecoveryTest {
         assertEquals(15, com.saeedkolivand.metastream.streaming.cleanSecondsBeforeUp(3500, 4000))
     }
 }
+
+class ReportInsightsTest {
+    @Test
+    fun ordinalsAndPercent() {
+        assertEquals("2nd", ReportInsights.ordinal(2))
+        assertEquals("11th", ReportInsights.ordinal(11))
+        assertEquals("23rd", ReportInsights.ordinal(23))
+        assertEquals(50, ReportInsights.percent(15.0, listOf(10.0, 10.0)))
+        assertEquals(null, ReportInsights.percent(5.0, emptyList()))
+    }
+}
