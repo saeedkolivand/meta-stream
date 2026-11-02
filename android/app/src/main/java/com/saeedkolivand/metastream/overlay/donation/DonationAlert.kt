@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
-import android.graphics.Typeface
 import android.text.TextUtils
 import com.saeedkolivand.metastream.bot.BotRules
 import com.saeedkolivand.metastream.chat.ChatEvent
@@ -28,7 +27,7 @@ import kotlin.math.sin
  * Donation alerts drawn live on the GPU (iOS DonationAlert.swift, the "Donation Alerts" boards). Each design rasterises its
  * text once when the alert starts and returns a pure function of the progress p (0..1) to [Item]s in canvas px, so a frame
  * is only quads. Designs are laid out on the boards' 1280x720 and fitted around the Alerts widget by [Board].
- * ponytail: the boards' Unbounded/Tilt Neon/JetBrains Mono faces aren't bundled; system sans and monospace stand in.
+ * Faces match the iOS boards: Unbounded, Tilt Neon, JetBrains Mono, Manrope (bundled, Persian falls through to Vazirmatn).
  */
 /** A board rect (left, top, right, bottom); plain floats so the fitting math runs in unit tests. */
 class Area(val l: Float, val t: Float, val r: Float, val b: Float)
@@ -213,7 +212,7 @@ internal fun ink(
     if (text.isEmpty() || px < 1f) return null
     val p = widgetPaint(face, weight, px, color).apply {
         letterSpacing = tracking
-        if (mono) typeface = Typeface.create(Typeface.MONOSPACE, weight, false)
+        if (mono) typeface = WidgetFonts.typeface("JetBrainsMono", weight)
         if (glowPx > 0f) setShadowLayer(glowPx, 0f, 0f, glow)
     }
     val fm = p.fontMetrics

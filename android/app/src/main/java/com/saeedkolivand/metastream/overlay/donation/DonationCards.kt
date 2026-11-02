@@ -27,10 +27,10 @@ private fun outline(w: Float, h: Float, r: Float, stroke: Float, color: Int = WH
 /** A dark card pops in with a ring pulse and 18 coins flying out. ponytail: the amount doesn't roll up like an odometer. */
 internal fun coinBurst(i: DonationInfo, look: DonationLook, b: Board): (Float) -> List<Item> {
     val acc = look.accent(0xFFF5C542)
-    val label = ink("${i.name.uppercase().take(24)} DONATED", b.len(18f), 700, acc, 0.2f)
-    val amount = ink(i.amount, b.len(76f), 700, WHITE)
-    val msg = ink(i.message, b.len(22f), 400, SOFT)
-    val initial = ink(i.initial, b.len(40f), 700, INK)
+    val label = ink("${i.name.uppercase().take(24)} DONATED", b.len(18f), 700, acc, 0.2f, face = "Manrope")
+    val amount = ink(i.amount, b.len(76f), 700, WHITE, face = "Unbounded")
+    val msg = ink(i.message, b.len(22f), 400, SOFT, face = "Manrope")
+    val initial = ink(i.initial, b.len(40f), 700, INK, face = "Unbounded")
     val colW = maxOf(label?.w ?: 0f, amount?.w ?: 0f, minOf(msg?.w ?: 0f, b.len(760f)))
     val cardW = b.len(188f) + colW
     val colH = b.len(107f) + if (msg != null) b.len(36f) else 0f
@@ -104,10 +104,10 @@ internal fun neon(i: DonationInfo, look: DonationLook, b: Board): (Float) -> Lis
     val sec = look.second(0xFF3EE8FF)
     val panel = b.rect(300f, 80f, 680f, 340f)
     val tube = outline(panel.width(), panel.height(), b.len(28f), b.len(4f), a, b.len(16f))
-    val head = ink("NEW DONATION", b.len(20f), 700, sec, 0.3f, glowPx = b.len(8f), glow = sec)
-    val name = ink(i.name, b.len(48f), 700, WHITE, glowPx = b.len(12f), glow = a)
-    val amount = ink(i.amount, b.len(92f), 700, sec, glowPx = b.len(18f), glow = sec)
-    val msg = ink(i.message, b.len(24f), 400, 0xFFE6E6F0.toInt())
+    val head = ink("NEW DONATION", b.len(20f), 700, sec, 0.3f, glowPx = b.len(8f), glow = sec, face = "TiltNeon")
+    val name = ink(i.name, b.len(48f), 700, WHITE, glowPx = b.len(12f), glow = a, face = "TiltNeon")
+    val amount = ink(i.amount, b.len(92f), 700, sec, glowPx = b.len(18f), glow = sec, face = "TiltNeon")
+    val msg = ink(i.message, b.len(24f), 400, 0xFFE6E6F0.toInt(), face = "Vazirmatn")
     fun power(p: Float) = when {
         p < 0.02f -> 0f
         p < 0.03f -> 1f

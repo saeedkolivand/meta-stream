@@ -50,14 +50,14 @@ internal fun holo(i: DonationInfo, look: DonationLook, b: Board): (Float) -> Lis
     val hash = i.name.fold(7) { h, c -> (h * 31 + c.code) % 9973 }
     val gray = 0xFF8B8D96.toInt()
     val texts = listOfNotNull(
-        ink(listOf("RARE", "EPIC", "LEGENDARY")[tier], b.len(15f), 700, acc, 0.18f)?.at(left, b.y(134f), -1),
-        ink("No. %04d".format(hash % 999 + 1), b.len(14f), 700, 0xFF9A9CA6.toInt())?.at(right, b.y(134f), 1),
-        ink(i.initial, b.len(64f), 700, acc)?.at(b.x(300f), b.y(258f)),
-        ink(i.name.uppercase(), b.len(34f), 700, WHITE)?.at(left, b.y(393f), -1, maxW = right - left),
-        ink(i.amount, b.len(46f), 700, acc)?.at(left, b.y(451f), -1, maxW = right - left),
-        ink(i.message.take(60), b.len(18f), 400, 0xFFC8C9D0.toInt())?.at(left, b.y(500f), -1, maxW = right - left),
-        ink(i.source, b.len(13f), 700, gray, 0.14f)?.at(left, b.y(577f), -1),
-        ink(i.date, b.len(13f), 700, gray, 0.14f)?.at(right, b.y(577f), 1)
+        ink(listOf("RARE", "EPIC", "LEGENDARY")[tier], b.len(15f), 700, acc, 0.18f, face = "Unbounded")?.at(left, b.y(134f), -1),
+        ink("No. %04d".format(hash % 999 + 1), b.len(14f), 700, 0xFF9A9CA6.toInt(), face = "Manrope")?.at(right, b.y(134f), 1),
+        ink(i.initial, b.len(64f), 700, acc, face = "Unbounded")?.at(b.x(300f), b.y(258f)),
+        ink(i.name.uppercase(), b.len(34f), 700, WHITE, face = "Unbounded")?.at(left, b.y(393f), -1, maxW = right - left),
+        ink(i.amount, b.len(46f), 700, acc, face = "Unbounded")?.at(left, b.y(451f), -1, maxW = right - left),
+        ink(i.message.take(60), b.len(18f), 400, 0xFFC8C9D0.toInt(), face = "Manrope")?.at(left, b.y(500f), -1, maxW = right - left),
+        ink(i.source, b.len(13f), 700, gray, 0.14f, face = "Manrope")?.at(left, b.y(577f), -1),
+        ink(i.date, b.len(13f), 700, gray, 0.14f, face = "Manrope")?.at(right, b.y(577f), 1)
     )
     val spots = listOf(-20f to 30f, 330f to -16f, 372f to 220f, -34f to 300f, 300f to 470f, 150f to -30f)
     return { p ->
@@ -133,11 +133,11 @@ internal fun shockwave(i: DonationInfo, look: DonationLook, b: Board, w: Float, 
     val side = minOf(b.len(1000f), 1024f) // ponytail: capped at 1024 px and scaled up past that; softer on 4K
     val raysBmp = rays(side)
     val raysW = b.len(1000f)
-    val head = ink("NEW TOP DONATION", b.len(18f), 700, acc, 0.3f)
-    val name = ink(i.name.uppercase(), b.len(40f), 600, WHITE, 0.32f)
-    val top = ink(i.amount, b.len(150f), 700, WHITE)
-    val shadow = ink(i.amount, b.len(150f), 700, acc)
-    val msg = ink(i.message.take(100), b.len(26f), 400, 0xFFD4D5DC.toInt())
+    val head = ink("NEW TOP DONATION", b.len(18f), 700, acc, 0.3f, face = "Manrope")
+    val name = ink(i.name.uppercase(), b.len(40f), 600, WHITE, 0.32f, face = "Unbounded")
+    val top = ink(i.amount, b.len(150f), 700, WHITE, face = "Unbounded")
+    val shadow = ink(i.amount, b.len(150f), 700, acc, face = "Unbounded")
+    val msg = ink(i.message.take(100), b.len(26f), 400, 0xFFD4D5DC.toInt(), face = "Manrope")
     val mx = b.x(640f)
     return { p ->
         val g = ArrayList<Item>()
@@ -205,8 +205,8 @@ internal fun goalSurge(i: DonationInfo, look: DonationLook, b: Board, w: Float, 
         Item(b.rect(80f, 560f, 300f, 80f), color = acc, radius = b.len(40f)),
         Item(b.rect(82f, 562f, 296f, 76f), color = ink0, radius = b.len(38f)),
         disc(b.x(122f), b.y(600f), b.len(30f), acc),
-        ink(i.initial, b.len(26f), 700, ink0)?.at(b.x(122f), b.y(600f)),
-        ink(i.name, b.len(16f), 600, 0xFFB9BAC2.toInt())?.at(b.x(166f), b.y(585f), -1, maxW = b.len(190f)),
+        ink(i.initial, b.len(26f), 700, ink0, face = "Manrope")?.at(b.x(122f), b.y(600f)),
+        ink(i.name, b.len(16f), 600, 0xFFB9BAC2.toInt(), face = "Manrope")?.at(b.x(166f), b.y(585f), -1, maxW = b.len(190f)),
         ink("+" + i.amount, b.len(30f), 700, WHITE)?.at(b.x(166f), b.y(611f), -1, maxW = b.len(190f))
     )
     val path = listOf(b.x(230f) to b.y(600f), b.x(170f) to b.y(340f), b.x(540f) to b.y(330f), target)

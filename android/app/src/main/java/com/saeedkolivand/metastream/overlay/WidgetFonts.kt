@@ -17,7 +17,23 @@ object WidgetFonts {
     private val full = HashMap<Int, Typeface>()
     private val mixed = HashMap<Int, Typeface>()
 
-    val faces: List<Pair<String, String>> = listOf("" to "System", "Vazirmatn" to "Vazirmatn")
+    /** Display faces (iOS WidgetFonts): variable files, one weight axis; Persian falls through to Vazirmatn. */
+    private val display = mapOf(
+        "Unbounded" to R.font.unbounded,
+        "TiltNeon" to R.font.tilt_neon,
+        "JetBrainsMono" to R.font.jetbrains_mono,
+        "Manrope" to R.font.manrope
+    )
+    private val extra = HashMap<String, Typeface>()
+
+    val faces: List<Pair<String, String>> = listOf(
+        "" to "System",
+        "Vazirmatn" to "Vazirmatn",
+        "Unbounded" to "Unbounded",
+        "TiltNeon" to "Tilt Neon",
+        "JetBrainsMono" to "JetBrains Mono",
+        "Manrope" to "Manrope"
+    )
 
     /** Loads the bundled files once; before that (unit tests) [typeface] returns plain system sans. */
     fun init(ctx: Context) {
@@ -34,6 +50,15 @@ object WidgetFonts {
                     .setSystemFallback("sans-serif")
                     .setStyle(FontStyle(w, FontStyle.FONT_SLANT_UPRIGHT))
                     .build()
+                for ((face, id) in display) {
+                    val latin = FontFamily.Builder(Font.Builder(res, id).setFontVariationSettings("'wght' $w").setWeight(w).build()).build()
+                    val persian = FontFamily.Builder(Font.Builder(res, noLatin[i]).build()).build()
+                    extra["$face/$w"] = Typeface.CustomFallbackBuilder(latin)
+                        .addCustomFallback(persian)
+                        .setSystemFallback("sans-serif")
+                        .setStyle(FontStyle(w, FontStyle.FONT_SLANT_UPRIGHT))
+                        .build()
+                }
             }
         }
     }
@@ -41,6 +66,7 @@ object WidgetFonts {
     /** [weight] snaps to 400/600/700; an unknown [face] is the system one. */
     fun typeface(face: String, weight: Int): Typeface {
         val w = WEIGHTS.lastOrNull { weight >= it } ?: 400
+        extra["$face/$w"]?.let { return it }
         val map = if (face == "Vazirmatn") full else mixed
         return map[w] ?: Typeface.create(Typeface.DEFAULT, w, false)
     }
