@@ -88,24 +88,42 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
     }
 }
 
+/** The root, grouped like iOS's catalog; the words after each page are what search also matches. */
+private val Catalog = listOf(
+    Triple("Streaming", Page.Ingest, "rtmp srt srtla bonding url key bitrate codec resolution record"),
+    Triple("Streaming", Page.Camera, "lens zoom stabilization face cam usb looks lut"),
+    Triple("Streaming", Page.Audio, "mic microphone soundboard sounds music mix"),
+    Triple("Streaming", Page.Glasses, "meta ray-ban wearables video"),
+    Triple("Scenes", Page.Scenes, "widgets overlay obs transitions stinger roles brb starting ending"),
+    Triple("Scenes", Page.Privacy, "blur faces plates"),
+    Triple("Chat & bot", Page.ReadAloud, "tts speech voice blocked words"),
+    Triple("Chat & bot", Page.AppBot, "commands timers thanks moderation"),
+    Triple("Money", Page.Goal, "donation donofa reymit streamelements donito donate page tip"),
+    Triple("Reach", Page.Telegram, "live post channel recap instagram story"),
+    Triple("Reach", Page.Streams, "history session report heatmap wrapped"),
+    Triple("Reach", Page.Spotify, "now playing song music"),
+    Triple("Reach", Page.Remote, "obs websocket stream deck touch portal streamer.bot"),
+    Triple("About", Page.Diagnostics, "logs version debug")
+)
+
 @Composable
 private fun RootPage(go: (Page) -> Unit) {
     val activity = requireNotNull(LocalActivity.current)
-    NavRow("Stream Manager") { ManagerState.open = true }
-    NavRow(Page.Ingest.title) { go(Page.Ingest) }
-    NavRow(Page.Camera.title) { go(Page.Camera) }
-    NavRow(Page.Audio.title) { go(Page.Audio) }
-    NavRow(Page.ReadAloud.title) { go(Page.ReadAloud) }
-    NavRow(Page.AppBot.title) { go(Page.AppBot) }
-    NavRow(Page.Goal.title) { go(Page.Goal) }
-    NavRow(Page.Telegram.title) { go(Page.Telegram) }
-    NavRow(Page.Streams.title) { go(Page.Streams) }
-    NavRow(Page.Spotify.title) { go(Page.Spotify) }
-    NavRow(Page.Remote.title) { go(Page.Remote) }
-    NavRow(Page.Scenes.title) { go(Page.Scenes) }
-    NavRow(Page.Privacy.title) { go(Page.Privacy) }
-    NavRow(Page.Glasses.title) { go(Page.Glasses) }
-    NavRow(Page.Diagnostics.title) { go(Page.Diagnostics) }
+    var query by rememberSaveable { mutableStateOf("") }
+    // Ready to go live: what would stop GO LIVE, at a glance.
+    val issues = listOfNotNull("No stream URL".takeIf { Engine.url.isBlank() }, "No stream key".takeIf { Engine.key.isBlank() })
+    Note(
+        if (issues.isEmpty()) "Ready to go live" else "Before going live: " + issues.joinToString(", "),
+        if (issues.isEmpty()) Color(0xFF30D158) else Color(0xFFFF9F0A)
+    )
+    OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), label = { Text("Search settings") }, singleLine = true)
+    val hits = Catalog.filter { (_, page, words) -> query.isBlank() || "${page.title} $words".contains(query.trim(), ignoreCase = true) }
+    if (query.isBlank()) NavRow("Stream Manager") { ManagerState.open = true }
+    for ((group, rows) in hits.groupBy { it.first }) {
+        Section(group) { rows.forEach { (_, page, _) -> NavRow(page.title) { go(page) } } }
+    }
+    if (hits.isEmpty()) Note("Nothing matches \"$query\"")
+    if (query.isNotBlank()) return
     Section("Stream") {
         OutlinedTextField(Engine.url, Engine::updateUrl, Modifier.fillMaxWidth(), label = {
             Text("RTMP / SRT URL")
