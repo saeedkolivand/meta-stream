@@ -114,13 +114,19 @@ internal fun SceneEditor(name: String, onClose: () -> Unit) {
 
     fun save(next: List<Layer>) = OverlayStore.setLayers(current, next)
 
+    // Read the store, not `layers`: callbacks reached through these local funs (the + menu) keep an old composition's list,
+    // so the second widget added replaced the first.
+    fun live() = OverlayStore.scenes.firstOrNull { it.name == current }?.layers.orEmpty()
+
     fun append(l: Layer) {
+        val layers = live()
         save(layers + l)
         selected = layers.size
         haptic(false)
     }
 
     fun remove(i: Int) {
+        val layers = live()
         if (i !in layers.indices) return
         save(layers.filterIndexed { j, _ -> j != i })
         selected = null
@@ -128,6 +134,7 @@ internal fun SceneEditor(name: String, onClose: () -> Unit) {
     }
 
     fun move(i: Int, by: Int) {
+        val layers = live()
         val j = i + by
         if (i !in layers.indices || j !in layers.indices) return
         save(layers.toMutableList().also { it[i] = layers[j] }.also { it[j] = layers[i] })
