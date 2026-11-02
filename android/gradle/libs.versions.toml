@@ -1,7 +1,7 @@
 [versions]
 uvcandroid = "1.0.13" # must match what RootEncoder extra-sources ships (it only exposes it at runtime)
 zxing = "3.5.4"
-agp = "9.4.1"
+agp = "9.5.0"
 kotlin = "2.4.21"
 activityCompose = "1.13.0"
 composeBom = "2026.09.00"
