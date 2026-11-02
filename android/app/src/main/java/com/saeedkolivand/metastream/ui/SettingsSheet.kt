@@ -58,13 +58,21 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
     var page by rememberSaveable { mutableStateOf(Page.Root) }
     // In-sheet navigation: Back (system or the header button) steps up a page before it dismisses the sheet.
     BackHandler(page != Page.Root) { page = page.parent ?: Page.Root }
-    ModalBottomSheet(onDismiss, containerColor = Color(0xFF1C1C1E), contentColor = Color.White) {
+    // Swiping down doesn't close it (it closed by accident when pulling down at the top of a list); Done does.
+    ModalBottomSheet(onDismiss, sheetGesturesEnabled = false, containerColor = Color(0xFF1C1C1E), contentColor = Color.White) {
         Column(
             Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
             Arrangement.spacedBy(8.dp)
         ) {
             page.parent?.let { parent -> TextButton({ page = parent }) { Text("‹ ${parent.title}") } }
-            Text(page.title, fontWeight = FontWeight.Bold)
+            androidx.compose.foundation.layout.Row(
+                Modifier.fillMaxWidth(),
+                Arrangement.SpaceBetween,
+                androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Text(page.title, fontWeight = FontWeight.Bold)
+                TextButton(onDismiss) { Text("Done", fontWeight = FontWeight.Bold) }
+            }
             when (page) {
                 Page.Root -> RootPage { page = it }
                 Page.Ingest -> IngestPage()
