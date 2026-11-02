@@ -154,11 +154,15 @@ private fun FaceCamGroup() {
     val why = FaceCam.unsupported
     Group(
         "Face cam (dual camera)",
-        why ?: "The back camera fills the stream, the front camera shows in a corner window; the eye button hides it. " +
-            "It turns off while the main camera is flipped to the front, and when the phone overheats."
+        (
+            why?.let { "$it It still works over screen share; " }
+                ?: "The back camera fills the stream, the front camera shows in a corner window; "
+            ) +
+            "the eye button hides it. It also shows over screen share, and turns off while the main camera is flipped to the front " +
+            "or the phone overheats."
     ) {
-        Toggle("Dual camera", FaceCam.enabled && why == null, why == null) { FaceCam.enable(it) }
-        if (FaceCam.enabled && why == null) {
+        Toggle("Dual camera", FaceCam.enabled) { FaceCam.enable(it) }
+        if (FaceCam.enabled) {
             Choice(
                 listOf("topLeft" to "Top left", "topRight" to "Top right", "bottomLeft" to "Bottom left", "bottomRight" to "Bottom right"),
                 o.corner

@@ -102,8 +102,13 @@ object FaceCam {
         { facing(it) == CameraCharacteristics.LENS_FACING_BACK }
     )
 
-    /** Phone source with the back camera as the main one; a flipped (front) main camera owns the front sensor. */
-    private fun wanted() = enabled && unsupported == null && !overheated && Engine.source == Source.Phone && Cam.facingBack()
+    /**
+     * Phone source with the back camera as the main one (a flipped main camera owns the front sensor), or screen share, where
+     * no camera is busy so any front camera works (iOS b6a8563). Glasses video skips the encoder, so nothing draws over it.
+     */
+    private fun wanted() = enabled &&
+        !overheated &&
+        (Engine.source == Source.Screen || (unsupported == null && Engine.source == Source.Phone && Cam.facingBack()))
 
     fun enable(on: Boolean) {
         enabled = on
@@ -177,8 +182,12 @@ object FaceCam {
     @SuppressLint("MissingPermission") // the stream's own camera permission gate ran before any filter was installed
     private fun open(f: FaceCamFilter, st: SurfaceTexture) {
         if (opening) return
-        val back = Cam.mainCameraId()
-        val id = partner(back)
+        val back = if (Engine.source == Source.Screen) null else Cam.mainCameraId()
+        val id = if (back == null) {
+            manager.cameraIdList.firstOrNull { facing(it) == CameraCharacteristics.LENS_FACING_FRONT }
+        } else {
+            partner(back)
+        }
         if (id == null) {
             applog("facecam", "no front camera can run beside camera $back")
             return
