@@ -250,6 +250,7 @@ object Engine {
             status = "open the app on the phone once, then retry"
             return
         }
+        Mics.log(app, "go live")
         Overlays.refresh() // before the encoder starts, so the privacy blur is already in the chain for the first frame
         val full = Bonding.target(app, url.trimEnd('/') + "/" + key) // srtla:// goes through the bonding proxy
         if (s == null) glasses.start(full, askWearables) else startStream(s, full)

@@ -10,6 +10,7 @@ import android.opengl.GLUtils
 import android.opengl.Matrix
 import com.pedro.encoder.input.gl.render.filters.BaseFilterRender
 import com.pedro.encoder.utils.gl.GlUtil
+import com.saeedkolivand.metastream.core.applog
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.ceil
@@ -40,6 +41,13 @@ internal class StingerFilter(
     private val frame = StingerFrame()
     private val colors = FloatArray(15)
     private var epoch = 0L
+
+    // perf (iOS 5af3621): frames, CPU time per draw call, longest gap between frames; logged once on release
+    private var frames = 0
+    private var drawNs = 0L
+    private var drawMaxNs = 0L
+    private var gapMaxNs = 0L
+    private var lastNs = 0L
 
     init {
         val v = floatArrayOf(-1f, -1f, 0f, 0f, 0f, 1f, -1f, 0f, 1f, 0f, -1f, 1f, 0f, 0f, 1f, 1f, 1f, 0f, 1f, 1f)
@@ -80,6 +88,8 @@ internal class StingerFilter(
         val h = getHeight().toFloat()
         val now = System.nanoTime()
         if (epoch == 0L) epoch = now
+        if (frames++ > 0) gapMaxNs = maxOf(gapMaxNs, now - lastNs)
+        lastNs = now
         kind.frame(kind.q((now - epoch) / 1e9, style), style, w, h, frame)
         GLES20.glUseProgram(program)
         squareVertex.position(0)
@@ -106,6 +116,9 @@ internal class StingerFilter(
         bind(0, loc[2], previousTexId)
         bind(1, loc[3], textures[0])
         bind(2, loc[4], textures[1])
+        val took = System.nanoTime() - now
+        drawNs += took
+        drawMaxNs = maxOf(drawMaxNs, took)
     }
 
     private fun bind(unit: Int, uniform: Int, id: Int) {
@@ -121,6 +134,18 @@ internal class StingerFilter(
     }
 
     override fun release() {
+        if (frames > 0) {
+            val secs = (lastNs - epoch) / 1e9
+            applog(
+                "perf",
+                String.format(
+                    java.util.Locale.US,
+                    "stinger %s: %d frames in %.2f s (%.0f fps), draw avg %.1f ms max %.1f ms, longest gap %d ms, canvas %dx%d, renderer GLES",
+                    kind.name, frames, secs, frames / maxOf(secs, 0.01), drawNs / 1e6 / frames, drawMaxNs / 1e6, gapMaxNs / 1_000_000,
+                    getWidth(), getHeight()
+                )
+            )
+        }
         GLES20.glDeleteProgram(program)
         GLES20.glDeleteTextures(2, textures, 0)
     }
