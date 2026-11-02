@@ -24,13 +24,17 @@ private fun outline(w: Float, h: Float, r: Float, stroke: Float, color: Int = WH
     return Txt(bmp, w + 2 * pad, h + 2 * pad)
 }
 
-/** A dark card pops in with a ring pulse and 18 coins flying out. ponytail: the amount doesn't roll up like an odometer. */
+/** A dark card pops in with a ring pulse and 18 coins flying out; the amount's digits roll up like an odometer (iOS). */
 internal fun coinBurst(i: DonationInfo, look: DonationLook, b: Board): (Float) -> List<Item> {
     val acc = look.accent(0xFFF5C542)
     val label = ink("${i.name.uppercase().take(24)} DONATED", b.len(18f), 700, acc, 0.2f, face = "Manrope")
     val amount = ink(i.amount, b.len(76f), 700, WHITE, face = "Unbounded")
     val msg = ink(i.message, b.len(22f), 400, SOFT, face = "Manrope")
     val initial = ink(i.initial, b.len(40f), 700, INK, face = "Unbounded")
+    // Odometer: digits 0-9 rasterised once; each digit column scrolls 10 + d digit heights, the next 0.07 s behind (the alert runs 6 s).
+    val digits = (0..9).map { ink("$it", b.len(76f), 700, WHITE, face = "Unbounded") }
+    val chars = i.amount.map { c -> if (c.isDigit()) null else ink("$c", b.len(76f), 700, WHITE, face = "Unbounded") }
+    val digitW = digits.maxOf { it?.w ?: 0f }
     val colW = maxOf(label?.w ?: 0f, amount?.w ?: 0f, minOf(msg?.w ?: 0f, b.len(760f)))
     val cardW = b.len(188f) + colW
     val colH = b.len(107f) + if (msg != null) b.len(36f) else 0f
@@ -88,7 +92,29 @@ internal fun coinBurst(i: DonationInfo, look: DonationLook, b: Board): (Float) -
                 g += disc(ax, cy, b.len(46f), acc)
                 initial?.let { g += it.at(ax, cy) }
                 label?.let { g += it.at(colX, colTop + b.len(12.5f), -1) }
-                amount?.let { g += it.at(colX, colTop + b.len(69f), -1) }
+                if (amount != null) {
+                    val lineH = b.len(76f)
+                    val mid = colTop + b.len(69f)
+                    val clip = RectF(colX, mid - lineH / 2, colX + amount.w * 1.5f, mid + lineH / 2)
+                    var x = colX
+                    var di = 0
+                    i.amount.forEachIndexed { n, c ->
+                        val d = c.digitToIntOrNull()
+                        val w = if (d != null) digitW else chars[n]?.w ?: 0f
+                        if (d == null) {
+                            chars[n]?.let { g += it.at(x, mid, -1) }
+                        } else {
+                            val o = (10 + d) * track(p - di * 0.07f / 6f, ::dEaseOut, 0.08f to 0f, 0.36f to 1f)
+                            val k0 = o.toInt()
+                            val f = o - k0
+                            for (k in k0..(if (f > 0.001f) k0 + 1 else k0)) {
+                                digits[k % 10]?.at(x + w / 2, mid + (k - k0 - f) * lineH)?.let { g += Item(it.rect, it.image, clip = clip) }
+                            }
+                            di++
+                        }
+                        x += w
+                    }
+                }
                 msg?.let { g += it.at(colX, colTop + b.len(125f), -1, maxW = b.len(760f)) }
                 val k = track(p, ::dBack, 0.04f to 0.6f, 0.11f to 1f, 0.86f to 1f, 0.93f to 0.9f)
                 val al = track(p, ::dLinear, 0.04f to 0f, 0.07f to 1f, 0.86f to 1f, 0.93f to 0f)
