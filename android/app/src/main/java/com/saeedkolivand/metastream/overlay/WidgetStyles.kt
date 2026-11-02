@@ -175,7 +175,7 @@ data class EventListStyle(
     }
 }
 
-/** The Goal widget (iOS GoalWidgetStyle, same keys). Every design follows the box sliders. */
+/** The Goal widget (iOS GoalWidgetStyle, same keys). The bar follows the box sliders; the other designs are a fixed size. */
 data class GoalStyle(
     val width: Float = 720f,
     val height: Float = 120f,
@@ -190,7 +190,18 @@ data class GoalStyle(
     val face: String = "",
     val design: String = "bar"
 ) {
-    val natural get() = width to height
+    val natural get() = when (design) {
+        "liquid" -> 630f to 114f // board size x 1.5
+        "road" -> 750f to 111f
+        "segments" -> 720f to 60f
+        // Variable-width designs: a generous box (~40-character title) the content hugs one side of.
+        "hairline" -> 720f to 130f
+        "island" -> 800f to 90f
+        "miniring" -> 760f to 150f
+        "dots" -> 880f to 96f
+        "spark" -> 760f to 120f
+        else -> width to height
+    }
 
     fun toData() = mapOf(
         "width" to "$width", "height" to "$height", "fontSize" to "$fontSize", "barColor" to barColor.unsigned(),
