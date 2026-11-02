@@ -44,3 +44,21 @@ class ReachTest {
         assertTrue(back.trackingStarted)
     }
 }
+
+class HeatmapTest {
+    @Test
+    fun bucketsByWeekdayHour() {
+        val utc = java.util.TimeZone.getTimeZone("UTC")
+        val monday10 = 1_704_067_200_000L + 10 * 3_600_000L // Monday 2024-01-01 10:00 UTC
+        fun rec(start: Long, vararg v: Int) = SessionRecord(start, "", "EUR").apply {
+            v.forEachIndexed { i, x -> samples += SessionSample(i + 1, x, 0, 0, 0, 0, x.toDouble(), 0) }
+        }
+        val recs = listOf(rec(monday10, 10, 20), rec(monday10 + 7 * 86_400_000L, 30, 0))
+        val avg = Heatmap.cells(recs, Heatmap.Metric.Viewers, utc).single()
+        assertEquals(0, avg.weekday)
+        assertEquals(10, avg.hour)
+        assertEquals(20.0, avg.value, 1e-9)
+        assertTrue(avg.enough)
+        assertEquals(900.0, Heatmap.cells(recs, Heatmap.Metric.Donations, utc).single().value, 1e-9) // 60 over 4 samples, per hour
+    }
+}

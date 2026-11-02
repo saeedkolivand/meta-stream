@@ -197,4 +197,5 @@ internal fun MainScreen() {
     StreamManager()
     NetworkSheet()
     GoLiveSheet.Sheet()
+    SessionReportSheet()
 }
