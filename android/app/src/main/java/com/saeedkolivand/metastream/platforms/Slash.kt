@@ -52,9 +52,13 @@ object Slash {
         val kick = origin == "kick"
         val label = if (kick) "Kick" else "Twitch"
         if (origin == "youtube") return "Slash commands aren't supported on YouTube"
-        if (name == "help") return "$label: " + (both + if (kick) emptyList() else twitchOnly).joinToString(" ") { "/$it" }
-        if (name !in both + twitchOnly + kickWeb) return "Unknown command /$name"
-        if (kick && name in kickWeb) return "/$name needs the kick.com sign-in, on iOS only for now"
+        if (name == "help") {
+            return "$label: " + (both + if (kick) KickWeb.commands.filter { it !in both } else twitchOnly).joinToString(" ") { "/$it" }
+        }
+        if (name !in both + twitchOnly + kickWeb + KickWeb.commands) return "Unknown command /$name"
+        // adr/0005: through the signed-in kick.com page. Signed out, /clear keeps its public-API fallback below.
+        if (kick && name in KickWeb.commands && (name != "clear" || KickWeb.ready())) return KickWeb.run(name, a)
+        if (kick && name in kickWeb) return "Kick has no /$name yet"
         if (kick && name in twitchOnly) return "Kick has no API for /$name yet"
         if (!kick && name in kickWeb) return "Twitch has no /$name"
         if (if (kick) Kick.userId == 0 else Twitch.userId.isEmpty()) return "$label isn't connected"

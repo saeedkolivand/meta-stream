@@ -40,6 +40,7 @@ class App : Application() {
         WidgetFonts.init(this)
         AppSettings.init()
         Mics.init(this)
+        com.saeedkolivand.metastream.platforms.KickWeb.init(this)
         Mics.log(this, "at launch")
         Soundboard.init(this)
         Looks.init(this)

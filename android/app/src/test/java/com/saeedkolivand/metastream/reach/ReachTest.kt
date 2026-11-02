@@ -127,3 +127,21 @@ class ReportInsightsTest {
         assertEquals(null, ReportInsights.percent(5.0, emptyList()))
     }
 }
+
+class KickWebTest {
+    @Test
+    fun modeBodiesPollsAndNames() {
+        val k = com.saeedkolivand.metastream.platforms.KickWeb
+        assertEquals("""{"slow_mode":{"enabled":true,"duration_seconds":5}}""", k.modeBody("slow", listOf("on")))
+        assertEquals("""{"slow_mode":{"enabled":true,"duration_seconds":30}}""", k.modeBody("slow", listOf("30")))
+        assertEquals("""{"slow_mode":{"enabled":false,"duration_seconds":1}}""", k.modeBody("slow", listOf("off")))
+        assertEquals("""{"emotes_only_mode":{"enabled":true}}""", k.modeBody("emoteonly", emptyList()))
+        assertEquals("""{"followers_only_mode":{"enabled":true,"duration_seconds":600}}""", k.modeBody("followonly", listOf("on", "10")))
+        assertEquals(null, k.modeBody("subscribers", emptyList()))
+        assertEquals("Best?" to listOf("Cats", "Dogs"), k.poll(listOf("Best?", "|", "Cats", "|", "Dogs")))
+        assertEquals(null, k.poll(listOf("Q?", "|", "a", "|", "bb")))
+        assertEquals(null, k.poll(listOf("|", "aa", "|", "bb")))
+        assertEquals("saeed", k.person("@Saeed"))
+        assertEquals(null, k.person("@"))
+    }
+}

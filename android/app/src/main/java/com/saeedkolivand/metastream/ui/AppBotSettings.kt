@@ -1,14 +1,34 @@
 package com.saeedkolivand.metastream.ui
 
+import android.annotation.SuppressLint
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.saeedkolivand.metastream.bot.AppBot
 import com.saeedkolivand.metastream.bot.BotCommand
 import com.saeedkolivand.metastream.bot.BotList
@@ -16,7 +36,9 @@ import com.saeedkolivand.metastream.bot.BotRules
 import com.saeedkolivand.metastream.bot.TwitchBot
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.platforms.Kick
+import com.saeedkolivand.metastream.platforms.KickWeb
 import com.saeedkolivand.metastream.platforms.Twitch
+import kotlinx.coroutines.launch
 
 /** A Prefs-backed switch. */
 @Composable
@@ -103,6 +125,7 @@ internal fun AppBotPage() {
         }
         Footnote("Shows that command as a button on the live notification and Lock Screen. A tap in your pocket could fire it.")
     }
+    KickSessionSection()
     Section("Other bots") {
         PrefField("Bot names", "botNames", BotList.DEFAULT_NAMES)
         PrefField("Trigger words", "botTriggers", BotList.DEFAULT_TRIGGERS)
@@ -112,5 +135,48 @@ internal fun AppBotPage() {
             Prefs.put("botReadMode", it)
         }
         Footnote("Names ending in \"bot\" always count. A bot line with a trigger word (\"won\") is read aloud.")
+    }
+}
+
+/** The kick.com session the unofficial Kick commands run through (iOS KickSessionSection, adr/0005). */
+@Composable
+private fun KickSessionSection() {
+    var signingIn by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { KickWeb.refresh() }
+    Section("kick.com session (unofficial)") {
+        Note(if (KickWeb.signedIn) "Signed in as ${KickWeb.user}" else "Not signed in")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton({ signingIn = true }) { Text("Sign in to kick.com") }
+            if (KickWeb.signedIn) TextButton(KickWeb::signOut) { Text("Sign out", color = Color(0xFFFF453A)) }
+        }
+        Footnote(
+            "Used for /poll, /raid, /clear, /clip, /mod, /vip and chat modes, which Kick's API doesn't offer. Unofficial: Kick can change it any time."
+        )
+    }
+    if (signingIn) {
+        val scope = rememberCoroutineScope()
+        val close = {
+            signingIn = false
+            scope.launch { KickWeb.refresh() }
+            Unit
+        }
+        Dialog(close, DialogProperties(usePlatformDefaultWidth = false)) {
+            Column(Modifier.fillMaxSize().background(Color.Black)) {
+                Row(Modifier.fillMaxWidth().padding(8.dp), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                    Text("kick.com", color = Color.White, fontWeight = FontWeight.Bold)
+                    TextButton(close) { Text("Done", fontWeight = FontWeight.Bold) }
+                }
+                // The user signs in themselves; the cookies land in the app's shared WebView store, where KickWeb reads them.
+                AndroidView({ c ->
+                    WebView(c).apply {
+                        @SuppressLint("SetJavaScriptEnabled")
+                        settings.javaScriptEnabled = true
+                        settings.domStorageEnabled = true
+                        webViewClient = WebViewClient()
+                        loadUrl("https://kick.com/login")
+                    }
+                }, Modifier.fillMaxSize())
+            }
+        }
     }
 }
