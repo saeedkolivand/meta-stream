@@ -41,6 +41,7 @@ private enum class Page(val title: String, val parent: Page?) {
     ReadAloud("Read aloud", Root),
     AppBot("App bot", Root),
     Goal("Goal", Root),
+    DonationSources("Donation sources", Goal),
     Privacy("Privacy", Root),
     Scenes("Scenes & widgets", Root),
     Diagnostics("Diagnostics & about", Root),
@@ -67,7 +68,8 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
                 Page.Camera -> CameraSettingsContent()
                 Page.ReadAloud -> ReadAloudSettings()
                 Page.AppBot -> AppBotPage()
-                Page.Goal -> GoalPage()
+                Page.Goal -> GoalPage { page = Page.DonationSources }
+                Page.DonationSources -> DonationSourcesPage()
                 Page.Privacy -> PrivacySettings()
                 Page.Scenes -> ScenesPage()
                 Page.Glasses -> GlassesVideoPage()
