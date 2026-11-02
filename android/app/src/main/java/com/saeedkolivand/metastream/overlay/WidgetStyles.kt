@@ -211,6 +211,33 @@ data class GoalStyle(
     }
 }
 
+/** The Now playing widget (iOS NowPlayingWidgetStyle, same keys). Natural size = iOS artboard x 2. */
+data class NowPlayingStyle(
+    val design: String = "slab",
+    val accentColor: Int = 0xFF1DB954.toInt(),
+    val face: String = "",
+    val popupSeconds: Int = 6
+) {
+    val natural get() = when (design) {
+        "text" -> 920f to 58f
+        "twoLine" -> 520f to 98f
+        "cover" -> 920f to 60f
+        "popup" -> 1040f to 58f
+        else -> 840f to 256f
+    }
+
+    fun toData() = mapOf("design" to design, "accentColor" to accentColor.unsigned(), "face" to face, "popupSeconds" to "$popupSeconds")
+
+    companion object {
+        fun from(d: Map<String, String>) = NowPlayingStyle(
+            d.str("design", "slab"),
+            d.argb("accentColor", 0xFF1DB954.toInt()),
+            d.str("face", ""),
+            d.num("popupSeconds", 6f).toInt().coerceIn(2, 30)
+        )
+    }
+}
+
 data class QrStyle(
     val text: String = "",
     val caption: String = "",

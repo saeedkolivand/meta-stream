@@ -14,6 +14,7 @@ import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.overlay.Scenes
 import com.saeedkolivand.metastream.overlay.WidgetFonts
 import com.saeedkolivand.metastream.platforms.Accounts
+import com.saeedkolivand.metastream.platforms.Spotify
 import com.saeedkolivand.metastream.reach.LivePost
 import com.saeedkolivand.metastream.reach.SessionLog
 import com.saeedkolivand.metastream.speech.Speaker
@@ -45,6 +46,7 @@ class App : Application() {
         OverlayStore.init(this)
         Overlays.init(this)
         Accounts.init(this, scope)
+        Spotify.init()
         ChatFeed.init(scope) {
             Speaker.speakChat(it)
             // providers call from their socket thread; the bot and the goal are main-thread

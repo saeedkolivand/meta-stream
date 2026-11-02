@@ -92,3 +92,19 @@ class WrappedTest {
         assertEquals(1.2, WrappedBuilder.build("2024-01", listOf(second, first), "en", utc)!!.km!!, 1e-9)
     }
 }
+
+class SpotifyParseTest {
+    @Test
+    fun parsesPlayingTrackOnly() {
+        val json = """{"is_playing":true,"currently_playing_type":"track","progress_ms":1000,"item":{"id":"x","name":"Song",
+            "duration_ms":10000,"artists":[{"name":"A"},{"name":"B"}],
+            "album":{"images":[{"url":"big","width":640},{"url":"mid","width":300},{"url":"small","width":64}]}}}"""
+        val t = com.saeedkolivand.metastream.platforms.Spotify.parse(JSONObject(json), 1_000_000)!!
+        assertEquals("A, B", t.artist)
+        assertEquals("mid", t.artURL)
+        assertEquals(3000, t.elapsedMs(1_002_000))
+        assertEquals(10000, t.elapsedMs(1_060_000))
+        assertEquals(null, com.saeedkolivand.metastream.platforms.Spotify.parse(JSONObject(json.replace("true", "false")), 0))
+        assertEquals(null, com.saeedkolivand.metastream.platforms.Spotify.parse(JSONObject(json.replace("\"track\"", "\"ad\"")), 0))
+    }
+}

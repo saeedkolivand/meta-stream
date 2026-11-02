@@ -43,6 +43,7 @@ private enum class Page(val title: String, val parent: Page?) {
     Goal("Goal", Root),
     Telegram("Telegram", Root),
     Streams("Streams", Root),
+    Spotify("Spotify", Root),
     DonationSources("Donation sources", Goal),
     Privacy("Privacy", Root),
     Scenes("Scenes & widgets", Root),
@@ -74,6 +75,7 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
                 Page.DonationSources -> DonationSourcesPage()
                 Page.Telegram -> TelegramPage()
                 Page.Streams -> StreamsPage()
+                Page.Spotify -> SpotifyPage()
                 Page.Privacy -> PrivacySettings()
                 Page.Scenes -> ScenesPage()
                 Page.Glasses -> GlassesVideoPage()
@@ -96,6 +98,7 @@ private fun RootPage(go: (Page) -> Unit) {
     NavRow(Page.Goal.title) { go(Page.Goal) }
     NavRow(Page.Telegram.title) { go(Page.Telegram) }
     NavRow(Page.Streams.title) { go(Page.Streams) }
+    NavRow(Page.Spotify.title) { go(Page.Spotify) }
     NavRow(Page.Scenes.title) { go(Page.Scenes) }
     NavRow(Page.Privacy.title) { go(Page.Privacy) }
     NavRow(Page.Glasses.title) { go(Page.Glasses) }

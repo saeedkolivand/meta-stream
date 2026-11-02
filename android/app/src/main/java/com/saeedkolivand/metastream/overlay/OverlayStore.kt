@@ -219,6 +219,7 @@ object OverlayStore {
             LayerType.Events -> EventListStyle.from(d).natural
             LayerType.Qr -> QrStyle.from(d).natural
             LayerType.Goal -> GoalStyle.from(d).natural
+            LayerType.NowPlaying -> NowPlayingStyle.from(d).natural
             LayerType.Browser -> (d["width"]?.toFloatOrNull() ?: 800f) to (d["height"]?.toFloatOrNull() ?: 600f)
             LayerType.Color -> (d["width"]?.toFloatOrNull() ?: 1920f) to (d["height"]?.toFloatOrNull() ?: 1080f)
             LayerType.Image -> local(d["file"].orEmpty())?.let(::imageSize)?.let { (w, h) ->

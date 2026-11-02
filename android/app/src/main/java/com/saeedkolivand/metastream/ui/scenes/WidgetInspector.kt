@@ -24,6 +24,7 @@ import com.saeedkolivand.metastream.overlay.EventListStyle
 import com.saeedkolivand.metastream.overlay.GoalStyle
 import com.saeedkolivand.metastream.overlay.Layer
 import com.saeedkolivand.metastream.overlay.LayerType
+import com.saeedkolivand.metastream.overlay.NowPlayingStyle
 import com.saeedkolivand.metastream.overlay.QrStyle
 import com.saeedkolivand.metastream.overlay.TextStyle as TextWidgetStyle
 import com.saeedkolivand.metastream.overlay.WidgetVariables
@@ -39,6 +40,7 @@ private fun defaultsOf(type: LayerType): Map<String, String> = when (type) {
     LayerType.Events -> EventListStyle().toData()
     LayerType.Qr -> QrStyle().toData()
     LayerType.Goal -> GoalStyle().toData()
+    LayerType.NowPlaying -> NowPlayingStyle().toData()
     LayerType.Text -> TextWidgetStyle().toData()
     LayerType.Browser -> mapOf("width" to "800", "height" to "600")
     else -> emptyMap()
@@ -73,6 +75,7 @@ internal fun WidgetInspector(
             LayerType.Text -> d.TextSection()
             LayerType.Qr -> d.QrSection()
             LayerType.Goal -> d.GoalSection()
+            LayerType.NowPlaying -> d.NowPlayingSection()
             LayerType.Browser -> d.WebSection()
             else -> Unit
         }
@@ -234,6 +237,16 @@ private fun DataKeys.GoalSection() = Section("Donation goal") {
     Flag("showPercent", "Percent")
     Flag("showOther", "Other currencies")
     Footnote("Title, target and currency are in Settings › Goal.")
+}
+
+@Composable
+private fun DataKeys.NowPlayingSection() = Section("Now playing") {
+    val designs = listOf("slab" to "Slab", "text" to "Text", "twoLine" to "Two lines", "cover" to "Text with cover", "popup" to "Pop-up")
+    Choice("Design", designs, str("design").takeIf { d -> designs.any { it.first == d } } ?: "slab") { put("design", it) }
+    Swatches("accentColor", "Accent color")
+    FontPicker()
+    if (str("design") == "popup") NumSlider("popupSeconds", "Stays for (s)", 2f..30f)
+    Footnote("Shows what your Spotify account plays (Settings › Spotify); hidden while nothing plays.")
 }
 
 @Composable

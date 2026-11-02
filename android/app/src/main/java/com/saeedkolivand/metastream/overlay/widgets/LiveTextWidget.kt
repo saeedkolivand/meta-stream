@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.RectF
 import com.pedro.encoder.input.gl.render.filters.`object`.ImageFilterRender
+import com.saeedkolivand.metastream.platforms.Spotify
 import kotlin.math.ceil
 import kotlin.math.min
 import kotlinx.coroutines.CoroutineScope
@@ -81,6 +82,8 @@ internal fun liveTextWidget(l: Layer, box: Box, outW: Int, outH: Int, scope: Cor
     val job = scope.launch {
         val location = WidgetVariables.needsLocation(template)
         if (location) WidgetLocation.retain()
+        val spotify = WidgetVariables.needsSpotify(template)
+        if (spotify) Spotify.retain()
         try {
             var shown = first
             while (isActive) {
@@ -93,6 +96,7 @@ internal fun liveTextWidget(l: Layer, box: Box, outW: Int, outH: Int, scope: Cor
             }
         } finally {
             if (location) WidgetLocation.release()
+            if (spotify) Spotify.release()
         }
     }
     return WidgetBuild(filter, job)

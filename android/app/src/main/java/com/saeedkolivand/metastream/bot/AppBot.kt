@@ -15,6 +15,7 @@ import com.saeedkolivand.metastream.overlay.WidgetLocation
 import com.saeedkolivand.metastream.overlay.WidgetWeather
 import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.platforms.Kick
+import com.saeedkolivand.metastream.platforms.Spotify
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.speech.SpeechSettings
 import com.saeedkolivand.metastream.speech.isBlocked
@@ -43,7 +44,7 @@ object AppBot {
         "botTplGift" to "{user}, thanks for the {count} gifted subs!", "botTplRaid" to "{user}, thanks for the raid with {count} viewers!",
         "botTplDonate" to "{title}: {total} / {target} ({percent}%) · {url}"
     )
-    val commands = listOf("!location", "!speed", "!distance", "!weather", "!battery", "!uptime", "!goal", "!donate", "!commands") +
+    val commands = listOf("!location", "!speed", "!distance", "!weather", "!battery", "!uptime", "!goal", "!donate", "!song", "!commands") +
         BotRules.donateAliases
 
     private val queues = HashMap<String, Channel<Pair<String, String>>>() // origin -> (text, replyTo), drained 1 per 1.5 s
@@ -57,6 +58,7 @@ object AppBot {
     private val marks = HashMap<String, Pair<Long, Int>>()
     private val lastTimer = HashMap<String, Long>()
     private var holdingGps = false
+    private var holdingSpotify = false
     private var brbAt: Long? = null
     private var brbOpen = false
 
@@ -216,6 +218,11 @@ object AppBot {
                     .replace("{url}", DonatePage.chatURL)
             }
         }
+        "!song" -> when (val song = Spotify.track) {
+            null -> if (Spotify.connected) "Nothing's playing right now" else "Spotify isn't connected"
+            else -> (if (song.artist.isEmpty()) song.title else "${song.artist} - ${song.title}") +
+                if (song.url.isEmpty()) "" else " ${song.url}"
+        }
         "!uptime" -> Engine.liveSince?.let {
             val m = maxOf(0L, System.currentTimeMillis() - it) / 60_000
             "$name has been live for ${if (m >= 60) "${m / 60} h " else ""}${m % 60} min"
@@ -236,6 +243,12 @@ object AppBot {
         if (wantGps != holdingGps) {
             holdingGps = wantGps
             if (wantGps) WidgetLocation.retain() else WidgetLocation.release()
+        }
+        // Polls Spotify while !song could be asked, so the answer is the song playing now.
+        val wantSpotify = active && (platformOn("kick") || platformOn("twitch")) && flag("botCmdSong") && Spotify.connected
+        if (wantSpotify != holdingSpotify) {
+            holdingSpotify = wantSpotify
+            if (wantSpotify) Spotify.retain() else Spotify.release()
         }
         if (wantGps && flag("botCmdWeather")) WidgetWeather.text // reading it is what turns the fetch on
         if (!Engine.live) {
