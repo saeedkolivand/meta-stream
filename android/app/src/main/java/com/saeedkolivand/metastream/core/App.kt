@@ -5,6 +5,7 @@ import com.saeedkolivand.metastream.bot.AppBot
 import com.saeedkolivand.metastream.camera.Looks
 import com.saeedkolivand.metastream.car.Notify
 import com.saeedkolivand.metastream.chat.ChatFeed
+import com.saeedkolivand.metastream.goal.DonatePage
 import com.saeedkolivand.metastream.goal.DonationHub
 import com.saeedkolivand.metastream.goal.GoalStore
 import com.saeedkolivand.metastream.goal.countDonation
@@ -53,6 +54,7 @@ class App : Application() {
         AppBot.init()
         GoalStore.init(this, scope)
         DonationHub.start(scope)
+        DonatePage.start(scope)
         GoalStore.onReached = {
             Speaker.speakSystem("Goal reached")
             AppBot.goalReached(GoalStore.config.title)

@@ -81,9 +81,12 @@ internal fun AppBotPage() {
         Footnote("{user} is the name, {count} the gifts or raiders.")
     }
     Section("Viewer commands") {
-        for (cmd in AppBot.commands) PrefSwitch(cmd, BotRules.switchKey(cmd), true)
+        for (cmd in AppBot.commands - BotRules.donateAliases.toSet()) PrefSwitch(cmd, BotRules.switchKey(cmd), true)
         PrefSwitch("Hide location (!location says it's private)", "botHideLocation", false)
-        Footnote("Each command answers once per 30 s per platform; you and your mods skip the wait.")
+        PrefField("!donate reply ({title} {total} {target} {percent} {url})", "botTplDonate", AppBot.defaults.getValue("botTplDonate"))
+        Footnote(
+            "!tip, !support and !donation answer like !donate. Each command answers once per 30 s per platform; you and your mods skip the wait."
+        )
     }
     Section("Timers") {
         PrefSwitch("Repeat timers while live", "botTimersOn", false)

@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.goal.DonatePage
 import com.saeedkolivand.metastream.goal.DonationPrices
 import com.saeedkolivand.metastream.goal.EntryState
 import com.saeedkolivand.metastream.goal.GoalStore
@@ -54,6 +55,7 @@ internal fun GoalPage(openSources: () -> Unit) {
         Text("Raised ${GoalStore.money(GoalStore.total)} / ${GoalStore.money(c.target)} (${(GoalStore.progress * 100).toInt()}%)")
         if (GoalStore.pendingCount > 0) Note("${GoalStore.pendingCount} waiting for a rate")
     }
+    DonatePageSection()
     AddAndTest()
     RatesAndPrices()
     Section("Recent donations (${GoalStore.entries.size})") {
@@ -71,6 +73,34 @@ internal fun GoalPage(openSources: () -> Unit) {
                 }.joinToString(" · ")
             )
         }
+    }
+}
+
+/** The page URL and its key; the key is never loaded back into the field (iOS does the same). */
+@Composable
+private fun DonatePageSection() {
+    var url by remember { mutableStateOf(DonatePage.pageURL) }
+    var key by remember { mutableStateOf("") }
+    var hasKey by remember { mutableStateOf(DonatePage.hasToken) }
+    Section("Donate page") {
+        Field("Page address", url, { url = it })
+        OutlinedButton({ DonatePage.setURL(url) }, enabled = url.trim() != DonatePage.pageURL) { Text("Save address") }
+        Field(if (hasKey) "Page key (saved, type to replace)" else "Page key", key, { key = it })
+        Button({
+            DonatePage.setToken(key)
+            key = ""
+            hasKey = DonatePage.hasToken
+        }, enabled = key.isNotBlank()) { Text("Save key") }
+        if (hasKey) {
+            OutlinedButton({
+                DonatePage.setToken("")
+                hasKey = false
+            }) { Text("Remove key") }
+        }
+        Note(DonatePage.status)
+        Footnote(
+            "The page shows the goal and LIVE while you stream. The key is only sent over https, to the address it was saved for: change the address and enter the key again."
+        )
     }
 }
 

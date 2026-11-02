@@ -8,6 +8,7 @@ import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.Kind
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.goal.DonatePage
 import com.saeedkolivand.metastream.goal.GoalStore
 import com.saeedkolivand.metastream.overlay.SceneRoles
 import com.saeedkolivand.metastream.overlay.WidgetLocation
@@ -39,9 +40,11 @@ object AppBot {
         "botTplStartingOn" to "Starting soon!", "botTplStartingOff" to "We're live, welcome in!",
         "botTplEndingOn" to "Thanks for watching!",
         "botTplFollow" to "{user}, thanks for the follow!", "botTplSub" to "{user}, thanks for subscribing!",
-        "botTplGift" to "{user}, thanks for the {count} gifted subs!", "botTplRaid" to "{user}, thanks for the raid with {count} viewers!"
+        "botTplGift" to "{user}, thanks for the {count} gifted subs!", "botTplRaid" to "{user}, thanks for the raid with {count} viewers!",
+        "botTplDonate" to "{title}: {total} / {target} ({percent}%) · {url}"
     )
-    val commands = listOf("!location", "!speed", "!distance", "!weather", "!battery", "!uptime", "!goal", "!commands")
+    val commands = listOf("!location", "!speed", "!distance", "!weather", "!battery", "!uptime", "!goal", "!donate", "!commands") +
+        BotRules.donateAliases
 
     private val queues = HashMap<String, Channel<Pair<String, String>>>() // origin -> (text, replyTo), drained 1 per 1.5 s
 
@@ -204,11 +207,22 @@ object AppBot {
         "!goal" -> GoalStore.config.let { c ->
             "${GoalStore.money(GoalStore.total)} of ${GoalStore.money(c.target)} for ${c.title} (${(GoalStore.progress * 100).toInt()}%)"
         }
+        "!donate", "!tip", "!support", "!donation" -> GoalStore.config.let { c ->
+            if (c.target.signum() <= 0) {
+                "Support the stream: ${DonatePage.chatURL}"
+            } else {
+                tpl("botTplDonate").replace("{title}", c.title).replace("{total}", GoalStore.money(GoalStore.total))
+                    .replace("{target}", GoalStore.money(c.target)).replace("{percent}", "${(GoalStore.progress * 100).toInt()}")
+                    .replace("{url}", DonatePage.chatURL)
+            }
+        }
         "!uptime" -> Engine.liveSince?.let {
             val m = maxOf(0L, System.currentTimeMillis() - it) / 60_000
             "$name has been live for ${if (m >= 60) "${m / 60} h " else ""}${m % 60} min"
         } ?: "$name isn't live right now"
-        else -> commands.filter { it != "!commands" && flag(BotRules.switchKey(it)) }.takeIf { it.isNotEmpty() }?.let {
+        else -> commands.filter {
+            it != "!commands" && it !in BotRules.donateAliases && flag(BotRules.switchKey(it))
+        }.takeIf { it.isNotEmpty() }?.let {
             "Commands: " +
                 it.joinToString(" ")
         }
