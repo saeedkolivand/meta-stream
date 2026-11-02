@@ -116,26 +116,7 @@ internal fun AppBotPage() {
         TimersEditor()
         Footnote("A timer waits for its interval (5 min at least) and 5 chat messages, and 5 min after any other timer.")
     }
-    Section("Saved commands") {
-        CommandsEditor()
-        var pick by remember { mutableStateOf(Prefs.string("notifyCommand")) }
-        Choice("Notification button", listOf("" to "None") + BotCommand.stored().map { it.text to it.text }, pick) {
-            pick = it
-            Prefs.put("notifyCommand", it)
-        }
-        Footnote("Shows that command as a button on the live notification and Lock Screen. A tap in your pocket could fire it.")
-    }
     KickSessionSection()
-    Section("Other bots") {
-        PrefField("Bot names", "botNames", BotList.DEFAULT_NAMES)
-        PrefField("Trigger words", "botTriggers", BotList.DEFAULT_TRIGGERS)
-        var mode by remember { mutableStateOf(Prefs.string("botReadMode", "triggers")) }
-        Choice("Read bots aloud", listOf("off" to "Never", "triggers" to "Trigger words", "all" to "Always"), mode) {
-            mode = it
-            Prefs.put("botReadMode", it)
-        }
-        Footnote("Names ending in \"bot\" always count. A bot line with a trigger word (\"won\") is read aloud.")
-    }
 }
 
 /** The kick.com session the unofficial Kick commands run through (iOS KickSessionSection, adr/0005). */
@@ -178,5 +159,34 @@ private fun KickSessionSection() {
                 }, Modifier.fillMaxSize())
             }
         }
+    }
+}
+
+/** Settings › Commands (iOS CommandsSettingsView): saved moderation commands and the notification button. */
+@Composable
+internal fun CommandsPage() {
+    Section("Saved commands") {
+        CommandsEditor()
+        var pick by remember { mutableStateOf(Prefs.string("notifyCommand")) }
+        Choice("Notification button", listOf("" to "None") + BotCommand.stored().map { it.text to it.text }, pick) {
+            pick = it
+            Prefs.put("notifyCommand", it)
+        }
+        Footnote("Shows that command as a button on the live notification and Lock Screen. A tap in your pocket could fire it.")
+    }
+}
+
+/** Settings › Known bots (iOS BotsSettingsView): who counts as a bot and which bot lines are read aloud. */
+@Composable
+internal fun KnownBotsPage() {
+    Section("Bots") {
+        PrefField("Bot names", "botNames", BotList.DEFAULT_NAMES)
+        PrefField("Trigger words", "botTriggers", BotList.DEFAULT_TRIGGERS)
+        var mode by remember { mutableStateOf(Prefs.string("botReadMode", "triggers")) }
+        Choice("Read bots aloud", listOf("off" to "Never", "triggers" to "Trigger words", "all" to "Always"), mode) {
+            mode = it
+            Prefs.put("botReadMode", it)
+        }
+        Footnote("Names ending in \"bot\" always count. A bot line with a trigger word (\"won\") is read aloud.")
     }
 }

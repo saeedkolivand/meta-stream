@@ -25,8 +25,7 @@ private val CURRENCIES = listOf("IRT" to "Toman", "EUR" to "Euro", "USD" to "US 
 
 /** iOS GoalSettingsView + GoalSubScreens: the goal, manual and test donations, rates and prices, the donation list. */
 @Composable
-internal fun GoalPage(openSources: () -> Unit) {
-    Section(null) { NavRow("Donation sources", onClick = openSources) }
+internal fun GoalPage() {
     val c = GoalStore.config
     var title by remember { mutableStateOf(c.title) }
     var target by remember { mutableStateOf(c.target.toPlainString()) }
@@ -55,7 +54,6 @@ internal fun GoalPage(openSources: () -> Unit) {
         Text("Raised ${GoalStore.money(GoalStore.total)} / ${GoalStore.money(c.target)} (${(GoalStore.progress * 100).toInt()}%)")
         if (GoalStore.pendingCount > 0) Note("${GoalStore.pendingCount} waiting for a rate")
     }
-    DonatePageSection()
     AddAndTest()
     RatesAndPrices()
     Section("Recent donations (${GoalStore.entries.size})") {
@@ -78,7 +76,7 @@ internal fun GoalPage(openSources: () -> Unit) {
 
 /** The page URL and its key; the key is never loaded back into the field (iOS does the same). */
 @Composable
-private fun DonatePageSection() {
+internal fun DonatePagePage() {
     var url by remember { mutableStateOf(DonatePage.pageURL) }
     var key by remember { mutableStateOf("") }
     var hasKey by remember { mutableStateOf(DonatePage.hasToken) }

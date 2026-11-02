@@ -9,10 +9,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.platforms.TokenStore
-import com.saeedkolivand.metastream.reach.InstagramStory
 import com.saeedkolivand.metastream.reach.LivePost
 import com.saeedkolivand.metastream.reach.Telegram
 import com.saeedkolivand.metastream.streaming.Engine
@@ -70,25 +68,5 @@ internal fun TelegramPage() {
         )
         PrefSwitch("Show city", "telegramShowCity", false)
         Footnote("The post stays in the channel after the stream, so the city does too.")
-    }
-    Section("Instagram story") {
-        val ctx = LocalContext.current
-        val ready = remember { InstagramStory.available(ctx) }
-        var tpl by remember { mutableStateOf(InstagramStory.template) }
-        Choice("Card", InstagramStory.Template.entries.map { it to it.title }, tpl) {
-            tpl = it
-            Prefs.put("igStoryTemplate", it.name)
-        }
-        Button({
-            scope.launch { InstagramStory.share(ctx) }
-        }, enabled = ready) { Text(if (Engine.live) "Share to Instagram story" else "Share \"live soon\" story") }
-        OutlinedButton({ scope.launch { InstagramStory.share(ctx, test = true) } }, enabled = ready) { Text("Test share") }
-        Footnote(
-            if (ready) {
-                "Opens Instagram's story editor with the card (a frame of the stream while live). Add the Link sticker in the empty lower part."
-            } else {
-                "Needs Instagram installed and the Meta app ID in the build."
-            }
-        )
     }
 }

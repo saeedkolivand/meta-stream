@@ -30,7 +30,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.core.Prefs
-import com.saeedkolivand.metastream.overlay.ColorTheme
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.Scene
 import com.saeedkolivand.metastream.overlay.SceneTemplate
@@ -40,7 +39,6 @@ import com.saeedkolivand.metastream.ui.Choice
 import com.saeedkolivand.metastream.ui.Footnote
 import com.saeedkolivand.metastream.ui.Green
 import com.saeedkolivand.metastream.ui.ObsImportSection
-import com.saeedkolivand.metastream.ui.RadioRow
 import com.saeedkolivand.metastream.ui.Red
 import com.saeedkolivand.metastream.ui.Section
 import com.saeedkolivand.metastream.ui.Stepper
@@ -48,7 +46,7 @@ import com.saeedkolivand.metastream.ui.SwitchRow
 
 private val Intervals = listOf(15 to "15 s", 30 to "30 s", 60 to "1 min", 120 to "2 min", 300 to "5 min")
 
-/** Settings page: the scene list (tap edits, long-press for more), auto-rotate, transition and the optional OBS import. */
+/** Settings › Scenes & widgets (iOS OverlaySettingsView): the scene list (tap edits, long-press for more) and the template set. */
 @Composable
 internal fun ScenesPage() {
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
@@ -64,26 +62,6 @@ internal fun ScenesPage() {
         Footnote("Tap a scene to edit it. Press and hold to show it on stream, duplicate, rename or delete.")
     }
     TemplatesSection()
-    if (OverlayStore.scenes.size >= 2) RotationSection()
-    Section("Transition") {
-        Choice(
-            "Between scenes",
-            listOf("cut" to "Cut", "fade" to "Fade", "stinger" to "Stinger"),
-            OverlayStore.transition,
-            onSelect = OverlayStore::setTransition
-        )
-    }
-    if (OverlayStore.transition == "stinger") StingerSettings()
-    Section("Scene roles") {
-        Seconds("Starting countdown", "startCountdown", 60, 0..300, 5)
-        Seconds("Ending hold", "endingHold", 10, 0..60, 1)
-        Footnote(
-            "Give a scene a role in its editor. Starting shows after going live for the countdown (use {countdown} in a " +
-                "text widget), BRB while the connection is too weak, Ending for the hold after you tap END (tap again to " +
-                "stop at once). Picking a scene by hand cancels the role."
-        )
-    }
-    Section("Import from OBS (optional)") { ObsImportSection() }
     editing?.let { SceneEditor(it) { editing = null } }
     renaming?.let { old -> RenameDialog(old) { renaming = null } }
     deleting?.let { name ->
@@ -207,16 +185,8 @@ private fun Seconds(title: String, key: String, default: Int, range: IntRange, s
 /** Ready-made Starting / BRB / Ending sets (iOS 51aa0e7) and the colour theme they, and the Instagram story, use (1dd3179). */
 @Composable
 private fun TemplatesSection() {
-    var theme by remember { mutableStateOf(ColorTheme.current) }
     var open by remember { mutableStateOf(false) }
     Section("Templates") {
-        Text("Theme") // six names don't fit a segmented row
-        for (t in ColorTheme.entries) {
-            RadioRow(t.title, t == theme) {
-                theme = t
-                ColorTheme.select(t)
-            }
-        }
         Box {
             OutlinedButton({ open = true }) { Text("Add Starting, BRB & Ending scenes") }
             DropdownMenu(open, { open = false }) {
@@ -229,7 +199,32 @@ private fun TemplatesSection() {
             }
         }
         Footnote(
-            "The set takes the Starting, BRB and Ending roles over from your other scenes. The theme also colours the Instagram story card."
+            "The set takes the Starting, BRB and Ending roles over from your other scenes. Its colours come from Theme & story."
         )
     }
+}
+
+/** Settings › Transitions (iOS SceneOptionsView): auto-rotate, the transition, scene roles and the optional OBS import. */
+@Composable
+internal fun TransitionsPage() {
+    if (OverlayStore.scenes.size >= 2) RotationSection()
+    Section("Transition") {
+        Choice(
+            "Between scenes",
+            listOf("cut" to "Cut", "fade" to "Fade", "stinger" to "Stinger"),
+            OverlayStore.transition,
+            onSelect = OverlayStore::setTransition
+        )
+    }
+    if (OverlayStore.transition == "stinger") StingerSettings()
+    Section("Scene roles") {
+        Seconds("Starting countdown", "startCountdown", 60, 0..300, 5)
+        Seconds("Ending hold", "endingHold", 10, 0..60, 1)
+        Footnote(
+            "Give a scene a role in its editor. Starting shows after going live for the countdown (use {countdown} in a " +
+                "text widget), BRB while the connection is too weak, Ending for the hold after you tap END (tap again to " +
+                "stop at once). Picking a scene by hand cancels the role."
+        )
+    }
+    Section("Import from OBS (optional)") { ObsImportSection() }
 }

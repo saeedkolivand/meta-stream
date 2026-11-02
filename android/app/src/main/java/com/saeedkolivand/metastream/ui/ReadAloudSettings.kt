@@ -69,6 +69,18 @@ internal fun ReadAloudSettings() {
     // The engine is created on demand; opening this sheet is a demand, so the picker has voices to show.
     LaunchedEffect(Unit) { Speaker.prepare() }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Section("Chat") {
+            OutlinedTextField(ChatFeed.kickSlug, ChatFeed::setKick, Modifier.fillMaxWidth(), label = {
+                Text("Kick channel")
+            }, singleLine = true)
+            OutlinedTextField(
+                ChatFeed.twitchChannel,
+                ChatFeed::setTwitch,
+                Modifier.fillMaxWidth(),
+                label = { Text("Twitch channel") },
+                singleLine = true
+            )
+        }
         SwitchRow("Read chat aloud", Speaker.readAloud, onChange = Speaker::updateReadAloud)
         VoicePicker()
         Note(
