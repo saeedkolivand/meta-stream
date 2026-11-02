@@ -16,3 +16,24 @@ class SettingsSearchTest {
         assertEquals("Camera", searchHit("Camera", words, " "))
     }
 }
+
+class SceneTemplateTest {
+    @Test
+    fun monoSetHasTheThreeRolesAndChannelQr() {
+        val scenes = com.saeedkolivand.metastream.overlay.SceneTemplate.Mono.scenes(
+            "Saeed",
+            com.saeedkolivand.metastream.overlay.ColorTheme.Paper
+        )
+        assertEquals(listOf("starting", "brb", "ending"), scenes.map { it.role })
+        assertEquals("https://kick.com/saeed", scenes[2].layers.last().data["text"])
+        assertNull(
+            com.saeedkolivand.metastream.overlay.SceneTemplate.Mono.scenes(
+                "",
+                com.saeedkolivand.metastream.overlay.ColorTheme.Kick
+            ).last().layers.firstOrNull {
+                it.name ==
+                    "QR code"
+            }
+        )
+    }
+}

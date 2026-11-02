@@ -30,9 +30,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.overlay.ColorTheme
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.Scene
+import com.saeedkolivand.metastream.overlay.SceneTemplate
 import com.saeedkolivand.metastream.overlay.Scenes
+import com.saeedkolivand.metastream.platforms.Kick
 import com.saeedkolivand.metastream.ui.Choice
 import com.saeedkolivand.metastream.ui.Footnote
 import com.saeedkolivand.metastream.ui.Green
@@ -59,6 +62,7 @@ internal fun ScenesPage() {
         }
         Footnote("Tap a scene to edit it. Press and hold to show it on stream, duplicate, rename or delete.")
     }
+    TemplatesSection()
     if (OverlayStore.scenes.size >= 2) RotationSection()
     Section("Transition") {
         Choice(
@@ -196,5 +200,32 @@ private fun Seconds(title: String, key: String, default: Int, range: IntRange, s
     Stepper("$title: ${if (v == 0) "off" else "$v s"}", v, step, range) {
         v = it
         Prefs.put(key, it)
+    }
+}
+
+/** Ready-made Starting / BRB / Ending sets (iOS 51aa0e7) and the colour theme they, and the Instagram story, use (1dd3179). */
+@Composable
+private fun TemplatesSection() {
+    var theme by remember { mutableStateOf(ColorTheme.current) }
+    var open by remember { mutableStateOf(false) }
+    Section("Templates") {
+        Choice("Theme", ColorTheme.entries.map { it to it.title }, theme) {
+            theme = it
+            ColorTheme.select(it)
+        }
+        Box {
+            OutlinedButton({ open = true }) { Text("Add Starting, BRB & Ending scenes") }
+            DropdownMenu(open, { open = false }) {
+                for (t in SceneTemplate.entries) {
+                    DropdownMenuItem({ Text(t.title) }, {
+                        open = false
+                        OverlayStore.addTemplate(t, Prefs.string("chatChannel", "").trim().ifEmpty { Kick.user })
+                    })
+                }
+            }
+        }
+        Footnote(
+            "The set takes the Starting, BRB and Ending roles over from your other scenes. The theme also colours the Instagram story card."
+        )
     }
 }

@@ -149,6 +149,25 @@ object OverlayStore {
         return name
     }
 
+    /** Adds a template's Starting / BRB / Ending set ("Mono · BRB"); each takes its role off whichever scene had it. */
+    fun addTemplate(t: SceneTemplate, channel: String) {
+        var p = pack ?: Pack(1920, 1080, emptyList(), emptyMap())
+        for (s in t.scenes(channel)) {
+            val base = "${t.title} · ${s.name}"
+            val name = generateSequence(1) { it + 1 }.map {
+                if (it ==
+                    1
+                ) {
+                    base
+                } else {
+                    "$base $it"
+                }
+            }.first { n -> p.scenes.none { it.name == n } }
+            p = p.copy(scenes = p.scenes.map { if (it.role == s.role) it.copy(role = null) else it } + s.copy(name = name))
+        }
+        commit(p)
+    }
+
     /** Copies as "<name> copy", "<name> copy 2"...; null when [name] doesn't exist. */
     fun duplicateScene(name: String): String? {
         val p = pack ?: return null

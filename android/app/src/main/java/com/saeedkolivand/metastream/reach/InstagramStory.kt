@@ -16,6 +16,7 @@ import androidx.core.content.FileProvider
 import com.saeedkolivand.metastream.BuildConfig
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.overlay.ColorTheme
 import com.saeedkolivand.metastream.platforms.Kick
 import com.saeedkolivand.metastream.streaming.Engine
 import java.io.File
@@ -32,11 +33,13 @@ object InstagramStory {
     enum class Template(val title: String) { Minimal("Minimal"), FullBleed("Full bleed"), Poster("Poster"), Bilingual("Bilingual FA / EN") }
 
     private const val ACTION = "com.instagram.share.ADD_TO_STORY"
-    private const val BG = 0xFF0E0E10.toInt()
-    private const val ACCENT = 0xFF53FC18.toInt()
-    private const val ON_ACCENT = 0xFF000000.toInt()
-    private const val TEXT = 0xFFFFFFFF.toInt()
-    private const val MUTED = 0x99FFFFFF.toInt()
+
+    // Colours follow Settings > Scenes › Theme (iOS ColorTheme), shared with the scene templates.
+    private val BG get() = ColorTheme.current.bg
+    private val ACCENT get() = ColorTheme.current.accent
+    private val ON_ACCENT get() = ColorTheme.current.onAccent
+    private val TEXT get() = ColorTheme.current.text
+    private val MUTED get() = ColorTheme.current.muted
 
     val template get() = Template.entries.firstOrNull { it.name == Prefs.string("igStoryTemplate", "") } ?: Template.Minimal
 
