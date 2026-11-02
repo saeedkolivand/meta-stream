@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.saeedkolivand.metastream.bot.AppBot
+import com.saeedkolivand.metastream.bot.BotCommand
 import com.saeedkolivand.metastream.bot.BotList
 import com.saeedkolivand.metastream.bot.BotRules
 import com.saeedkolivand.metastream.bot.TwitchBot
@@ -93,7 +94,15 @@ internal fun AppBotPage() {
         TimersEditor()
         Footnote("A timer waits for its interval (5 min at least) and 5 chat messages, and 5 min after any other timer.")
     }
-    Section("Saved commands") { CommandsEditor() }
+    Section("Saved commands") {
+        CommandsEditor()
+        var pick by remember { mutableStateOf(Prefs.string("notifyCommand")) }
+        Choice("Notification button", listOf("" to "None") + BotCommand.stored().map { it.text to it.text }, pick) {
+            pick = it
+            Prefs.put("notifyCommand", it)
+        }
+        Footnote("Shows that command as a button on the live notification and Lock Screen. A tap in your pocket could fire it.")
+    }
     Section("Other bots") {
         PrefField("Bot names", "botNames", BotList.DEFAULT_NAMES)
         PrefField("Trigger words", "botTriggers", BotList.DEFAULT_TRIGGERS)

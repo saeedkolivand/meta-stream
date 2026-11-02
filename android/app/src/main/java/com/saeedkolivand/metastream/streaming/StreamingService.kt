@@ -11,8 +11,12 @@ import android.os.IBinder
 import android.os.SystemClock
 import androidx.compose.runtime.snapshotFlow
 import com.saeedkolivand.metastream.R
+import com.saeedkolivand.metastream.bot.BotCommand
+import com.saeedkolivand.metastream.bot.send
+import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.applog
 import com.saeedkolivand.metastream.core.ensureChannel
+import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +28,7 @@ private const val CHANNEL = "live"
 private const val NOTIFICATION_ID = 1
 private const val ACTION_MUTE = "com.saeedkolivand.metastream.MUTE"
 private const val ACTION_STOP = "com.saeedkolivand.metastream.STOP"
+private const val ACTION_COMMAND = "com.saeedkolivand.metastream.COMMAND"
 private const val TEXT_THROTTLE_MS = 5000L
 
 /**
@@ -63,6 +68,8 @@ class StreamingService : Service() {
         when (intent?.action) {
             ACTION_MUTE -> Engine.toggleMute()
             ACTION_STOP -> Engine.stop()
+            // Re-read at tap time: the saved text, not one baked into the notification, and only while still live.
+            ACTION_COMMAND -> notifyCommand()?.takeIf { Engine.live }?.let { c -> Accounts.scope.launch { c.send() } }
             ACTION_SCREEN -> if (running) {
                 // Android 14+: the media-projection type must be on before the projection is created.
                 startForeground(
@@ -112,6 +119,14 @@ class StreamingService : Service() {
         private fun currentNotice() =
             if (Engine.live) liveNotice(Engine.source, Engine.status, Engine.connected, Engine.liveSince, Engine.muted) else null
 
+        /** The saved command chosen for the live notification (iOS Lock Screen buttons; Android shows three actions, so one). */
+        private fun notifyCommand() = Prefs.string("notifyCommand").takeIf { it.isNotEmpty() }?.let { t ->
+            BotCommand.stored().firstOrNull {
+                it.text ==
+                    t
+            }
+        }
+
         private fun action(c: Context, code: Int, action: String) =
             PendingIntent.getService(c, code, Intent(c, StreamingService::class.java).setAction(action), PendingIntent.FLAG_IMMUTABLE)
 
@@ -128,6 +143,7 @@ class StreamingService : Service() {
                 .setRequestPromotedOngoing(true) // Android 16 Live Update; needs POST_PROMOTED_NOTIFICATIONS
                 .addAction(android.R.drawable.ic_btn_speak_now, n.muteLabel, action(c, 1, ACTION_MUTE))
                 .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", action(c, 2, ACTION_STOP))
+            notifyCommand()?.let { b.addAction(android.R.drawable.ic_menu_send, it.text.take(24), action(c, 3, ACTION_COMMAND)) }
             n.chronometerSince?.let { b.setWhen(it).setUsesChronometer(true) }
             n.chip?.let { b.setShortCriticalText(it) }
             return b.build()
