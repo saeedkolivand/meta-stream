@@ -158,8 +158,8 @@ private fun FaceCamGroup() {
             why?.let { "$it It still works over screen share; " }
                 ?: "The back camera fills the stream, the front camera shows in a corner window; "
             ) +
-            "the eye button hides it. It also shows over screen share, and turns off while the main camera is flipped to the front " +
-            "or the phone overheats."
+            "the eye button hides it. Flip to the front camera and the window shows the back one. It also shows over screen share, " +
+            "and turns off while the phone overheats."
     ) {
         Toggle("Dual camera", FaceCam.enabled) { FaceCam.enable(it) }
         if (FaceCam.enabled) {
