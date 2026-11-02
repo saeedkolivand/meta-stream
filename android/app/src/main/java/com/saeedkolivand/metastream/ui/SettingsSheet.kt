@@ -1,7 +1,6 @@
 package com.saeedkolivand.metastream.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -9,9 +8,12 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,7 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,13 +40,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.saeedkolivand.metastream.R
-import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.ui.scenes.ScenesPage
 import com.saeedkolivand.metastream.ui.scenes.TransitionsPage
 
@@ -82,7 +84,9 @@ private enum class Page(val title: String, val parent: Page?, val group: String 
     Streams("Streams", Root, "Your streams", R.drawable.ic_history, Purple),
     Remote("Remote control", Root, "System", R.drawable.ic_remote, Grey),
     Diagnostics("Diagnostics & about", Root, "System", R.drawable.ic_info, Grey),
-    Logs("Logs", Diagnostics);
+    Logs("Logs", Diagnostics),
+    CamStrip("Customise controls", Camera),
+    CamPro("Pro controls", Camera);
 
     val depth: Int get() = generateSequence(this) { it.parent }.count()
 }
@@ -123,7 +127,9 @@ private fun PageContent(p: Page, go: (Page) -> Unit) = when (p) {
     Page.Root -> RootPage(go)
     Page.Accounts -> AccountsPage({ go(Page.AppBot) }, { go(Page.Telegram) }, { go(Page.DonationSources) })
     Page.Ingest -> IngestPage()
-    Page.Camera -> CameraSettingsContent()
+    Page.Camera -> CameraSettingsContent({ go(Page.CamStrip) }, { go(Page.CamPro) })
+    Page.CamStrip -> CamCustomize()
+    Page.CamPro -> CameraProPage()
     Page.Glasses -> GlassesVideoPage()
     Page.Audio -> AudioPage()
     Page.Privacy -> PrivacySettings()
@@ -183,25 +189,45 @@ internal fun searchHit(title: String, words: String, query: String): String? {
     return sub?.let { "$title › ${it[0].trim()}" }
 }
 
+/** The grey value on a root row and the iOS page id issues point at (iOS SettingsCatalog value / id). */
+private fun Page.value(): String = when (this) {
+    Page.Accounts -> SettingsValues.accounts()
+    Page.Ingest -> SettingsValues.ingest()
+    Page.Camera -> SettingsValues.camera()
+    Page.Glasses -> SettingsValues.glasses()
+    Page.Audio -> SettingsValues.audio()
+    Page.Privacy -> SettingsValues.privacy()
+    Page.Scenes -> SettingsValues.scenes()
+    Page.Theme -> SettingsValues.theme()
+    Page.ReadAloud -> SettingsValues.chat()
+    Page.Commands -> SettingsValues.commands()
+    Page.AppBot -> SettingsValues.appBot()
+    Page.Goal -> SettingsValues.goal()
+    Page.DonationSources -> SettingsValues.sources()
+    Page.Telegram -> SettingsValues.telegram()
+    Page.Spotify -> SettingsValues.spotify()
+    Page.Remote -> SettingsValues.remote()
+    else -> ""
+}
+
+private val IssuePages = mapOf(
+    "accounts" to Page.Accounts,
+    "ingest" to Page.Ingest,
+    "sources" to Page.DonationSources,
+    "telegram" to Page.Telegram,
+    "remote" to Page.Remote
+)
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RootPage(go: (Page) -> Unit) {
-    val activity = requireNotNull(LocalActivity.current)
     var query by rememberSaveable { mutableStateOf("") }
-    // Ready to go live: what would stop GO LIVE, at a glance (iOS ReadinessCard).
-    val issues = listOfNotNull("No stream URL".takeIf { Engine.url.isBlank() }, "No stream key".takeIf { Engine.key.isBlank() })
-    Section(null) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(10.dp).background(if (issues.isEmpty()) Green else Orange, CircleShape))
-            Spacer(Modifier.width(8.dp))
-            Text(if (issues.isEmpty()) "Ready to go live" else "Check before going live", fontWeight = FontWeight.SemiBold)
-        }
-        issues.forEach { Text(it, color = Orange, fontSize = 15.sp) }
-    }
     TextField(
         query,
         { query = it },
         Modifier.fillMaxWidth(),
-        placeholder = { Text("Search") },
+        placeholder = { Text("Search settings", color = Secondary) },
+        leadingIcon = { Icon(painterResource(R.drawable.ic_search), null, Modifier.size(18.dp), tint = Secondary) },
         singleLine = true,
         shape = RoundedCornerShape(10.dp),
         colors = TextFieldDefaults.colors(
@@ -211,16 +237,52 @@ private fun RootPage(go: (Page) -> Unit) {
             unfocusedIndicatorColor = Color.Transparent
         )
     )
-    val hits = Catalog.mapNotNull { (page, words) -> searchHit(page.title, words, query)?.let { Triple(page.group, page, it) } }
-    for ((group, rows) in hits.groupBy { it.first }) {
-        Section(group) {
-            Column {
-                rows.forEachIndexed { i, (_, page, label) ->
-                    if (i > 0) HorizontalDivider(Modifier.padding(start = 42.dp), color = Hairline)
-                    NavRow(label, page.icon, page.tint) { go(page) }
+    if (query.isBlank()) {
+        // Ready to go live: what is set up, and what would get in the way (iOS ReadinessCard).
+        val issues = SettingsValues.issues()
+        Section(null) {
+            Column(Modifier.padding(vertical = 8.dp), Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(10.dp).background(if (issues.isEmpty()) Green else Orange, CircleShape))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        if (issues.isEmpty()) "Ready to go live" else "Check before going live",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 17.sp
+                    )
+                }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    SettingsValues.chips().forEach {
+                        Text(
+                            it,
+                            Modifier.background(Secondary.copy(alpha = 0.2f), CircleShape).padding(horizontal = 10.dp, vertical = 5.dp),
+                            fontSize = 13.sp,
+                            maxLines = 1
+                        )
+                    }
+                }
+                issues.forEach { (id, message) ->
+                    Row(Modifier.fillMaxWidth().clickable { IssuePages[id]?.let(go) }, verticalAlignment = Alignment.CenterVertically) {
+                        Text("⚠", color = Orange)
+                        Spacer(Modifier.width(8.dp))
+                        Text(message, Modifier.weight(1f))
+                        Text("›", color = Color.White.copy(alpha = 0.3f), fontSize = 20.sp)
+                    }
                 }
             }
         }
+        val counts = issues.groupingBy { IssuePages[it.first] }.eachCount()
+        for ((group, pages) in Catalog.map { it.first }.groupBy { it.group }) {
+            Section(group) {
+                pages.forEach { page -> NavRow(page.title, page.icon, page.tint, page.value(), counts[page] ?: 0) { go(page) } }
+            }
+        }
+        return
     }
-    if (hits.isEmpty()) Note("Nothing matches \"$query\"")
+    val hits = Catalog.mapNotNull { (page, words) -> searchHit(page.title, words, query)?.let { page to it } }
+    if (hits.isEmpty()) {
+        Note("No results for \"$query\"")
+        return
+    }
+    Section("Settings") { hits.forEach { (page, label) -> NavRow(label, page.icon, page.tint) { go(page) } } }
 }
