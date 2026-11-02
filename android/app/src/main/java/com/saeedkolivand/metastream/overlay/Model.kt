@@ -3,7 +3,7 @@ package com.saeedkolivand.metastream.overlay
 import org.json.JSONArray
 import org.json.JSONObject
 
-enum class LayerType { Browser, Image, Media, Text, Color, Slideshow, Chat, Alerts, Events, Qr }
+enum class LayerType { Browser, Image, Media, Text, Color, Slideshow, Chat, Alerts, Events, Qr, Goal }
 
 /**
  * Frame-relative placement for in-app widgets, so a layout survives portrait/landscape: [anchor] 0..8 row-major

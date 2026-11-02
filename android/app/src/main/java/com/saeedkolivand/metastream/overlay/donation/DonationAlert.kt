@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.text.TextUtils
 import com.saeedkolivand.metastream.bot.BotRules
 import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.Kind
@@ -177,6 +178,9 @@ internal fun track(p: Float, ease: (Float) -> Float, vararg k: Pair<Float, Float
     return k.last().second
 }
 
+private const val MAX_CHARS = 300
+private const val MAX_TEXT_PX = 2048f
+
 /** Text rasterised once, w x h canvas px (padding for a glow included). */
 internal class Txt(val bmp: Bitmap, val w: Float, val h: Float) {
     /** Hugging the left (-1), centre (0) or right (1) of [x], centred on [y]; shrunk to fit [maxW], then scaled by [k]. */
@@ -203,20 +207,25 @@ internal fun ink(
     tracking: Float = 0f,
     mono: Boolean = false,
     glowPx: Float = 0f,
-    glow: Int = 0
+    glow: Int = 0,
+    face: String = ""
 ): Txt? {
     if (text.isEmpty() || px < 1f) return null
-    val p = widgetPaint("", weight, px, color).apply {
+    val p = widgetPaint(face, weight, px, color).apply {
         letterSpacing = tracking
         if (mono) typeface = Typeface.create(Typeface.MONOSPACE, weight, false)
         if (glowPx > 0f) setShadowLayer(glowPx, 0f, 0f, glow)
     }
     val fm = p.fontMetrics
     val pad = glowPx * 1.5f
-    val w = ceil(p.measureText(text) + 2 * pad)
+    // Viewer text (names, messages) is unbounded: cut it to the widest texture GLES guarantees, with an ellipsis.
+    val shown = TextUtils.ellipsize(text.take(MAX_CHARS), p, MAX_TEXT_PX - 2 * pad, TextUtils.TruncateAt.END).toString().ifEmpty {
+        return null
+    }
+    val w = ceil(p.measureText(shown) + 2 * pad)
     val h = ceil(fm.bottom - fm.top + 2 * pad)
     val bmp = newBitmap(w, h)
-    Canvas(bmp).drawText(text, pad, pad - fm.top, p)
+    Canvas(bmp).drawText(shown, pad, pad - fm.top, p)
     return Txt(bmp, w, h)
 }
 

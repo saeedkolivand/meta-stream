@@ -24,6 +24,7 @@ import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.overlay.AlertStyle
 import com.saeedkolivand.metastream.overlay.ChatStyle
 import com.saeedkolivand.metastream.overlay.EventListStyle
+import com.saeedkolivand.metastream.overlay.GoalStyle
 import com.saeedkolivand.metastream.overlay.Layer
 import com.saeedkolivand.metastream.overlay.LayerType
 import com.saeedkolivand.metastream.overlay.OverlayStore
@@ -44,6 +45,7 @@ internal enum class NewWidget(val title: String) {
     Socials("Socials"),
     Image("Image or GIF"),
     Qr("QR code"),
+    Goal("Donation goal"),
     Web("Web widget");
 
     /** One place that knows each kind's defaults, so a new widget looks right the moment it lands. */
@@ -57,6 +59,7 @@ internal enum class NewWidget(val title: String) {
         Drive -> preset("🚗 {speed}  🛣 {distance}", 6)
         Socials -> preset("📷 IG @yourname\n🎵 TikTok @yourname\n✈️ TG @yourname", 8, rotate = true)
         Qr -> widgetLayer(LayerType.Qr, "QR code", WidgetLayout.inset(8), QrStyle(text = "https://example.com").toData())
+        Goal -> widgetLayer(LayerType.Goal, "Goal", WidgetLayout.inset(1), GoalStyle().toData())
         Image, Web -> null
     }
 
@@ -100,6 +103,7 @@ internal fun LayerIcon(type: LayerType) {
         LayerType.Events -> "≡"
         LayerType.Text -> "Aa"
         LayerType.Qr -> "▦"
+        LayerType.Goal -> "%"
         LayerType.Browser -> "⌘"
         LayerType.Color -> "■"
         else -> "▣"

@@ -21,6 +21,7 @@ import com.saeedkolivand.metastream.overlay.AlertStyle
 import com.saeedkolivand.metastream.overlay.ChatStyle
 import com.saeedkolivand.metastream.overlay.DonationKind
 import com.saeedkolivand.metastream.overlay.EventListStyle
+import com.saeedkolivand.metastream.overlay.GoalStyle
 import com.saeedkolivand.metastream.overlay.Layer
 import com.saeedkolivand.metastream.overlay.LayerType
 import com.saeedkolivand.metastream.overlay.QrStyle
@@ -37,6 +38,7 @@ private fun defaultsOf(type: LayerType): Map<String, String> = when (type) {
     LayerType.Alerts -> AlertStyle().toData()
     LayerType.Events -> EventListStyle().toData()
     LayerType.Qr -> QrStyle().toData()
+    LayerType.Goal -> GoalStyle().toData()
     LayerType.Text -> TextWidgetStyle().toData()
     LayerType.Browser -> mapOf("width" to "800", "height" to "600")
     else -> emptyMap()
@@ -70,6 +72,7 @@ internal fun WidgetInspector(
             LayerType.Events -> d.EventSection()
             LayerType.Text -> d.TextSection()
             LayerType.Qr -> d.QrSection()
+            LayerType.Goal -> d.GoalSection()
             LayerType.Browser -> d.WebSection()
             else -> Unit
         }
@@ -213,6 +216,24 @@ private fun DataKeys.QrSection() = Section("QR code") {
     FontPicker()
     Swatches("foreground", "Code color")
     Swatches("background", "Background color")
+}
+
+@Composable
+private fun DataKeys.GoalSection() = Section("Donation goal") {
+    val designs = listOf("bar" to "Bar", "segments" to "Segments", "hairline" to "Hairline", "dots" to "Dots")
+    Choice("Design", designs, str("design")) { put("design", it) }
+    NumSlider("width", "Box width", 300f..1200f)
+    NumSlider("height", "Box height", 80f..240f)
+    FontPicker()
+    NumSlider("fontSize", "Font size", 16f..48f)
+    Swatches("barColor", "Bar color")
+    Swatches("trackColor", "Track color")
+    Swatches("textColor", "Text color")
+    Flag("background", "Background")
+    if (flag("background")) Swatches("backgroundColor", "Background color")
+    Flag("showPercent", "Percent")
+    Flag("showOther", "Other currencies")
+    Footnote("Title, target and currency are in Settings › Goal.")
 }
 
 @Composable

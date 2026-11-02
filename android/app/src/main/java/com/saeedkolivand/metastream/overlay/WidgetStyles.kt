@@ -175,6 +175,42 @@ data class EventListStyle(
     }
 }
 
+/** The Goal widget (iOS GoalWidgetStyle, same keys). Every design follows the box sliders. */
+data class GoalStyle(
+    val width: Float = 720f,
+    val height: Float = 120f,
+    val fontSize: Float = 28f,
+    val barColor: Int = 0xFF53FC18.toInt(),
+    val trackColor: Int = 0xFF26262B.toInt(),
+    val textColor: Int = 0xFFFFFFFF.toInt(),
+    val backgroundColor: Int = 0xD9101014.toInt(),
+    val background: Boolean = true,
+    val showPercent: Boolean = true,
+    val showOther: Boolean = false,
+    val face: String = "",
+    val design: String = "bar"
+) {
+    val natural get() = width to height
+
+    fun toData() = mapOf(
+        "width" to "$width", "height" to "$height", "fontSize" to "$fontSize", "barColor" to barColor.unsigned(),
+        "trackColor" to trackColor.unsigned(), "textColor" to textColor.unsigned(), "backgroundColor" to backgroundColor.unsigned(),
+        "background" to "$background", "showPercent" to "$showPercent", "showOther" to "$showOther", "face" to face, "design" to design
+    )
+
+    companion object {
+        fun from(d: Map<String, String>): GoalStyle {
+            val o = GoalStyle()
+            return GoalStyle(
+                d.num("width", o.width), d.num("height", o.height), d.num("fontSize", o.fontSize), d.argb("barColor", o.barColor),
+                d.argb("trackColor", o.trackColor), d.argb("textColor", o.textColor), d.argb("backgroundColor", o.backgroundColor),
+                d.flag("background", o.background), d.flag("showPercent", o.showPercent), d.flag("showOther", o.showOther),
+                d.str("face", o.face), d.str("design", o.design)
+            )
+        }
+    }
+}
+
 data class QrStyle(
     val text: String = "",
     val caption: String = "",

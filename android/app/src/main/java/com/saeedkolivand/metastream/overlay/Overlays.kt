@@ -200,6 +200,7 @@ object Overlays {
             LayerType.Alerts -> alertWidget(l, box, outW, outH, scope)
             LayerType.Events -> eventListWidget(l, box, outW, outH, scope)
             LayerType.Qr -> qrWidget(l, box, outW, outH)
+            LayerType.Goal -> goalWidget(l, box, scope)
             LayerType.Text -> liveTextWidget(l, box, outW, outH, scope)
             LayerType.Image -> gifWidget(l, box, outW, outH)
             else -> null
