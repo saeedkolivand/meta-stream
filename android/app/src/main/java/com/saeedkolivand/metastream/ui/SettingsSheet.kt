@@ -96,23 +96,50 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
     }
 }
 
-/** The root, grouped like iOS's catalog; the words after each page are what search also matches. */
+/**
+ * The root, grouped like iOS's catalog. Each page lists its sub-sections and the words search matches in them, so a hit
+ * inside one shows its path (iOS 5e953c7): "Camera › Face cam".
+ */
 private val Catalog = listOf(
-    Triple("Streaming", Page.Ingest, "rtmp srt srtla bonding url key bitrate codec resolution record"),
-    Triple("Streaming", Page.Camera, "lens zoom stabilization face cam usb looks lut"),
-    Triple("Streaming", Page.Audio, "mic microphone soundboard sounds music mix"),
-    Triple("Streaming", Page.Glasses, "meta ray-ban wearables video"),
-    Triple("Scenes", Page.Scenes, "widgets overlay obs transitions stinger roles brb starting ending"),
-    Triple("Scenes", Page.Privacy, "blur faces plates"),
-    Triple("Chat & bot", Page.ReadAloud, "tts speech voice blocked words"),
-    Triple("Chat & bot", Page.AppBot, "commands timers thanks moderation"),
-    Triple("Money", Page.Goal, "donation donofa reymit streamelements donito donate page tip"),
-    Triple("Reach", Page.Telegram, "live post channel recap instagram story"),
-    Triple("Reach", Page.Streams, "history session report heatmap wrapped"),
-    Triple("Reach", Page.Spotify, "now playing song music"),
-    Triple("Reach", Page.Remote, "obs websocket stream deck touch portal streamer.bot"),
-    Triple("About", Page.Diagnostics, "logs version debug")
+    Triple(
+        "Streaming",
+        Page.Ingest,
+        "Ingest: rtmp srt srtla bonding url key; Encoder: bitrate codec resolution fps; Recording: record save local"
+    ),
+    Triple(
+        "Streaming",
+        Page.Camera,
+        "Lens & zoom: lens zoom stabilization; Face cam: dual camera front pip; Looks: lut filter colour; Focus: focus exposure iso shutter white balance"
+    ),
+    Triple("Streaming", Page.Audio, "Microphone: mic usb bluetooth gain; Soundboard: sounds sfx; Mix volume: music mix"),
+    Triple("Streaming", Page.Glasses, "Meta glasses: meta ray-ban wearables; Glasses video: resolution fps"),
+    Triple("Scenes", Page.Scenes, "Scenes: widgets overlay obs; Transitions: stinger fade; Scene roles: brb starting ending"),
+    Triple("Scenes", Page.Privacy, "Privacy: blur faces plates"),
+    Triple("Chat & bot", Page.ReadAloud, "Read aloud: tts speech voice; Blocked: blocked words"),
+    Triple(
+        "Chat & bot",
+        Page.AppBot,
+        "Viewer commands: commands; Timers: timers; Thank-yous: thanks; Saved commands: moderation mod; Scene notices: brb"
+    ),
+    Triple(
+        "Money",
+        Page.Goal,
+        "Goal: goal; Accounts: donation donofa reymit streamelements donito tip; Donate page: donate page; Rates: rates usd bits kicks"
+    ),
+    Triple("Reach", Page.Telegram, "Telegram: bot channel; Post: live post recap; Instagram story: instagram story"),
+    Triple("Reach", Page.Streams, "Streams: history session report; When your viewers show up: heatmap; Wrapped: wrapped year"),
+    Triple("Reach", Page.Spotify, "Spotify: now playing song music"),
+    Triple("Reach", Page.Remote, "Remote control: obs websocket stream deck touch portal streamer.bot; Password: password"),
+    Triple("About", Page.Diagnostics, "General: keep awake; Logs: logs debug; About: version")
 )
+
+/** The row a search hit shows: the page alone when its title matches, else "Page › Section"; null when nothing matches. */
+internal fun searchHit(title: String, words: String, query: String): String? {
+    val q = query.trim()
+    if (q.isEmpty() || title.contains(q, ignoreCase = true)) return title
+    val sub = words.split(';').map { it.split(':', limit = 2) }.firstOrNull { it.joinToString(" ").contains(q, ignoreCase = true) }
+    return sub?.let { "$title › ${it[0].trim()}" }
+}
 
 @Composable
 private fun RootPage(go: (Page) -> Unit) {
@@ -125,10 +152,10 @@ private fun RootPage(go: (Page) -> Unit) {
         if (issues.isEmpty()) Color(0xFF30D158) else Color(0xFFFF9F0A)
     )
     OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), label = { Text("Search settings") }, singleLine = true)
-    val hits = Catalog.filter { (_, page, words) -> query.isBlank() || "${page.title} $words".contains(query.trim(), ignoreCase = true) }
+    val hits = Catalog.mapNotNull { (group, page, words) -> searchHit(page.title, words, query)?.let { Triple(group, page, it) } }
     if (query.isBlank()) NavRow("Stream Manager") { ManagerState.open = true }
     for ((group, rows) in hits.groupBy { it.first }) {
-        Section(group) { rows.forEach { (_, page, _) -> NavRow(page.title) { go(page) } } }
+        Section(group) { rows.forEach { (_, page, label) -> NavRow(label) { go(page) } } }
     }
     if (hits.isEmpty()) Note("Nothing matches \"$query\"")
     if (query.isNotBlank()) return
