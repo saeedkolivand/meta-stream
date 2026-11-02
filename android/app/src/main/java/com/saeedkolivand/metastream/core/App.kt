@@ -14,6 +14,8 @@ import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.overlay.Scenes
 import com.saeedkolivand.metastream.overlay.WidgetFonts
 import com.saeedkolivand.metastream.platforms.Accounts
+import com.saeedkolivand.metastream.reach.LivePost
+import com.saeedkolivand.metastream.reach.SessionLog
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
@@ -49,12 +51,15 @@ class App : Application() {
             scope.launch {
                 countDonation(it)
                 AppBot.handle(it)
+                SessionLog.record(it)
             }
         }
         AppBot.init()
         GoalStore.init(this, scope)
         DonationHub.start(scope)
         DonatePage.start(scope)
+        SessionLog.init(this)
+        LivePost.start(scope)
         GoalStore.onReached = {
             Speaker.speakSystem("Goal reached")
             AppBot.goalReached(GoalStore.config.title)

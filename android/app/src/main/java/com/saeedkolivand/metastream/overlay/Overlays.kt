@@ -66,6 +66,9 @@ object Overlays {
     }
 
     /** Called when the stream is (re)prepared: the output size is only known then. */
+    /** The output frame (overlays and blur included), delivered on the GL thread; false when no pipeline is bound. */
+    fun grab(done: (Bitmap) -> Unit): Boolean = gl?.let { g -> g.takePhoto { done(it) } } != null
+
     fun bind(gl: GlInterface, w: Int, h: Int) {
         release()
         Privacy.forget() // a new pipeline starts with an empty chain
