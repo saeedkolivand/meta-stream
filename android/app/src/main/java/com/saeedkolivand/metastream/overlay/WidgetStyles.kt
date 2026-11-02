@@ -37,9 +37,11 @@ data class ChatStyle(
     val height: Float = 500f,
     val fontSize: Float = 22f,
     val maxMessages: Int = 8,
-    val fadeSeconds: Int = 0, // 0 = never
+    // 0 = never
+    val fadeSeconds: Int = 0,
     val background: Boolean = false,
-    val backgroundColor: Int = 0xD9101014.toInt(), // flat near-black, 85%
+    // flat near-black, 85%
+    val backgroundColor: Int = 0xD9101014.toInt(),
     val textColor: Int = 0xFFFFFFFF.toInt(),
     val senderColors: Boolean = true,
     val shadow: Boolean = true,
@@ -92,16 +94,33 @@ data class AlertStyle(
     val fontSize: Float = 40f,
     val accentColor: Int = 0xFF9146FF.toInt(),
     val textColor: Int = 0xFFFFFFFF.toInt(),
-    val face: String = ""
+    val face: String = "",
+    // DonationKind id; donations (tips, Bits, KICKs) only
+    val design: String = "island",
+    // 0 = the design's own colour
+    val designAccent: Int = 0,
+    // neon's second tube
+    val designSecond: Int = 0,
+    // slow | normal | quick
+    val designSpeed: String = "normal"
 ) {
     val natural get() = 900f to 240f
+
+    val speed get() = if (designSpeed == "slow") {
+        0.75f
+    } else if (designSpeed == "quick") {
+        1.33f
+    } else {
+        1f
+    }
 
     fun shows(k: Kind) = shown(k, follow, subscribe, raid, tip, cheer)
 
     fun toData() = mapOf(
         "follow" to "$follow", "subscribe" to "$subscribe", "raid" to "$raid", "tip" to "$tip", "cheer" to "$cheer",
         "holdSeconds" to "$holdSeconds", "fontSize" to "$fontSize", "accentColor" to accentColor.unsigned(),
-        "textColor" to textColor.unsigned(), "face" to face
+        "textColor" to textColor.unsigned(), "face" to face, "design" to design, "designAccent" to designAccent.unsigned(),
+        "designSecond" to designSecond.unsigned(), "designSpeed" to designSpeed
     )
 
     companion object {
@@ -110,7 +129,8 @@ data class AlertStyle(
             return AlertStyle(
                 d.flag("follow", o.follow), d.flag("subscribe", o.subscribe), d.flag("raid", o.raid), d.flag("tip", o.tip),
                 d.flag("cheer", o.cheer), d.int("holdSeconds", o.holdSeconds), d.num("fontSize", o.fontSize),
-                d.argb("accentColor", o.accentColor), d.argb("textColor", o.textColor), d.str("face", o.face)
+                d.argb("accentColor", o.accentColor), d.argb("textColor", o.textColor), d.str("face", o.face), d.str("design", o.design),
+                d.argb("designAccent", o.designAccent), d.argb("designSecond", o.designSecond), d.str("designSpeed", o.designSpeed)
             )
         }
     }
@@ -189,14 +209,17 @@ data class QrStyle(
 /** In-app text. OBS text layers use the same keys (text/size/bold/color/face), so the two share a decoder. */
 data class TextStyle(
     val text: String = "",
-    val size: Float = 64f, // font px at a 1080 px short side
+    // font px at a 1080 px short side
+    val size: Float = 64f,
     val bold: Boolean = true,
     val color: Int = 0xFFFFFFFF.toInt(),
     val face: String = "",
     val shadow: Boolean = true,
     val background: Boolean = false,
-    val backgroundColor: Int = 0x33101014.toInt(), // 20% near-black
-    val rotate: Boolean = false, // show one line of the text at a time
+    // 20% near-black
+    val backgroundColor: Int = 0x33101014.toInt(),
+    // show one line of the text at a time
+    val rotate: Boolean = false,
     val rotateSeconds: Int = 5
 ) {
     fun toData() = mapOf(

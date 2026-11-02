@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.saeedkolivand.metastream.overlay.AlertStyle
 import com.saeedkolivand.metastream.overlay.ChatStyle
+import com.saeedkolivand.metastream.overlay.DonationKind
 import com.saeedkolivand.metastream.overlay.EventListStyle
 import com.saeedkolivand.metastream.overlay.Layer
 import com.saeedkolivand.metastream.overlay.LayerType
@@ -134,6 +135,23 @@ private fun DataKeys.AlertSection() = Section("Alerts") {
     NumSlider("fontSize", "Font size", 20f..80f)
     Swatches("accentColor", "Accent color")
     Swatches("textColor", "Text color")
+    Choice("Donation style", DonationKind.entries.map { it.id to it.title }, str("design")) { put("design", it) }
+    if (str("design") != "island") {
+        Choice("Speed", listOf("slow" to "Slow", "normal" to "Normal", "quick" to "Quick"), str("designSpeed")) { put("designSpeed", it) }
+        DesignColor("designAccent", "Design colour")
+        if (str("design") == "neon") DesignColor("designSecond", "Second tube")
+    }
+    Footnote("Tips, Bits and KICKs play the donation style over the whole picture, centred on this widget; Island is the banner.")
+}
+
+@Composable
+private fun DataKeys.DesignColor(key: String, label: String) {
+    if (str(key).toLongOrNull() == 0L) {
+        TextButton({ putColor(key, 0xFFFFFF) }) { Text("$label: the design's own · change") }
+    } else {
+        Swatches(key, label)
+        TextButton({ put(key, "0") }) { Text("Use the design's own") }
+    }
 }
 
 @Composable

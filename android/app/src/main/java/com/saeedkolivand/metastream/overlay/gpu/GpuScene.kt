@@ -14,6 +14,8 @@ internal class GpuScene(
     val moving: Boolean,
     val epochNanos: Long = System.nanoTime(),
     val topFade: Float = 0f,
+    // units are output px over the whole frame, not the widget box (donation alerts)
+    val canvas: Boolean = false,
     private val build: (Float) -> List<Item>
 ) {
     private val fixed = if (moving) null else build(0f)
@@ -32,5 +34,7 @@ internal class Item(
     val alpha: Float = 1f,
     val radius: Float = 0f,
     val clip: RectF? = null,
-    val clipRadius: Float = 0f
+    val clipRadius: Float = 0f,
+    // degrees clockwise about the rect's centre
+    val rotation: Float = 0f
 )

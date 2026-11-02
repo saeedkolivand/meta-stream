@@ -2,6 +2,7 @@ package com.saeedkolivand.metastream.overlay
 
 import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.ChatFeed
+import com.saeedkolivand.metastream.chat.Kind
 import com.saeedkolivand.metastream.speech.offensive
 import com.saeedkolivand.metastream.streaming.AudioMix
 import kotlinx.coroutines.CoroutineScope
@@ -36,6 +37,16 @@ internal fun alertWidget(l: Layer, box: Box, outW: Int, outH: Int, scope: Corout
             if (next == null) {
                 ChatFeed.chat.first { (it.lastOrNull()?.id ?: 0L) > seen }
                 continue
+            }
+            if (next.kind == Kind.Tip || next.kind == Kind.Cheer) {
+                donationScene(next, style, outW, outH, box)?.let {
+                    AudioMix.playAlert()
+                    filter.show(it) // one moving scene over the whole picture for the board's loop
+                    delay((donationSeconds(style) * 1000).toLong())
+                    filter.show(null)
+                    delay(GAP_MS)
+                    continue
+                }
             }
             val art = alertGpu(next, style, scale, hold)
             AudioMix.playAlert() // into the mix with the banner; ignored unless live

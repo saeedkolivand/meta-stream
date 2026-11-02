@@ -36,6 +36,11 @@ internal class SpriteFilter : BaseFilterRender() {
     private var box = Box(0f, 0f, 1f, 1f)
     private var cosR = 1f
     private var sinR = 0f
+    private var drawBox = box
+    private var drawCos = 1f
+    private var drawSin = 0f
+    private var itemCos = 1f
+    private var itemSin = 0f
 
     private var frameProgram = -1
     private var itemProgram = -1
@@ -128,7 +133,10 @@ internal class SpriteFilter : BaseFilterRender() {
     private fun u(name: String) = loc.getValue(name)
 
     private fun drawItems(s: GpuScene, w: Int, h: Int) {
-        val b = box
+        val b = if (s.canvas) Box(0f, 0f, w.toFloat(), h.toFloat()) else box
+        drawBox = b
+        drawCos = if (s.canvas) 1f else cosR
+        drawSin = if (s.canvas) 0f else sinR
         val sx = b.w / s.width
         val sy = b.h / s.height
         GLES20.glUseProgram(itemProgram)
@@ -156,6 +164,14 @@ internal class SpriteFilter : BaseFilterRender() {
             }
             GLES20.glUniform1f(u("uClipRadius"), item.clipRadius * minOf(sx, sy))
             GLES20.glUniform1f(u("uAlpha"), item.alpha * sceneAlpha)
+            if (item.rotation == 0f) {
+                itemCos = 1f
+                itemSin = 0f
+            } else {
+                val rad = Math.toRadians(item.rotation.toDouble())
+                itemCos = cos(rad).toFloat()
+                itemSin = sin(rad).toFloat()
+            }
             vertices(r.left * sx, r.top * sy, wPx, hPx, w, h)
             GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         }
@@ -180,16 +196,19 @@ internal class SpriteFilter : BaseFilterRender() {
 
     /** Corner ([uu], [vv]) of the item at ([x], [y]) box px, size [wPx] x [hPx]. */
     private fun corner(x: Float, y: Float, uu: Float, vv: Float, wPx: Float, hPx: Float, outW: Int, outH: Int) {
-        val b = box
+        val b = drawBox
         val lx = uu * wPx
         val ly = vv * hPx
-        val bx = x + lx
-        val by = y + ly
+        // the item's own turn about its centre, then the widget's about the box centre
+        val dx = lx - wPx / 2
+        val dy = ly - hPx / 2
+        val bx = x + wPx / 2 + dx * itemCos - dy * itemSin
+        val by = y + hPx / 2 + dx * itemSin + dy * itemCos
         val ox = bx - b.w / 2
         val oy = by - b.h / 2
         // y grows down, so this standard rotation turns clockwise on screen, like OBS.
-        val px = b.x + b.w / 2 + ox * cosR - oy * sinR
-        val py = b.y + b.h / 2 + ox * sinR + oy * cosR
+        val px = b.x + b.w / 2 + ox * drawCos - oy * drawSin
+        val py = b.y + b.h / 2 + ox * drawSin + oy * drawCos
         quad.put(px / outW * 2f - 1f)
         quad.put(1f - py / outH * 2f)
         quad.put(uu)
