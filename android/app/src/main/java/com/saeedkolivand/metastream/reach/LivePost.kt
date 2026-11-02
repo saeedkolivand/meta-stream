@@ -268,13 +268,18 @@ object LivePost {
 
     /** The output frame (after blur and overlays) as JPEG; null unless still live, not ending and blur isn't stalled. */
     private suspend fun grab(): ByteArray? {
-        val bmp =
-            withTimeoutOrNull(3000) { suspendCancellableCoroutine<Bitmap?> { c -> if (!Overlays.grab { c.resume(it) }) c.resume(null) } }
-                ?: return null
-        if (!Engine.live || closing || Privacy.stalled) return null
+        val bmp = frame() ?: return null
         return withContext(Dispatchers.Default) {
             ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.JPEG, 80, it) }.toByteArray()
         }
+    }
+
+    /** The output frame after blur and overlays; null unless live, not ending and blur isn't stalled (also the story card's). */
+    internal suspend fun frame(): Bitmap? {
+        val bmp =
+            withTimeoutOrNull(3000) { suspendCancellableCoroutine<Bitmap?> { c -> if (!Overlays.grab { c.resume(it) }) c.resume(null) } }
+                ?: return null
+        return bmp.takeIf { Engine.live && !closing && !Privacy.stalled }
     }
 
     // text inputs

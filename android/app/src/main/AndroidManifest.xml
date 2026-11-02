@@ -23,6 +23,14 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.usb.host" android:required="false" />
 
+    <!-- Instagram's story editor (package visibility, Android 11+). -->
+    <queries>
+        <intent>
+            <action android:name="com.instagram.share.ADD_TO_STORY" />
+            <data android:mimeType="image/jpeg" />
+        </intent>
+    </queries>
+
     <application
         android:name=".core.App"
         android:allowBackup="false"
@@ -34,6 +42,15 @@
         <!-- Meta DAT credentials; empty with Developer Mode. -->
         <meta-data android:name="com.meta.wearable.mwdat.APPLICATION_ID" android:value="${mwdat_application_id}" />
         <meta-data android:name="com.meta.wearable.mwdat.CLIENT_TOKEN" android:value="${mwdat_client_token}" />
+
+        <!-- Hands the Instagram story card (cache/share only) to Instagram. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+        </provider>
 
         <!-- configChanges: rotation must not recreate the activity mid-stream; RootEncoder follows the device itself. -->
         <activity
