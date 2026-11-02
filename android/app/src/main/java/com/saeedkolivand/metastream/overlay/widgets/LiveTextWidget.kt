@@ -31,8 +31,9 @@ internal fun inAppTextBitmap(style: TextStyle, scale: Float): Bitmap? {
     val px = style.size * scale
     val pad = if (style.background) px * 0.3f else 0f
     val paint = widgetPaint(style.face, if (style.bold) 700 else 400, px, style.color, if (style.shadow) px * 0.06f else 0f)
-    val wide = textLayout(style.text, paint, MEASURE_WIDTH)
-    val layout = textLayout(style.text, paint, ceil(wide.widest()).toInt() + 1)
+    val text = InlineIcons.spans(style.text)
+    val wide = textLayout(text, paint, MEASURE_WIDTH)
+    val layout = textLayout(text, paint, ceil(wide.widest()).toInt() + 1)
     val bmp = newBitmap(layout.width + 2 * pad, layout.height + 2 * pad)
     val c = Canvas(bmp)
     if (style.background) {

@@ -204,7 +204,8 @@ object AppBot {
         "!speed" -> WidgetLocation.speedText.takeIf { it != "--" }?.let { "$name is going $it" }
             ?: "Speed isn't available right now (no GPS)"
         "!distance" -> "$name has travelled ${WidgetLocation.distanceText(Engine.liveSince)} today"
-        "!weather" -> WidgetWeather.text.takeIf { it != "--" }?.let { "It's $it where $name is" } ?: "The weather there isn't known yet"
+        "!weather" -> WidgetWeather.plainText.takeIf { it != "--" }?.let { "It's $it where $name is" }
+            ?: "The weather there isn't known yet"
         "!battery" -> battery()?.let { "$name's phone is at $it%" }
         "!goal" -> GoalStore.config.let { c ->
             "${GoalStore.money(GoalStore.total)} of ${GoalStore.money(c.target)} for ${c.title} (${(GoalStore.progress * 100).toInt()}%)"

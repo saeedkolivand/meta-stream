@@ -15,18 +15,32 @@ private const val REFRESH_MS = 15 * 60_000L
 private const val RETRY_MS = 2 * 60_000L
 private const val MOVED_METERS = 5000f
 
-/** Emoji for a WMO weather code (Open-Meteo `weather_code`). */
-internal fun weatherEmoji(code: Int): String = when (code) {
-    0 -> "☀️"
-    1, 2 -> "🌤️"
-    3 -> "☁️"
-    45, 48 -> "🌫️"
-    in 51..67 -> "🌧️"
-    in 71..77 -> "❄️"
-    80, 81, 82 -> "🌦️"
-    85, 86 -> "🌨️"
-    in 95..99 -> "⛈️"
-    else -> "🌡️"
+/** Inline icon (see [InlineIcons]) for a WMO weather code (Open-Meteo `weather_code`); same names as iOS. */
+internal fun weatherSymbol(code: Int): String = when (code) {
+    0 -> "sun.max.fill"
+    1, 2 -> "cloud.sun.fill"
+    3 -> "cloud.fill"
+    45, 48 -> "cloud.fog.fill"
+    in 51..67 -> "cloud.rain.fill"
+    in 71..77 -> "snowflake"
+    80, 81, 82 -> "cloud.sun.rain.fill"
+    85, 86 -> "cloud.snow.fill"
+    in 95..99 -> "cloud.bolt.rain.fill"
+    else -> "thermometer.medium"
+}
+
+/** Plain words for a WMO weather code, for chat replies. */
+internal fun weatherWords(code: Int): String = when (code) {
+    0 -> "clear"
+    1, 2 -> "partly cloudy"
+    3 -> "overcast"
+    45, 48 -> "foggy"
+    in 51..67 -> "rainy"
+    in 71..77 -> "snowy"
+    80, 81, 82 -> "showers"
+    85, 86 -> "snow showers"
+    in 95..99 -> "thunderstorms"
+    else -> "unsettled"
 }
 
 /**
@@ -38,6 +52,9 @@ internal object WidgetWeather {
     private var value = "--"
 
     @Volatile
+    private var plain = "--"
+
+    @Volatile
     private var wanted = false
 
     /** Reading it is what turns fetching on, so location never goes to Open-Meteo unless a widget shows {weather}. */
@@ -45,6 +62,13 @@ internal object WidgetWeather {
         get() {
             wanted = true
             return value
+        }
+
+    /** "17°, partly cloudy": [text] without the icon, for chat replies. */
+    val plainText: String
+        get() {
+            wanted = true
+            return plain
         }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -67,7 +91,8 @@ internal object WidgetWeather {
             val result = runCatching { fetch(lat, lon) }.getOrNull()
             synchronized(this@WidgetWeather) {
                 if (result != null) {
-                    value = result
+                    value = result.first
+                    plain = result.second
                     okAt = System.currentTimeMillis()
                     failedAt = 0L
                     fetched = Location("").apply {
@@ -85,7 +110,7 @@ internal object WidgetWeather {
     private fun distance(aLat: Double, aLon: Double, bLat: Double, bLon: Double) =
         FloatArray(1).also { Location.distanceBetween(aLat, aLon, bLat, bLon, it) }[0]
 
-    private fun fetch(lat: Double, lon: Double): String {
+    private fun fetch(lat: Double, lon: Double): Pair<String, String> {
         val unit = if (Locale.getDefault().country in IMPERIAL) "fahrenheit" else "celsius"
         val url = String.format(
             Locale.US,
@@ -96,7 +121,9 @@ internal object WidgetWeather {
         )
         http.newCall(Request.Builder().url(url).build()).execute().use { r ->
             val cur = JSONObject(r.body?.string().orEmpty()).getJSONObject("current")
-            return "${weatherEmoji(cur.getInt("weather_code"))} ${cur.getDouble("temperature_2m").roundToInt()}°"
+            val code = cur.getInt("weather_code")
+            val t = "${cur.getDouble("temperature_2m").roundToInt()}°"
+            return "{i:${weatherSymbol(code)}} $t" to "$t, ${weatherWords(code)}"
         }
     }
 }

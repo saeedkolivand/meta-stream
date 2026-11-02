@@ -44,10 +44,23 @@ object OverlayStore {
     var rotateSeconds by mutableStateOf(60)
         private set
 
+    private fun iconized(l: Layer) = if (l.type == LayerType.Text &&
+        l.layout != null
+    ) {
+        l.copy(data = l.data + ("text" to InlineIcons.iconized(l.data["text"].orEmpty())))
+    } else {
+        l
+    }
+
     fun init(application: Application) {
         app = application
         scene = Prefs.string("overlayScene")
-        pack = runCatching { Pack.fromJson(packFile.readText()) }.getOrNull()
+        pack = runCatching { Pack.fromJson(packFile.readText()) }.getOrNull()?.let { p ->
+            // In-app text layers move from emoji to icon tokens (idempotent, like iOS); saved back only when something changed.
+            val moved = p.copy(scenes = p.scenes.map { sc -> sc.copy(layers = sc.layers.map(::iconized)) })
+            if (moved != p) runCatching { packFile.writeText(moved.toJson()) }
+            moved
+        }
         transition = Prefs.string("sceneTransition", "fade")
         rotateOn = Prefs.bool("sceneRotateOn")
         rotateSeconds = Prefs.int("sceneRotateSeconds", 60)

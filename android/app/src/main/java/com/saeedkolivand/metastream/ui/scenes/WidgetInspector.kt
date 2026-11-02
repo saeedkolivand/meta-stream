@@ -22,6 +22,7 @@ import com.saeedkolivand.metastream.overlay.ChatStyle
 import com.saeedkolivand.metastream.overlay.DonationKind
 import com.saeedkolivand.metastream.overlay.EventListStyle
 import com.saeedkolivand.metastream.overlay.GoalStyle
+import com.saeedkolivand.metastream.overlay.InlineIcons
 import com.saeedkolivand.metastream.overlay.Layer
 import com.saeedkolivand.metastream.overlay.LayerType
 import com.saeedkolivand.metastream.overlay.NowPlayingStyle
@@ -178,6 +179,7 @@ private fun DataKeys.TextSection() {
     Section("Text") {
         Field("text", "Text", singleLine = false)
         TokenMenu { put("text", str("text") + it) }
+        IconMenu { put("text", str("text") + it) }
         FontPicker()
         NumSlider("size", "Font size", 16f..200f)
         Flag("bold", "Bold")
@@ -195,6 +197,21 @@ private fun DataKeys.TextSection() {
 }
 
 /** Appends a live value such as {viewers}; the token list belongs to WidgetVariables so the menu can't drift from what resolves. */
+/** Inserts an inline icon token: icons on stream, never emoji. */
+@Composable
+private fun IconMenu(onInsert: (String) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    OutlinedButton({ open = true }) { Text("Insert icon") }
+    DropdownMenu(open, { open = false }) {
+        for (name in InlineIcons.palette) {
+            DropdownMenuItem({ Text(name) }, {
+                open = false
+                onInsert("{i:$name}")
+            })
+        }
+    }
+}
+
 @Composable
 private fun TokenMenu(onInsert: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
