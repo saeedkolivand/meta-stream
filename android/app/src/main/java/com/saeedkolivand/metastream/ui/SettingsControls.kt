@@ -1,11 +1,19 @@
 package com.saeedkolivand.metastream.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -15,21 +23,30 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/** iOS inset-grouped background colours. */
+internal val CardColor = Color(0xFF1C1C1E)
+
+/** iOS inset-grouped section: small grey header, then a rounded card holding the rows. No title = card alone. */
 @Composable
-internal fun Section(title: String, content: @Composable () -> Unit) {
-    Text(
-        title.uppercase(),
-        Modifier.padding(top = 12.dp),
-        color = Color.White.copy(alpha = 0.6f),
-        fontSize = 12.sp,
-        fontWeight = FontWeight.SemiBold
-    )
-    content()
+internal fun Section(title: String?, content: @Composable () -> Unit) {
+    if (title != null) {
+        Text(
+            title.uppercase(),
+            Modifier.padding(start = 16.dp, top = 16.dp),
+            color = Color.White.copy(alpha = 0.55f),
+            fontSize = 13.sp
+        )
+    }
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(CardColor).padding(horizontal = 16.dp, vertical = 12.dp),
+        Arrangement.spacedBy(10.dp)
+    ) { content() }
 }
 
 @Composable
@@ -43,12 +60,18 @@ internal fun SwitchRow(label: String, checked: Boolean, enabled: Boolean = true,
     }
 }
 
-/** iOS NavigationLink row. */
+/** iOS NavigationLink row, with the Settings-style colour tile when [icon] is set. */
 @Composable
-internal fun NavRow(title: String, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp), Arrangement.SpaceBetween) {
-        Text(title)
-        Text("›", color = Color.White.copy(alpha = 0.5f))
+internal fun NavRow(title: String, icon: Int? = null, tint: Color = Color(0xFF8E8E93), onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (icon != null) {
+            Box(Modifier.size(30.dp).clip(RoundedCornerShape(7.dp)).background(tint), Alignment.Center) {
+                Icon(painterResource(icon), null, Modifier.size(18.dp), tint = Color.White)
+            }
+            Spacer(Modifier.width(12.dp))
+        }
+        Text(title, Modifier.weight(1f), fontSize = 17.sp)
+        Text("›", color = Color.White.copy(alpha = 0.35f), fontSize = 22.sp)
     }
 }
 

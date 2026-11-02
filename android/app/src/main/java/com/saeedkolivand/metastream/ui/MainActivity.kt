@@ -73,7 +73,14 @@ class MainActivity : ComponentActivity() {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 }
             }
-            MaterialTheme(darkColorScheme(primary = Color(0xFF0A84FF), onPrimary = Color.White)) {
+            // iOS-like: segmented picks and filled tones in system grey rather than Material's purple.
+            val scheme = darkColorScheme(
+                primary = Color(0xFF0A84FF),
+                onPrimary = Color.White,
+                secondaryContainer = Color(0xFF3A3A3C),
+                onSecondaryContainer = Color.White
+            )
+            MaterialTheme(scheme) {
                 // Cold launch only: rotation/recreation restores false. The app composes underneath right away.
                 var showSplash by rememberSaveable { mutableStateOf(savedInstanceState == null) }
                 Box {

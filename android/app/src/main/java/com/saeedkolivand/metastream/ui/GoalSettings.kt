@@ -26,7 +26,7 @@ private val CURRENCIES = listOf("IRT" to "Toman", "EUR" to "Euro", "USD" to "US 
 /** iOS GoalSettingsView + GoalSubScreens: the goal, manual and test donations, rates and prices, the donation list. */
 @Composable
 internal fun GoalPage(openSources: () -> Unit) {
-    NavRow("Donation sources", openSources)
+    Section(null) { NavRow("Donation sources", onClick = openSources) }
     val c = GoalStore.config
     var title by remember { mutableStateOf(c.title) }
     var target by remember { mutableStateOf(c.target.toPlainString()) }

@@ -61,7 +61,7 @@ internal fun DiagnosticsPage(openLogs: () -> Unit) {
     val context = LocalContext.current
     val info = remember { context.packageManager.getPackageInfo(context.packageName, 0) }
     Section("General") { SwitchRow("Keep screen awake", AppSettings.keepAwake, onChange = AppSettings::updateKeepAwake) }
-    Section("Logs") { NavRow("View logs", openLogs) }
+    Section("Logs") { NavRow("View logs", onClick = openLogs) }
     Section("About") {
         Text("Version", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
         Text("${info.versionName} (${info.longVersionCode})", fontFamily = FontFamily.Monospace, fontSize = 13.sp)
