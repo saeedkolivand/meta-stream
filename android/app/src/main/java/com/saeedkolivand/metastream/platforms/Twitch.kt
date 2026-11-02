@@ -127,6 +127,17 @@ object Twitch : Account("Twitch", "twitch") {
         Accounts.say("Twitch login timed out")
     }
 
+    override suspend fun refreshViewers() {
+        if (userId.isEmpty()) return
+        try {
+            val stream = api.call("GET", "/streams", mapOf("user_id" to userId)).objects("data").firstOrNull()
+            live = stream != null
+            viewers = stream?.optInt("viewer_count") ?: 0
+        } catch (e: PlatformException) {
+            applog("api", "twitch viewers: ${e.message}")
+        }
+    }
+
     override suspend fun refresh() {
         try {
             api.call("GET", "/users").objects("data").firstOrNull()?.let {

@@ -4,9 +4,13 @@ import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.streaming.Engine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
@@ -39,6 +43,16 @@ object Accounts {
         for (a in all) {
             a.restore()
             if (a.connected) scope.launch { a.refresh() }
+        }
+        // While live, viewer counts are re-read every 60 s (both platforms update theirs about once a minute), so the
+        // viewer pill and {viewers} don't show the go-live number all stream.
+        scope.launch {
+            snapshotFlow { Engine.live }.collectLatest { live ->
+                while (live) {
+                    all.filter { it.connected }.forEach { it.refreshViewers() }
+                    delay(60_000)
+                }
+            }
         }
     }
 
@@ -101,6 +115,9 @@ abstract class Account(val label: String, internal val prefix: String) {
     abstract fun disconnect()
 
     open suspend fun send(text: String) = Unit
+
+    /** Viewers + live only, for the while-live poll (refresh() is several calls and a status message). */
+    open suspend fun refreshViewers() = Unit
 
     /** Stores access/refresh tokens; returns the scope list when the provider sent one as an array (only Twitch does). */
     protected fun saveTokens(json: JSONObject): List<String>? {
