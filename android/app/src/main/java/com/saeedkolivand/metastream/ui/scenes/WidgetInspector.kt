@@ -240,7 +240,16 @@ private fun DataKeys.QrSection() = Section("QR code") {
 
 @Composable
 private fun DataKeys.GoalSection() = Section("Donation goal") {
-    val designs = listOf("bar" to "Bar", "segments" to "Segments", "hairline" to "Hairline", "dots" to "Dots")
+    val designs = listOf(
+        "bar" to "Liquid",
+        "road" to "Road trip",
+        "segments" to "Segments",
+        "hairline" to "Hairline",
+        "island" to "Island pill",
+        "miniring" to "Mini ring",
+        "dots" to "Dot wave",
+        "spark" to "Spark"
+    )
     Choice("Design", designs, str("design")) { put("design", it) }
     NumSlider("width", "Box width", 300f..1200f)
     NumSlider("height", "Box height", 80f..240f)
