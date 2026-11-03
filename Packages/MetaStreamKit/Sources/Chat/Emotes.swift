@@ -26,6 +26,8 @@ public final class Emotes {
     @ObservationIgnored private var loadedFor: String?   // "<twitch id>|<kick slug>" the current byName was built for; "|" = none
     @ObservationIgnored private var loadingImages: Set<URL> = []
 
+    public init() {}
+
     /// Fetches every provider's global set, plus per-channel sets when `twitchLogin` is given and connected.
     /// No-ops if already loaded for this exact identity, so repeat calls from every `startChat()` re-run
     /// (voice toggle flips, channel edits) don't re-hit six APIs for nothing.
