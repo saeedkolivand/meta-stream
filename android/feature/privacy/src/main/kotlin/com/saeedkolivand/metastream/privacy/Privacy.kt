@@ -10,9 +10,6 @@ import androidx.compose.runtime.setValue
 import com.pedro.library.view.GlInterface
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.storage.Prefs
-import com.saeedkolivand.metastream.overlay.Overlays
-import com.saeedkolivand.metastream.streaming.Engine
-import com.saeedkolivand.metastream.streaming.Source
 
 private const val PAD = 0.3f // iOS padFraction: motion between detections is the risk, not one frame of under-blur
 private const val EVERY_MS = 165L // ~6 detections a second, as iOS (detectAtLeastEvery 0.4 s, ~6/s at 30 fps)
@@ -24,9 +21,9 @@ enum class BlurState { Off, Protecting, Pending }
 
 /** Blur runs only when asked, on a source it can reach, and at least one detector is on (else capture would burn CPU for nothing). */
 /** iOS textDetectionDue: always while nothing is carried (first pass, or the last run found none), else every [everyN]th. */
-internal fun textDue(pass: Int, everyN: Int, carried: Boolean) = !carried || pass % everyN == 0
+fun textDue(pass: Int, everyN: Int, carried: Boolean) = !carried || pass % everyN == 0
 
-internal fun blurWanted(on: Boolean, applicable: Boolean, faces: Boolean, text: Boolean, barcodes: Boolean) =
+fun blurWanted(on: Boolean, applicable: Boolean, faces: Boolean, text: Boolean, barcodes: Boolean) =
     on && applicable && (faces || text || barcodes)
 
 /**
@@ -36,6 +33,14 @@ internal fun blurWanted(on: Boolean, applicable: Boolean, faces: Boolean, text: 
  */
 object Privacy : BlurFeed {
     private lateinit var speak: (String) -> Unit
+
+    // Set by the app wiring, so privacy needs neither the engine nor the overlays.
+    /** Re-syncs just the blur filter in the GL chain (Overlays.syncPrivacy). */
+    var resync: () -> Unit = {}
+
+    /** Frames reach the GL chain (not glasses HEVC passthrough). Read in composition, so keep it snapshot-state backed. */
+    var isApplicable: () -> Boolean = { true }
+    var isLive: () -> Boolean = { false }
     private val main = Handler(Looper.getMainLooper())
     private val tracker = BoxTracker()
     private val detector by lazy { Detector(ROTATION) }
@@ -68,14 +73,14 @@ object Privacy : BlurFeed {
     private var textBoxes: List<Box> = emptyList() // last text result, carried across passes that skip text
 
     /** Glasses passthrough is HEVC straight from the glasses; there are no frames here to alter. */
-    val applicable get() = Engine.source != Source.Glasses
+    val applicable get() = isApplicable()
     val hasDetector get() = faces || text || barcodes
     val wanted get() = blurWanted(on, applicable, faces, text, barcodes)
 
     val state
         get() = when {
             !on || !hasDetector -> BlurState.Off
-            Engine.live && !installed -> BlurState.Pending
+            isLive() && !installed -> BlurState.Pending
             else -> BlurState.Protecting
         }
 
@@ -91,25 +96,25 @@ object Privacy : BlurFeed {
         on = v
         Prefs.put("blurOn", v)
         // Target the privacy filter only; a full refresh would also destroy and reload the overlay scene's browser/media.
-        Overlays.syncPrivacy()
+        resync()
     }
 
     fun updateFaces(v: Boolean) {
         faces = v
         Prefs.put("blurFaces", v)
-        Overlays.syncPrivacy() // dropping the last detector removes the filter rather than capturing for nothing
+        resync() // dropping the last detector removes the filter rather than capturing for nothing
     }
 
     fun updateText(v: Boolean) {
         text = v
         Prefs.put("blurText", v)
-        Overlays.syncPrivacy()
+        resync()
     }
 
     fun updateBarcodes(v: Boolean) {
         barcodes = v
         Prefs.put("blurBarcodes", v)
-        Overlays.syncPrivacy()
+        resync()
     }
 
     /**

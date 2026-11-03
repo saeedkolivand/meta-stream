@@ -21,6 +21,7 @@ import com.saeedkolivand.metastream.overlay.WidgetFonts
 import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.platforms.KickWeb
 import com.saeedkolivand.metastream.platforms.Spotify
+import com.saeedkolivand.metastream.privacy.Privacy
 import com.saeedkolivand.metastream.reach.LivePost
 import com.saeedkolivand.metastream.reach.SessionLog
 import com.saeedkolivand.metastream.remote.ObsServer
@@ -29,6 +30,7 @@ import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Mics
 import com.saeedkolivand.metastream.streaming.Soundboard
+import com.saeedkolivand.metastream.streaming.Source
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -55,6 +57,9 @@ class App : Application() {
         Speaker.skipMessage = { !BotList.reads(it.user, it.text) || AppBot.isOwn(it) }
         OverlayStore.init(this)
         Overlays.init(this)
+        Privacy.resync = Overlays::syncPrivacy
+        Privacy.isApplicable = { Engine.source != Source.Glasses }
+        Privacy.isLive = { Engine.live }
         Accounts.init(this, scope)
         Spotify.init()
         ChatModerator.init(scope)

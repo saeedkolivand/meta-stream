@@ -44,6 +44,7 @@ dependencies {
     implementation(project(":feature:chat"))
     implementation(project(":feature:goal"))
     implementation(project(":feature:speech"))
+    implementation(project(":feature:privacy"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.documentfile)
     implementation(platform(libs.androidx.compose.bom))
@@ -56,9 +57,6 @@ dependencies {
     implementation(libs.rootencoder)
     implementation(libs.rootencoder.extra)
     implementation(libs.uvcandroid) // UvcSource picks the camera format; extra-sources keeps UVCAndroid off our compile classpath
-    implementation(libs.mlkit.face)
-    implementation(libs.mlkit.text)
-    implementation(libs.mlkit.barcode)
     implementation(libs.okhttp)
     implementation(libs.zxing.core) // QR widget: encoding a QR code by hand is ~600 lines; core is pure Java, no Android deps
     implementation(libs.carapp)
