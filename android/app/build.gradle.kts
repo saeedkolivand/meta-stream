@@ -42,6 +42,7 @@ dependencies {
     implementation(project(":feature:glasses"))
     implementation(project(":feature:platforms"))
     implementation(project(":feature:chat"))
+    implementation(project(":feature:goal"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.documentfile)
     implementation(platform(libs.androidx.compose.bom))

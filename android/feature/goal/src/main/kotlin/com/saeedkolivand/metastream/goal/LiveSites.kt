@@ -20,7 +20,7 @@ private const val DONITO_DEMO_NAME = "کاربر آزمایشی"
 private const val DONITO_DEMO_MESSAGE = "این یک پیام حامی آزمایشی است."
 
 /** Donito's overlay Centrifugo socket (JSON protocol): live events only, no history, no ack. */
-internal suspend fun runDonito(token: String) = DonationHub.reconnecting(Site.Donito) {
+suspend fun runDonito(token: String) = DonationHub.reconnecting(Site.Donito) {
     val ws = Ws(Request.Builder().url("wss://donito.me/ws/connection/event/websocket?token=${Uri.encode(token)}").build())
     var connected = false
     try {
@@ -98,7 +98,7 @@ private fun isMock(o: JSONObject) = listOf("isMock", "isTest", "mock", "test").a
 }
 
 /** StreamElements' socket.io v2 socket: live tips and test events; the tips poll stays for catch-up. */
-internal suspend fun runStreamElements(key: String) = DonationHub.reconnecting(Site.StreamElements, report = false) {
+suspend fun runStreamElements(key: String) = DonationHub.reconnecting(Site.StreamElements, report = false) {
     val ws = Ws(Request.Builder().url("wss://realtime.streamelements.com/socket.io/?cluster=main&EIO=3&transport=websocket").build())
     var connected = false
     var pinger: kotlinx.coroutines.Job? = null
@@ -209,7 +209,7 @@ private suspend fun seEvent(key: String, p: JSONObject) {
  * Reymit's overlay long poll: the server holds each request until something changes. Only its test donation is used;
  * real ones arrive through the API-token poll. Never logs the link or key.
  */
-internal suspend fun runReymitOverlay(link: String) {
+suspend fun runReymitOverlay(link: String) {
     val key = Uri.parse(link).getQueryParameter("key")?.takeIf { it.isNotEmpty() } ?: return applog("goal", "reymit overlay: link rejected")
     var md5 = ""
     var md5o = ""

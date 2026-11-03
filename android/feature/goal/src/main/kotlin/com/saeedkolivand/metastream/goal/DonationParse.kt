@@ -10,12 +10,12 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** One donation as a site reports it. */
-internal data class Parsed(val id: String, val name: String, val message: String, val money: Money, val date: Long, val state: State) {
+data class Parsed(val id: String, val name: String, val message: String, val money: Money, val date: Long, val state: State) {
     enum class State { Paid, Pending, Refunded }
 }
 
 /** Which JSON keys carry which field, first non-empty wins (the sites' shapes are partly undocumented). */
-internal class Shape(
+class Shape(
     val id: List<String>,
     val amount: List<String>,
     val currency: List<String>,
@@ -37,7 +37,7 @@ internal class Shape(
 }
 
 /** iOS DonationHub's parsing statics. */
-internal object DonationParse {
+object DonationParse {
     /** A string, number or {code/symbol/name/username} object as text; "" for anything else. */
     fun text(v: Any?): String = when (v) {
         is String -> v.trim()

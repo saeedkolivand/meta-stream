@@ -47,7 +47,7 @@ object DonatePage {
     /** The page for chat, scheme kept: Kick only makes a link tappable with it. */
     val chatURL get() = pageURL.trim().trimEnd('/').let { if (it.lowercase().startsWith("http")) it else "https://$it" }
 
-    internal fun host(url: String) = runCatching { URI(url.trim()).host?.lowercase() }.getOrNull()
+    fun host(url: String) = runCatching { URI(url.trim()).host?.lowercase() }.getOrNull()
 
     fun setURL(url: String) {
         Prefs.put("donatePageURL", url.trim())
@@ -93,14 +93,14 @@ object DonatePage {
     }
 
     /** Money as numbers rounded to 2 decimals (toman to 0). */
-    internal fun body(title: String, total: BigDecimal, target: BigDecimal, currency: String, live: Boolean, at: Instant): String {
+    fun body(title: String, total: BigDecimal, target: BigDecimal, currency: String, live: Boolean, at: Instant): String {
         fun num(d: BigDecimal) = d.setScale(if (currency == "IRT") 0 else 2, RoundingMode.HALF_UP).toDouble()
         return JSONObject().put("title", title).put("total", num(total)).put("target", num(target)).put("currency", currency)
             .put("live", live).put("updatedAt", at.toString()).toString()
     }
 
     /** [path] on the page; null unless https and the host the key was saved for (the key is a bearer secret). */
-    internal fun endpoint(path: String): String? {
+    fun endpoint(path: String): String? {
         val url = pageURL.trim().trim('/') + path
         return url.takeIf {
             it.lowercase().startsWith("https://") && host(it) != null && host(it) == Prefs.string("donatePageTokenHost", "")

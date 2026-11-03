@@ -37,10 +37,10 @@ enum class Site(val title: String, val keyLabel: String, val help: String) {
     val id get() = name.lowercase()
 }
 
-internal enum class Outcome { Ok, Rejected, Unreachable }
+enum class Outcome { Ok, Rejected, Unreachable }
 
 /** A WebSocket as a frame channel for a coroutine: closes when the socket ends; [close] on the way out. */
-internal class Ws(request: Request) {
+class Ws(request: Request) {
     val frames = Channel<String>(Channel.UNLIMITED)
     private val ws = http.newWebSocket(
         request,
@@ -71,9 +71,9 @@ internal class Ws(request: Request) {
  */
 object DonationHub {
     val status = mutableStateMapOf<Site, String>().apply { Site.entries.forEach { put(it, "Not set up") } }
-    internal const val REJECTED = "Key rejected — paste a new one"
-    internal val backoff = listOf(2L, 5L, 10L, 30L)
-    internal lateinit var scope: CoroutineScope
+    const val REJECTED = "Key rejected — paste a new one"
+    val backoff = listOf(2L, 5L, 10L, 30L)
+    lateinit var scope: CoroutineScope
     private val jobs = HashMap<Site, List<Job>>()
     private val lastAt = HashMap<Site, Long>()
     private val logged = HashMap<Site, String>()
@@ -103,7 +103,7 @@ object DonationHub {
         run(Site.Donofa)
     }
 
-    internal fun storeKey(name: String, value: String) = if (value.isEmpty()) TokenStore.remove(name) else TokenStore.set(name, value)
+    fun storeKey(name: String, value: String) = if (value.isEmpty()) TokenStore.remove(name) else TokenStore.set(name, value)
 
     fun start(scope: CoroutineScope) {
         this.scope = scope
@@ -111,7 +111,7 @@ object DonationHub {
     }
 
     /** (Re)starts one site; "Not set up" without a key. */
-    internal fun run(site: Site) {
+    fun run(site: Site) {
         jobs.remove(site)?.forEach { it.cancel() }
         val k = key(site)
         val overlay = if (site == Site.Reymit) reymitOverlay() else "" // Reymit's overlay link works without the API token
@@ -153,7 +153,7 @@ object DonationHub {
         }
     }
 
-    internal var seChannel = ""
+    var seChannel = ""
 
     /** The first successful poll is catch-up (unknown ids are missed); later polls are live. A rejected key ends it. */
     private suspend fun poll(site: Site, seconds: Int, fetch: suspend () -> Pair<Outcome, List<Parsed>>) {
@@ -184,7 +184,7 @@ object DonationHub {
     }
 
     /** Record first, announce only what was new. */
-    internal fun ingest(site: Site, items: List<Parsed>, live: Boolean, announce: Boolean = true): Int {
+    fun ingest(site: Site, items: List<Parsed>, live: Boolean, announce: Boolean = true): Int {
         var new = 0
         for (p in items.sortedBy { it.date }) {
             val key = "${site.id}:${p.id}"
@@ -213,21 +213,21 @@ object DonationHub {
     }
 
     /** A site's test donation plays the alert but is never recorded. */
-    internal fun announceTest(site: Site, name: String, message: String, amount: Any?, currency: String) {
+    fun announceTest(site: Site, name: String, message: String, amount: Any?, currency: String) {
         val a = DonationParse.decimal(amount)?.takeIf { it.signum() > 0 } ?: return
         applog("goal", "${site.id} test donation announced")
         ChatFeed.onChat(ChatEvent("test-donation", name.ifEmpty { "Someone" }, message, kind = Kind.Tip, money = Money.of(a, currency)))
     }
 
     /** Logs each status change once (the "· last donation" tail ignored). */
-    internal fun setStatus(site: Site, text: String) {
+    fun setStatus(site: Site, text: String) {
         status[site] = text
         val head = text.substringBefore(" ·")
         if (logged[site] != head) applog("goal", "${site.id}: $head")
         logged[site] = head
     }
 
-    internal fun connectedText(site: Site): String {
+    fun connectedText(site: Site): String {
         val t = lastAt[site] ?: return "Connected"
         val mins = maxOf(1, (System.currentTimeMillis() - t) / 60_000)
         return "Connected · last donation " +
@@ -241,7 +241,7 @@ object DonationHub {
     }
 
     /** GET as JSON; [reject] are the codes that mean the key is wrong, other failures are "unreachable". */
-    internal suspend fun get(url: String, auth: String?, reject: Set<Int>): Pair<Outcome, Any?> = withContext(Dispatchers.IO) {
+    suspend fun get(url: String, auth: String?, reject: Set<Int>): Pair<Outcome, Any?> = withContext(Dispatchers.IO) {
         runCatching {
             val req = Request.Builder().url(url).header("Accept", "application/json").apply {
                 auth?.let { header("Authorization", it) }
@@ -260,7 +260,7 @@ object DonationHub {
     }
 
     /** Reconnects [session] with backoff until it reports a rejected key; true from [session] = it connected. */
-    internal suspend fun reconnecting(site: Site, report: Boolean = true, session: suspend () -> Pair<Boolean, Boolean>) {
+    suspend fun reconnecting(site: Site, report: Boolean = true, session: suspend () -> Pair<Boolean, Boolean>) {
         var attempt = 0
         while (scope.isActive) {
             val (rejected, connected) = session()

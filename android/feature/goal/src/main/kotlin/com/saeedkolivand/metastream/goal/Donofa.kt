@@ -17,19 +17,19 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
 private const val TEST_MESSAGE = "پیام نمایشی و فرضی دونیت"
-internal const val BROWSER_UA =
+const val BROWSER_UA =
     "Mozilla/5.0 (Linux; Android 16; Pixel) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Mobile Safari/537.36"
 
 private val widgetIds = HashMap<Int, String>() // widget child id -> identifier (a single widget maps itself)
 private val widgetSeen = HashSet<Int>() // action ids already handled
 
-internal fun jsonOf(text: String): JSONObject? = runCatching { JSONObject(text) }.getOrNull()
+fun jsonOf(text: String): JSONObject? = runCatching { JSONObject(text) }.getOrNull()
 
 /** Pusher's data is an object or a JSON string holding one. */
 private fun data(o: JSONObject): JSONObject? = o.optJSONObject("data") ?: jsonOf(o.optString("data"))
 
 /** Donofa (iOS DonationHub Donofa): history catch-up, then the Pusher socket; reconnects with backoff. */
-internal suspend fun runDonofa(key: String) {
+suspend fun runDonofa(key: String) {
     DonationHub.reconnecting(Site.Donofa) {
         if (donofaCatchUp(key) == Outcome.Rejected) true to false else donofaSocket(key)
     }
