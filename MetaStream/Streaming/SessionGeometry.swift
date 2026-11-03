@@ -65,23 +65,6 @@ extension Streamer {
     /// @AppStorage("glassesEnabled") so they update the moment it flips.
     static var glassesEnabled: Bool { glassesConfigured && UserDefaults.standard.bool(forKey: "glassesEnabled") }
 
-    /// Apple's "Action mode" is Camera-app branding for the extended cinematic algorithm; AVFoundation
-    /// exposes it as a stabilisation mode on the capture connection. `.cinematicExtendedEnhanced` is the
-    /// strongest one (iOS 18+, always available at our iOS 26 minimum).
-    /// ponytail: sets the REQUESTED mode only — AVFoundation quietly ignores one the active format cannot
-    /// do, and `activeVideoStabilizationMode` is where to look if that ever needs surfacing in the UI.
-    /// nonisolated: pure String -> enum mapping, no Streamer state -- CameraFormatCapabilities.probe
-    /// (CameraSettings.swift, not MainActor) calls this off the main actor to check per-format support;
-    /// without this it's a Swift 6 cross-actor call error, the exact trap this file's header warns about.
-    nonisolated static func stabilizationMode(_ name: String) -> AVCaptureVideoStabilizationMode {
-        switch name {
-        case "standard": return .standard
-        case "cinematic": return .cinematic
-        case "action": return .cinematicExtendedEnhanced
-        default: return .off
-        }
-    }
-
     var dualWanted: Bool { dualLocked ?? UserDefaults.standard.bool(forKey: "dualCam") }
 
     /// Screen is the chosen video source and this build carries the broadcast extension.

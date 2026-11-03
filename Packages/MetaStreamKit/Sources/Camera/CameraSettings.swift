@@ -234,3 +234,20 @@ extension CameraSettings {
     }
 }
 #endif
+
+extension CameraSettings {
+    /// The stabilization names the settings store ("off", "standard", "cinematic", "action") as AVFoundation modes.
+    /// Apple's "Action mode" is Camera-app branding for the extended cinematic algorithm: `.cinematicExtendedEnhanced`,
+    /// the strongest one (iOS 18+, always available at our iOS 26 minimum).
+    /// ponytail: sets the REQUESTED mode only; AVFoundation quietly ignores one the active format cannot do, and
+    /// `activeVideoStabilizationMode` is where to look if that ever needs surfacing in the UI.
+    /// nonisolated: CameraFormatCapabilities.probe calls it off the main actor to check per-format support.
+    public nonisolated static func stabilizationMode(_ name: String) -> AVCaptureVideoStabilizationMode {
+        switch name {
+        case "standard": return .standard
+        case "cinematic": return .cinematic
+        case "action": return .cinematicExtendedEnhanced
+        default: return .off
+        }
+    }
+}

@@ -252,7 +252,7 @@ public struct CameraFormatCapabilities: Sendable {
                 return nil
             }
             let stab = stabilizationNames.filter { name in
-                matching.contains { $0.isVideoStabilizationModeSupported(Streamer.stabilizationMode(name)) }
+                matching.contains { $0.isVideoStabilizationModeSupported(CameraSettings.stabilizationMode(name)) }
             }
             perCandidate.append("\(height)p: ok, \(matching.count) formats, fps=\(offeredFps), stab=\(["off"] + stab)")
             return Resolution(height: height, frameRates: offeredFps, stabilizationModes: ["off"] + stab)

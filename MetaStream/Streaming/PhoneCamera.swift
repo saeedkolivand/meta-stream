@@ -167,7 +167,7 @@ extension Streamer {
                 // A multicam session can't apply presets at all -- each device's activeFormat is picked below.
                 // UVC formats rarely match a preset, so an external device never gets one.
                 if !multi, !isExt { await mixer.setSessionPreset(phoneQuality.sessionPreset) }
-                let mode = Self.stabilizationMode(phoneQuality.stabilization)
+                let mode = CameraSettings.stabilizationMode(phoneQuality.stabilization)
                 let mainMaxHeight = min(phoneQuality.height, 1080)
                 let mcFps = min(phoneQuality.fps, Self.multiFpsCap)
                 let configureMain: @Sendable (VideoDeviceUnit) throws -> Void = { unit in
