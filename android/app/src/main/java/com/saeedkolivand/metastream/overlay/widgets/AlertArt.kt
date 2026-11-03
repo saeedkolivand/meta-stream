@@ -6,8 +6,8 @@ import android.graphics.Color
 import android.graphics.Path
 import android.graphics.RectF
 import android.text.TextPaint
-import com.saeedkolivand.metastream.chat.ChatEvent
-import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Kind
 import kotlin.math.ceil
 
 internal const val BOX_W = 900f

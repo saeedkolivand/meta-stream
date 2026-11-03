@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.platforms.YouTube
 import com.saeedkolivand.metastream.speech.Speaker

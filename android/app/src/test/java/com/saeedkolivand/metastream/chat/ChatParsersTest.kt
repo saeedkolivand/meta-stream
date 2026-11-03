@@ -1,5 +1,6 @@
 package com.saeedkolivand.metastream.chat
 
+import com.saeedkolivand.metastream.core.model.Kind
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

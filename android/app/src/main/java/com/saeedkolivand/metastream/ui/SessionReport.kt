@@ -32,7 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.saeedkolivand.metastream.goal.Money
+import com.saeedkolivand.metastream.core.model.Money
 import com.saeedkolivand.metastream.reach.LivePostText
 import com.saeedkolivand.metastream.reach.Moment
 import com.saeedkolivand.metastream.reach.ReportInsights

@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.goal
+package com.saeedkolivand.metastream.core.model
 
 import java.math.BigDecimal
 import org.junit.Assert.assertEquals

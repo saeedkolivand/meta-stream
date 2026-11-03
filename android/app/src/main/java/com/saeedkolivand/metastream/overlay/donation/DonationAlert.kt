@@ -6,11 +6,11 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.text.TextUtils
 import com.saeedkolivand.metastream.bot.BotRules
-import com.saeedkolivand.metastream.chat.ChatEvent
-import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Kind
+import com.saeedkolivand.metastream.core.model.Money
 import com.saeedkolivand.metastream.goal.DonationPrices
 import com.saeedkolivand.metastream.goal.GoalStore
-import com.saeedkolivand.metastream.goal.Money
 import com.saeedkolivand.metastream.goal.Rates
 import java.math.BigDecimal
 import java.math.MathContext

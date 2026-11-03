@@ -5,9 +5,9 @@ import com.saeedkolivand.metastream.bot.TwitchBot
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.core.AppSettings
 import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.model.Money
 import com.saeedkolivand.metastream.goal.DonationHub
 import com.saeedkolivand.metastream.goal.GoalStore
-import com.saeedkolivand.metastream.goal.Money
 import com.saeedkolivand.metastream.goal.Site
 import com.saeedkolivand.metastream.overlay.ColorTheme
 import com.saeedkolivand.metastream.overlay.OverlayStore

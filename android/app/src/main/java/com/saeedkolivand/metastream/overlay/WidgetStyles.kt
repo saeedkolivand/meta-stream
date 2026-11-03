@@ -1,6 +1,6 @@
 package com.saeedkolivand.metastream.overlay
 
-import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.core.model.Kind
 
 // Settings of every in-app widget, stored as strings in Layer.data so a layer stays one flat value: ARGB colours as the
 // unsigned 32-bit decimal (what iOS writes, so packs are portable), bools "true"/"false". A missing or unparsable key

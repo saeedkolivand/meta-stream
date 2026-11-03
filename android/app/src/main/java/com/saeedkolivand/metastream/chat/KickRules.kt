@@ -1,6 +1,8 @@
 package com.saeedkolivand.metastream.chat
 
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.platforms.Accounts
 import java.io.File
 import java.net.HttpURLConnection

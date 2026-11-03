@@ -4,10 +4,10 @@ import android.os.BatteryManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.saeedkolivand.metastream.chat.ChatEvent
-import com.saeedkolivand.metastream.chat.Kind
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.goal.DonatePage
 import com.saeedkolivand.metastream.goal.GoalStore
 import com.saeedkolivand.metastream.overlay.SceneRoles

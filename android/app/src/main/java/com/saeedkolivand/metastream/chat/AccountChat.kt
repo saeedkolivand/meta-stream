@@ -1,6 +1,7 @@
 package com.saeedkolivand.metastream.chat
 
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.platforms.YouTube
 import java.io.IOException

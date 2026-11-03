@@ -3,7 +3,7 @@
 # ponytail: line-based comment stripping (// lines and /* */ blocks); a /* inside a string would fool it.
 cd "$(dirname "$0")"
 fail=0
-for f in $(find app/src -name '*.kt'); do
+for f in $(find . -path '*/src/*' -name '*.kt' -not -path './build-logic/*' -not -path '*/build/*'); do
   n=$(awk '
     /^[[:space:]]*\/\*/ { inblock = 1 }
     inblock { if ($0 ~ /\*\//) inblock = 0; next }

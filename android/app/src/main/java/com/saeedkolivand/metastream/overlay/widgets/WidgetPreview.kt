@@ -1,8 +1,8 @@
 package com.saeedkolivand.metastream.overlay
 
 import android.graphics.Bitmap
-import com.saeedkolivand.metastream.chat.ChatEvent
-import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Kind
 
 private const val SETTLED_MS = 3000L
 private const val SAMPLE_QR = "https://example.com"

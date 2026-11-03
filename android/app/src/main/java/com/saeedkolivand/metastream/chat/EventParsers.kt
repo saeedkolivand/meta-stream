@@ -1,5 +1,7 @@
 package com.saeedkolivand.metastream.chat
 
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Kind
 import org.json.JSONObject
 
 /** One decoded Twitch EventSub WebSocket frame. */

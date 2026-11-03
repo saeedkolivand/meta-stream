@@ -10,10 +10,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.Person
 import androidx.core.app.RemoteInput
-import com.saeedkolivand.metastream.chat.ChatEvent
-import com.saeedkolivand.metastream.chat.Kind
 import com.saeedkolivand.metastream.core.applog
 import com.saeedkolivand.metastream.core.ensureChannel
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.platforms.Accounts
 import kotlinx.coroutines.launch
 

@@ -1,7 +1,7 @@
 package com.saeedkolivand.metastream.speech
 
-import com.saeedkolivand.metastream.chat.ChatEvent
-import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.goal.tipCents
 
 /** Which event kinds are read aloud, and the tip floor. */

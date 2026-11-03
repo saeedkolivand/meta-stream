@@ -1,6 +1,6 @@
 package com.saeedkolivand.metastream.overlay
 
-import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.core.model.Kind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

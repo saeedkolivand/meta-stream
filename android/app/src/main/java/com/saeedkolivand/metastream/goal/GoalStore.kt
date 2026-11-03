@@ -5,6 +5,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Money
 import java.io.File
 import java.math.BigDecimal
 import java.math.MathContext
@@ -231,7 +233,7 @@ object GoalStore {
 private val SELF_RECORDING = setOf("test-donation", "test", "donofa", "reymit", "streamelements", "donito")
 
 /** Every money event from chat (tips, Bits, KICKs, subs) counts toward the goal once. */
-fun countDonation(e: com.saeedkolivand.metastream.chat.ChatEvent) {
+fun countDonation(e: ChatEvent) {
     if (e.platform in SELF_RECORDING) return
     val m = DonationPrices.money(e) ?: return
     GoalStore.record(e.platform + ":" + e.msgId.ifEmpty { UUID.randomUUID().toString() }, e.platform, m, e.time, note = e.user)

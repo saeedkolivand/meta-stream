@@ -12,6 +12,8 @@ import com.google.mlkit.genai.prompt.TextPart
 import com.google.mlkit.genai.prompt.generateContentRequest
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.speech.offensive
 import com.saeedkolivand.metastream.speech.sanitizeSpeech
 import java.util.concurrent.atomic.AtomicInteger

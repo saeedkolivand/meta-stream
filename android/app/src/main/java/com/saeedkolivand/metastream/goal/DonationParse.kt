@@ -1,5 +1,6 @@
 package com.saeedkolivand.metastream.goal
 
+import com.saeedkolivand.metastream.core.model.Money
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.time.OffsetDateTime

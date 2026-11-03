@@ -1,6 +1,6 @@
 package com.saeedkolivand.metastream.speech
 
-import com.saeedkolivand.metastream.chat.ChatEvent
+import com.saeedkolivand.metastream.core.model.ChatEvent
 import java.text.Normalizer
 
 // Same rules as iOS Speaker.isNoise / Speaker.isBlocked: what read-aloud skips and what never goes on stream.

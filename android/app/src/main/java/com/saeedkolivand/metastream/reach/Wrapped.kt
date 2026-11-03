@@ -1,8 +1,8 @@
 package com.saeedkolivand.metastream.reach
 
 import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.model.Money
 import com.saeedkolivand.metastream.goal.DonatePage
-import com.saeedkolivand.metastream.goal.Money
 import com.saeedkolivand.metastream.platforms.TokenStore
 import com.saeedkolivand.metastream.platforms.http
 import java.math.BigDecimal

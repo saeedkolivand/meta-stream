@@ -5,7 +5,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
-import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.core.model.Kind
 import kotlin.math.cos
 import kotlin.math.sin
 

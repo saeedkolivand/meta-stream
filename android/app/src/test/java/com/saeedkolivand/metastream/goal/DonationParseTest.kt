@@ -1,5 +1,6 @@
 package com.saeedkolivand.metastream.goal
 
+import com.saeedkolivand.metastream.core.model.Money
 import java.math.BigDecimal
 import org.json.JSONObject
 import org.junit.Assert.assertEquals

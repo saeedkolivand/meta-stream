@@ -2,9 +2,9 @@ package com.saeedkolivand.metastream.overlay
 
 import android.graphics.RectF
 import androidx.compose.runtime.snapshotFlow
+import com.saeedkolivand.metastream.core.model.Money
 import com.saeedkolivand.metastream.goal.GoalConfig
 import com.saeedkolivand.metastream.goal.GoalStore
-import com.saeedkolivand.metastream.goal.Money
 import com.saeedkolivand.metastream.goal.Rates
 import java.math.BigDecimal
 import kotlin.math.roundToInt

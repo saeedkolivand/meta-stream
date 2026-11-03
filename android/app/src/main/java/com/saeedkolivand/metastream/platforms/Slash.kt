@@ -1,8 +1,8 @@
 package com.saeedkolivand.metastream.platforms
 
-import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.ChatFeed
-import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Kind
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import org.json.JSONObject

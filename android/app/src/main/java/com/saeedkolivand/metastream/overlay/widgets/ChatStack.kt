@@ -2,10 +2,11 @@ package com.saeedkolivand.metastream.overlay
 
 import android.graphics.Canvas
 import android.graphics.RectF
-import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.Emotes
 import com.saeedkolivand.metastream.chat.Run
 import com.saeedkolivand.metastream.chat.tokenize
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Kind
 import kotlin.math.roundToInt
 
 internal const val CHAT_FADE_TOP = 0.18f
@@ -27,7 +28,7 @@ internal fun chatPlacements(rows: List<ChatEvent>, heights: List<Float>, style: 
     return out
 }
 
-internal fun hasAnimatedEmote(e: ChatEvent) = e.kind == com.saeedkolivand.metastream.chat.Kind.Message &&
+internal fun hasAnimatedEmote(e: ChatEvent) = e.kind == Kind.Message &&
     tokenize(e.text, Emotes.byName).any { it is Run.Emote && EmoteBitmaps.isAnimated(it.url) }
 
 private class CachedRow(val bmp: android.graphics.Bitmap, val h: Float, val slots: List<EmoteSlot>)

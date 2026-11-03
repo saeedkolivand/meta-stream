@@ -7,8 +7,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.model.Money
 import com.saeedkolivand.metastream.goal.GoalStore
-import com.saeedkolivand.metastream.goal.Money
 import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.overlay.SceneRoles
 import com.saeedkolivand.metastream.overlay.WidgetLocation

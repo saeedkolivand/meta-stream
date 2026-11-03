@@ -1,5 +1,7 @@
 package com.saeedkolivand.metastream.chat
 
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.speech.SpeechOptions
 import com.saeedkolivand.metastream.speech.eventSummary
 import com.saeedkolivand.metastream.speech.spokenAmount
