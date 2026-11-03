@@ -71,10 +71,10 @@ public final class Platforms: NSObject {
     public let store: TokenStore = UserDefaults.standard
     public let auth = AuthPresenter()
 
-    @ObservationIgnored private(set) lazy var kick = KickService(owner: self)
-    @ObservationIgnored private(set) lazy var twitch = TwitchService(owner: self)
-    @ObservationIgnored private(set) lazy var restream = RestreamService(owner: self)
-    @ObservationIgnored private(set) lazy var youTube = YouTubeService(owner: self)
+    @ObservationIgnored public private(set) lazy var kick = KickService(owner: self)
+    @ObservationIgnored public private(set) lazy var twitch = TwitchService(owner: self)
+    @ObservationIgnored public private(set) lazy var restream = RestreamService(owner: self)
+    @ObservationIgnored public private(set) lazy var youTube = YouTubeService(owner: self)
 
     // Config compat (single source of truth in PlatformConfig).
     public static var webRedirect: String { PlatformConfig.webRedirect }
