@@ -1,34 +1,35 @@
 import CoreLogging
 import CoreModel
 import Foundation
+import Observation
 import Platforms
 
 /// Live chat as one AsyncStream<ChatEvent> (text-to-speech drives off it) plus a recent-messages buffer
 /// for a future chat UI. Kick, Twitch and YouTube each run independently and funnel into the same stream —
 /// exactly one of these owns any given origin, so starting one never stops another. Restream chat can plug
 /// into the same `events` stream later. Transports live in ChatProviders.swift; this type only multiplexes.
-@MainActor
-final class ChatFeed: ObservableObject {
-    @Published private(set) var recent: [ChatEvent] = []   // last 100, across every origin
-    /// Events yielded so far. Not @Published: widgets poll it on their own tick instead of re-rendering SwiftUI.
-    private(set) var serial = 0
+@MainActor @Observable
+final class ChatFeed {
+    private(set) var recent: [ChatEvent] = []   // last 100, across every origin
+    /// Events yielded so far. Not observed: widgets poll it on their own tick instead of re-rendering SwiftUI.
+    @ObservationIgnored private(set) var serial = 0
     /// Bumped by every clear: a clear adds no event, so `serial` alone can't tell the on-screen chat to redraw.
-    private(set) var clears = 0
+    @ObservationIgnored private(set) var clears = 0
     /// The chat sheet and the on-screen chat show only what arrived after the last clear: a clear empties them of
     /// everything (alerts and site events too, from any origin), while `recent` keeps events for the Event list.
-    @Published private(set) var clearedAt = Date.distantPast
+    private(set) var clearedAt = Date.distantPast
     var visible: [ChatEvent] { recent.filter { $0.at > clearedAt } }
-    @Published private(set) var lastFollower = ""
-    @Published private(set) var lastSubscriber = ""
-    @Published private(set) var flooding = false
-    private var floodTask: Task<Void, Never>?
+    private(set) var lastFollower = ""
+    private(set) var lastSubscriber = ""
+    private(set) var flooding = false
+    @ObservationIgnored private var floodTask: Task<Void, Never>?
 
     let events: AsyncStream<ChatEvent>
     private let emit: AsyncStream<ChatEvent>.Continuation
 
-    private var kick: KickChatProvider?
-    private var twitch: TwitchEventSubProvider?
-    private var youtube: YouTubePollProvider?
+    @ObservationIgnored private var kick: KickChatProvider?
+    @ObservationIgnored private var twitch: TwitchEventSubProvider?
+    @ObservationIgnored private var youtube: YouTubePollProvider?
     private let moderator = ChatModerator()
 
     init() {

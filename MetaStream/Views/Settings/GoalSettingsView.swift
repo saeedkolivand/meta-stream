@@ -4,7 +4,7 @@ import SwiftUI
 /// Settings › Goal: the donation goal, manual and test donations; rates and the donation list are one level down.
 /// The donation-site keys and the donate page have their own screens. Money is Decimal throughout (parsed from text, never Double).
 struct GoalSettingsView: View {
-    @EnvironmentObject var chat: ChatFeed
+    @Environment(ChatFeed.self) var chat
     @ObservedObject private var goal = GoalStore.shared
     @ObservedObject private var rates = Rates.shared
 

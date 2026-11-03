@@ -34,7 +34,7 @@ private extension View {
 struct StreamChatView: View {
     let events: [ChatEvent]
     let style: ChatWidgetStyle
-    @ObservedObject var emotes: Emotes
+    var emotes: Emotes
     var channel: String = ""
     var now: Date = Date()
     /// Chat burst (see ChatBurst): rows appear without the entry slide.

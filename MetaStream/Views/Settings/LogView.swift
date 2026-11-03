@@ -4,7 +4,7 @@ import SwiftUI
 /// The in-app Logs screen (Settings > Diagnostics), plus the chat flood test.
 struct LogView: View {
     private let store = LogStore.shared
-    @EnvironmentObject var chat: ChatFeed
+    @Environment(ChatFeed.self) var chat
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {

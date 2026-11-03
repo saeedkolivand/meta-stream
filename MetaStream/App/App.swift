@@ -34,7 +34,7 @@ struct MetaStreamApp: App {
                         .environmentObject(streamer)
                         .environment(platforms)
                         .environmentObject(speaker)
-                        .environmentObject(chat)
+                        .environment(chat)
                         .environmentObject(privacy)
                 }
                 if showSplash { SplashView { showSplash = false } }
@@ -42,6 +42,7 @@ struct MetaStreamApp: App {
             // Streamer speaks connection changes on Speaker's System lane (never muted).
             .onAppear {
                 streamer.speaker = speaker; streamer.privacy = privacy
+                speaker.skipMessage = { !BotList.reads($0.user, $0.text) || AppBot.shared.isOwn($0) }
                 AppBot.shared.streamer = streamer; AppBot.shared.platforms = platforms
                 LivePost.shared.platforms = platforms; LivePost.shared.resume()
                 if gpsShare { GPSShare.shared.setEnabled(true) }

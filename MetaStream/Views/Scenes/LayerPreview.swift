@@ -7,7 +7,7 @@ struct LayerPreview: View {
     let layer: OverlayLayer
     let natural: CGSize
     let size: CGSize
-    @ObservedObject var emotes: Emotes
+    var emotes: Emotes
     /// Live merged chat; empty falls back to the samples so a quiet chat still shows its look.
     let chat: [ChatEvent]
 

@@ -19,7 +19,7 @@ struct ContentView: View {
 
     @ObservedObject var sessionLog = SessionLog.shared   // not private: it would make ContentView's memberwise init private
     @StateObject private var vm = StreamViewModel()
-    @StateObject private var emotes = Emotes()
+    @State private var emotes = Emotes()
     @StateObject private var levelMonitor = LevelMonitor()
     @State private var showSettings = false
     @State private var showChat = false

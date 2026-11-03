@@ -5,16 +5,16 @@ import WebKit
 /// Kick slash commands the public API lacks, run from a hidden signed-in kick.com page (adr/0005).
 /// Endpoints captured from kick.com's own requests on 2026-10-17; unofficial, can change any day.
 /// Never logs cookies, tokens or response bodies.
-@MainActor
-final class KickWeb: ObservableObject {
+@MainActor @Observable
+final class KickWeb {
     static let shared = KickWeb()
     static let commands = ["slow", "emoteonly", "followers", "followonly", "subscribers", "raid", "clip", "clear", "poll", "polldelete",
                            "mod", "unmod", "vip", "unvip", "og", "unog", "prediction"]
-    @Published private(set) var user = ""     // signed-in username; "" = not signed in
+    private(set) var user = ""     // signed-in username; "" = not signed in
     var signedIn: Bool { !user.isEmpty }
-    private var slug = ""
-    private var channelId: Int?
-    private var web: WKWebView?
+    @ObservationIgnored private var slug = ""
+    @ObservationIgnored private var channelId: Int?
+    @ObservationIgnored private var web: WKWebView?
 
     // MARK: pure parts -- see Self.demo()
 
@@ -232,7 +232,7 @@ final class KickWeb: ObservableObject {
 
 /// Settings row: the kick.com session the unofficial commands run through.
 struct KickSessionSection: View {
-    @ObservedObject var kick = KickWeb.shared
+    private var kick = KickWeb.shared
     @State private var signingIn = false
 
     var body: some View {

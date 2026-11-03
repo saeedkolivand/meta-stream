@@ -17,14 +17,14 @@ import UIKit
 ///   FFZ    GET api.frankerfacez.com/v1/room/id/{id}    -> {"room":{"set":Int},"sets":{...same as above...}}
 /// Animated emotes play: 7TV's animated file (not `static_name`), Kick's and BTTV's GIF/WebP are decoded into all
 /// frames + delays (ImageIO, capped at 60 frames) and `image(for:at:)` picks the frame for a given time. FFZ stays static.
-@MainActor
-final class Emotes: ObservableObject {
-    @Published private(set) var byName: [String: URL] = [:]
-    @Published private(set) var images: [URL: Image] = [:]   // decoded static frames, by emote URL
+@MainActor @Observable
+final class Emotes {
+    private(set) var byName: [String: URL] = [:]
+    private(set) var images: [URL: Image] = [:]   // decoded static frames, by emote URL
 
-    private var animations: [URL: Animation] = [:]   // multi-frame emotes only; `images` holds frame 0 of everything
-    private var loadedFor: String?   // "<twitch id>|<kick slug>" the current byName was built for; "|" = none
-    private var loadingImages: Set<URL> = []
+    @ObservationIgnored private var animations: [URL: Animation] = [:]   // multi-frame emotes only; `images` holds frame 0 of everything
+    @ObservationIgnored private var loadedFor: String?   // "<twitch id>|<kick slug>" the current byName was built for; "|" = none
+    @ObservationIgnored private var loadingImages: Set<URL> = []
 
     /// Fetches every provider's global set, plus per-channel sets when `twitchLogin` is given and connected.
     /// No-ops if already loaded for this exact identity, so repeat calls from every `startChat()` re-run
@@ -77,7 +77,7 @@ final class Emotes: ObservableObject {
                 }
                 let frames = decoded.frames.map { Image(decorative: $0, scale: Self.pixelScale) }
                 if frames.count > 1 { animations[url] = Animation(images: frames, delays: decoded.delays) }
-                images[url] = frames[0]   // last: this is the @Published write that re-renders the rows
+                images[url] = frames[0]   // last: this is the observed write that re-renders the rows
             }
         }
         return nil

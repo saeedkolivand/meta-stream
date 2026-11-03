@@ -5,10 +5,10 @@ import SwiftUI
 
 /// Native, aggregated chat sheet: every origin ChatFeed is running lands in one list, newest at the bottom.
 struct ChatSheetView: View {
-    @EnvironmentObject var chat: ChatFeed
+    @Environment(ChatFeed.self) var chat
     @Environment(Platforms.self) var platforms
     @ObservedObject var vm: StreamViewModel
-    @ObservedObject var emotes: Emotes
+    var emotes: Emotes
     @Binding var showChat: Bool
     @Binding var showSettings: Bool
     @Binding var showManager: Bool

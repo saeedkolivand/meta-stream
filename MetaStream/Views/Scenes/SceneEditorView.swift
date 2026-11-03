@@ -9,7 +9,7 @@ struct SceneEditorView: View {
     @ObservedObject var store = OverlayStore.shared
     @Environment(\.horizontalSizeClass) private var sizeClass
     // Emotes is owned by ContentView and isn't an environment object; samples render fine without emote images.
-    @StateObject private var emotes = Emotes()
+    @State private var emotes = Emotes()
     @State var name: String
     @State var draftName: String
     @State var layers: [OverlayLayer] = []

@@ -8,13 +8,13 @@ struct SceneCanvasView: View {
     let layers: [OverlayLayer]
     let canvas: CGSize
     @Binding var selected: Int?
-    @ObservedObject var emotes: Emotes
+    var emotes: Emotes
     /// Called once per finished gesture with the layer's new value.
     let commit: (Int, OverlayLayer) -> Void
 
     @ObservedObject private var store = OverlayStore.shared
     @EnvironmentObject private var streamer: Streamer
-    @EnvironmentObject private var chat: ChatFeed
+    @Environment(ChatFeed.self) private var chat
     @State private var active: Int?
     @State private var drag: CGSize = .zero
     @State private var pinch: CGFloat = 1

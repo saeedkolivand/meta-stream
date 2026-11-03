@@ -27,6 +27,8 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     // ponytail: intentional and not to be "simplified" away — mute only silences Alert/Chat below.
     // A streamer who muted TTS because chat got noisy still needs to hear their stream died (System lane).
     var showOrigin = false   // caller sets this when more than one chat origin is live, e.g. "on Kick, Bob says …"
+    /// Set by the app wiring: bot lines Read aloud › Bots keeps quiet, and the app bot's own lines (Android: same hook).
+    var skipMessage: (ChatEvent) -> Bool = { _ in false }
 
     private let synth = AVSpeechSynthesizer()
     private var systemQueue: [String] = []   // unbounded: System is never dropped
@@ -111,8 +113,8 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         let note = ChatFilter.isBlocked(e.text, extra: blocked) ? "" : ChatFilter.sanitize(e.text)
         switch e.kind {
         case .message:
-            guard messagesOn, !ChatFilter.isNoise(user: e.user, text: e.text, ignored: ignored), !note.isEmpty, BotList.reads(e.user, e.text),
-                  !AppBot.shared.isOwn(e) else { return nil }
+            guard messagesOn, !ChatFilter.isNoise(user: e.user, text: e.text, ignored: ignored), !note.isEmpty,
+                  !skipMessage(e) else { return nil }
             defer { lastChatter = e.user }
             return e.user == lastChatter ? note : "\(user) says \(note)"
         case .tip:
