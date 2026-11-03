@@ -73,6 +73,8 @@ targets:
         product: Platforms
       - package: MetaStreamKit
         product: Chat
+      - package: MetaStreamKit
+        product: Goal
       - package: MetaWearablesDAT
         product: MWDATCore
       - package: MetaWearablesDAT
@@ -110,4 +112,6 @@ targets:
         product: Platforms
       - package: MetaStreamKit
         product: Chat
+      - package: MetaStreamKit
+        product: Goal
 

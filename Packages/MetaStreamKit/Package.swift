@@ -19,7 +19,8 @@ let package = Package(
         .library(name: "CoreUI", targets: ["CoreUI"]),
         .library(name: "Camera", targets: ["Camera"]),
         .library(name: "Platforms", targets: ["Platforms"]),
-        .library(name: "Chat", targets: ["Chat"])
+        .library(name: "Chat", targets: ["Chat"]),
+        .library(name: "Goal", targets: ["Goal"])
     ],
     targets: [
         // Plain data shared by every feature: chat events, money, text patterns. Foundation only.
@@ -40,6 +41,8 @@ let package = Package(
         // Kick, Twitch, Restream, YouTube accounts: OAuth, tokens, stream info, categories, ingest.
         .target(name: "Platforms", dependencies: ["CoreLogging", "CoreNetwork", "CoreStorage"], swiftSettings: strict),
         // Chat feed: Kick/Twitch/YouTube providers, emotes, AI moderation and summary, slash commands, kick.com web session.
-        .target(name: "Chat", dependencies: ["CoreModel", "CoreLogging", "CoreUI", "Platforms"], swiftSettings: strict)
+        .target(name: "Chat", dependencies: ["CoreModel", "CoreLogging", "CoreUI", "Platforms"], swiftSettings: strict),
+        // Donation goal: GoalStore, Money, exchange rates, donation-site sources, the donate page publisher.
+        .target(name: "Goal", dependencies: ["CoreModel", "CoreLogging", "CoreStorage", "Chat"], swiftSettings: strict)
     ]
 )
