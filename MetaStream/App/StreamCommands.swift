@@ -1,3 +1,4 @@
+import Speech
 import SwiftUI
 
 /// Magic Keyboard shortcuts (shown when holding ⌘). No go-live/stop shortcut on purpose: too easy to hit by accident.

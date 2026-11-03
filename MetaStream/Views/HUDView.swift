@@ -1,6 +1,7 @@
 import CoreUI
 import MWDATCore
 import Platforms
+import Speech
 import SwiftUI
 
 /// Top status strip: connection, bitrate, battery, heat, source, mute, photo, manage, camera buttons.

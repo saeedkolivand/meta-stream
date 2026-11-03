@@ -2,6 +2,7 @@ import Chat
 import CoreUI
 import MWDATCore
 import Platforms
+import Speech
 import SwiftUI
 
 // MARK: - Live screen

@@ -1,6 +1,7 @@
 import Chat
 import CoreUI
 import Platforms
+import Speech
 import SwiftUI
 
 /// Live-screen state + routing: codec choice, chat origins, chat start/stop, outgoing send and blur.

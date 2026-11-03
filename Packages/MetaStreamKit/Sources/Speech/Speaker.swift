@@ -11,25 +11,25 @@ import AVFoundation
 /// subs/raids/ad-breaks, queued) and Chat (chat messages, queued and rate-limited). One AVSpeechSynthesizer utterance
 /// plays at a time; `speakNext()` picks the highest-priority non-empty lane each time it's free to speak.
 @MainActor
-final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
+public final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     // Settings the view can bind to (voice/rate picker, per-kind toggles, min-tip slider).
-    @AppStorage("ttsVoiceID") var voiceID = ""            // AVSpeechSynthesisVoice identifier; empty = system default
-    @AppStorage("ttsRate") var rate: Double = 0.5          // AVSpeechUtteranceDefaultSpeechRate
-    @AppStorage("ttsMinTipCents") var minTipCents = 0
-    @AppStorage("ttsMessagesOn") var messagesOn = true
-    @AppStorage("ttsTipsOn") var tipsOn = true
-    @AppStorage("ttsFollowsOn") var followsOn = true
-    @AppStorage("ttsSubsOn") var subsOn = true
-    @AppStorage("ttsRaidsOn") var raidsOn = true
-    @AppStorage("ttsIgnore") var ignored = ""             // names never read, comma or space separated
-    @AppStorage("ttsBlocked") var blocked = ""            // extra words that stop a message being read, comma separated
+    @AppStorage("ttsVoiceID") public var voiceID = ""            // AVSpeechSynthesisVoice identifier; empty = system default
+    @AppStorage("ttsRate") public var rate: Double = 0.5          // AVSpeechUtteranceDefaultSpeechRate
+    @AppStorage("ttsMinTipCents") public var minTipCents = 0
+    @AppStorage("ttsMessagesOn") public var messagesOn = true
+    @AppStorage("ttsTipsOn") public var tipsOn = true
+    @AppStorage("ttsFollowsOn") public var followsOn = true
+    @AppStorage("ttsSubsOn") public var subsOn = true
+    @AppStorage("ttsRaidsOn") public var raidsOn = true
+    @AppStorage("ttsIgnore") public var ignored = ""             // names never read, comma or space separated
+    @AppStorage("ttsBlocked") public var blocked = ""            // extra words that stop a message being read, comma separated
 
-    @Published var muted = false
+    @Published public var muted = false
     // ponytail: intentional and not to be "simplified" away — mute only silences Alert/Chat below.
     // A streamer who muted TTS because chat got noisy still needs to hear their stream died (System lane).
-    var showOrigin = false   // caller sets this when more than one chat origin is live, e.g. "on Kick, Bob says …"
+    public var showOrigin = false   // caller sets this when more than one chat origin is live, e.g. "on Kick, Bob says …"
     /// Set by the app wiring: bot lines Read aloud › Bots keeps quiet, and the app bot's own lines (Android: same hook).
-    var skipMessage: (ChatEvent) -> Bool = { _ in false }
+    public var skipMessage: (ChatEvent) -> Bool = { _ in false }
 
     private let synth = AVSpeechSynthesizer()
     private var systemQueue: [String] = []   // unbounded: System is never dropped
@@ -41,7 +41,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     private var repeating: [String: Task<Void, Never>] = [:]
     private var lastChatter = ""            // a run of messages from one person names them once
 
-    override init() {
+    public override init() {
         super.init()
         synth.delegate = self
         // ponytail: usesApplicationAudioSession=false gives TTS its own ambient/mixed session instead of this
@@ -62,14 +62,14 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
 
     // MARK: System lane
 
-    func speakSystem(_ text: String) {
+    public func speakSystem(_ text: String) {
         systemQueue.append(text)
         if synth.isSpeaking { synth.stopSpeaking(at: .word) } else { speakNext() }
     }
 
     /// Speaks `text` now, then again at 30 s / 60 s / 2 min while the condition persists (call `stopRepeating`
     /// once it clears). Re-calling with the same `id` while already repeating is a no-op.
-    func startRepeating(id: String, text: String) {
+    public func startRepeating(id: String, text: String) {
         guard repeating[id] == nil else { return }
         speakSystem(text)
         repeating[id] = Task { [weak self] in
@@ -82,7 +82,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     }
 
     /// Stops the repeat schedule for `id`; pass `recovered` to announce recovery once, on the System lane.
-    func stopRepeating(id: String, recovered: String? = nil) {
+    public func stopRepeating(id: String, recovered: String? = nil) {
         repeating[id]?.cancel()
         repeating[id] = nil
         if let recovered { speakSystem(recovered) }
@@ -91,14 +91,14 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     // MARK: Alert lane
 
     /// Generic alert with no template, e.g. "ad break in 90 seconds".
-    func speakAlert(_ text: String) {
+    public func speakAlert(_ text: String) {
         enqueue(String(text.prefix(200)), into: &alertQueue)
         speakIfIdle()
     }
 
     // MARK: Chat lane + templated alerts (tip/follow/subscribe/raid)
 
-    func speak(_ event: ChatEvent) {
+    public func speak(_ event: ChatEvent) {
         guard event.origin != "test", !event.flagged, var text = sentence(for: event) else { return }   // "test" = flood test   // mute is enforced in enqueue(_:into:)
         if showOrigin, !event.origin.isEmpty { text = "on \(event.origin), " + text }
         switch event.kind {
@@ -179,10 +179,10 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         synth.speak(u)
     }
 
-    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+    public nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         Task { @MainActor [weak self] in self?.speakNext() }
     }
-    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+    public nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
         Task { @MainActor [weak self] in self?.speakNext() }
     }
 
@@ -190,7 +190,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
 
     /// The best installed voice for the system language (Premium > Enhanced), nil = iOS default. iOS's own default is the
     /// robotic compact voice even when a Premium one is downloaded. Once per launch: speechVoices() is slow.
-    static let bestVoice: AVSpeechSynthesisVoice? = {
+    public static let bestVoice: AVSpeechSynthesisVoice? = {
         // Any region of the language: "en-DE" has no voices of its own, so it must match en-US/en-GB; the exact one wins ties.
         let lang = AVSpeechSynthesisVoice.currentLanguageCode()
         let prefix = lang.prefix { $0 != "-" } + "-"
@@ -201,7 +201,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     }()
 
     /// "one million toman", "ten euros", "five dollars and fifty cents"; other currencies as a plain number and code.
-    static func spokenMoney(_ money: Money) -> String {
+    public static func spokenMoney(_ money: Money) -> String {
         let m = money.inToman
         guard m.amount > 0 else { return "money" }
         let f = NumberFormatter(); f.numberStyle = .spellOut; f.locale = Locale(identifier: "en_US")
@@ -223,7 +223,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     }
 
     /// Spells whole-dollar amounts ("five dollars"); anything with cents stays a plain number ("12.50 dollars").
-    static func spokenAmount(cents: Int) -> String {
+    public static func spokenAmount(cents: Int) -> String {
         guard cents > 0 else { return "money" }
         let dollars = cents / 100
         guard cents % 100 == 0 else { return String(format: "%.2f dollars", Double(cents) / 100) }

@@ -1,4 +1,5 @@
 import CoreModel
+import Speech
 import XCTest
 import Foundation
 @testable import MetaStream

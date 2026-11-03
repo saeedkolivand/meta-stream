@@ -2,6 +2,7 @@ import Chat
 import CoreModel
 import CoreUI
 import Platforms
+import Speech
 import SwiftUI
 
 /// Native, aggregated chat sheet: every origin ChatFeed is running lands in one list, newest at the bottom.
