@@ -1,5 +1,9 @@
 package com.saeedkolivand.metastream.camera
 
+import com.saeedkolivand.metastream.streaming.FaceCamOptions
+import com.saeedkolivand.metastream.streaming.faceRadius
+import com.saeedkolivand.metastream.streaming.faceRect
+import com.saeedkolivand.metastream.streaming.frontPartner
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

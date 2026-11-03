@@ -96,7 +96,7 @@ class UvcSource : VideoSource() {
  * Index of the best (width, height, fpsList) for a stream [wantHeight] tall at [wantFps]: 16:9 only, height <= wanted,
  * those offering [wantFps] first, then the tallest. Null when the camera lists no 16:9 format at or below the target.
  */
-internal fun pickSize(sizes: List<Triple<Int, Int, List<Int>>>, wantHeight: Int, wantFps: Int): Int? {
+fun pickSize(sizes: List<Triple<Int, Int, List<Int>>>, wantHeight: Int, wantFps: Int): Int? {
     val fits = sizes.indices.filter { i -> sizes[i].let { (w, h, _) -> w * 9 == h * 16 && h <= wantHeight } }
     val withFps = fits.filter { wantFps in sizes[it].third }
     return (withFps.ifEmpty { fits }).maxByOrNull { sizes[it].second }

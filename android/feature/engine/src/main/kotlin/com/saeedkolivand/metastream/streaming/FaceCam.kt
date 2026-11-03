@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.camera
+package com.saeedkolivand.metastream.streaming
 
 import android.annotation.SuppressLint
 import android.app.Application
@@ -20,12 +20,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import com.pedro.encoder.input.gl.render.filters.BaseFilterRender
+import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.storage.Prefs
-import com.saeedkolivand.metastream.streaming.Engine
-import com.saeedkolivand.metastream.streaming.Source
-import com.saeedkolivand.metastream.streaming.compositor
-import com.saeedkolivand.metastream.streaming.thermalSerious
 
 private const val CLOSE_DELAY_MS = 2000L
 private const val MAX_PIXELS = 1280 * 720 // concurrent streams are only guaranteed up to 720p each

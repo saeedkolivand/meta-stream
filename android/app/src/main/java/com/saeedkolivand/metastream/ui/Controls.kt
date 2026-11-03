@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
-import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.ui.Green
 import com.saeedkolivand.metastream.core.ui.Orange
@@ -53,6 +52,7 @@ import com.saeedkolivand.metastream.privacy.BlurState
 import com.saeedkolivand.metastream.privacy.Privacy
 import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
+import com.saeedkolivand.metastream.streaming.FaceCam
 import com.saeedkolivand.metastream.streaming.Recording
 import com.saeedkolivand.metastream.streaming.ScreenShare
 import com.saeedkolivand.metastream.streaming.Soundboard

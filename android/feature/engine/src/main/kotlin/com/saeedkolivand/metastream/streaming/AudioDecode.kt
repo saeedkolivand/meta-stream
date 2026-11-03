@@ -14,7 +14,7 @@ private const val TIMEOUT_US = 10_000L
  * read whole, truncated). Null for an unreadable file or one without audio. Blocking: call it off the main thread.
  * ponytail: assumes the decoder's default 16-bit output (Android's default); a float-PCM decoder would need a branch here.
  */
-internal fun decodeAudio(file: File, maxSeconds: Int): ShortArray? {
+fun decodeAudio(file: File, maxSeconds: Int): ShortArray? {
     val ex = MediaExtractor()
     var codec: MediaCodec? = null
     return try {

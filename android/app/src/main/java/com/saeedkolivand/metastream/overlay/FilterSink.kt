@@ -3,8 +3,8 @@ package com.saeedkolivand.metastream.overlay
 import com.pedro.encoder.input.gl.render.filters.BaseFilterRender
 import com.pedro.encoder.input.gl.render.filters.`object`.BaseObjectFilterRender
 import com.pedro.library.view.GlInterface
-import com.saeedkolivand.metastream.camera.Looks
 import com.saeedkolivand.metastream.privacy.Privacy
+import com.saeedkolivand.metastream.streaming.Looks
 
 /**
  * The overlay layers' view of the GL filter chain. It remembers what it added so a rebuild removes only those filters:

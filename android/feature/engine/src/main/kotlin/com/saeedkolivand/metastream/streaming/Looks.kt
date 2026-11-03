@@ -1,12 +1,11 @@
-package com.saeedkolivand.metastream.camera
+package com.saeedkolivand.metastream.streaming
 
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import com.pedro.library.view.GlInterface
+import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.core.logging.applog
-import com.saeedkolivand.metastream.streaming.Engine
-import com.saeedkolivand.metastream.streaming.Source
 import java.io.File
 
 private const val MAX_CUBE_BYTES = 16 * 1024 * 1024 // a 64-point cube is ~8 MB of text

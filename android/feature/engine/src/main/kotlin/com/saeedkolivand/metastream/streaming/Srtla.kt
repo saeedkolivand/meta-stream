@@ -27,7 +27,7 @@ private const val PEER_QUIET_MS = 2000L
  * receiver over one UDP socket per network (Wi-Fi, cellular, Ethernet; requested so cellular stays up beside Wi-Fi) and
  * merges the replies back. All link state lives on the "srtla" thread; network callbacks post onto it.
  */
-internal class Srtla(private val host: String, private val port: Int, context: Context, private val onStats: (List<LinkStat>) -> Unit) {
+class Srtla(private val host: String, private val port: Int, context: Context, private val onStats: (List<LinkStat>) -> Unit) {
     private val cm = context.getSystemService(ConnectivityManager::class.java)
     private val selector = Selector.open()
     private val local = DatagramChannel.open().apply {

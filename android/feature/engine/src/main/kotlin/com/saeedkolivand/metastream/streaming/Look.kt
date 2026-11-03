@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.camera
+package com.saeedkolivand.metastream.streaming
 
 import com.saeedkolivand.metastream.core.storage.Prefs
 import org.json.JSONObject

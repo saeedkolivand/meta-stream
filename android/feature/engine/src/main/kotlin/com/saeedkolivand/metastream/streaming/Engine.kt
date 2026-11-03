@@ -23,7 +23,6 @@ import com.pedro.encoder.utils.gl.AspectRatioMode
 import com.pedro.library.generic.GenericStream
 import com.pedro.library.util.streamclient.SrtStreamClient
 import com.saeedkolivand.metastream.camera.Cam
-import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.logging.redactFromLogs
 import com.saeedkolivand.metastream.core.model.Session
@@ -135,10 +134,10 @@ object Engine {
     }
 
     /** The prepared stream local recording writes from; it shares the preview's instance. */
-    internal fun recorder(): GenericStream? = ensure()?.takeIf { matchSettings(it) }
+    fun recorder(): GenericStream? = ensure()?.takeIf { matchSettings(it) }
 
     /** Application context for helpers outside Engine (recording's cache dir and gallery save). */
-    internal val appContext: Context get() = app
+    val appContext: Context get() = app
 
     private var preview: SurfaceView? = null
     private var prepared: Pair<VideoParams, Boolean>? = null

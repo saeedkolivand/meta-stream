@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.camera
+package com.saeedkolivand.metastream.streaming
 
 import android.content.Context
 import android.graphics.SurfaceTexture

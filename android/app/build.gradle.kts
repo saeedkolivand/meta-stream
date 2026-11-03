@@ -45,6 +45,7 @@ dependencies {
     implementation(project(":feature:goal"))
     implementation(project(":feature:speech"))
     implementation(project(":feature:privacy"))
+    implementation(project(":feature:engine"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.documentfile)
     implementation(platform(libs.androidx.compose.bom))

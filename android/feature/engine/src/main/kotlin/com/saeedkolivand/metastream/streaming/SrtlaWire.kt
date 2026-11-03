@@ -1,7 +1,7 @@
 package com.saeedkolivand.metastream.streaming
 
 /** Constants and pure logic of the SRTLA sender (BELABOX srtla_send.c + common.h, via iOS Srtla.swift); names are its identifiers. */
-internal object SrtlaWire {
+object SrtlaWire {
     // common.h
     const val NGP = 0x9211
     const val REG1 = 0x9200
@@ -50,12 +50,7 @@ internal object SrtlaWire {
 }
 
 /** conn_t: one bonding link's socket and congestion state (srtla thread only). */
-internal class SrtlaLink(
-    val network: android.net.Network,
-    val label: String,
-    val backup: Boolean,
-    val ch: java.nio.channels.DatagramChannel
-) {
+class SrtlaLink(val network: android.net.Network, val label: String, val backup: Boolean, val ch: java.nio.channels.DatagramChannel) {
     var lastRcvd = 0L
     var lastSent = 0L
     var window = SrtlaWire.WIN_DEF
@@ -67,7 +62,7 @@ internal class SrtlaLink(
     fun up(now: Long) = lastRcvd + SrtlaWire.CONN_TIMEOUT >= now // !conn_timed_out
 }
 
-internal fun List<SrtlaLink>.ack(a: Int) { // register_srt_ack: everything below is delivered
+fun List<SrtlaLink>.ack(a: Int) { // register_srt_ack: everything below is delivered
     for (c in this) {
         var n = 0
         for (i in c.log.indices) if (c.log[i] < a) c.log[i] = -1 else n++
@@ -76,7 +71,7 @@ internal fun List<SrtlaLink>.ack(a: Int) { // register_srt_ack: everything below
 }
 
 /** A NAK range checks each link's 256-entry log instead of walking it: a broken receiver could name two billion numbers. */
-internal fun List<SrtlaLink>.nak(b: ByteArray, n: Int) {
+fun List<SrtlaLink>.nak(b: ByteArray, n: Int) {
     var i = 16
     while (i + 4 <= n) {
         val v = SrtlaWire.be32(b, i)
@@ -99,7 +94,7 @@ internal fun List<SrtlaLink>.nak(b: ByteArray, n: Int) {
     }
 }
 
-internal fun List<SrtlaLink>.srtlaAck(s: Int) { // register_srtla_ack
+fun List<SrtlaLink>.srtlaAck(s: Int) { // register_srtla_ack
     var found = false
     for (c in this) {
         val i = if (found) -1 else c.log.indexOf(s)

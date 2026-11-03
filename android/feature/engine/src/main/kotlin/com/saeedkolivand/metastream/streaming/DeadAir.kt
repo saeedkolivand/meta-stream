@@ -9,7 +9,7 @@ private val REPEATS = longArrayOf(30, 60, 120)
  * iOS HealthMonitor.checkDeadAir: "No audio on stream" once the mix has been under -50 dBFS for 20 s while live and
  * unmuted. Driven by Health's 1 s loop, not by the level reports, so a mic that delivers no buffers counts as silence.
  */
-internal object DeadAir {
+object DeadAir {
     private var quietSince: Long? = null
     private var alertSince: Long? = null
     private var repeat = 0

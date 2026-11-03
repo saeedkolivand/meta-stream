@@ -4,7 +4,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.camera.CameraSettings
-import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.camera.shutterLabel
 import com.saeedkolivand.metastream.core.storage.AppSettings
 import com.saeedkolivand.metastream.core.storage.FPS_CHOICES
@@ -18,7 +17,9 @@ import com.saeedkolivand.metastream.core.ui.Segmented
 import com.saeedkolivand.metastream.core.ui.SliderRow
 import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.streaming.Engine
+import com.saeedkolivand.metastream.streaming.FaceCam
 import com.saeedkolivand.metastream.streaming.Source
+import com.saeedkolivand.metastream.streaming.level
 
 private fun edit(change: CameraSettings.() -> CameraSettings) = Cam.update { it.change() }
 

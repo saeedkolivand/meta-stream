@@ -45,7 +45,7 @@ object ScreenShare {
     }
 
     /** Called by the service once it runs as a media-projection foreground service. */
-    internal fun granted(context: Context, code: Int, data: Intent) {
+    fun granted(context: Context, code: Int, data: Intent) {
         val p = runCatching { context.getSystemService(MediaProjectionManager::class.java).getMediaProjection(code, data) }
             .onFailure { applog("screen", "no projection: ${it.message}") }.getOrNull() ?: return
         stop()
@@ -74,12 +74,12 @@ object ScreenShare {
      * Engine's video source for Screen. Without a projection (a fresh stream after a restart) it's a blank frame, never
      * the camera: the user chose to show their screen, so falling back to the camera would film them unannounced.
      */
-    internal fun source(context: Context): VideoSource = projection?.let { ScreenSource(context, it) } ?: NoVideoSource().also {
+    fun source(context: Context): VideoSource = projection?.let { ScreenSource(context, it) } ?: NoVideoSource().also {
         applog("screen", "no projection, sending a blank frame; pick Screen again to share")
     }
 
     /** The apps' audio mixed with the mic, from the current projection; null without one. */
-    internal fun appAudio(): MixAudioSource? = projection?.let { MixAudioSource(it, object : MediaProjection.Callback() {}) }
+    fun appAudio(): MixAudioSource? = projection?.let { MixAudioSource(it, object : MediaProjection.Callback() {}) }
 
     fun stop() {
         watch?.cancel()
@@ -93,13 +93,13 @@ object ScreenShare {
 }
 
 /** The RootEncoder source class [s] runs on, so Engine.pick swaps only when it changes. */
-internal fun sourceClass(s: Source): Class<out VideoSource> = when (s) {
+fun sourceClass(s: Source): Class<out VideoSource> = when (s) {
     Source.Usb -> UvcSource::class.java
     Source.Screen -> ScreenSource::class.java
     else -> Camera2Source::class.java
 }
 
-internal fun videoSource(context: Context, s: Source): VideoSource = when (s) {
+fun videoSource(context: Context, s: Source): VideoSource = when (s) {
     Source.Usb -> UvcSource()
     Source.Screen -> ScreenShare.source(context)
     else -> Camera2Source(context)

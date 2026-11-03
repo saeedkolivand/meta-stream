@@ -8,7 +8,7 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /** The mix's loudness, the dead-air rule, mixing and the chime: pure (tested), same numbers as iOS AudioMath/SoundMix. */
-internal object AudioMath {
+object AudioMath {
     const val DEAD_AIR_DB = -50f
     const val DEAD_AIR_MS = 20_000L
     const val SILENCE_DB = -120f

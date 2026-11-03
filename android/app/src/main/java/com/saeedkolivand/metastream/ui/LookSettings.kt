@@ -9,8 +9,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import com.saeedkolivand.metastream.camera.Look
-import com.saeedkolivand.metastream.camera.Looks
 import com.saeedkolivand.metastream.core.ui.ActionRow
 import com.saeedkolivand.metastream.core.ui.Choice
 import com.saeedkolivand.metastream.core.ui.Footnote
@@ -19,6 +17,8 @@ import com.saeedkolivand.metastream.core.ui.Section
 import com.saeedkolivand.metastream.core.ui.SliderRow
 import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.streaming.Engine
+import com.saeedkolivand.metastream.streaming.Look
+import com.saeedkolivand.metastream.streaming.Looks
 
 /** iOS CameraProControlsView+Look: the live source's grade, saved per source on every change, applied on the GPU. */
 @Composable

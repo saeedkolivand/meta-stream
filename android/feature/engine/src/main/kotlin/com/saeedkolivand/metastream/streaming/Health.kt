@@ -21,7 +21,7 @@ private const val LOW_BATTERY = 15
 private const val BATTERY_MS = 30_000L
 
 /** True when a battery refresh is due; the first tick after go-live always refreshes (last is 0). */
-internal fun batteryDue(now: Long, last: Long) = last == 0L || now - last >= BATTERY_MS
+fun batteryDue(now: Long, last: Long) = last == 0L || now - last >= BATTERY_MS
 
 /** iOS HUD wording: fair -> warm, serious -> hot, critical -> overheating; null while nominal (Android NONE/LIGHT). */
 fun thermalLabel(status: Int): String? = when {

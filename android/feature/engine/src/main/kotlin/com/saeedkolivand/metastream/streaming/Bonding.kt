@@ -13,9 +13,9 @@ import com.saeedkolivand.metastream.core.logging.applog
 data class LinkStat(val label: String, val backup: Boolean, val up: Boolean, val share: Int)
 
 /** A network the proxy bonds over: its Settings key ("main" | "backup" | "off"), label and default role, like iOS. */
-internal data class Transport(val type: Int, val key: String, val label: String, val def: String)
+data class Transport(val type: Int, val key: String, val label: String, val def: String)
 
-internal val BONDING_TRANSPORTS = listOf(
+val BONDING_TRANSPORTS = listOf(
     Transport(NetworkCapabilities.TRANSPORT_WIFI, "srtlaWifi", "Wi-Fi", "main"),
     Transport(NetworkCapabilities.TRANSPORT_ETHERNET, "srtlaEthernet", "Ethernet", "main"),
     Transport(NetworkCapabilities.TRANSPORT_CELLULAR, "srtlaCellular", "Cellular", "backup")

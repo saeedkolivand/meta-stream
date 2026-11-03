@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.camera
+package com.saeedkolivand.metastream.streaming
 
 import android.content.Context
 import android.opengl.GLES20
@@ -10,7 +10,7 @@ import java.nio.ByteOrder
 
 private const val STRIDE = 20
 
-internal const val LOOK_VERTEX = """
+const val LOOK_VERTEX = """
 uniform mat4 uMVPMatrix;
 uniform mat4 uSTMatrix;
 attribute vec4 aPosition;
@@ -27,7 +27,7 @@ void main() {
  * sampled and mixed. ponytail: warmth scales the channels toward a 4500 K / 8500 K white instead of CITemperatureAndTint's
  * chromatic adaptation; the LUT is 8-bit, so very steep grades can band.
  */
-internal const val LOOK_FRAGMENT = """
+const val LOOK_FRAGMENT = """
 precision highp float;
 varying vec2 vTextureCoord;
 uniform sampler2D uSampler;
@@ -53,7 +53,7 @@ void main() {
 }"""
 
 /** Grades every camera frame ahead of the overlays. [set] is thread-safe; a new LUT is uploaded on the GL thread. */
-internal class LookFilter : BaseFilterRender() {
+class LookFilter : BaseFilterRender() {
     @Volatile private var look = Look()
 
     @Volatile private var cube: Cube? = null

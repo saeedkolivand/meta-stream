@@ -10,7 +10,6 @@ import android.content.pm.ServiceInfo
 import android.os.IBinder
 import android.os.SystemClock
 import androidx.compose.runtime.snapshotFlow
-import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.core.logging.applog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
