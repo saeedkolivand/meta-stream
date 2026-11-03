@@ -1,5 +1,6 @@
 package com.saeedkolivand.metastream.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,9 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,7 +36,11 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun ThemePage() {
     var theme by remember { mutableStateOf(ColorTheme.current) }
-    Section("Theme") {
+    Section(
+        "Theme",
+        "The theme colours the scene templates and the Instagram story. Changing it doesn't recolour scenes you already " +
+            "made from a template; re-apply the template for that."
+    ) {
         for (t in ColorTheme.entries) {
             ThemeRow(t, t == theme) {
                 theme = t
@@ -45,46 +48,50 @@ internal fun ThemePage() {
             }
         }
     }
-    Footnote(
-        "The theme colours the scene templates and the Instagram story. Changing it doesn't recolour scenes you already " +
-            "made from a template; re-apply the template for that."
-    )
     val scope = rememberCoroutineScope()
-    Section("Instagram story") {
-        val ctx = LocalContext.current
-        val ready = remember { InstagramStory.available(ctx) }
+    val ctx = LocalContext.current
+    val ready = remember { InstagramStory.available(ctx) }
+    Section(
+        "Instagram story",
+        if (ready) {
+            "Opens Instagram with this card, without going live. Add the Link sticker there."
+        } else {
+            "Needs Instagram installed and a Meta app ID in the build."
+        }
+    ) {
         var tpl by remember { mutableStateOf(InstagramStory.template) }
-        Choice("Card", InstagramStory.Template.entries.map { it to it.title }, tpl) {
+        Choice("Layout", InstagramStory.Template.entries.map { it to it.title }, tpl) {
             tpl = it
             Prefs.put("igStoryTemplate", it.name)
         }
-        Button({
-            scope.launch { InstagramStory.share(ctx) }
-        }, enabled = ready) { Text(if (Engine.live) "Share to Instagram story" else "Share \"live soon\" story") }
-        OutlinedButton({ scope.launch { InstagramStory.share(ctx, test = true) } }, enabled = ready) { Text("Test share") }
-        Footnote(
-            if (ready) {
-                "Opens Instagram's story editor with the card (a frame of the stream while live). Add the Link sticker in the empty lower part."
-            } else {
-                "Needs Instagram installed and the Meta app ID in the build."
+        Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            val card = remember(tpl, theme) {
+                InstagramStory.card(null, "Walking through Cologne", "https://kick.com/yourname", tpl, false).asImageBitmap()
             }
-        )
+            Image(card, null, Modifier.size(180.dp, 320.dp))
+            Text("Preview without a stream frame", Modifier.padding(top = 8.dp), color = Secondary, fontSize = 13.sp)
+        }
+        ActionRow("Test share to Instagram", ready) { scope.launch { InstagramStory.share(ctx, test = true) } }
+        // Android only: iOS shares from the HUD's story button, which Android doesn't have yet.
+        ActionRow(if (Engine.live) "Share to Instagram story" else "Share \"live soon\" story", ready) {
+            scope.launch { InstagramStory.share(ctx) }
+        }
     }
 }
 
-/** Name, Persian name and the five swatches, like the iOS picker row. */
+/** Name, Persian name and the five swatches, like the iOS inline picker row (check on the picked one). */
 @Composable
 private fun ThemeRow(t: ColorTheme, selected: Boolean, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
-        RadioButton(selected, onClick)
         Column(Modifier.weight(1f)) {
-            Text(t.title)
-            Text(t.faName, color = Color.White.copy(alpha = 0.55f), fontSize = 13.sp)
+            Text(t.title, fontSize = 17.sp)
+            Text(t.faName, color = Secondary, fontSize = 13.sp)
         }
-        Row(Modifier.padding(end = 4.dp), Arrangement.spacedBy(3.dp)) {
+        Row(Modifier.padding(end = 8.dp), Arrangement.spacedBy(3.dp)) {
             for (c in listOf(t.bg, t.surface, t.text, t.muted, t.accent)) {
                 Box(Modifier.size(14.dp).background(Color(c), CircleShape).border(0.5.dp, Color.White.copy(alpha = 0.4f), CircleShape))
             }
         }
+        Text(if (selected) "✓" else "", Modifier.size(20.dp), color = SystemBlue, fontSize = 17.sp)
     }
 }

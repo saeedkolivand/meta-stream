@@ -91,7 +91,11 @@ private enum class Page(val title: String, val parent: Page?, val group: String 
     CamStrip("Customise controls", Camera),
     CamPro("Pro controls", Camera),
     Soundboard("Soundboard", Audio),
-    Stinger("Stinger", Transitions);
+    Stinger("Stinger", Transitions),
+    Voice("Voice", ReadAloud),
+    DontRead("Don't read", ReadAloud),
+    BotMessages("Messages", AppBot),
+    BotTimers("Timers", AppBot);
 
     val depth: Int get() = generateSequence(this) { it.parent }.count()
 }
@@ -157,9 +161,13 @@ private fun PageContent(p: Page, go: (Page) -> Unit) = when (p) {
     Page.Transitions -> TransitionsPage { go(Page.Stinger) }
     Page.Stinger -> StingerSettings()
     Page.Theme -> ThemePage()
-    Page.ReadAloud -> ReadAloudSettings()
+    Page.ReadAloud -> ReadAloudSettings({ go(Page.Voice) }, { go(Page.DontRead) })
+    Page.Voice -> VoicePage()
+    Page.DontRead -> DontReadPage()
     Page.Commands -> CommandsPage()
-    Page.AppBot -> AppBotPage()
+    Page.AppBot -> AppBotPage({ go(Page.BotMessages) }, { go(Page.BotTimers) })
+    Page.BotMessages -> AppBotMessagesPage()
+    Page.BotTimers -> AppBotTimersPage()
     Page.Bots -> KnownBotsPage()
     Page.Goal -> GoalPage()
     Page.DonationSources -> DonationSourcesPage()

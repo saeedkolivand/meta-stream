@@ -2,11 +2,11 @@ package com.saeedkolivand.metastream.ui
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -23,9 +23,9 @@ import com.saeedkolivand.metastream.bot.BotTimer
 import com.saeedkolivand.metastream.bot.send
 import kotlinx.coroutines.launch
 
-private val DESTINATIONS = listOf("all" to "Both", "kick" to "Kick", "twitch" to "Twitch")
+private val DESTINATIONS = listOf("kick" to "Kick", "twitch" to "Twitch", "all" to "Both")
 
-/** Settings › App bot › Timers: text, minutes, remove; saved on every edit. */
+/** iOS AppBotTimersView rows: message, interval, delete; saved on every edit. */
 @Composable
 internal fun TimersEditor() {
     var list by remember { mutableStateOf(BotTimer.stored()) }
@@ -34,16 +34,20 @@ internal fun TimersEditor() {
         BotTimer.save(next)
     }
     list.forEachIndexed { i, t ->
-        OutlinedTextField(t.text, { v -> edit(list.toMutableList().also { it[i] = t.copy(text = v) }) }, Modifier.fillMaxWidth(), label = {
-            Text("Timer ${i + 1}")
-        })
-        Stepper("Every ${t.minutes} min", t.minutes, 5..240, 5) { m -> edit(list.toMutableList().also { it[i] = t.copy(minutes = m) }) }
-        TextButton({ edit(list.filterIndexed { j, _ -> j != i }) }) { Text("Remove timer") }
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.weight(1f)) {
+                    TextRow("Message", t.text, { v -> edit(list.toMutableList().also { it[i] = t.copy(text = v) }) })
+                }
+                TextButton({ edit(list.filterIndexed { j, _ -> j != i }) }) { Text("Delete", color = Red) }
+            }
+            Stepper("Every ${t.minutes} min", t.minutes, 5..120, 5) { m -> edit(list.toMutableList().also { it[i] = t.copy(minutes = m) }) }
+        }
     }
-    TextButton({ edit(list + BotTimer("")) }) { Text("Add timer") }
+    ActionRow("Add timer") { edit(list + BotTimer("")) }
 }
 
-/** Settings › App bot › Saved commands: the chips above the chat input. */
+/** iOS CommandsSettingsView rows: the command, where it goes (segmented), delete. */
 @Composable
 internal fun CommandsEditor() {
     var list by remember { mutableStateOf(BotCommand.stored()) }
@@ -52,16 +56,17 @@ internal fun CommandsEditor() {
         BotCommand.save(next)
     }
     list.forEachIndexed { i, c ->
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(c.text, { v ->
-                edit(list.toMutableList().also { it[i] = c.copy(text = v) })
-            }, Modifier.weight(1f), singleLine = true)
-            TextButton({ edit(list.filterIndexed { j, _ -> j != i }) }) { Text("Remove") }
+        Column(Modifier.padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.weight(1f)) {
+                    TextRow("!command", c.text, { v -> edit(list.toMutableList().also { it[i] = c.copy(text = v) }) })
+                }
+                TextButton({ edit(list.filterIndexed { j, _ -> j != i }) }) { Text("Delete", color = Red) }
+            }
+            Segmented(DESTINATIONS, c.destination) { d -> edit(list.toMutableList().also { it[i] = c.copy(destination = d) }) }
         }
-        Choice("Send to", DESTINATIONS, c.destination) { d -> edit(list.toMutableList().also { it[i] = c.copy(destination = d) }) }
     }
-    TextButton({ edit(list + BotCommand("")) }) { Text("Add command") }
-    Footnote("Sent as you, so other bots (BotRix, Nightbot) obey them. A /command runs on each platform instead of posting.")
+    ActionRow("Add command") { edit(list + BotCommand("!", "all")) }
 }
 
 /** One tap sends a saved command (iOS ChatSheetView's command strip); [onNote] gets a slash command's outcome. */

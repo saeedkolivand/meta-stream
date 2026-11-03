@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -33,6 +32,7 @@ import com.saeedkolivand.metastream.bot.AppBot
 import com.saeedkolivand.metastream.bot.BotCommand
 import com.saeedkolivand.metastream.bot.BotList
 import com.saeedkolivand.metastream.bot.BotRules
+import com.saeedkolivand.metastream.bot.BotTimer
 import com.saeedkolivand.metastream.bot.TwitchBot
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.platforms.Kick
@@ -60,63 +60,91 @@ internal fun PrefField(label: String, key: String, default: String) {
     })
 }
 
-/** iOS AppBotSettingsView: the app's own chat account, never posting as the streamer. */
+/** iOS AppBotSettingsView: the app's own chat account, never posting as the streamer. Messages and Timers are their own pages. */
 @Composable
-internal fun AppBotPage() {
-    if (AppBot.status.isNotEmpty()) Note(AppBot.status)
-    Section("Accounts") {
-        PrefSwitch("Kick (the app's bot account)", "botKick", false, Kick.connected)
-        if (!Kick.connected) Footnote("Connect Kick in Stream Manager first; the bot posts as Kick's app bot on your channel.")
-        PrefSwitch("Twitch", "botTwitch", false, Twitch.connected)
-        Row {
-            if (TwitchBot.name.isEmpty()) {
-                Button(TwitchBot::connect, enabled = Twitch.connected) { Text("Connect Twitch bot account") }
-            } else {
-                OutlinedButton(TwitchBot::disconnect) { Text("Disconnect ${TwitchBot.name}") }
-            }
-        }
-        Footnote("Twitch needs a second account for the bot: sign in to it on the activate page (a private tab helps).")
-        PrefSwitch("Test mode (works while offline)", "botTestMode", false)
-        Footnote("Offline, only you and your mods get answers. Timers stay live-only.")
+internal fun AppBotPage(openMessages: () -> Unit, openTimers: () -> Unit) {
+    Section(
+        null,
+        "Posts only while you are live, never as you. Test mode lets it answer you and your mods (no one else) and post " +
+            "notices while offline; turn it off when done."
+    ) {
+        PrefSwitch("App bot on Kick", "botKick", false, Kick.connected)
+        PrefSwitch("App bot on Twitch", "botTwitch", false, Twitch.connected)
+        PrefSwitch("Test mode", "botTestMode", false)
+        if (AppBot.status.isNotEmpty()) Text(AppBot.status, color = Secondary, fontSize = 13.sp)
     }
-    Section("Scene notices") {
-        PrefSwitch("Post scene notices", "botNotices", true)
-        for ((key, label) in listOf(
-            "botTplStartingOn" to "Starting scene up",
-            "botTplStartingOff" to "Starting scene over",
-            "botTplBrbOn" to "Weak connection (BRB)",
-            "botTplBrbOff" to "Back from BRB",
-            "botTplEndingOn" to "Ending scene"
-        )) {
-            PrefField(label, key, AppBot.defaults.getValue(key))
+    Section(
+        "Twitch bot account",
+        "Kick: the bot posts as Kick's app bot on your channel once Kick is connected. Twitch: connect a second account here " +
+            "(make it a mod of your channel)."
+    ) {
+        if (TwitchBot.name.isEmpty()) {
+            ActionRow("Connect bot account", Twitch.connected, onClick = TwitchBot::connect)
+        } else {
+            Text("Connected as ${TwitchBot.name}", fontSize = 17.sp)
+            ActionRow("Disconnect", destructive = true, onClick = TwitchBot::disconnect)
         }
     }
-    Section("Thank-yous") {
-        PrefSwitch("Thank followers, subs, gifts and raids", "botThanks", true)
-        for ((key, label) in listOf(
-            "botTplFollow" to "Follow",
-            "botTplSub" to "Sub",
-            "botTplGift" to "Gifted subs",
-            "botTplRaid" to "Raid"
-        )) {
-            PrefField(label, key, AppBot.defaults.getValue(key))
-        }
-        Footnote("{user} is the name, {count} the gifts or raiders.")
-    }
-    Section("Viewer commands") {
+    Section(
+        "Viewer commands",
+        "Once per 30 s per command and platform; mods and you skip that. !location says region and country only. !song posts " +
+            "the Spotify song with its link (Settings › Spotify). The !donate answer is in Messages."
+    ) {
         for (cmd in AppBot.commands - BotRules.donateAliases.toSet()) PrefSwitch(cmd, BotRules.switchKey(cmd), true)
-        PrefSwitch("Hide location (!location says it's private)", "botHideLocation", false)
-        PrefField("!donate reply ({title} {total} {target} {percent} {url})", "botTplDonate", AppBot.defaults.getValue("botTplDonate"))
-        Footnote(
-            "!tip, !support and !donation answer like !donate. Each command answers once per 30 s per platform; you and your mods skip the wait."
-        )
+        PrefSwitch("Hide location", "botHideLocation", false)
     }
-    Section("Timers") {
-        PrefSwitch("Repeat timers while live", "botTimersOn", false)
+    Section(null, "What the bot posts for scene changes, donate questions and thank-yous, and repeating timers.") {
+        val messages = listOf("botNotices", "botThanks").count { Prefs.bool(it, true) }
+        NavRow("Messages", value = if (messages == 0) "Off" else "$messages on", onClick = openMessages)
+        val timers = BotTimer.stored().size
+        NavRow("Timers", value = if (Prefs.bool("botTimersOn", false) && timers > 0) "$timers" else "Off", onClick = openTimers)
+    }
+}
+
+@Composable
+private fun Tpl(label: String, key: String) = PrefField(label, key, AppBot.defaults.getValue(key))
+
+/** iOS AppBotMessagesView: scene notices, the !donate answer and thank-yous. An emptied template posts nothing. */
+@Composable
+internal fun AppBotMessagesPage() {
+    Section(
+        null,
+        "Empty = don't post. With no scene set to the BRB role, a weak connection only posts the BRB lines and the stream " +
+            "stays on camera. The BRB line goes out at most once per 2 min."
+    ) {
+        PrefSwitch("Scene notices", "botNotices", true)
+        Tpl("BRB starts", "botTplBrbOn")
+        Tpl("BRB ends", "botTplBrbOff")
+        Tpl("Starting scene", "botTplStartingOn")
+        Tpl("Starting ends (live)", "botTplStartingOff")
+        Tpl("Ending scene", "botTplEndingOn")
+    }
+    Section(
+        "Viewer commands",
+        "!donate (also !tip, !support, !donation) answers with this: {title}, {total}, {target}, {percent} and {url}."
+    ) {
+        Tpl("Donate answer", "botTplDonate")
+    }
+    Section(null, "{user} and {count}. Empty = don't post.") {
+        PrefSwitch("Thank-yous", "botThanks", true)
+        Tpl("Follow", "botTplFollow")
+        Tpl("Sub", "botTplSub")
+        Tpl("Gifted subs", "botTplGift")
+        Tpl("Raid", "botTplRaid")
+    }
+}
+
+/** iOS AppBotTimersView: repeating messages while live. */
+@Composable
+internal fun AppBotTimersPage() {
+    Section(
+        null,
+        "A timer posts when its interval has passed and at least 5 viewers chatted since its last post; timers wait 5 min " +
+            "after each other."
+    ) {
+        PrefSwitch("Timers", "botTimersOn", false)
         TimersEditor()
-        Footnote("A timer waits for its interval (5 min at least) and 5 chat messages, and 5 min after any other timer.")
     }
-    KickSessionSection()
 }
 
 /** The kick.com session the unofficial Kick commands run through (iOS KickSessionSection, adr/0005). */
@@ -124,15 +152,14 @@ internal fun AppBotPage() {
 private fun KickSessionSection() {
     var signingIn by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { KickWeb.refresh() }
-    Section("kick.com session (unofficial)") {
-        Note(if (KickWeb.signedIn) "Signed in as ${KickWeb.user}" else "Not signed in")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton({ signingIn = true }) { Text("Sign in to kick.com") }
-            if (KickWeb.signedIn) TextButton(KickWeb::signOut) { Text("Sign out", color = Color(0xFFFF453A)) }
-        }
-        Footnote(
-            "Used for /poll, /raid, /clear, /clip, /mod, /vip and chat modes, which Kick's API doesn't offer. Unofficial: Kick can change it any time."
-        )
+    Section(
+        "kick.com session (unofficial)",
+        "Used for /poll, /raid, /clear, /clip, /mod, /vip and chat modes, which Kick's API doesn't offer. Unofficial: Kick can " +
+            "change it any time."
+    ) {
+        Text(if (KickWeb.signedIn) "Signed in as ${KickWeb.user}" else "Not signed in", fontSize = 17.sp)
+        ActionRow("Sign in to kick.com") { signingIn = true }
+        if (KickWeb.signedIn) ActionRow("Sign out", destructive = true, onClick = KickWeb::signOut)
     }
     if (signingIn) {
         val scope = rememberCoroutineScope()
@@ -162,31 +189,42 @@ private fun KickSessionSection() {
     }
 }
 
-/** Settings › Commands (iOS CommandsSettingsView): saved moderation commands and the notification button. */
+/** Settings › Commands (iOS CommandsSettingsView): saved commands, the notification button and the kick.com session. */
 @Composable
 internal fun CommandsPage() {
-    Section("Saved commands") {
-        CommandsEditor()
+    Section(
+        null,
+        "Sent as your own account, so bots that obey only the broadcaster accept them. A command starting with / (like /clear) " +
+            "runs as a moderator command instead of being posted. These are examples; check your bot's dashboard for its exact commands."
+    ) { CommandsEditor() }
+    // Android's live notification holds one command button (iOS: up to 3 Lock Screen buttons on the live card).
+    Section(null, "Shows that command as a button on the live notification and Lock Screen. A tap in your pocket could fire it.") {
         var pick by remember { mutableStateOf(Prefs.string("notifyCommand")) }
         Choice("Notification button", listOf("" to "None") + BotCommand.stored().map { it.text to it.text }, pick) {
             pick = it
             Prefs.put("notifyCommand", it)
         }
-        Footnote("Shows that command as a button on the live notification and Lock Screen. A tap in your pocket could fire it.")
     }
+    KickSessionSection()
 }
 
-/** Settings › Known bots (iOS BotsSettingsView): who counts as a bot and which bot lines are read aloud. */
+/** Settings › Known bots (iOS BotsSettingsView): who counts as a bot and which bot lines are announcements. */
 @Composable
 internal fun KnownBotsPage() {
-    Section("Bots") {
-        PrefField("Bot names", "botNames", BotList.DEFAULT_NAMES)
-        PrefField("Trigger words", "botTriggers", BotList.DEFAULT_TRIGGERS)
+    Section(
+        "Bots",
+        "Comma-separated. Names ending in “bot” always count. Bots are hidden from stream chat widgets when Hide bots is on."
+    ) { PrefField("Bot names", "botNames", BotList.DEFAULT_NAMES) }
+    Section(
+        "Announcements",
+        "A bot message with a trigger word (whole word, comma-separated) is an announcement: it buzzes your phone and is " +
+            "highlighted in chat, whatever the read setting."
+    ) {
         var mode by remember { mutableStateOf(Prefs.string("botReadMode", "triggers")) }
-        Choice("Read bots aloud", listOf("off" to "Never", "triggers" to "Trigger words", "all" to "Always"), mode) {
+        Choice("Read bot messages", listOf("off" to "Never", "triggers" to "Announcements only", "all" to "All"), mode) {
             mode = it
             Prefs.put("botReadMode", it)
         }
-        Footnote("Names ending in \"bot\" always count. A bot line with a trigger word (\"won\") is read aloud.")
+        PrefField("Trigger words", "botTriggers", BotList.DEFAULT_TRIGGERS)
     }
 }
