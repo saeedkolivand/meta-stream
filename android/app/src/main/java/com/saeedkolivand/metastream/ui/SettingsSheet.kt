@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,8 +43,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -109,38 +112,52 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
     Dialog(onDismiss, DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         BackHandler(page != Page.Root) { page = page.parent ?: Page.Root }
         Surface(Modifier.fillMaxSize(), color = Color.Black, contentColor = Color.White) {
-            Column(Modifier.safeDrawingPadding()) {
-                // iOS bar: back on the left, the sub-page's title inline in the middle, the page's actions and Done on the right.
-                Box(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 4.dp)) {
-                    page.parent?.let { parent ->
-                        TextButton({ page = parent }, Modifier.align(Alignment.CenterStart)) {
-                            Text("‹ ${parent.title}", fontSize = 17.sp, maxLines = 1)
+            // iOS text metrics: SF's line height is ~1.3x the size (17/22, 13/18) with no extra tracking; Material's body style
+            // would keep a fixed 24 sp line and 0.5 sp letter spacing whatever size a row asks for.
+            ProvideTextStyle(TextStyle(lineHeight = 1.3.em, letterSpacing = 0.sp)) {
+                Column(Modifier.safeDrawingPadding()) {
+                    // iOS bar: back on the left, the sub-page's title inline in the middle, the page's actions and Done on the right.
+                    Box(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 4.dp)) {
+                        page.parent?.let { parent ->
+                            TextButton({ page = parent }, Modifier.align(Alignment.CenterStart)) {
+                                // iOS shortens the back title to "Back" when it would run into the page title.
+                                val label = if (page != Page.Root && parent.title.length + page.title.length > 24) "Back" else parent.title
+                                Text("‹ $label", fontSize = 17.sp, maxLines = 1)
+                            }
+                        }
+                        if (page != Page.Root) {
+                            Text(
+                                page.title,
+                                Modifier.align(Alignment.Center),
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1
+                            )
+                        }
+                        Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
+                            if (page == Page.Scenes) ScenesToolbar { page = Page.Transitions }
+                            if (page == Page.Streams) StreamsToolbar()
+                            TextButton(onDismiss) { Text("Done", fontWeight = FontWeight.Bold, fontSize = 17.sp) }
                         }
                     }
-                    if (page != Page.Root) {
-                        Text(page.title, Modifier.align(Alignment.Center), fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                    }
-                    Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
-                        if (page == Page.Scenes) ScenesToolbar { page = Page.Transitions }
-                        if (page == Page.Streams) StreamsToolbar()
-                        TextButton(onDismiss) { Text("Done", fontWeight = FontWeight.Bold, fontSize = 17.sp) }
-                    }
-                }
-                AnimatedContent(page, transitionSpec = {
-                    val forward = targetState.depth > initialState.depth
-                    (slideInHorizontally { if (forward) it else -it / 3 } + fadeIn()) togetherWith
-                        (slideOutHorizontally { if (forward) -it / 3 else it } + fadeOut())
-                }, label = "settings page") { p ->
-                    Column(
-                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 32.dp),
-                        Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (p ==
-                            Page.Root
+                    AnimatedContent(page, transitionSpec = {
+                        val forward = targetState.depth > initialState.depth
+                        (slideInHorizontally { if (forward) it else -it / 3 } + fadeIn()) togetherWith
+                            (slideOutHorizontally { if (forward) -it / 3 else it } + fadeOut())
+                    }, label = "settings page") { p ->
+                        Column(
+                            Modifier.fillMaxSize().verticalScroll(
+                                rememberScrollState()
+                            ).padding(start = 16.dp, end = 16.dp, bottom = 32.dp),
+                            Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(p.title, Modifier.padding(start = 4.dp, bottom = 4.dp), fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                            if (p ==
+                                Page.Root
+                            ) {
+                                Text(p.title, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                            }
+                            PageContent(p) { page = it }
                         }
-                        PageContent(p) { page = it }
                     }
                 }
             }

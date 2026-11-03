@@ -57,14 +57,15 @@ private val SwitchOn = Color(0xFF34C759)
  */
 @Composable
 internal fun Section(title: String?, footer: String? = null, content: @Composable () -> Unit) {
-    Column {
+    // iOS inset-grouped spacing: 35 pt between sections (27 here + the page's 8), header 7 pt over its card.
+    Column(Modifier.padding(top = 27.dp)) {
         if (title != null) {
-            Text(title.uppercase(), Modifier.padding(start = 16.dp, top = 16.dp, bottom = 6.dp), color = Secondary, fontSize = 13.sp)
+            Text(title.uppercase(), Modifier.padding(start = 16.dp, bottom = 7.dp), color = Secondary, fontSize = 13.sp)
         }
         Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardColor).padding(start = 16.dp, end = 16.dp)) {
             Rows(content)
         }
-        if (footer != null) Text(footer, Modifier.padding(start = 16.dp, end = 16.dp, top = 6.dp), color = Secondary, fontSize = 13.sp)
+        if (footer != null) Text(footer, Modifier.padding(start = 16.dp, end = 16.dp, top = 7.dp), color = Secondary, fontSize = 13.sp)
     }
 }
 
