@@ -6,12 +6,12 @@ import WebKit
 /// Endpoints captured from kick.com's own requests on 2026-10-17; unofficial, can change any day.
 /// Never logs cookies, tokens or response bodies.
 @MainActor @Observable
-final class KickWeb {
-    static let shared = KickWeb()
-    static let commands = ["slow", "emoteonly", "followers", "followonly", "subscribers", "raid", "clip", "clear", "poll", "polldelete",
+public final class KickWeb {
+    public static let shared = KickWeb()
+    public static let commands = ["slow", "emoteonly", "followers", "followonly", "subscribers", "raid", "clip", "clear", "poll", "polldelete",
                            "mod", "unmod", "vip", "unvip", "og", "unog", "prediction"]
-    private(set) var user = ""     // signed-in username; "" = not signed in
-    var signedIn: Bool { !user.isEmpty }
+    public private(set) var user = ""     // signed-in username; "" = not signed in
+    public var signedIn: Bool { !user.isEmpty }
     @ObservationIgnored private var slug = ""
     @ObservationIgnored private var channelId: Int?
     @ObservationIgnored private var web: WKWebView?
@@ -19,7 +19,7 @@ final class KickWeb {
     // MARK: pure parts -- see Self.demo()
 
     /// PATCH body for /slow, /emoteonly, /followonly (/followers); nil for anything else.
-    static func modeBody(_ name: String, _ a: [String]) -> String? {
+    public static func modeBody(_ name: String, _ a: [String]) -> String? {
         let off = a.first?.lowercased() == "off", n = a.compactMap { Int($0) }.first
         switch name {
         case "slow": return #"{"slow_mode":{"enabled":\#(!off),"duration_seconds":\#(off ? 1 : max(n ?? 5, 1))}}"#
@@ -30,14 +30,14 @@ final class KickWeb {
     }
 
     /// "/poll Question? | a | b": 2...6 options of at least 2 characters (kick.com's rule). nil = invalid.
-    static func poll(_ a: [String]) -> (title: String, options: [String])? {
+    public static func poll(_ a: [String]) -> (title: String, options: [String])? {
         let p = a.joined(separator: " ").split(separator: "|", omittingEmptySubsequences: false).map { $0.trimmingCharacters(in: .whitespaces) }
         guard let title = p.first, !title.isEmpty, (2...6).contains(p.count - 1), p.dropFirst().allSatisfy({ $0.count >= 2 }) else { return nil }
         return (title, Array(p.dropFirst()))
     }
 
     /// A typed username as kick.com wants it: no leading "@", lowercase; nil when empty.
-    static func person(_ raw: String?) -> String? {
+    public static func person(_ raw: String?) -> String? {
         guard let raw else { return nil }
         let u = (raw.hasPrefix("@") ? String(raw.dropFirst()) : raw).lowercased()
         return u.isEmpty ? nil : u
@@ -56,7 +56,7 @@ final class KickWeb {
     // MARK: session
 
     /// Reads the signed-in user from the page, loading kick.com first if needed.
-    func refresh() async {
+    public func refresh() async {
         guard let w = await page("/") else { return }
         let r = await fetch(w, "GET", "/api/v1/user", nil)
         let j = Self.json(r.text)
@@ -64,12 +64,12 @@ final class KickWeb {
         slug = user.isEmpty ? "" : (j["streamer_channel"] as? [String: Any])?["slug"] as? String ?? ""
     }
 
-    func ready() async -> Bool {
+    public func ready() async -> Bool {
         if !signedIn { await refresh() }
         return signedIn
     }
 
-    func signOut() async {
+    public func signOut() async {
         let s = WKWebsiteDataStore.default(), types = WKWebsiteDataStore.allWebsiteDataTypes()
         await s.removeData(ofTypes: types, for: await s.dataRecords(ofTypes: types).filter { $0.displayName.contains("kick.com") })
         web?.removeFromSuperview()
@@ -83,7 +83,7 @@ final class KickWeb {
     // MARK: commands
 
     /// One-line note for the streamer.
-    func run(_ cmd: String, _ a: [String]) async -> String {
+    public func run(_ cmd: String, _ a: [String]) async -> String {
         let name = cmd == "followers" ? "followonly" : cmd   // kick.com's own name
         guard await ready() else { return "Sign in to kick.com in Settings to use /\(cmd)" }
         if name == "prediction" { return "Kick predictions open a dialog on kick.com; not supported yet" }
@@ -125,14 +125,14 @@ final class KickWeb {
     }
 
     /// Ban (permanent) or timeout (minutes) through kick.com; true on 2xx. Captured on 2026-10-19. Caller checks `ready()`.
-    func ban(_ user: String, minutes: Int?) async -> Bool {
+    public func ban(_ user: String, minutes: Int?) async -> Bool {
         guard let who = Self.person(user) else { return false }
         var body: [String: Any] = ["banned_username": who, "reason": "", "permanent": minutes == nil]
         if let minutes { body["duration"] = minutes }
         return await call(minutes == nil ? "ban" : "timeout", "POST", "https://kick.com/api/v2/channels/\(slug)/bans", Self.jsonText(body))
     }
 
-    func unban(_ user: String) async -> Bool {
+    public func unban(_ user: String) async -> Bool {
         guard let who = Self.person(user) else { return false }
         return await call("unban", "DELETE", "https://kick.com/api/v2/channels/\(slug)/bans/\(Self.segment(who))", nil)
     }
@@ -211,7 +211,7 @@ final class KickWeb {
     }
 
     #if DEBUG
-    static func demo() {
+    public static func demo() {
         assert(modeBody("slow", ["on"]) == #"{"slow_mode":{"enabled":true,"duration_seconds":5}}"#)
         assert(modeBody("slow", ["30"]) == #"{"slow_mode":{"enabled":true,"duration_seconds":30}}"#)
         assert(modeBody("slow", ["off"]) == #"{"slow_mode":{"enabled":false,"duration_seconds":1}}"#)
@@ -231,11 +231,13 @@ final class KickWeb {
 }
 
 /// Settings row: the kick.com session the unofficial commands run through.
-struct KickSessionSection: View {
+public struct KickSessionSection: View {
     private var kick = KickWeb.shared
     @State private var signingIn = false
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Section {
             Text(kick.signedIn ? "Signed in as \(kick.user)" : "Not signed in")
                 .task { await kick.refresh() }

@@ -1,4 +1,5 @@
 import AVFoundation
+import Chat
 import CoreUI
 import Platforms
 import SwiftUI

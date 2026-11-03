@@ -6,8 +6,8 @@ import Platforms
 
 /// Slash commands typed in the chat input (see CONTEXT.md): parsed here, carried out through the platform's
 /// own moderation API by `SlashRunner`, never posted as a message.
-enum SlashCommand {
-    static func parse(_ text: String) -> (name: String, args: [String])? {
+public enum SlashCommand {
+    public static func parse(_ text: String) -> (name: String, args: [String])? {
         guard text.hasPrefix("/") else { return nil }
         let parts = text.dropFirst().split(whereSeparator: \.isWhitespace).map(String.init)
         guard let name = parts.first else { return nil }
@@ -15,19 +15,19 @@ enum SlashCommand {
     }
 
     /// "600" -> 600, "10m" -> 600, "1h", "1d", "30s". nil when it isn't a duration (so the word is part of a reason).
-    static func seconds(_ s: String) -> Int? {
+    public static func seconds(_ s: String) -> Int? {
         var n = s.lowercased(), mult = 1
         if let m = ["s": 1, "m": 60, "h": 3600, "d": 86400][String(n.suffix(1))] { mult = m; n.removeLast() }
         guard let v = Int(n), v > 0, v <= 1_000_000 else { return nil }
         return v * mult
     }
 
-    static func pretty(_ s: Int) -> String {
+    public static func pretty(_ s: Int) -> String {
         s % 86400 == 0 ? "\(s / 86400) d" : s % 3600 == 0 ? "\(s / 3600) h" : s % 60 == 0 ? "\(s / 60) min" : "\(s) s"
     }
 
     #if DEBUG
-    static func demo() {
+    public static func demo() {
         let ban = parse("/ban bob spam")
         assert(ban?.name == "ban" && ban?.args == ["bob", "spam"])
         assert(parse("/CLEAR")?.name == "clear" && parse("/CLEAR")?.args == [])
@@ -42,10 +42,10 @@ enum SlashCommand {
 
 /// Runs one parsed slash command against `origin`; returns the one-line note shown to the streamer.
 @MainActor
-struct SlashRunner {
-    let p: Platforms
-    let chat: ChatFeed
-    let origin: String
+public struct SlashRunner {
+    public let p: Platforms
+    public let chat: ChatFeed
+    public let origin: String
     private var isKick: Bool { origin == "kick" }
 
     private static let both = ["ban", "unban", "timeout", "untimeout", "delete", "clear", "title", "category", "ad", "help"]
@@ -53,7 +53,7 @@ struct SlashRunner {
     private static let kickLater = ["host", "poll", "prediction", "polldelete", "followonly"]
     private static let kickOnly = ["mod", "unmod", "vip", "unvip", "og", "unog"]   // run by KickWeb; Twitch has none here
 
-    func run(_ name: String, _ a: [String]) async -> String {
+    public func run(_ name: String, _ a: [String]) async -> String {
         let label = DisplayNames.platformName(origin)
         if name == "help" { return "\(label): " + (Self.both + (isKick ? KickWeb.commands.filter { !Self.both.contains($0) } : Self.twitchOnly)).map { "/" + $0 }.joined(separator: " ") }
         guard (Self.both + Self.twitchOnly + Self.kickLater + Self.kickOnly).contains(name) else { return "Unknown command /\(name)" }
@@ -259,5 +259,11 @@ struct SlashRunner {
         }
         _ = try await p.twitch.api().call("PATCH", "/chat/settings", query: mod, body: body)
         return note
+    }
+
+    public init(p: Platforms, chat: ChatFeed, origin: String) {
+        self.p = p
+        self.chat = chat
+        self.origin = origin
     }
 }

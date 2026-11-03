@@ -9,22 +9,22 @@ import Platforms
 /// exactly one of these owns any given origin, so starting one never stops another. Restream chat can plug
 /// into the same `events` stream later. Transports live in ChatProviders.swift; this type only multiplexes.
 @MainActor @Observable
-final class ChatFeed {
-    private(set) var recent: [ChatEvent] = []   // last 100, across every origin
+public final class ChatFeed {
+    public private(set) var recent: [ChatEvent] = []   // last 100, across every origin
     /// Events yielded so far. Not observed: widgets poll it on their own tick instead of re-rendering SwiftUI.
-    @ObservationIgnored private(set) var serial = 0
+    @ObservationIgnored public private(set) var serial = 0
     /// Bumped by every clear: a clear adds no event, so `serial` alone can't tell the on-screen chat to redraw.
-    @ObservationIgnored private(set) var clears = 0
+    @ObservationIgnored public private(set) var clears = 0
     /// The chat sheet and the on-screen chat show only what arrived after the last clear: a clear empties them of
     /// everything (alerts and site events too, from any origin), while `recent` keeps events for the Event list.
-    private(set) var clearedAt = Date.distantPast
-    var visible: [ChatEvent] { recent.filter { $0.at > clearedAt } }
-    private(set) var lastFollower = ""
-    private(set) var lastSubscriber = ""
-    private(set) var flooding = false
+    public private(set) var clearedAt = Date.distantPast
+    public var visible: [ChatEvent] { recent.filter { $0.at > clearedAt } }
+    public private(set) var lastFollower = ""
+    public private(set) var lastSubscriber = ""
+    public private(set) var flooding = false
     @ObservationIgnored private var floodTask: Task<Void, Never>?
 
-    let events: AsyncStream<ChatEvent>
+    public let events: AsyncStream<ChatEvent>
     private let emit: AsyncStream<ChatEvent>.Continuation
 
     @ObservationIgnored private var kick: KickChatProvider?
@@ -32,16 +32,16 @@ final class ChatFeed {
     @ObservationIgnored private var youtube: YouTubePollProvider?
     private let moderator = ChatModerator()
 
-    init() {
+    public init() {
         // ponytail: bufferingNewest caps memory if TTS ever falls behind a chat flood; unbounded isn't needed.
         (events, emit) = AsyncStream.makeStream(of: ChatEvent.self, bufferingPolicy: .bufferingNewest(200))
     }
 
     /// Stops every origin — Kick, Twitch and YouTube.
-    func stop() { stopKick(); stopTwitch(); stopYouTube() }
+    public func stop() { stopKick(); stopTwitch(); stopYouTube() }
 
     /// Connects to Kick chat for `slug` (the channel name from the stream URL) and stays connected until `stopKick()`.
-    func start(kickSlug: String) {
+    public func start(kickSlug: String) {
         let provider = kick ?? KickChatProvider(onEvent: { [weak self] e in self?.yield(e) },
                                                 onClear: { [weak self] in self?.clear(origin: "kick") },
                                                 onRemove: { [weak self] m, u, l in self?.remove(origin: "kick", messageID: m, userID: u, login: l) })
@@ -49,11 +49,11 @@ final class ChatFeed {
         provider.start(slug: kickSlug)
     }
 
-    func stopKick() { kick?.stop() }
+    public func stopKick() { kick?.stop() }
 
     /// Connects to Twitch EventSub for the currently-authorized account and stays connected until
     /// `stopTwitch()`. Identity, subscription creation and scope bookkeeping live in `Platforms`.
-    func startTwitch(platforms: Platforms) {
+    public func startTwitch(platforms: Platforms) {
         stopTwitch()
         let provider = TwitchEventSubProvider(platforms: platforms, onEvent: { [weak self] e in self?.yield(e) },
                                               onClear: { [weak self] in self?.clear(origin: "twitch") },
@@ -62,21 +62,21 @@ final class ChatFeed {
         provider.start()
     }
 
-    func stopTwitch() { twitch?.stop() }
+    public func stopTwitch() { twitch?.stop() }
 
     /// Polls YouTube live chat until `stopYouTube()`. No push option exists for liveChat - polling at the
     /// interval the API itself hands back (`pollingIntervalMillis`) is the contract, not a shortcut around one.
-    func startYouTube(platforms: Platforms) {
+    public func startYouTube(platforms: Platforms) {
         stopYouTube()
         let provider = YouTubePollProvider(platforms: platforms, onEvent: { [weak self] e in self?.yield(e) })
         youtube = provider
         provider.start()
     }
 
-    func stopYouTube() { youtube?.stop() }
+    public func stopYouTube() { youtube?.stop() }
 
     /// Logs-screen load test: ChatFlood.perSecond fake messages per second for ChatFlood.seconds; call again to stop.
-    func toggleFlood() {
+    public func toggleFlood() {
         if let t = floodTask { t.cancel(); floodTask = nil; flooding = false; return }
         flooding = true
         floodTask = Task { [weak self] in
@@ -94,7 +94,7 @@ final class ChatFeed {
     // MARK: - shared sink
 
     /// Every provider lands here; messages may wait up to 1.5 s for AI review before `publish`.
-    func yield(_ e: ChatEvent) {
+    public func yield(_ e: ChatEvent) {
         moderator.review(e) { [weak self] in self?.publish($0) }
     }
 
@@ -110,7 +110,7 @@ final class ChatFeed {
     /// A chat clear (our /clear, or one done on the platform by you or a mod): drops that origin's messages and moves
     /// `clearedAt`, so the chat sheet and the on-screen chat empty completely. The Event list still sees follows and
     /// subs. `serial` doesn't move, so nothing that reads `events(since:)` (alerts) sees old events again.
-    func clear(origin: String) {
+    public func clear(origin: String) {
         let before = recent.count
         recent.removeAll { $0.origin == origin && $0.kind == .message }
         clears += 1
@@ -120,7 +120,7 @@ final class ChatFeed {
 
     /// A moderator deleted one message (`messageID`), or timed out / banned a user (their messages all go, like Twitch's
     /// own chat). Bumps `clears` so the on-screen chat redraws.
-    func remove(origin: String, messageID: String? = nil, userID: String? = nil, login: String? = nil) {
+    public func remove(origin: String, messageID: String? = nil, userID: String? = nil, login: String? = nil) {
         let before = recent.count
         recent.removeAll { e in
             guard e.origin == origin, e.kind == .message else { return false }
@@ -135,7 +135,7 @@ final class ChatFeed {
     }
 
     /// Events yielded after `serial` that are still in `recent` (older ones scrolled out of the 100-event buffer).
-    func events(since serial: Int) -> [ChatEvent] {
+    public func events(since serial: Int) -> [ChatEvent] {
         guard serial < self.serial else { return [] }
         return Array(recent.suffix(min(self.serial - serial, recent.count)))
     }
@@ -144,7 +144,7 @@ final class ChatFeed {
 #if DEBUG
 extension ChatFeed {
     /// Self-check: one realistic frame per transport, decoded into the ChatEvent Speaker expects. No framework.
-    static func demo() {
+    public static func demo() {
         // Kick: Pusher double-JSON-encoding.
         let kickSample = #"{"event":"App\\Events\\ChatMessageEvent","channel":"chatrooms.123.v2","data":"{\"content\":\"gg [emote:12345:catJAM]\",\"sender\":{\"id\":1,\"username\":\"viewerOne\"}}"}"#
         let kickOuter = try! JSONSerialization.jsonObject(with: Data(kickSample.utf8)) as! [String: Any]

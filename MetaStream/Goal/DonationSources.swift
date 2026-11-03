@@ -1,6 +1,7 @@
 // Donation sites (CONTEXT.md: Donation source, Missed donation; adr/0006): Donofa (live WebSocket + history), Reymit and
 // StreamElements (polled). A donation is recorded in the goal BEFORE it is announced, so one reported twice is announced
 // once; ones found in a site's history at launch/reconnect are recorded as missed and never announced.
+import Chat
 import CoreLogging
 import CoreModel
 import CoreStorage

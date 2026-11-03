@@ -1,3 +1,4 @@
+import Chat
 import CoreLogging
 import Foundation
 import Platforms

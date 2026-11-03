@@ -4,20 +4,35 @@ import Foundation
 /// Data-driven Kick alerts: Kick's non-chat Pusher events are undocumented and get renamed, so which
 /// events mean what lives in a JSON rules table (built-in default, overridable from metastream.iamsaeed.dev).
 /// The same JSON is committed as docs/kick-events.json and embedded by the Android app.
-enum KickRules {
-    struct Rule: Sendable {
-        let kind: ChatEvent.Kind
-        var user: [String] = [], text: [String] = [], count: [String] = [], amount: [String] = []
-        var minCount = 0
-        var require: String?
+public enum KickRules {
+    public struct Rule: Sendable {
+        public let kind: ChatEvent.Kind
+        public var user: [String] = [], text: [String] = [], count: [String] = [], amount: [String] = []
+        public var minCount = 0
+        public var require: String?
+
+        public init(
+            kind: ChatEvent.Kind,
+            user: [String] = [], text: [String] = [], count: [String] = [], amount: [String] = [],
+            require: String? = nil
+        ) {
+            self.kind = kind
+            self.user = user
+            self.require = require
+        }
     }
 
-    struct Rules: Sendable {
-        var channels: [String] = []
-        var events: [String: Rule] = [:]
+    public struct Rules: Sendable {
+        public var channels: [String] = []
+        public var events: [String: Rule] = [:]
+
+        public init(channels: [String] = [], events: [String: Rule] = [:]) {
+            self.channels = channels
+            self.events = events
+        }
     }
 
-    static let defaultJSON = #"""
+    public static let defaultJSON = #"""
     {
       "version": 1,
       "channels": ["chatrooms.{chatroomId}.v2", "channel.{channelId}"],
@@ -31,13 +46,13 @@ enum KickRules {
     }
     """#
 
-    static let defaults = decode(Data(defaultJSON.utf8)) ?? Rules()
+    public static let defaults = decode(Data(defaultJSON.utf8)) ?? Rules()
 
     private static let remoteURL = URL(string: "https://metastream.iamsaeed.dev/kick-events.json")!
     private static var cacheURL: URL? { FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?.appendingPathComponent("kick-events.json") }
 
     /// Remote (cached on success) -> cached -> built-in. Never throws.
-    static func load() async -> (rules: Rules, source: String) {
+    public static func load() async -> (rules: Rules, source: String) {
         var req = URLRequest(url: remoteURL)
         req.timeoutInterval = 5
         if let data = try? await URLSession.shared.data(for: req).0, let rules = decode(data) {
@@ -49,7 +64,7 @@ enum KickRules {
     }
 
     /// nil unless the JSON is an object with version 1; malformed individual rules are skipped.
-    static func decode(_ data: Data) -> Rules? {
+    public static func decode(_ data: Data) -> Rules? {
         guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any], chatInt(root["version"]) == 1 else { return nil }
         var rules = Rules(channels: (root["channels"] as? [Any])?.compactMap { $0 as? String } ?? [])
         for (name, raw) in root["events"] as? [String: Any] ?? [:] {
@@ -73,7 +88,7 @@ enum KickRules {
     }
 
     /// Channel names to subscribe to; a template with an unknown or unavailable placeholder is skipped.
-    static func channels(_ rules: Rules, chatroomID: Int, channelID: Int?) -> [String] {
+    public static func channels(_ rules: Rules, chatroomID: Int, channelID: Int?) -> [String] {
         rules.channels.compactMap { template in
             var name = template.replacingOccurrences(of: "{chatroomId}", with: String(chatroomID))
             if let channelID { name = name.replacingOccurrences(of: "{channelId}", with: String(channelID)) }
@@ -82,7 +97,7 @@ enum KickRules {
     }
 
     /// Pure: nil when the event has no rule, the data isn't a JSON object, `require` fails, or the user is empty.
-    static func parse(_ rules: Rules, event: String, data: String?) -> ChatEvent? {
+    public static func parse(_ rules: Rules, event: String, data: String?) -> ChatEvent? {
         guard let rule = rules.events[event], let data,
               let obj = try? JSONSerialization.jsonObject(with: Data(data.utf8)) as? [String: Any]
         else { return nil }

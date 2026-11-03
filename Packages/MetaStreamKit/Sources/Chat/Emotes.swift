@@ -18,9 +18,9 @@ import UIKit
 /// Animated emotes play: 7TV's animated file (not `static_name`), Kick's and BTTV's GIF/WebP are decoded into all
 /// frames + delays (ImageIO, capped at 60 frames) and `image(for:at:)` picks the frame for a given time. FFZ stays static.
 @MainActor @Observable
-final class Emotes {
-    private(set) var byName: [String: URL] = [:]
-    private(set) var images: [URL: Image] = [:]   // decoded static frames, by emote URL
+public final class Emotes {
+    public private(set) var byName: [String: URL] = [:]
+    public private(set) var images: [URL: Image] = [:]   // decoded static frames, by emote URL
 
     @ObservationIgnored private var animations: [URL: Animation] = [:]   // multi-frame emotes only; `images` holds frame 0 of everything
     @ObservationIgnored private var loadedFor: String?   // "<twitch id>|<kick slug>" the current byName was built for; "|" = none
@@ -29,7 +29,7 @@ final class Emotes {
     /// Fetches every provider's global set, plus per-channel sets when `twitchLogin` is given and connected.
     /// No-ops if already loaded for this exact identity, so repeat calls from every `startChat()` re-run
     /// (voice toggle flips, channel edits) don't re-hit six APIs for nothing.
-    func load(twitchID: String?, kickSlug: String? = nil) async {
+    public func load(twitchID: String?, kickSlug: String? = nil) async {
         let key = twitchID ?? ""
         let slug = kickSlug ?? ""
         guard "\(key)|\(slug)" != loadedFor else { return }
@@ -61,7 +61,7 @@ final class Emotes {
     /// thermally serious) the first frame. URLSession's own URLCache handles the network-level cache; these
     /// dictionaries only avoid re-decoding the same bytes on every row re-render. ponytail: never evicted -
     /// emote vocabulary in one stream session is small, an LRU here would be solving a problem this app doesn't have.
-    func image(for url: URL, at time: Date? = nil) -> Image? {
+    public func image(for url: URL, at time: Date? = nil) -> Image? {
         if let anim = animations[url], let time, !Self.isHot {
             return anim.images[Self.frameIndex(delays: anim.delays, at: time.timeIntervalSinceReferenceDate)]
         }
@@ -84,11 +84,11 @@ final class Emotes {
     }
 
     /// True when `url` decoded to more than one frame.
-    func isAnimated(_ url: URL) -> Bool { animations[url] != nil }
+    public func isAnimated(_ url: URL) -> Bool { animations[url] != nil }
 
     /// True when the message holds a loaded animated emote and the phone is cool enough to play it - the
     /// caller's cue to keep re-rendering on a 10 fps tick.
-    func animates(_ text: String) -> Bool {
+    public func animates(_ text: String) -> Bool {
         guard !Self.isHot, !animations.isEmpty else { return false }
         return Self.tokenize(text, byName: byName).contains { run in
             if case .emote(let url) = run { return isAnimated(url) }
@@ -110,7 +110,7 @@ final class Emotes {
     private static var isHot: Bool { ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue }
 
     /// Frame to show `t` seconds into the loop: position of (t mod total) in the cumulative delays.
-    nonisolated static func frameIndex(delays: [Double], at t: Double) -> Int {
+    public nonisolated static func frameIndex(delays: [Double], at t: Double) -> Int {
         let total = delays.reduce(0, +)
         guard total > 0 else { return 0 }
         var rest = t.truncatingRemainder(dividingBy: total)
@@ -122,16 +122,21 @@ final class Emotes {
         return delays.count - 1
     }
 
-    struct Decoded: @unchecked Sendable {   // CGImage is immutable; safe to hand across actors
-        let frames: [CGImage]
-        let delays: [Double]
+    public struct Decoded: @unchecked Sendable {   // CGImage is immutable; safe to hand across actors
+        public let frames: [CGImage]
+        public let delays: [Double]
+
+        public init(frames: [CGImage], delays: [Double]) {
+            self.frames = frames
+            self.delays = delays
+        }
     }
 
     /// All frames (evenly sampled down to maxFrames, skipped frames' time folded into the kept one) scaled to the
     /// inline height. Providers hand back wildly different native pixel sizes (7TV's 2x ~64px, BTTV's 2x ~56px,
     /// Kick's "fullsize" bigger still), so every frame is thumbnailed to the same height. Any failure after the
     /// first frame falls back to a static emote; nil only when not even frame 0 decodes.
-    nonisolated static func decode(_ data: Data) -> Decoded? {
+    public nonisolated static func decode(_ data: Data) -> Decoded? {
         guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
         let count = CGImageSourceGetCount(src)
         guard count > 0 else { return nil }
@@ -174,14 +179,14 @@ final class Emotes {
 
     // MARK: - Tokenizer
 
-    enum Run: Equatable, Sendable { case text(String), emote(URL) }
+    public enum Run: Equatable, Sendable { case text(String), emote(URL) }
 
     /// Splits a chat message into text/emote runs: Kick's inline `[emote:id:name]` tokens (unambiguous,
     /// checked first) and any whitespace-delimited word that exactly matches a name in `byName`. Matching
     /// is case-sensitive and whole-word only, same as every other chat client's emote rendering - "POGGERS"
     /// mid-word doesn't light up. ponytail: splits on a single space; a message with double spaces gets an
     /// extra empty text run between words, which renders as nothing - harmless, not worth a real tokenizer.
-    static func tokenize(_ text: String, byName: [String: URL]) -> [Run] {
+    public static func tokenize(_ text: String, byName: [String: URL]) -> [Run] {
         var runs: [Run] = []
         let nsText = text as NSString
         var lastEnd = text.startIndex

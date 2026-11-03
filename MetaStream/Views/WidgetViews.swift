@@ -1,6 +1,7 @@
 // SwiftUI views for the native stream widgets. The compositor rasterises them with ImageRenderer and the scene
 // editor draws the very same views, so what you arrange is exactly what goes out. Point sizes are fixed (never
 // Dynamic Type) and every view lays out at exactly its natural size.
+import Chat
 import CoreImage.CIFilterBuiltins
 import CoreModel
 import CoreUI

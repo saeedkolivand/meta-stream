@@ -7,13 +7,13 @@ import FoundationModels
 
 /// The pure decisions behind AI moderation, split out so they can be unit-tested without a model.
 @MainActor
-enum ChatModeration {
-    static let maxWaiting = 8                    // more than this queued = chat flood
-    static let holdLimit: Duration = .milliseconds(1500)
+public enum ChatModeration {
+    public static let maxWaiting = 8                    // more than this queued = chat flood
+    public static let holdLimit: Duration = .milliseconds(1500)
 
     /// True if most letters are Latin script (the on-device model only handles those languages well; Persian etc. fall
     /// back to the word list). Latin = Basic Latin through Latin Extended-B plus Latin Extended Additional.
-    nonisolated static func isMostlyLatin(_ s: String) -> Bool {
+    public nonisolated static func isMostlyLatin(_ s: String) -> Bool {
         var letters = 0, latin = 0
         for u in s.unicodeScalars where u.properties.isAlphabetic {
             letters += 1
@@ -24,11 +24,11 @@ enum ChatModeration {
 
     /// ponytail: overflow rule - past maxWaiting the extra messages skip the AI and go straight through; a flood can't
     /// be reviewed in time anyway and the word list still applies.
-    static func shouldHold(waiting: Int) -> Bool { waiting < maxWaiting }
+    public static func shouldHold(waiting: Int) -> Bool { waiting < maxWaiting }
 
     /// The text to classify, or nil if the event needn't be reviewed: not a chat message, the flood test, already caught
     /// by the word list, or not Latin script.
-    static func reviewText(for e: ChatEvent) -> String? {
+    public static func reviewText(for e: ChatEvent) -> String? {
         guard e.kind == .message, e.origin != "test", !e.offensive else { return nil }
         let text = ChatFilter.sanitize(e.text, maxLength: 300)   // no URLs/emotes: fewer tokens, less noise
         return isMostlyLatin(text) ? text : nil
@@ -38,23 +38,23 @@ enum ChatModeration {
 /// Holds each chat message briefly while Apple's on-device model classifies it (like Twitch AutoMod), then hands it on
 /// with `flagged` set if unsafe. Without Apple Intelligence (or the toggle off) `review` delivers synchronously.
 @MainActor
-final class ChatModerator {
-    typealias Deliver = @MainActor (ChatEvent) -> Void
+public final class ChatModerator {
+    public typealias Deliver = @MainActor (ChatEvent) -> Void
     private var waiting = 0
     private var tail: Task<Void, Never>?   // serial: each review awaits the previous one
 
-    static var available: Bool {
+    public static var available: Bool {
         #if canImport(FoundationModels)
         if case .available = SystemLanguageModel.default.availability { return true }
         #endif
         return false
     }
 
-    static var enabled: Bool {
+    public static var enabled: Bool {
         (UserDefaults.standard.object(forKey: "aiModeration") as? Bool ?? true) && available
     }
 
-    func review(_ e: ChatEvent, deliver: @escaping Deliver) {
+    public func review(_ e: ChatEvent, deliver: @escaping Deliver) {
         guard Self.enabled, let text = ChatModeration.reviewText(for: e), ChatModeration.shouldHold(waiting: waiting) else {
             return deliver(e)
         }

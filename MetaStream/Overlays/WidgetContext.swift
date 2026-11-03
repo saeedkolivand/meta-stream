@@ -1,4 +1,5 @@
 // Live data the widgets read each tick. Weak so a widget task never keeps the app's models alive.
+import Chat
 import Foundation
 import Platforms
 

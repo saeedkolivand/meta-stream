@@ -1,3 +1,4 @@
+import Chat
 import CoreModel
 import SwiftUI
 

@@ -4,13 +4,13 @@ import Foundation
 import Platforms
 
 /// Lenient Int from a JSON number or numeric string (platforms are inconsistent about which they send).
-func chatInt(_ v: Any?) -> Int? { (v as? Int) ?? (v as? String).flatMap(Int.init) }
+public func chatInt(_ v: Any?) -> Int? { (v as? Int) ?? (v as? String).flatMap(Int.init) }
 
 /// Shared reconnect ladder for chat providers: runs `work` until it returns/throws, then retries with
 /// 1/2/4/8/15s backoff until stopped. Kick/Twitch pass one connection lifetime; YouTube passes its
 /// never-returning poll loop (success sleeps live inside `work`, so this sleep only fires after failures).
 @MainActor
-func runWithBackoff(label: String, isStopped: @escaping @MainActor () -> Bool, work: @escaping @MainActor () async throws -> Void) -> Task<Void, Never> {
+public func runWithBackoff(label: String, isStopped: @escaping @MainActor () -> Bool, work: @escaping @MainActor () async throws -> Void) -> Task<Void, Never> {
     Task { @MainActor in
         var backoff = 1.0
         while !Task.isCancelled, !isStopped() {
@@ -28,7 +28,7 @@ func runWithBackoff(label: String, isStopped: @escaping @MainActor () -> Bool, w
 }
 
 @MainActor
-protocol ChatProvider: AnyObject {
+public protocol ChatProvider: AnyObject {
     func start()
     func stop()
 }
@@ -36,9 +36,9 @@ protocol ChatProvider: AnyObject {
 // MARK: - Kick (anonymous public Pusher WebSocket, no OAuth)
 
 @MainActor
-final class KickChatProvider: ChatProvider {
+public final class KickChatProvider: ChatProvider {
     /// kick.com's API rejects non-browser agents; Emotes uses the same one for its channel lookup.
-    static let userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1"
+    public static let userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1"
     /// Last known Pusher app; Kick rotates it, so `pusherURL()` asks Kick for the live one first.
     private static let fallbackPusher = (key: "34bf7a0ff419a2a775b9", cluster: "us2")
 
@@ -53,14 +53,14 @@ final class KickChatProvider: ChatProvider {
     private var loggedEvents: Set<String> = []
     private var rules = KickRules.defaults
 
-    init(onEvent: @escaping @MainActor (ChatEvent) -> Void, onClear: @escaping @MainActor () -> Void = {},
+    public init(onEvent: @escaping @MainActor (ChatEvent) -> Void, onClear: @escaping @MainActor () -> Void = {},
          onRemove: @escaping @MainActor (_ messageID: String?, _ userID: String?, _ login: String?) -> Void = { _, _, _ in }) {
         self.onEvent = onEvent
         self.onClear = onClear
         self.onRemove = onRemove
     }
 
-    func start(slug: String) {
+    public func start(slug: String) {
         stop()
         self.slug = slug
         stopped = false
@@ -75,8 +75,8 @@ final class KickChatProvider: ChatProvider {
         }
     }
 
-    func start() { if !slug.isEmpty { start(slug: slug) } }
-    func stop() {
+    public func start() { if !slug.isEmpty { start(slug: slug) } }
+    public func stop() {
         stopped = true
         task?.cancel(); task = nil
         socket?.cancel(with: .goingAway, reason: nil); socket = nil
@@ -176,7 +176,7 @@ final class KickChatProvider: ChatProvider {
     private static let userBanned = "App\\Events\\UserBannedEvent"
 
     /// Chat messages are parsed here; every other event goes through the (remote-overridable) `rules` table.
-    static func parse(event: String, data: String?, rules: KickRules.Rules = KickRules.defaults) -> ChatEvent? {
+    public static func parse(event: String, data: String?, rules: KickRules.Rules = KickRules.defaults) -> ChatEvent? {
         guard event == chatMessage else { return KickRules.parse(rules, event: event, data: data) }
         guard let data, let inner = try? JSONSerialization.jsonObject(with: Data(data.utf8)) as? [String: Any] else { return nil }
         return parseMessage(inner)
@@ -197,7 +197,7 @@ final class KickChatProvider: ChatProvider {
 // MARK: - Twitch (EventSub WebSocket)
 
 @MainActor
-final class TwitchEventSubProvider: ChatProvider {
+public final class TwitchEventSubProvider: ChatProvider {
     private static let eventSubURL = URL(string: "wss://eventsub.wss.twitch.tv/ws")!
 
     private let onEvent: @MainActor (ChatEvent) -> Void
@@ -208,7 +208,7 @@ final class TwitchEventSubProvider: ChatProvider {
     private var task: Task<Void, Never>?
     private var stopped = true
 
-    init(platforms: Platforms, onEvent: @escaping @MainActor (ChatEvent) -> Void, onClear: @escaping @MainActor () -> Void = {},
+    public init(platforms: Platforms, onEvent: @escaping @MainActor (ChatEvent) -> Void, onClear: @escaping @MainActor () -> Void = {},
          onRemove: @escaping @MainActor (_ messageID: String?, _ userID: String?, _ login: String?) -> Void = { _, _, _ in }) {
         self.onClear = onClear
         self.onRemove = onRemove
@@ -216,7 +216,7 @@ final class TwitchEventSubProvider: ChatProvider {
         self.onEvent = onEvent
     }
 
-    func start() {
+    public func start() {
         guard let platforms else { return }
         stop()
         stopped = false
@@ -228,7 +228,7 @@ final class TwitchEventSubProvider: ChatProvider {
         _ = platforms
     }
 
-    func stop() {
+    public func stop() {
         stopped = true
         task?.cancel(); task = nil
         socket?.cancel(with: .goingAway, reason: nil); socket = nil
@@ -288,14 +288,14 @@ final class TwitchEventSubProvider: ChatProvider {
         }
     }
 
-    static func sessionID(from welcomeText: String) -> String? {
+    public static func sessionID(from welcomeText: String) -> String? {
         guard let obj = try? JSONSerialization.jsonObject(with: Data(welcomeText.utf8)) as? [String: Any],
               (obj["metadata"] as? [String: Any])?["message_type"] as? String == "session_welcome"
         else { return nil }
         return ((obj["payload"] as? [String: Any])?["session"] as? [String: Any])?["id"] as? String
     }
 
-    static func parseEvent(type: String, event: [String: Any]) -> ChatEvent? {
+    public static func parseEvent(type: String, event: [String: Any]) -> ChatEvent? {
         switch type {
         case "channel.chat.message":
             guard let user = event["chatter_user_name"] as? String,
@@ -346,19 +346,19 @@ final class TwitchEventSubProvider: ChatProvider {
 // MARK: - YouTube (liveChat/messages polling)
 
 @MainActor
-final class YouTubePollProvider: ChatProvider {
+public final class YouTubePollProvider: ChatProvider {
     private let onEvent: @MainActor (ChatEvent) -> Void
     private weak var platforms: Platforms?
     private var task: Task<Void, Never>?
     private var stopped = true
     private var pageToken: String?
 
-    init(platforms: Platforms, onEvent: @escaping @MainActor (ChatEvent) -> Void) {
+    public init(platforms: Platforms, onEvent: @escaping @MainActor (ChatEvent) -> Void) {
         self.platforms = platforms
         self.onEvent = onEvent
     }
 
-    func start() {
+    public func start() {
         guard let platforms else { return }
         stop()
         stopped = false
@@ -382,12 +382,12 @@ final class YouTubePollProvider: ChatProvider {
         _ = platforms
     }
 
-    func stop() {
+    public func stop() {
         stopped = true
         task?.cancel(); task = nil
     }
 
-    static func parseItem(_ item: [String: Any]) -> ChatEvent? {
+    public static func parseItem(_ item: [String: Any]) -> ChatEvent? {
         guard let snippet = item["snippet"] as? [String: Any],
               let type = snippet["type"] as? String,
               let author = item["authorDetails"] as? [String: Any],

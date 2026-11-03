@@ -1,3 +1,4 @@
+import Chat
 import SwiftUI
 
 /// Settings › Chat commands: the saved !commands behind the chat chips, the ! menu and the Lock Screen buttons.

@@ -6,13 +6,13 @@ import FoundationModels
 
 /// "Catch me up": a 2-3 sentence on-device summary of recent chat. Nothing leaves the device.
 @MainActor
-enum ChatSummary {
-    static let maxMessages = 60
-    static let maxChars = 5000   // the on-device model has a small context window
+public enum ChatSummary {
+    public static let maxMessages = 60
+    public static let maxChars = 5000   // the on-device model has a small context window
 
-    enum Failure: Error {
+    public enum Failure: Error {
         case unavailable, empty, unsafe
-        var message: String {
+        public var message: String {
             switch self {
             case .unavailable: return "Apple Intelligence isn't available."
             case .empty: return "No recent English chat to summarize."
@@ -22,7 +22,7 @@ enum ChatSummary {
     }
 
     /// "user: text" lines of the last `maxMessages` messages, minus blocked/flagged/non-Latin ones; newest kept if capped.
-    static func transcript(_ events: [ChatEvent]) -> String {
+    public static func transcript(_ events: [ChatEvent]) -> String {
         let lines = events.filter { $0.kind == .message && $0.origin != "test" && !$0.offensive }
             .suffix(maxMessages)
             .compactMap { e -> String? in
@@ -32,7 +32,7 @@ enum ChatSummary {
         return String(lines.joined(separator: "\n").suffix(maxChars))
     }
 
-    static func summarize(_ events: [ChatEvent]) async throws -> String {
+    public static func summarize(_ events: [ChatEvent]) async throws -> String {
         guard ChatModerator.available else { throw Failure.unavailable }
         let chat = transcript(events)
         guard !chat.isEmpty else { throw Failure.empty }
