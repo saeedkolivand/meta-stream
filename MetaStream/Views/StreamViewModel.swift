@@ -1,6 +1,7 @@
 import Chat
 import CoreUI
 import Platforms
+import Privacy
 import Speech
 import SwiftUI
 

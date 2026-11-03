@@ -3,6 +3,7 @@ import CoreLogging
 import CoreUI
 import Goal
 import Platforms
+import Privacy
 import Speech
 import SwiftUI
 import MWDATCore

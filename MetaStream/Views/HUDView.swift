@@ -1,6 +1,7 @@
 import CoreUI
 import MWDATCore
 import Platforms
+import Privacy
 import Speech
 import SwiftUI
 

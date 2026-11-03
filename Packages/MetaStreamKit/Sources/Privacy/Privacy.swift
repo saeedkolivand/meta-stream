@@ -29,14 +29,19 @@ import Vision
 /// no dropped frames, just an unmodified picture -- because nothing logged what detection actually found.
 /// `execute` now logs a rate-limited (~1/s, never per-frame) summary of options/counts/composited boxes so
 /// that failure mode shows up in the log instead of needing a device test to notice.
-@MainActor final class Privacy: ObservableObject, VideoEffect {
-    struct Options { var faces = true; var text = true; var barcodes = true }
+@MainActor public final class Privacy: ObservableObject, VideoEffect {
+    public struct Options: Sendable {
+        public var faces = true, text = true, barcodes = true
+        public init() {}
+    }
 
     /// True once detection hasn't successfully completed a pass in >1s -- the caller should fail closed
     /// (e.g. switch to the same black-frame path setCameraOff already uses) rather than trust this frame.
-    @Published private(set) var stalled = false
-    nonisolated(unsafe) var options = Options()
-    nonisolated(unsafe) var enabled = false   // off by default: blur is an opt-in cost (see the ADR)
+    @Published public private(set) var stalled = false
+
+    public init() {}
+    public nonisolated(unsafe) var options = Options()
+    public nonisolated(unsafe) var enabled = false   // off by default: blur is an opt-in cost (see the ADR)
 
     nonisolated private static let detectEveryNFrames = 5
     nonisolated private static let textEveryNPasses = 2  // text is Vision's costliest request here (full-frame region
@@ -72,7 +77,7 @@ import Vision
     /// Hands back an obscured image, or the original image if there's nothing to hide. Called by HaishinKit
     /// once per rendered frame while this is registered on mixer.screen and the mixer is in .offscreen mode
     /// (see Streamer.syncBlurEffect) -- it never runs while disabled or while the mixer is passthrough.
-    nonisolated func execute(_ image: CIImage) -> CIImage {
+    public nonisolated func execute(_ image: CIImage) -> CIImage {
         guard enabled else { return image }
         frameCount += 1
         let extent = image.extent
@@ -176,18 +181,18 @@ import Vision
 
     // MARK: pure helpers -- see Self.demo()
 
-    nonisolated static func pad(_ box: CGRect, by fraction: CGFloat) -> CGRect {
+    public nonisolated static func pad(_ box: CGRect, by fraction: CGFloat) -> CGRect {
         let dx = box.width * fraction, dy = box.height * fraction
         return box.insetBy(dx: -dx, dy: -dy).intersection(CGRect(x: 0, y: 0, width: 1, height: 1))
     }
 
-    nonisolated static func isExpired(lastDetection: Date, now: Date, maxAge: TimeInterval) -> Bool {
+    public nonisolated static func isExpired(lastDetection: Date, now: Date, maxAge: TimeInterval) -> Bool {
         now.timeIntervalSince(lastDetection) > maxAge
     }
 
     /// True when this detection pass should re-run text detection rather than reuse the carried boxes --
     /// always on the very first pass (nothing carried yet), otherwise every `everyN`th pass.
-    nonisolated static func textDetectionDue(pass: Int, everyN: Int, hasCarriedBoxes: Bool) -> Bool {
+    public nonisolated static func textDetectionDue(pass: Int, everyN: Int, hasCarriedBoxes: Bool) -> Bool {
         !hasCarriedBoxes || pass % everyN == 0
     }
 }

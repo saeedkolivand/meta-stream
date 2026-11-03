@@ -4,6 +4,7 @@ import CoreLogging
 import Foundation
 import AVFoundation
 import CoreMedia
+import Privacy
 import UIKit
 import HaishinKit
 

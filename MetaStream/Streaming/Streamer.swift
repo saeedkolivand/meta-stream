@@ -6,6 +6,7 @@ import Foundation
 import Combine
 import AVFoundation
 import CoreMedia
+import Privacy
 import Speech
 import VideoToolbox
 import UIKit
