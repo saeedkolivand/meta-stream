@@ -176,7 +176,7 @@ final class AlertIslandScreenObject: ScreenObject {
                 let size = "\(Int(bounds.width))x\(Int(bounds.height))"
                 let timing = "\(frames) frames in \(String(format: "%.2f", last)) s (\(fps) fps)"
                 applog("perf", "island alert \(event.kind): \(timing), draw avg \(avg) ms max \(peak) ms, longest gap \(gap) ms, "
-                       + "canvas \(size), renderer \(type(of: renderer))")
+                       + "canvas \(size), renderer \(Swift.type(of: renderer))")
             }
             return CIImage.empty()
         }
