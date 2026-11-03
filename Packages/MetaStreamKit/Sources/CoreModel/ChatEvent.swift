@@ -8,7 +8,7 @@ import Foundation
 /// `subscribe` with count > 0 is a GIFT of `count` subs by `user`; count 0 is a normal (re)sub. Twitch Bits and Kick
 /// KICKs are both `cheer` with `count` = how many; what any of it is worth: DonationPrices.money.
 public struct ChatEvent: Sendable {
-    public enum Kind: Equatable { case message, tip, cheer, follow, subscribe, raid }
+    public enum Kind: Equatable, Sendable { case message, tip, cheer, follow, subscribe, raid }
     public let kind: Kind
     public let user: String
     public var text: String
