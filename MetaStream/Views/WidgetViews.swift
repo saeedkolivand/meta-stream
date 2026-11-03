@@ -2,6 +2,7 @@
 // editor draws the very same views, so what you arrange is exactly what goes out. Point sizes are fixed (never
 // Dynamic Type) and every view lays out at exactly its natural size.
 import CoreImage.CIFilterBuiltins
+import CoreModel
 import SwiftUI
 import UIKit
 

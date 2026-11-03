@@ -1,3 +1,4 @@
+import CoreModel
 import Foundation
 
 /// Data-driven Kick alerts: Kick's non-chat Pusher events are undocumented and get renamed, so which

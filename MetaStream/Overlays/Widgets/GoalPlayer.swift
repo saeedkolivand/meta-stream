@@ -1,6 +1,7 @@
 // Drives the GPU Goal widget: polls the GoalStore twice a second and hands the GPU object a still scene when the total, the
 // goal or the celebration changes. A donation that raises the total plays the design's reaction as one moving scene (its t
 // comes from the scene clock); the object redraws every frame only until that scene ends, then holds a still one.
+import CoreModel
 import Foundation
 
 @MainActor

@@ -1,5 +1,6 @@
 // Native alert banner: queues follow/sub/raid/tip/cheer events from the chat feed and shows each one in turn.
 // The "Island" capsule is drawn on the GPU (AlertIslandGPU.swift); without a mixer it falls back to ~24 fps CPU re-renders of AlertBannerView.
+import CoreModel
 import HaishinKit
 import SwiftUI
 import UIKit

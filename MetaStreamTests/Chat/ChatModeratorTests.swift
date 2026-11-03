@@ -1,3 +1,4 @@
+import CoreModel
 import XCTest
 import Foundation
 @testable import MetaStream

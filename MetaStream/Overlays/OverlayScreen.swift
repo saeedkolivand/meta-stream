@@ -3,6 +3,7 @@
 // implicitly Sendable: they are global-actor isolated classes).
 import AVFoundation
 import CoreImage
+import CoreModel
 import HaishinKit
 import UIKit
 

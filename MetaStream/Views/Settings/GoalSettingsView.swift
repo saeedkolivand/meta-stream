@@ -1,3 +1,4 @@
+import CoreModel
 import SwiftUI
 
 /// Settings › Goal: the donation goal, manual and test donations; rates and the donation list are one level down.

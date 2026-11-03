@@ -1,6 +1,7 @@
 // Native "recent events" list (latest follows, subs, tips, raids), newest on top, on the GPU: each event pill is rasterised
 // once (ChatRows.swift) and the GPU stacks them. Nothing moves, so the scene is always still and is re-shown only when the
 // feed changes.
+import CoreModel
 import HaishinKit
 import SwiftUI
 

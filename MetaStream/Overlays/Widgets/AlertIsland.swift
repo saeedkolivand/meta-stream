@@ -1,6 +1,7 @@
 // "Island" alert timing: every frame of the banner is a pure function of the seconds since the alert started, so
 // the render loop just asks for a pose and draws it (and tests can pin the curve without a renderer).
 import CoreGraphics
+import CoreModel
 import Foundation
 import HaishinKit
 

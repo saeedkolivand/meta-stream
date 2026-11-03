@@ -1,3 +1,4 @@
+import CoreModel
 import Foundation
 
 /// The numbers and sentences the Session report derives from one record and the older ones. Pure: no disk, no views.

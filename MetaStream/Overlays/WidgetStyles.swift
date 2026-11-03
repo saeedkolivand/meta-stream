@@ -2,6 +2,7 @@
 // ARGB colors as decimal UInt32 strings (what OverlayRaster.color(argb:) reads), bools "true"/"false", lists comma-separated.
 // Missing or unparsable keys fall back to the default, so old packs keep loading when a field is added.
 import CoreGraphics
+import CoreModel
 import Foundation
 
 private extension Dictionary where Key == String, Value == String {

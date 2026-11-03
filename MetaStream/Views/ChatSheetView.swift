@@ -1,3 +1,4 @@
+import CoreModel
 import SwiftUI
 
 /// Native, aggregated chat sheet: every origin ChatFeed is running lands in one list, newest at the bottom.

@@ -1,34 +1,5 @@
+import CoreModel
 import Foundation
-
-/// One chat or alert event, platform-agnostic. `origin` names the destination a viewer typed on
-/// ("kick"/"twitch"/"youtube") and is only spoken when `Speaker.showOrigin` is set.
-/// Two numeric fields cover everything: `amountCents` is money (tips), `count` is countable
-/// things (raid viewers, cheered bits). ponytail: cents as Int, never Double — currency in
-/// floating point is a rounding bug waiting to happen.
-/// `subscribe` with count > 0 is a GIFT of `count` subs by `user`; count 0 is a normal (re)sub. Twitch Bits and Kick
-/// KICKs are both `cheer` with `count` = how many; what any of it is worth: DonationPrices.money.
-struct ChatEvent: Sendable {
-    enum Kind: Equatable { case message, tip, cheer, follow, subscribe, raid }
-    let kind: Kind
-    let user: String
-    var text: String = ""
-    var amountCents: Int = 0
-    /// A tip's amount in the currency it was given in (donation sites, Super Chats); nil = `amountCents` US cents.
-    var money: Money? = nil
-    var count: Int = 0
-    var origin: String = ""
-    /// Twitch sub tier 1...3 (Prime counts as 1); other platforms have one tier.
-    var tier: Int = 1
-    /// Normalized role badges (see ChatBadges) and the sender's "#RRGGBB" name color; messages only.
-    var badges: [String] = []
-    var color: String? = nil
-    /// Platform message id and sender user id (Kick/Twitch chat messages only): what moderation slash commands act on.
-    var id = ""
-    var userId = ""
-    var at: Date = Date()
-    /// Set by ChatModerator when the on-device model judged the message unsafe: kept in the in-app chat, nowhere else.
-    var flagged = false
-}
 
 /// Live chat as one AsyncStream<ChatEvent> (text-to-speech drives off it) plus a recent-messages buffer
 /// for a future chat UI. Kick, Twitch and YouTube each run independently and funnel into the same stream —

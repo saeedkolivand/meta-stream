@@ -1,3 +1,4 @@
+import CoreModel
 import Foundation
 
 /// The Live post (CONTEXT.md "Reach"): the one Telegram channel message a stream session owns. Announced before the

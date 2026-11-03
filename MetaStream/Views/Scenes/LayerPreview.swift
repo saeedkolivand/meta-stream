@@ -1,3 +1,4 @@
+import CoreModel
 import SwiftUI
 
 /// One layer drawn in the editor canvas with the same SwiftUI views the stream renders from, laid out at natural size

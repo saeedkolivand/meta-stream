@@ -1,6 +1,7 @@
 // Publishes the goal to the streamer's donate page (CONTEXT.md: Donate page): POST <page>/api/goal with a bearer key.
 // Sent when the goal changes, when going live / ending, and every 60 s while live (the page tells LIVE from OFFLINE by
 // the heartbeat). At most one request per 5 s. Off while no key is set.
+import CoreModel
 import Foundation
 import Combine
 

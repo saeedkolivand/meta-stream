@@ -1,4 +1,5 @@
 import Charts
+import CoreModel
 import SwiftUI
 
 /// One session in the Streams list: title, "Tue 21 Oct · 1 h 42 m · €45", viewers sparkline, peak.

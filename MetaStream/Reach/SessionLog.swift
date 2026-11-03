@@ -1,3 +1,4 @@
+import CoreModel
 import Foundation
 
 /// Records the running stream session (CONTEXT.md "Reach"): a per-minute timeline, Moments, donation totals and

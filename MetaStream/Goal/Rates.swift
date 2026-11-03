@@ -1,6 +1,7 @@
 // Market rates for the goal (adr/0006): toman per US dollar from Nobitex's USDT price, US dollars per euro from the
 // European Central Bank (frankfurter.app), crypto in dollars from CoinGecko. Refreshed every 10 minutes while the app
 // runs and kept across launches. The streamer's own toman rate, when set, replaces Nobitex.
+import CoreModel
 import Foundation
 
 @MainActor

@@ -1,3 +1,4 @@
+import CoreModel
 import SwiftUI
 
 /// Loops the chosen donation design with the stream's own drawing code (like the stinger preview), over a stand-in scene.

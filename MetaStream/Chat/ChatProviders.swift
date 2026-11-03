@@ -1,3 +1,4 @@
+import CoreModel
 import Foundation
 
 /// Lenient Int from a JSON number or numeric string (platforms are inconsistent about which they send).

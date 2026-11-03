@@ -1,3 +1,4 @@
+import CoreModel
 import SwiftUI
 
 /// Shared display names + small chat-presentation helpers. Single home for every mode/id -> label

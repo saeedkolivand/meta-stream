@@ -1,5 +1,6 @@
 // Native chat widget on the GPU: each message row is rasterised once when it arrives (ChatRows.swift); stacking, the entry
 // slide and the fade-out run on the GPU as functions of time. The loop only decides WHICH rows to show.
+import CoreModel
 import HaishinKit
 import SwiftUI
 import UIKit

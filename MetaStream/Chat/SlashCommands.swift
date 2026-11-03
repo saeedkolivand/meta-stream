@@ -1,3 +1,4 @@
+import CoreModel
 import Foundation
 
 /// Slash commands typed in the chat input (see CONTEXT.md): parsed here, carried out through the platform's

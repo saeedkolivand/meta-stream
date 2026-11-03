@@ -1,3 +1,4 @@
+import CoreModel
 import SwiftUI
 
 extension Rates {

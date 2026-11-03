@@ -1,3 +1,4 @@
+import CoreModel
 import Foundation
 
 /// Fake chat for the Logs screen's "Chat flood test": deterministic from the index, origin "test" (Speaker ignores it).

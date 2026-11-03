@@ -1,6 +1,7 @@
 // Plays a donation (tip, Bits, KICKs) as a full-canvas GPU alert instead of the Island banner (see DonationAlert.swift).
 // Alerts stay one at a time: the widget loop awaits play() like it awaits AlertPlayer.play.
 import CoreGraphics
+import CoreModel
 import Foundation
 import HaishinKit
 

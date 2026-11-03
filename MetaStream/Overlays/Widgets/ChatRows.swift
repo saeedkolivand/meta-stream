@@ -3,6 +3,7 @@
 // a key; stacking the rows, the entry slide, the fade-out, the top dissolve and the clipping are Core Image recipes the GPU
 // evaluates each composited frame, as functions of time. So a new message costs one row raster, never a whole-box re-render.
 import CoreImage
+import CoreModel
 import QuartzCore
 import SwiftUI
 import UIKit

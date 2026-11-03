@@ -1,3 +1,4 @@
+import CoreModel
 import Foundation
 
 /// The body of the monthly Wrapped page (CONTEXT.md "Wrapped"): exactly the keys the donate page accepts. Never a date
