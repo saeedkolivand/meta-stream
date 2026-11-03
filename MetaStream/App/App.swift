@@ -4,6 +4,7 @@ import CoreUI
 import Goal
 import Platforms
 import Privacy
+import Signals
 import Speech
 import SwiftUI
 import MWDATCore

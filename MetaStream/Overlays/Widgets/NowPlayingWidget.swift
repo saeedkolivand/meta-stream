@@ -6,6 +6,7 @@
 import CoreLogging
 import HaishinKit
 import QuartzCore
+import Signals
 import UIKit
 
 extension OverlayCompositor {

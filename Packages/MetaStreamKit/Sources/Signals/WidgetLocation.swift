@@ -7,8 +7,8 @@ import Network
 import UIKit
 
 @MainActor
-final class WidgetLocation: NSObject, CLLocationManagerDelegate {
-    static let shared = WidgetLocation()
+public final class WidgetLocation: NSObject, CLLocationManagerDelegate {
+    public static let shared = WidgetLocation()
 
     private let manager = CLLocationManager()
     private var users = 0
@@ -29,7 +29,7 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
     private var phoneSilent = false   // logs "no reply" once per outage, not every second
 
     /// "42 km/h" (mph in non-metric locales), "--" until the first fix.
-    var speedText: String {
+    public var speedText: String {
         guard let v = metersPerSecond else { return "--" }
         let metric = Locale.current.measurementSystem == .metric
         let n = Int((v * (metric ? 3.6 : 2.23694)).rounded())
@@ -38,7 +38,7 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
 
     /// "3.4 km" (mi in non-metric locales) travelled today: since the first stream that started on the day the
     /// current one did (`since` = its go-live time; nil = today). 0.0 until a moving, accurate fix.
-    func distanceText(since: Date?) -> String {
+    public func distanceText(since: Date?) -> String {
         let day = Self.dayKey(since ?? Date())
         if day != distanceDay {
             distanceDay = day
@@ -50,7 +50,7 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
     }
 
     /// Metres travelled on the current distance day, for the Session report's distance.
-    var metersToday: Double { meters }
+    public var metersToday: Double { meters }
 
     private func saveDistance() {
         UserDefaults.standard.set(meters, forKey: "distanceMeters")
@@ -58,17 +58,17 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
     }
 
     /// "2026-10-18" in the phone's own calendar and time zone.
-    static func dayKey(_ d: Date) -> String {
+    public static func dayKey(_ d: Date) -> String {
         let c = Calendar.current.dateComponents([.year, .month, .day], from: d)
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
     /// Province/state and country only; nil until the first geocode.
-    var regionText: String? { region.isEmpty ? nil : region }
+    public var regionText: String? { region.isEmpty ? nil : region }
 
-    var cityText: String { city.isEmpty ? "--" : city }
+    public var cityText: String { city.isEmpty ? "--" : city }
 
-    func retain() {
+    public func retain() {
         users += 1
         if users == 1 {
             start()
@@ -76,7 +76,7 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
         }
     }
 
-    func release() {
+    public func release() {
         users = max(0, users - 1)
         if users == 0 { manager.stopUpdatingLocation(); lastFix = nil; loggedFix = false; phonePoll?.cancel(); phonePoll = nil; phoneTime = nil }
     }
@@ -94,7 +94,7 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
     }
 
     // CLLocationManager callbacks arrive off the main actor; only plain numbers hop across, the CLLocation is rebuilt there.
-    nonisolated func locationManager(_ m: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    public nonisolated func locationManager(_ m: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let l = locations.last else { return }
         let (speed, lat, lon, acc, time) = (l.speed, l.coordinate.latitude, l.coordinate.longitude, l.horizontalAccuracy, l.timestamp)
         Task { @MainActor in
@@ -103,7 +103,7 @@ final class WidgetLocation: NSObject, CLLocationManagerDelegate {
         }
     }
 
-    nonisolated func locationManagerDidChangeAuthorization(_ m: CLLocationManager) {
+    public nonisolated func locationManagerDidChangeAuthorization(_ m: CLLocationManager) {
         Task { @MainActor in if self.users > 0 { self.start() } }
     }
 

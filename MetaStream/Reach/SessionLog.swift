@@ -3,6 +3,7 @@ import CoreModel
 import Foundation
 import Goal
 import Platforms
+import Signals
 
 /// Records the running stream session (CONTEXT.md "Reach"): a per-minute timeline, Moments, donation totals and
 /// Chatters. Saved as JSON when the session ends. Chat text is never stored, only counts per Chatter key.

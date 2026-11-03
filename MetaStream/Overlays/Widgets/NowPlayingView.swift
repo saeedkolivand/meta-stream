@@ -1,6 +1,7 @@
 // Native Now playing widget view: one of eight designs (NowPlayingDesigns / NowPlayingDesignsText) drawn at one pose.
 // Flat fills only. The cover is the real album art, aspect-filled and clipped to each design's shape; until it has
 // downloaded a flat accent-tinted placeholder with a note stands in.
+import Signals
 import SwiftUI
 import UIKit
 

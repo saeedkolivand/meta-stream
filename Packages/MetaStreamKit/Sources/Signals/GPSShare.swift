@@ -5,25 +5,25 @@ import CoreLogging
 import Network
 import Observation
 
-struct SharedFix: Equatable {
+public struct SharedFix: Equatable {
     // ponytail: Apple's Personal Hotspot always puts the iPhone at 172.20.10.1; other hotspots are not found.
-    static let hotspotIP = IPv4Address("172.20.10.1")!
-    static let host = NWEndpoint.Host.ipv4(hotspotIP)
-    static let port: NWEndpoint.Port = 47123
+    public static let hotspotIP = IPv4Address("172.20.10.1")!
+    public static let host = NWEndpoint.Host.ipv4(hotspotIP)
+    public static let port: NWEndpoint.Port = 47123
     /// Voice priority (Wi-Fi WMM): the stream's video fills the hotspot link, and a best-effort ping queued behind it misses its window.
-    static var params: NWParameters { let p = NWParameters.udp; p.serviceClass = .interactiveVoice; return p }
+    public static var params: NWParameters { let p = NWParameters.udp; p.serviceClass = .interactiveVoice; return p }
 
-    var lat, lon, speed, accuracy: Double
-    var time: Date
+    public var lat, lon, speed, accuracy: Double
+    public var time: Date
 
-    var wire: String { "\(lat),\(lon),\(speed),\(accuracy),\(time.timeIntervalSince1970)" }
+    public var wire: String { "\(lat),\(lon),\(speed),\(accuracy),\(time.timeIntervalSince1970)" }
 
-    init(lat: Double, lon: Double, speed: Double, accuracy: Double, time: Date) {
+    public init(lat: Double, lon: Double, speed: Double, accuracy: Double, time: Date) {
         (self.lat, self.lon, self.speed, self.accuracy, self.time) = (lat, lon, speed, accuracy, time)
     }
 
     /// nil unless it is five finite numbers in range: the packet comes off the network.
-    init?(wire: String) {
+    public init?(wire: String) {
         let n = wire.split(separator: ",").compactMap { Double($0) }
         guard n.count == 5, n.allSatisfy(\.isFinite), abs(n[0]) <= 90, abs(n[1]) <= 180, n[2] < 150, n[4] > 0 else { return nil }
         self.init(lat: n[0], lon: n[1], speed: n[2], accuracy: n[3], time: Date(timeIntervalSince1970: n[4]))
@@ -32,16 +32,16 @@ struct SharedFix: Equatable {
 
 /// The iPhone side. Runs location in the background while on (needs UIBackgroundModes "location").
 @MainActor @Observable
-final class GPSShare: NSObject, CLLocationManagerDelegate {
-    static let shared = GPSShare()
+public final class GPSShare: NSObject, CLLocationManagerDelegate {
+    public static let shared = GPSShare()
 
     @ObservationIgnored private let manager = CLLocationManager()
     private var listener: NWListener?
-    private(set) var latest: SharedFix?
-    private(set) var lastAsked: Date?   // last iPad ping answered, for GPSOnlyView
+    public private(set) var latest: SharedFix?
+    public private(set) var lastAsked: Date?   // last iPad ping answered, for GPSOnlyView
     private var loggedReject = false
 
-    func setEnabled(_ on: Bool) {
+    public func setEnabled(_ on: Bool) {
         listener?.cancel()
         listener = nil
         manager.stopUpdatingLocation()
@@ -81,13 +81,13 @@ final class GPSShare: NSObject, CLLocationManagerDelegate {
         }
     }
 
-    nonisolated func locationManager(_ m: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    public nonisolated func locationManager(_ m: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let l = locations.last else { return }
         let fix = SharedFix(lat: l.coordinate.latitude, lon: l.coordinate.longitude, speed: l.speed, accuracy: l.horizontalAccuracy, time: l.timestamp)
         Task { @MainActor in self.latest = fix }
     }
 
-    nonisolated func locationManagerDidChangeAuthorization(_ m: CLLocationManager) {
+    public nonisolated func locationManagerDidChangeAuthorization(_ m: CLLocationManager) {
         Task { @MainActor in if self.listener != nil { self.manager.startUpdatingLocation() } }
     }
 }

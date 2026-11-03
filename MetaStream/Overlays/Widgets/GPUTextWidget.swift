@@ -4,6 +4,7 @@
 // by StingerCanvas (cached); placing, tinting and blurring them is Core Image work done when the frame is composited.
 import CoreImage
 import HaishinKit
+import Signals
 import UIKit
 
 extension OverlayCompositor {

@@ -1,6 +1,7 @@
 // Imported OBS text with {tokens}: the string is re-resolved once a second and the bitmap redrawn only when it changed.
 // (In-app text, with or without tokens, is a GPU widget: GPUTextWidget.swift.)
 import HaishinKit
+import Signals
 import UIKit
 
 extension OverlayCompositor {

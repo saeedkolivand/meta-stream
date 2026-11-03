@@ -1,3 +1,4 @@
+import Signals
 import SwiftUI
 
 /// iPhone screen while it only shares GPS with the iPad (GPSShare): no camera, chat or preview, so backgrounded it is

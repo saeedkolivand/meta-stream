@@ -6,6 +6,7 @@ import CoreUI
 import Foundation
 import Goal
 import Platforms
+import Signals
 import UIKit
 
 /// A message the app bot repeats on a schedule while live (Settings › App bot). The list lives in AppStorage("botTimers") as JSON.

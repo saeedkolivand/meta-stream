@@ -3,6 +3,7 @@
 // natural points of NowPlayingWidgetStyle.natural (the 1080 scale) and `ratio` scales them to canvas pixels once.
 // Cards and text widgets live in NowPlayingArtCards.swift / NowPlayingArtText.swift as extensions of NPDraw.
 import CoreImage
+import Signals
 import Synchronization
 import UIKit
 

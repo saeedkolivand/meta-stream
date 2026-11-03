@@ -7,19 +7,24 @@ private struct Forecast: Decodable {
         let temperature: Double
         let code: Int
         enum CodingKeys: String, CodingKey { case temperature = "temperature_2m", code = "weather_code" }
+
+        public init(temperature: Double, code: Int) {
+            self.temperature = temperature
+            self.code = code
+        }
     }
     let current: Now
 }
 
 @MainActor
-final class WidgetWeather {
-    static let shared = WidgetWeather()
+public final class WidgetWeather {
+    public static let shared = WidgetWeather()
 
     /// "{i:cloud.fill} 17°" (an inline icon token, see TextRuns), "--" until the first fetch succeeds; a failed refresh keeps it.
     /// Reading it is what turns fetching on, so location never goes to Open-Meteo unless a widget shows {weather}.
-    var text: String { wanted = true; return value }
+    public var text: String { wanted = true; return value }
     /// "18°C, clear": no place name, for the app bot's !weather. Reading it turns fetching on too.
-    var plainText: String { wanted = true; return plain }
+    public var plainText: String { wanted = true; return plain }
     private var plain = "--"
     private var value = "--"
     private var wanted = false
@@ -27,7 +32,7 @@ final class WidgetWeather {
     private var lastOK: (at: Date, loc: CLLocation)?
     private var lastFail: Date?
 
-    func update(lat: Double, lon: Double) {
+    public func update(lat: Double, lon: Double) {
         guard wanted, !fetching else { return }
         let loc = CLLocation(latitude: lat, longitude: lon)
         if let f = lastFail, Date().timeIntervalSince(f) < 120 { return }
@@ -48,7 +53,7 @@ final class WidgetWeather {
     }
 
     /// WMO weather code -> plain words.
-    nonisolated static func words(_ code: Int) -> String {
+    public nonisolated static func words(_ code: Int) -> String {
         switch code {
         case 0: "clear"
         case 1, 2: "partly cloudy"
@@ -64,7 +69,7 @@ final class WidgetWeather {
     }
 
     /// WMO weather code -> SF Symbol name.
-    nonisolated static func symbol(_ code: Int) -> String {
+    public nonisolated static func symbol(_ code: Int) -> String {
         switch code {
         case 0: "sun.max.fill"
         case 1, 2: "cloud.sun.fill"

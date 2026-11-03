@@ -3,6 +3,7 @@ import CoreUI
 import Foundation
 import Goal
 import Platforms
+import Signals
 
 /// The grey summaries on the settings rows. Each reads the same UserDefaults key (and default) as the screen it
 /// summarises; empty means "nothing worth saying", never a guess.

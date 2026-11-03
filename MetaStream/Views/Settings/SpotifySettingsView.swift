@@ -1,3 +1,4 @@
+import Signals
 import SwiftUI
 
 /// Settings › Spotify: the account the Now playing widget and the {song} / {artist} tokens read from.

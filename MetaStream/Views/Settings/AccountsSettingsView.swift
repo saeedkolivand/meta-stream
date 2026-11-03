@@ -1,5 +1,6 @@
 import Goal
 import Platforms
+import Signals
 import SwiftUI
 
 /// Settings › Accounts: every login in one place -- streaming platforms, chat bots, services and donation sites.

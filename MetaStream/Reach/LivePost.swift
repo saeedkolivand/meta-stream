@@ -4,6 +4,7 @@ import CoreStorage
 import Foundation
 import Goal
 import Platforms
+import Signals
 
 /// The Live post (CONTEXT.md "Reach"): the one Telegram channel message a stream session owns. Announced before the
 /// stream (optional), adopted when the session starts, refreshed while it runs, turned into the recap when it ends.

@@ -10,34 +10,46 @@ import Observation
 import Platforms
 import UIKit
 
-struct NowPlayingTrack: Equatable, Sendable {
-    var id: String            // Spotify item id; a change of id is a song change
-    var title: String
-    var artist: String
-    var artURL: String
-    var durationMs: Int
-    var progressMs: Int
-    var at: Date              // when progressMs was read
-    var url = ""              // open.spotify.com link, for the app bot's !song
+public struct NowPlayingTrack: Equatable, Sendable {
+    public var id: String            // Spotify item id; a change of id is a song change
+    public var title: String
+    public var artist: String
+    public var artURL: String
+    public var durationMs: Int
+    public var progressMs: Int
+    public var at: Date              // when progressMs was read
+    public var url = ""              // open.spotify.com link, for the app bot's !song
 
     /// Playback position now, extrapolated from the last poll (the poll only says where it was).
-    func elapsedMs(_ now: Date = Date()) -> Int { min(durationMs, progressMs + Int(now.timeIntervalSince(at) * 1000)) }
-    func progress(_ now: Date = Date()) -> Double { durationMs > 0 ? Double(elapsedMs(now)) / Double(durationMs) : 0 }
+    public func elapsedMs(_ now: Date = Date()) -> Int { min(durationMs, progressMs + Int(now.timeIntervalSince(at) * 1000)) }
+    public func progress(_ now: Date = Date()) -> Double { durationMs > 0 ? Double(elapsedMs(now)) / Double(durationMs) : 0 }
+
+    public init(id: String, title: String, artist: String, artURL: String, durationMs: Int, progressMs: Int, at: Date,
+                url: String = "") {
+        self.id = id
+        self.title = title
+        self.artist = artist
+        self.artURL = artURL
+        self.durationMs = durationMs
+        self.progressMs = progressMs
+        self.at = at
+        self.url = url
+    }
 }
 
 @MainActor @Observable
-final class SpotifyNowPlaying {
-    static let shared = SpotifyNowPlaying()
+public final class SpotifyNowPlaying {
+    public static let shared = SpotifyNowPlaying()
 
     /// nil while nothing plays (paused, stopped, an ad, not connected): widgets hide.
-    private(set) var track: NowPlayingTrack?
+    public private(set) var track: NowPlayingTrack?
     /// Cover of `track`, nil until downloaded (designs draw their placeholder until then).
-    private(set) var art: UIImage?
-    private(set) var connected: Bool
-    var status = ""
+    public private(set) var art: UIImage?
+    public private(set) var connected: Bool
+    public var status = ""
 
     // ponytail: public PKCE client id (no secret exists), so it lives in code rather than a CI secret.
-    static let clientID = "b8b8964ddeab49809d9f9ae1cf9b468e"
+    public static let clientID = "b8b8964ddeab49809d9f9ae1cf9b468e"
     private let store = KeychainTokenStore()
     private let auth = AuthPresenter()
     private var users = 0
@@ -46,19 +58,19 @@ final class SpotifyNowPlaying {
 
     private init() { connected = store.string(forKey: "spotifyRefresh") != nil }
 
-    func retain() {
+    public func retain() {
         users += 1
         if users == 1 { poll = Task { await loop() } }
     }
 
-    func release() {
+    public func release() {
         users = max(0, users - 1)
         if users == 0 { poll?.cancel(); poll = nil }
     }
 
     // MARK: login
 
-    func connect() {
+    public func connect() {
         // The only `try` is inside codeFlow's exchange closure, which codeFlow catches and reports via status.
         // swiftlint:disable:next unhandled_throwing_task
         Task {
@@ -96,7 +108,7 @@ final class SpotifyNowPlaying {
         }
     }
 
-    func disconnect() {
+    public func disconnect() {
         store.forget("spotify")
         connected = false
         track = nil; art = nil; artFor = ""
@@ -169,7 +181,7 @@ final class SpotifyNowPlaying {
     }
 
     /// nil unless a track is actually playing (paused, podcast episodes without artists and ads all hide the widget).
-    nonisolated static func parse(_ json: [String: Any], at: Date) -> NowPlayingTrack? {
+    public nonisolated static func parse(_ json: [String: Any], at: Date) -> NowPlayingTrack? {
         guard json["is_playing"] as? Bool == true, json["currently_playing_type"] as? String == "track",
               let item = json["item"] as? [String: Any], let id = item["id"] as? String ?? item["uri"] as? String,
               let name = item["name"] as? String else { return nil }
@@ -184,7 +196,7 @@ final class SpotifyNowPlaying {
     }
 
     #if DEBUG
-    static func demo() {
+    public static func demo() {
         let t0 = Date(timeIntervalSince1970: 1_000_000)
         let json: [String: Any] = ["is_playing": true, "currently_playing_type": "track", "progress_ms": 1000,
             "item": ["id": "x", "name": "Song", "duration_ms": 10000, "artists": [["name": "A"], ["name": "B"]],

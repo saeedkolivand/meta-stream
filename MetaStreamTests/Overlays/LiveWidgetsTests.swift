@@ -1,4 +1,5 @@
 import CoreModel
+import Signals
 import XCTest
 @testable import MetaStream
 
