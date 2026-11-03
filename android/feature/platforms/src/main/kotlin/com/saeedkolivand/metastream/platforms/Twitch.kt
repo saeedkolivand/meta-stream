@@ -5,7 +5,6 @@ import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.saeedkolivand.metastream.BuildConfig
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.network.Endpoint
 import com.saeedkolivand.metastream.core.network.Net
@@ -44,9 +43,9 @@ object Twitch : Account("Twitch", "twitch") {
     var scopes by mutableStateOf<Set<String>>(emptySet())
         private set
     var adNextAt by mutableStateOf<Instant?>(null)
-        internal set
+        set
     var adSnoozeCount by mutableStateOf(0)
-        internal set
+        set
     var userCode by mutableStateOf("")
         private set
     var verifyUrl by mutableStateOf("")
@@ -57,7 +56,7 @@ object Twitch : Account("Twitch", "twitch") {
         private set
     private var loginJob: Job? = null
 
-    internal val api = Endpoint("https://api.twitch.tv/helix", "twitchAccess", mapOf("Client-Id" to BuildConfig.TWITCH_CLIENT_ID)) {
+    val api = Endpoint("https://api.twitch.tv/helix", "twitchAccess", mapOf("Client-Id" to BuildConfig.TWITCH_CLIENT_ID)) {
         val json = Net.form(
             TOKEN_URL,
             mapOf("grant_type" to "refresh_token", "client_id" to BuildConfig.TWITCH_CLIENT_ID, "refresh_token" to refreshToken())

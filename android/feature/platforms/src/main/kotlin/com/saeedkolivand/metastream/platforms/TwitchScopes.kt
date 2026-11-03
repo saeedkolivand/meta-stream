@@ -1,7 +1,7 @@
 package com.saeedkolivand.metastream.platforms
 
 /** Twitch scope tables, keyed by the feature name the UI shows (iOS TwitchService.chatScopes/actionScopes). */
-internal object TwitchScopes {
+object TwitchScopes {
     // Read scopes the chat feed's EventSub subscriptions need.
     val chat = mapOf(
         "chat" to setOf("user:read:chat"),

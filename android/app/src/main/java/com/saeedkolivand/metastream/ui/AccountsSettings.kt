@@ -34,6 +34,7 @@ import com.saeedkolivand.metastream.core.ui.Section
 import com.saeedkolivand.metastream.core.ui.SystemBlue
 import com.saeedkolivand.metastream.goal.DonationHub
 import com.saeedkolivand.metastream.goal.Site
+import com.saeedkolivand.metastream.platforms.Account
 import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.platforms.Kick
 import com.saeedkolivand.metastream.platforms.Restream
@@ -87,7 +88,7 @@ internal fun AccountsPage(openAppBot: () -> Unit, openTelegram: () -> Unit, open
 }
 
 @Composable
-private fun Platform(a: com.saeedkolivand.metastream.platforms.Account, letter: String, tint: Color) = when {
+private fun Platform(a: Account, letter: String, tint: Color) = when {
     !a.hasApp -> AccountRow(tint, letter, a.label, "No client ID in this build")
     a.connected -> AccountRow(tint, letter, a.label, a.user.ifEmpty { "Connected" }, "Disconnect", a::disconnect, true)
     else -> AccountRow(tint, letter, a.label, "Not connected", "Connect", a::connect)

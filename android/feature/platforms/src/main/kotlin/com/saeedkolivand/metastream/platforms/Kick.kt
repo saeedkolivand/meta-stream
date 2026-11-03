@@ -3,7 +3,6 @@ package com.saeedkolivand.metastream.platforms
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.saeedkolivand.metastream.BuildConfig
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.network.Endpoint
 import com.saeedkolivand.metastream.core.network.Net
@@ -32,10 +31,10 @@ object Kick : Account("Kick", "kick") {
     var slug by mutableStateOf("")
         private set
     private var streamUrl = ""
-    internal var userId = 0
+    var userId = 0
         private set
 
-    internal val api = Endpoint("https://api.kick.com", "kickAccess") {
+    val api = Endpoint("https://api.kick.com", "kickAccess") {
         saveTokens(
             Net.form(
                 TOKEN_URL,

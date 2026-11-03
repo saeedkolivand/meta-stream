@@ -19,22 +19,25 @@ import org.json.JSONObject
 data class Category(val id: String, val name: String)
 
 /** Client IDs/secrets (BuildConfig, from local.properties or CI env), the web redirect and the ingest URLs in one place. */
-internal object PlatformConfig {
+object PlatformConfig {
     const val WEB_REDIRECT = "https://metastream.iamsaeed.dev/oauth.html"
     const val GOOGLE_REDIRECT = "com.saeedkolivand.metastream:/oauth2redirect"
     const val KICK_INGEST = "rtmps://fa723fc1b171.global-contribute.live-video.net:443/app/"
     const val TWITCH_INGEST = "rtmps://live.twitch.tv:443/app/"
     const val RESTREAM_INGEST = "rtmp://live.restream.io/live"
+
+    /** Twitch app client ID (iOS PlatformConfig.twitchID), for the bot account's own sign-in. */
+    val twitchId: String = BuildConfig.TWITCH_CLIENT_ID
 }
 
 /** Process-wide wiring: the app context/scope for sign-in flows, the shared status line, and chat routing. */
 object Accounts {
-    internal lateinit var app: Context
-    internal lateinit var scope: CoroutineScope
+    lateinit var app: Context
+    lateinit var scope: CoroutineScope
 
     /** Last result line shown under Stream Manager (iOS `Platforms.status`). */
     var status by mutableStateOf("")
-        internal set
+        set
 
     val all: List<Account> get() = listOf(Kick, Twitch, Restream, YouTube)
 
@@ -58,7 +61,7 @@ object Accounts {
         }
     }
 
-    internal fun say(message: String) {
+    fun say(message: String) {
         applog("api", "status: $message")
         status = message
     }
@@ -83,7 +86,7 @@ object Accounts {
 }
 
 /** State and behaviour shared by the four services (iOS PlatformAdapter + TokenStore helpers). Subclasses are singleton objects. */
-abstract class Account(val label: String, internal val prefix: String) {
+abstract class Account(val label: String, val prefix: String) {
     var connected by mutableStateOf(false)
         private set
     var user by mutableStateOf("")
@@ -106,7 +109,7 @@ abstract class Account(val label: String, internal val prefix: String) {
     /** Env/secret names to show when [hasApp] is false. */
     abstract val missingSecrets: String
 
-    internal open fun restore() {
+    open fun restore() {
         connected = TokenStore.has(prefix + "Access")
     }
 
@@ -169,7 +172,7 @@ abstract class Account(val label: String, internal val prefix: String) {
     }
 
     /** Fire-and-forget call (chat send, quick actions): only failures surface, plus [done] when given. */
-    internal suspend fun attempt(done: String? = null, work: suspend () -> Unit) {
+    suspend fun attempt(done: String? = null, work: suspend () -> Unit) {
         try {
             work()
             done?.let(Accounts::say)

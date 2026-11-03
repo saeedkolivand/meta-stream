@@ -10,8 +10,6 @@ import com.google.mlkit.genai.prompt.Generation
 import com.google.mlkit.genai.prompt.SystemInstruction
 import com.google.mlkit.genai.prompt.TextPart
 import com.google.mlkit.genai.prompt.generateContentRequest
-import com.saeedkolivand.metastream.chat.offensive
-import com.saeedkolivand.metastream.chat.sanitizeSpeech
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind

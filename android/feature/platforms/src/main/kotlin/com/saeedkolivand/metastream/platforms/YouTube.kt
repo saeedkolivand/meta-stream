@@ -3,7 +3,6 @@ package com.saeedkolivand.metastream.platforms
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.saeedkolivand.metastream.BuildConfig
 import com.saeedkolivand.metastream.core.network.Endpoint
 import com.saeedkolivand.metastream.core.network.Net
 import com.saeedkolivand.metastream.core.network.Pkce
@@ -172,7 +171,7 @@ object YouTube : Account("YouTube", "yt") {
 }
 
 /** The broadcast YouTube Studio calls "your stream": the most alive one, else the newest. */
-internal fun pickBroadcast(items: List<JSONObject>): JSONObject? {
+fun pickBroadcast(items: List<JSONObject>): JSONObject? {
     fun lifecycle(b: JSONObject) = b.optJSONObject("status")?.optString("lifeCycleStatus")
     return listOf("live", "liveStarting", "testing", "ready", "created").firstNotNullOfOrNull { s ->
         items.firstOrNull { lifecycle(it) == s }

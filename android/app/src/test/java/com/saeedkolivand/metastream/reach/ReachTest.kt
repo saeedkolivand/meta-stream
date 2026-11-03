@@ -1,5 +1,7 @@
 package com.saeedkolivand.metastream.reach
 
+import com.saeedkolivand.metastream.platforms.KickWeb
+import com.saeedkolivand.metastream.platforms.Spotify
 import java.math.BigDecimal
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -99,13 +101,13 @@ class SpotifyParseTest {
         val json = """{"is_playing":true,"currently_playing_type":"track","progress_ms":1000,"item":{"id":"x","name":"Song",
             "duration_ms":10000,"artists":[{"name":"A"},{"name":"B"}],
             "album":{"images":[{"url":"big","width":640},{"url":"mid","width":300},{"url":"small","width":64}]}}}"""
-        val t = com.saeedkolivand.metastream.platforms.Spotify.parse(JSONObject(json), 1_000_000)!!
+        val t = Spotify.parse(JSONObject(json), 1_000_000)!!
         assertEquals("A, B", t.artist)
         assertEquals("mid", t.artURL)
         assertEquals(3000, t.elapsedMs(1_002_000))
         assertEquals(10000, t.elapsedMs(1_060_000))
-        assertEquals(null, com.saeedkolivand.metastream.platforms.Spotify.parse(JSONObject(json.replace("true", "false")), 0))
-        assertEquals(null, com.saeedkolivand.metastream.platforms.Spotify.parse(JSONObject(json.replace("\"track\"", "\"ad\"")), 0))
+        assertEquals(null, Spotify.parse(JSONObject(json.replace("true", "false")), 0))
+        assertEquals(null, Spotify.parse(JSONObject(json.replace("\"track\"", "\"ad\"")), 0))
     }
 }
 
@@ -131,7 +133,7 @@ class ReportInsightsTest {
 class KickWebTest {
     @Test
     fun modeBodiesPollsAndNames() {
-        val k = com.saeedkolivand.metastream.platforms.KickWeb
+        val k = KickWeb
         assertEquals("""{"slow_mode":{"enabled":true,"duration_seconds":5}}""", k.modeBody("slow", listOf("on")))
         assertEquals("""{"slow_mode":{"enabled":true,"duration_seconds":30}}""", k.modeBody("slow", listOf("30")))
         assertEquals("""{"slow_mode":{"enabled":false,"duration_seconds":1}}""", k.modeBody("slow", listOf("off")))

@@ -5,7 +5,6 @@ import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.saeedkolivand.metastream.BuildConfig
 import com.saeedkolivand.metastream.core.network.Endpoint
 import com.saeedkolivand.metastream.core.network.Net
 import com.saeedkolivand.metastream.core.network.PlatformException
@@ -13,6 +12,7 @@ import com.saeedkolivand.metastream.core.network.objects
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.storage.TokenStore
 import com.saeedkolivand.metastream.platforms.Accounts
+import com.saeedkolivand.metastream.platforms.PlatformConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -30,13 +30,13 @@ internal object TwitchBot {
     val connected get() = id.isNotEmpty() && TokenStore.has("twitchBotAccess")
     private var login: Job? = null
 
-    val api = Endpoint("https://api.twitch.tv/helix", "twitchBotAccess", mapOf("Client-Id" to BuildConfig.TWITCH_CLIENT_ID)) {
+    val api = Endpoint("https://api.twitch.tv/helix", "twitchBotAccess", mapOf("Client-Id" to PlatformConfig.twitchId)) {
         save(
             Net.form(
                 TOKEN_URL,
                 mapOf(
                     "grant_type" to "refresh_token",
-                    "client_id" to BuildConfig.TWITCH_CLIENT_ID,
+                    "client_id" to PlatformConfig.twitchId,
                     "refresh_token" to TokenStore.get("twitchBotRefresh").orEmpty()
                 )
             )
@@ -56,7 +56,7 @@ internal object TwitchBot {
         login?.cancel()
         login = Accounts.scope.launch {
             try {
-                val cid = BuildConfig.TWITCH_CLIENT_ID
+                val cid = PlatformConfig.twitchId
                 val dev = Net.form("https://id.twitch.tv/oauth2/device", mapOf("client_id" to cid, "scopes" to SCOPES))
                 val code = dev.optString("device_code").ifEmpty { throw PlatformException("no device_code in response") }
                 AppBot.status = "Enter code ${dev.optString("user_code")} on Twitch as the bot account"

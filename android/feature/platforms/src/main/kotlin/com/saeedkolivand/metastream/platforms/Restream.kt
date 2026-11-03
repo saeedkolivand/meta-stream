@@ -3,7 +3,6 @@ package com.saeedkolivand.metastream.platforms
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.saeedkolivand.metastream.BuildConfig
 import com.saeedkolivand.metastream.core.network.Endpoint
 import com.saeedkolivand.metastream.core.network.Net
 import com.saeedkolivand.metastream.core.network.Pkce

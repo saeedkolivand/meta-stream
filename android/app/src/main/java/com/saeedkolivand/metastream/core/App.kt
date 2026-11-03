@@ -18,6 +18,7 @@ import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.overlay.Scenes
 import com.saeedkolivand.metastream.overlay.WidgetFonts
 import com.saeedkolivand.metastream.platforms.Accounts
+import com.saeedkolivand.metastream.platforms.KickWeb
 import com.saeedkolivand.metastream.platforms.Spotify
 import com.saeedkolivand.metastream.reach.LivePost
 import com.saeedkolivand.metastream.reach.SessionLog
@@ -44,7 +45,7 @@ class App : Application() {
         WidgetFonts.init(this)
         AppSettings.init()
         Mics.init(this)
-        com.saeedkolivand.metastream.platforms.KickWeb.init(this)
+        KickWeb.init(this)
         Mics.log(this, "at launch")
         Soundboard.init(this)
         Looks.init(this)

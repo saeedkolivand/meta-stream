@@ -13,7 +13,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  * MainActivity as `metastream://oauth/...` (Kick/Restream via docs/oauth.html) or the Google custom scheme.
  * A redirect is accepted only if its `state` matches a flow we started, and only once.
  */
-internal object OAuth {
+object OAuth {
     const val GOOGLE_SCHEME = "com.saeedkolivand.metastream"
     private const val TIMEOUT_MS = 10 * 60_000L
     private val pending = ConcurrentHashMap<String, CompletableDeferred<String?>>()
