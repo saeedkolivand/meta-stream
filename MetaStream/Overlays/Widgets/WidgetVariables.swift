@@ -55,7 +55,7 @@ enum WidgetVariables {
         case "{weather}": return WidgetWeather.shared.text
         case "{follower}": return clean(ctx.chat?.lastFollower ?? "")
         case "{sub}": return clean(ctx.chat?.lastSubscriber ?? "")
-        case "{countdown}": return ctx.streamer?.countdownText ?? ""
+        case "{countdown}": return SceneDirector.shared.countdownText
         case "{song}": return SpotifyNowPlaying.shared.track?.title ?? ""
         case "{artist}": return SpotifyNowPlaying.shared.track?.artist ?? ""
         default: return token

@@ -41,9 +41,9 @@ struct SceneOptionsView: View {
         }
         .navigationTitle("Transitions & scene options")
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: store.rotateOn) { streamer.updateSceneRotation() }
-        .onChange(of: store.rotateSeconds) { streamer.updateSceneRotation() }
-        .onChange(of: store.rotateScenes) { streamer.updateSceneRotation() }
+        .onChange(of: store.rotateOn) { SceneDirector.shared.updateSceneRotation() }
+        .onChange(of: store.rotateSeconds) { SceneDirector.shared.updateSceneRotation() }
+        .onChange(of: store.rotateScenes) { SceneDirector.shared.updateSceneRotation() }
     }
 
     private var transitionSection: some View {

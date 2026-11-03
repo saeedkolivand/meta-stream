@@ -11,11 +11,11 @@ struct StreamCommands: Commands {
         CommandMenu("Stream") {
             ForEach(0..<9, id: \.self) { i in
                 let name = store.scenes.indices.contains(i) ? store.scenes[i].name : nil
-                Button(name.map { "Scene \(i + 1): \($0)" } ?? "Scene \(i + 1)") { if let name { streamer.selectScene(name) } }
+                Button(name.map { "Scene \(i + 1): \($0)" } ?? "Scene \(i + 1)") { if let name { SceneDirector.shared.selectScene(name) } }
                     .keyboardShortcut(KeyEquivalent(Character("\(i + 1)")), modifiers: .command)
                     .disabled(name == nil)
             }
-            Button("No overlay") { streamer.selectScene("") }
+            Button("No overlay") { SceneDirector.shared.selectScene("") }
                 .keyboardShortcut("0", modifiers: .command)
             Divider()
             Button(streamer.muted ? "Unmute microphone" : "Mute microphone") { streamer.setMuted(!streamer.muted) }

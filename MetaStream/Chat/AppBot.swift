@@ -348,7 +348,7 @@ final class AppBot: ObservableObject {
         if wantGPS, flag("botCmdWeather") { _ = WidgetWeather.shared.plainText }   // reading it is what turns the fetch on
         holdSpotify()
         guard live else { msgs = [:]; marks = [:]; lastTimer = [:]; brbAt = nil; brbOpen = false; return }
-        guard flag("botTimersOn", false), streamer?.roleActive != "brb" else { return }
+        guard flag("botTimersOn", false), SceneDirector.shared.roleActive != "brb" else { return }
         let now = Date()
         for t in AppTimer.decode(UserDefaults.standard.string(forKey: "botTimers") ?? "[]") where !t.text.isEmpty {
             for o in ["kick", "twitch"] where platformOn(o) {

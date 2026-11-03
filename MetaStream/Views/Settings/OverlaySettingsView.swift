@@ -80,7 +80,7 @@ struct OverlaySettingsView: View {
     private var noneRow: some View {
         Button {
             hapticTap()
-            streamer.selectScene("")
+            SceneDirector.shared.selectScene("")
         } label: {
             HStack {
                 Text("None (no overlay)").foregroundStyle(.primary)
@@ -100,13 +100,13 @@ struct OverlaySettingsView: View {
         }
         .buttonStyle(.plain)
         .contextMenu {
-            Button { streamer.selectScene(scene.name) } label: { Label("Show on stream", systemImage: "play.rectangle") }
+            Button { SceneDirector.shared.selectScene(scene.name) } label: { Label("Show on stream", systemImage: "play.rectangle") }
             Button { _ = store.duplicateScene(scene.name) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
             Button { renameText = scene.name; renaming = scene.name } label: { Label("Rename", systemImage: "pencil") }
             Button(role: .destructive) {
                 hapticTap()
                 store.deleteScene(scene.name)
-                streamer.updateSceneRotation()
+                SceneDirector.shared.updateSceneRotation()
             } label: { Label("Delete", systemImage: "trash") }
         }
     }

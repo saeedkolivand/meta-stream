@@ -305,7 +305,7 @@ final class ObsServer {
         case "SetCurrentProgramScene":
             guard let n = (q["sceneName"] ?? q["sceneUuid"]) as? String else { return (300, "Missing sceneName", [:]) }
             guard store.scenes.contains(where: { $0.name == n }) else { return (600, "No scene named \(n)", [:]) }
-            s.selectScene(n); return ok()
+            SceneDirector.shared.selectScene(n); return ok()
         case "GetStudioModeEnabled":
             return ok(["studioModeEnabled": false])
         case "GetStreamStatus":

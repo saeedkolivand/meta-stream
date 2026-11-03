@@ -48,6 +48,8 @@ struct MetaStreamApp: App {
             // Streamer speaks connection changes on Speaker's System lane (never muted).
             .onAppear {
                 streamer.speaker = speaker; streamer.privacy = privacy
+                streamer.compositor = SceneDirector.shared; SceneDirector.shared.streamer = streamer
+                SceneDirector.shared.onRole = { AppBot.shared.role($0, on: $1) }
                 streamer.onSessionStarted = { SessionLog.shared.begin(title: LivePost.shared.title); LivePost.shared.sessionStarted($0) }
                 streamer.onSecond = { AppBot.shared.tick(); LivePost.shared.second($0) }
                 streamer.onSessionEnded = { LivePost.shared.sessionEnded(SessionLog.shared.end()) }

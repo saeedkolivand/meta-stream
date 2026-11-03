@@ -171,7 +171,7 @@ struct SceneCanvasView: View {
     private func effective(_ l: OverlayLayer) -> OverlayLayer {
         guard l.type == .text, let t = l.data["text"], t.contains("{") else { return l }
         var c = l
-        c.data["text"] = WidgetVariables.resolve(t, streamer.overlays.context)
+        c.data["text"] = WidgetVariables.resolve(t, SceneDirector.shared.overlays.context)
         return c
     }
 

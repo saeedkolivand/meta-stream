@@ -192,7 +192,7 @@ struct SceneEditorView: View {
                         Text("Ending").tag("ending")
                     }
                 }
-                Toggle("Show on stream", isOn: Binding(get: { store.scene == name }, set: { streamer.selectScene($0 ? name : "") }))
+                Toggle("Show on stream", isOn: Binding(get: { store.scene == name }, set: { SceneDirector.shared.selectScene($0 ? name : "") }))
             } label: {
                 HStack(spacing: 4) {
                     Text(name).font(.headline)

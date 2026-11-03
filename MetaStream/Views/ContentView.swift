@@ -200,9 +200,9 @@ struct ContentView: View {
         .onChange(of: camLevelOn) { _, on in on ? levelMonitor.start() : levelMonitor.stop() }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = keepAwake }
         .onAppear {
-            let c = streamer.overlays.context
+            let c = SceneDirector.shared.overlays.context
             c.chat = chat; c.emotes = emotes; c.streamer = streamer; c.platforms = platforms
-            streamer.updateSceneRotation()
+            SceneDirector.shared.updateSceneRotation()
         }
         .onChange(of: keepAwake) { _, v in UIApplication.shared.isIdleTimerDisabled = v }
         .onChange(of: streamer.lastPhotoAt) { _, _ in

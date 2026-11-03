@@ -40,7 +40,7 @@ struct HUDView: View {
     private func sceneButton(_ name: String, _ label: String) -> some View {
         Button {
             hapticTap()
-            streamer.selectScene(name)
+            SceneDirector.shared.selectScene(name)
         } label: {
             if overlays.scene == name { Label(label, systemImage: "checkmark") } else { Text(label) }
         }

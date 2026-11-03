@@ -251,7 +251,8 @@ final class LivePost: ObservableObject {
     private func liveInput(_ stream: Streamer) -> LivePostText.Live {
         let elapsed = stream.liveSince.map { Date().timeIntervalSince($0) } ?? 0
         var input = LivePostText.Live(title: title, slug: slug, viewers: viewers, elapsed: elapsed)
-        if stream.roleActive == "starting", stream.countdownEnd != nil { input.countdown = stream.countdownText }
+        let scenes = SceneDirector.shared
+        if scenes.roleActive == "starting", scenes.countdownEnd != nil { input.countdown = scenes.countdownText }
         input.reconnecting = stream.connectedSince == nil
         input.goal = goalLine()
         input.last = SessionLog.shared.lastDonation.map { "\($0.user) · \($0.display)" }
