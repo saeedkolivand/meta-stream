@@ -1,6 +1,7 @@
 import CoreLogging
 import CoreModel
 import Foundation
+import Platforms
 
 /// Lenient Int from a JSON number or numeric string (platforms are inconsistent about which they send).
 func chatInt(_ v: Any?) -> Int? { (v as? Int) ?? (v as? String).flatMap(Int.init) }

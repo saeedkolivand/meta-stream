@@ -1,9 +1,10 @@
+import Platforms
 import SwiftUI
 import UniformTypeIdentifiers
 
 /// Settings › Scenes & widgets › Stinger: a built-in stinger (drawn live, so it follows these settings) or your own clip.
 struct StingerSettingsView: View {
-    @EnvironmentObject var platforms: Platforms
+    @Environment(Platforms.self) var platforms
     @ObservedObject private var store = OverlayStore.shared
     @State private var style = StingerStyle.load()
     @State private var pickClip = false

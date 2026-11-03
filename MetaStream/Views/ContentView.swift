@@ -1,5 +1,6 @@
 import CoreUI
 import MWDATCore
+import Platforms
 import SwiftUI
 
 // MARK: - Live screen
@@ -10,7 +11,7 @@ struct ContentView: View {
     /// Plain reference, not observed: a chat message must not rebuild this screen. Child views that show chat observe
     /// it through the environment.
     let chat: ChatFeed
-    @EnvironmentObject var platforms: Platforms
+    @Environment(Platforms.self) var platforms
     @EnvironmentObject var privacy: Privacy
     @AppStorage("keepAwake") var keepAwake = true
     @AppStorage("camLevelOn") var camLevelOn = false

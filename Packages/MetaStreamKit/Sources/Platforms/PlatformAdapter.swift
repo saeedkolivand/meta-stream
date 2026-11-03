@@ -4,37 +4,52 @@ import Foundation
 /// Replaces the per-property switches (connected/user/isLive/viewers/streamKey/ingest) plus the
 /// per-action switches (connect/refresh/disconnect/send/load/apply) with one dictionary lookup.
 /// All closures are @MainActor: Platforms is @MainActor and views already touch it from the main thread.
-struct StreamInfoDraft {
-    var title = ""
-    var category: StreamCategory?
-    var tags = ""
-    var labels: [String: Bool] = [:]
-    var delay = 0
-    var language = ""
-    var description = ""
-    var privacy = "public"
-    var latency = "normal"
+public struct StreamInfoDraft: Sendable {
+    public var title = ""
+    public var category: StreamCategory?
+    public var tags = ""
+    public var labels: [String: Bool] = [:]
+    public var delay = 0
+    public var language = ""
+    public var description = ""
+    public var privacy = "public"
+    public var latency = "normal"
+
+    public init(
+        title: String = "", category: StreamCategory? = nil, tags: String = "", labels: [String: Bool] = [:], delay: Int = 0,
+        language: String = "", description: String = "", privacy: String = "public", latency: String = "normal"
+    ) {
+        self.title = title
+        self.category = category
+        self.tags = tags
+        self.labels = labels
+        self.delay = delay
+        self.language = language
+        self.description = description
+        self.privacy = privacy
+        self.latency = latency
+    }
 }
 
-struct PlatformAdapter {
-    let name: String
-    let hasApp: Bool
-    let hasCategory: Bool
-    let canSendChat: Bool
-    let connected: @MainActor (Platforms) -> Bool
-    let user: @MainActor (Platforms) -> String
-    let isLive: @MainActor (Platforms) -> Bool
-    let viewers: @MainActor (Platforms) -> Int
-    let streamKey: @MainActor (Platforms) -> String
-    let ingest: @MainActor (Platforms) -> String
-    let connect: @MainActor (Platforms) -> Void
-    let refresh: @MainActor (Platforms) async -> Void
-    let disconnect: @MainActor (Platforms) -> Void
-    let send: @MainActor (Platforms, String) async -> Void
-    let load: @MainActor (Platforms, [(id: String, name: String)]) -> StreamInfoDraft
-    let apply: @MainActor (Platforms, StreamInfoDraft) async -> Void
+public struct PlatformAdapter {
+    public let name: String
+    public let hasApp: Bool
+    public let hasCategory: Bool
+    public let canSendChat: Bool
+    public let connected: @MainActor (Platforms) -> Bool
+    public let user: @MainActor (Platforms) -> String
+    public let isLive: @MainActor (Platforms) -> Bool
+    public let viewers: @MainActor (Platforms) -> Int
+    public let streamKey: @MainActor (Platforms) -> String
+    public let ingest: @MainActor (Platforms) -> String
+    public let connect: @MainActor (Platforms) -> Void
+    public let refresh: @MainActor (Platforms) async -> Void
+    public let disconnect: @MainActor (Platforms) -> Void
+    public let send: @MainActor (Platforms, String) async -> Void
+    public let load: @MainActor (Platforms, [(id: String, name: String)]) -> StreamInfoDraft
+    public let apply: @MainActor (Platforms, StreamInfoDraft) async -> Void
 
-    @MainActor static let all: [String: PlatformAdapter] = [
+    @MainActor public static let all: [String: PlatformAdapter] = [
         "kick": PlatformAdapter(
             name: "Kick", hasApp: true, hasCategory: true, canSendChat: true,
             connected: { $0.kickConnected }, user: { $0.kickUser }, isLive: { $0.kickLive }, viewers: { $0.kickViewers },
@@ -90,10 +105,46 @@ struct PlatformAdapter {
             apply: { p, d in await p.ytApply(title: d.title, description: d.description, privacy: d.privacy, latency: d.latency) }
         ),
     ]
+
+    public init(
+        name: String,
+        hasApp: Bool,
+        hasCategory: Bool,
+        canSendChat: Bool,
+        connected: @escaping @MainActor (Platforms) -> Bool,
+        user: @escaping @MainActor (Platforms) -> String,
+        isLive: @escaping @MainActor (Platforms) -> Bool,
+        viewers: @escaping @MainActor (Platforms) -> Int,
+        streamKey: @escaping @MainActor (Platforms) -> String,
+        ingest: @escaping @MainActor (Platforms) -> String,
+        connect: @escaping @MainActor (Platforms) -> Void,
+        refresh: @escaping @MainActor (Platforms) async -> Void,
+        disconnect: @escaping @MainActor (Platforms) -> Void,
+        send: @escaping @MainActor (Platforms, String) async -> Void,
+        load: @escaping @MainActor (Platforms, [(id: String, name: String)]) -> StreamInfoDraft,
+        apply: @escaping @MainActor (Platforms, StreamInfoDraft) async -> Void
+    ) {
+        self.name = name
+        self.hasApp = hasApp
+        self.hasCategory = hasCategory
+        self.canSendChat = canSendChat
+        self.connected = connected
+        self.user = user
+        self.isLive = isLive
+        self.viewers = viewers
+        self.streamKey = streamKey
+        self.ingest = ingest
+        self.connect = connect
+        self.refresh = refresh
+        self.disconnect = disconnect
+        self.send = send
+        self.load = load
+        self.apply = apply
+    }
 }
 
 extension StreamInfoDraft {
-    static func cleanTags(_ raw: String) -> [String] {
+    public static func cleanTags(_ raw: String) -> [String] {
         raw.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
     }
 }

@@ -1,4 +1,5 @@
 import Combine
+import Platforms
 import SwiftUI
 
 /// Top-level settings. iPhone: a searchable list pushing one screen at a time; iPad: a sidebar and the selected screen
@@ -7,7 +8,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var hSize
-    @EnvironmentObject private var platforms: Platforms
+    @Environment(Platforms.self) private var platforms
     @EnvironmentObject private var streamer: Streamer
     @State private var query = ""
     @State private var wrappedPending = false

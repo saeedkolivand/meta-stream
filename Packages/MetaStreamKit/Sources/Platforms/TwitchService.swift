@@ -6,15 +6,15 @@ import UIKit
 /// Twitch Device Code Grant (public client, no secret), Helix channel reads/writes,
 /// EventSub subscriptions, and hands-free broadcaster actions. State lives on Platforms.
 @MainActor
-final class TwitchService: ObservableObject {
-    unowned let p: Platforms
+public final class TwitchService {
+    public unowned let p: Platforms
     private var login: Task<Void, Never>?   // the running device-code login; a second Connect replaces it
-    init(owner: Platforms) { p = owner }
+    public init(owner: Platforms) { p = owner }
 
     // Read scopes the chat feed's EventSub subscriptions need, keyed by the feature name the UI shows.
     // user:read:chat has shipped since the first Twitch connect, so old tokens already carry it; the other
     // three are new as of chat-feed support, so an existing user's token won't have them until they reconnect.
-    static let chatScopes: [String: Set<String>] = [
+    public static let chatScopes: [String: Set<String>] = [
         "chat": ["user:read:chat"],
         "follows": ["moderator:read:followers"],
         "subscriptions": ["channel:read:subscriptions"],
@@ -24,7 +24,7 @@ final class TwitchService: ObservableObject {
     // Same "reconnect once" pattern as chatScopes. Stream markers use channel:manage:broadcast, which
     // was already requested for title/category edits, so that action needs no new scope and has no
     // entry here — see createMarker.
-    static let actionScopes: [String: Set<String>] = [
+    public static let actionScopes: [String: Set<String>] = [
         "clips": ["clips:edit"],
         "ads": ["channel:read:ads", "channel:manage:ads"],
         "commercial": ["channel:edit:commercial"],
@@ -36,10 +36,10 @@ final class TwitchService: ObservableObject {
 
     // https://dev.twitch.tv/docs/api/reference/#get-content-classification-labels — the current valid CCL ids.
     // Fallback set for when fetchLabelCatalog() hasn't run yet or failed.
-    static let labelIDs = ["DebatedSocialIssuesAndPolitics", "DrugsIntoxication", "SexualThemes", "ViolentGraphic", "Gambling", "ProfanityVulgarity"]
+    public static let labelIDs = ["DebatedSocialIssuesAndPolitics", "DrugsIntoxication", "SexualThemes", "ViolentGraphic", "Gambling", "ProfanityVulgarity"]
 
     /// Pure scope-gap logic (no `self`), so it can be exercised without a live instance — see `demo()`.
-    static func missingScopeFeatures(granted: Set<String>) -> [String] {
+    public static func missingScopeFeatures(granted: Set<String>) -> [String] {
         chatScopes.merging(actionScopes) { a, _ in a }
             .filter { !$0.value.isSubset(of: granted) }.map(\.key).sorted()
     }
@@ -47,7 +47,7 @@ final class TwitchService: ObservableObject {
     #if DEBUG
     /// Self-check for the scope-gap logic: given a granted scope set, the right feature names come back
     /// as missing. This is the logic a user actually feels when a button is greyed out.
-    static func demo() {
+    public static func demo() {
         let granted: Set<String> = ["channel:manage:broadcast", "user:read:chat", "clips:edit", "channel:read:ads", "channel:manage:ads"]
         let missing = missingScopeFeatures(granted: granted)
         let want = ["announcements", "chat lockdown", "cheers", "commercial", "follows", "moderation", "raids", "subscriptions"]
@@ -57,7 +57,7 @@ final class TwitchService: ObservableObject {
     }
     #endif
 
-    func api() -> PlatformEndpoint {
+    public func api() -> PlatformEndpoint {
         PlatformEndpoint(base: "https://api.twitch.tv/helix", tokenKey: "twitchAccess",
             headers: ["Client-Id": PlatformConfig.twitchID], store: p.store) {
             let json = try await PlatformNet.form("https://id.twitch.tv/oauth2/token", [
@@ -66,7 +66,7 @@ final class TwitchService: ObservableObject {
         }
     }
 
-    func connect() {
+    public func connect() {
         login?.cancel()
         login = Task {
             do {
@@ -105,7 +105,7 @@ final class TwitchService: ObservableObject {
         }
     }
 
-    func refresh() async {
+    public func refresh() async {
         do {
             if let u = ((try await api().call("GET", "/users"))["data"] as? [[String: Any]])?.first {
                 p.twitchUserID = u["id"] as? String ?? ""
@@ -134,7 +134,7 @@ final class TwitchService: ObservableObject {
     }
 
     /// Viewers + live only, for the while-live poll: refresh() is 4-5 calls and a status message.
-    func refreshViewers() async {
+    public func refreshViewers() async {
         guard !p.twitchUserID.isEmpty else { return }
         do {
             let res = try await api().call("GET", "/streams", query: [.init(name: "user_id", value: p.twitchUserID)])
@@ -144,7 +144,7 @@ final class TwitchService: ObservableObject {
         } catch { applog("api", "twitch viewers: \(error.localizedDescription)", error: true) }
     }
 
-    func search(_ q: String) async -> [StreamCategory] {
+    public func search(_ q: String) async -> [StreamCategory] {
         guard q.count >= 2 else { return [] }
         let r = try? await api().call("GET", "/search/categories", query: [.init(name: "query", value: q), .init(name: "first", value: "8")])
         return ((r?["data"] as? [[String: Any]]) ?? []).compactMap {
@@ -156,7 +156,7 @@ final class TwitchService: ObservableObject {
     /// GET helix/content_classification_labels — the current, real label set with human names, so a label
     /// Twitch adds later shows up without a code change. Cached per session (guard on non-empty); left
     /// empty on any error, so callers fall back to labelIDs.
-    func fetchLabelCatalog() async {
+    public func fetchLabelCatalog() async {
         guard p.twitchLabelCatalog.isEmpty else { return }
         guard let data = (try? await api().call("GET", "/content_classification_labels"))?["data"] as? [[String: Any]] else { return }
         let parsed = data.compactMap { item -> (id: String, name: String)? in
@@ -169,7 +169,7 @@ final class TwitchService: ObservableObject {
 
     /// `tags`/`labels`/`delay`/`language` are all "omit when unchanged" against the last-loaded values, so an
     /// untouched (or not-yet-loaded) field can never silently wipe what's already on the channel.
-    func apply(title: String, category: StreamCategory?, tags: [String] = [], labels: [String: Bool] = [:], delay: Int = 0, language: String = "") async {
+    public func apply(title: String, category: StreamCategory?, tags: [String] = [], labels: [String: Bool] = [:], delay: Int = 0, language: String = "") async {
         var body: [String: Any] = ["title": title]
         if let category { body["game_id"] = category.id }
 
@@ -195,13 +195,13 @@ final class TwitchService: ObservableObject {
         }
     }
 
-    func send(_ text: String) async {
+    public func send(_ text: String) async {
         await PlatformFlow.attempt(status: { self.p.status = $0 }) {
             _ = try await self.api().call("POST", "/chat/messages", body: ["broadcaster_id": self.p.twitchUserID, "sender_id": self.p.twitchUserID, "message": text])
         }
     }
 
-    func disconnect() {
+    public func disconnect() {
         p.store.forget("twitch")
         p.twitchUser = ""; p.twitchTitle = ""; p.twitchCategory = nil; p.twitchStreamKey = ""
         p.twitchTags = []; p.twitchLabels = []; p.twitchDelay = 0; p.twitchLanguage = ""; p.twitchScopes = []
@@ -211,7 +211,7 @@ final class TwitchService: ObservableObject {
     /// Subscribes one Twitch EventSub WebSocket session to everything `ChatFeed` speaks. Types/versions/
     /// conditions per Twitch's EventSub subscription types reference. A type whose scope is missing is
     /// skipped, not attempted — `twitchMissingScopeFeatures` is the one place that explains the gap.
-    func subscribeEventSub(sessionID: String) async {
+    public func subscribeEventSub(sessionID: String) async {
         guard !p.twitchUserID.isEmpty else { applog("chat", "twitch eventsub subscribe skipped: no user id yet", error: true); return }
         let transport: [String: Any] = ["method": "websocket", "session_id": sessionID]
         var subs: [(type: String, version: String, condition: [String: String])] = [
@@ -241,8 +241,16 @@ final class TwitchService: ObservableObject {
 
     /// POST helix/clips, scope clips:edit. Twitch creates the clip asynchronously — the id/url come back
     /// immediately but the clip itself can take a few seconds to finish processing on Twitch's side.
-    struct TwitchClip { let id: String; let url: String }
-    func createClip() async throws -> TwitchClip {
+    public struct TwitchClip: Sendable {
+        public let id: String
+        public let url: String
+
+        public init(id: String, url: String) {
+            self.id = id
+            self.url = url
+        }
+    }
+    public func createClip() async throws -> TwitchClip {
         guard !p.twitchUserID.isEmpty else { throw PlatformNet.err("twitch: not connected") }
         let r = try await api().call("POST", "/clips", query: [.init(name: "broadcaster_id", value: p.twitchUserID)])
         guard let c = (r["data"] as? [[String: Any]])?.first, let id = c["id"] as? String else { throw PlatformNet.err("twitch: clip create returned no id") }
@@ -251,14 +259,14 @@ final class TwitchService: ObservableObject {
 
     /// POST helix/streams/markers — body key is `user_id`, not `broadcaster_id` (Twitch's own inconsistency).
     /// Scope channel:manage:broadcast, already requested for title/category edits, so no new grant needed.
-    func createMarker() async throws {
+    public func createMarker() async throws {
         guard !p.twitchUserID.isEmpty else { throw PlatformNet.err("twitch: not connected") }
         _ = try await api().call("POST", "/streams/markers", body: ["user_id": p.twitchUserID])
     }
 
     /// GET helix/channels/ads, scope channel:read:ads. `next_ad_at` is "" when nothing is scheduled.
     /// Failures are logged, not surfaced — a quiet countdown beats spamming errors.
-    func refreshAdSchedule() async {
+    public func refreshAdSchedule() async {
         do {
             guard let a = ((try await api().call("GET", "/channels/ads", query: [.init(name: "broadcaster_id", value: p.twitchUserID)]))["data"] as? [[String: Any]])?.first else { return }
             p.twitchAdSnoozeCount = a["snooze_count"] as? Int ?? 0
@@ -267,7 +275,7 @@ final class TwitchService: ObservableObject {
     }
 
     /// POST helix/channels/ads/schedule/snooze, scope channel:manage:ads.
-    func snoozeAd() async {
+    public func snoozeAd() async {
         await PlatformFlow.mutate(status: { self.p.status = $0 }, done: "Ad snoozed", refresh: { await self.refreshAdSchedule() }) {
             _ = try await self.api().call("POST", "/channels/ads/schedule/snooze", query: [.init(name: "broadcaster_id", value: self.p.twitchUserID)])
         }
@@ -275,7 +283,7 @@ final class TwitchService: ObservableObject {
 
     /// POST helix/channels/commercial, scope channel:edit:commercial. Twitch only accepts
     /// 30/60/90/120/150/180s. ponytail: fixed 90s, no length picker — that needs the screen.
-    func startCommercial(seconds: Int = 90) async {
+    public func startCommercial(seconds: Int = 90) async {
         guard !p.twitchUserID.isEmpty else { return }
         await PlatformFlow.attempt(status: { self.p.status = $0 }) {
             _ = try await self.api().call("POST", "/channels/commercial", body: ["broadcaster_id": self.p.twitchUserID, "length": seconds])
@@ -285,7 +293,7 @@ final class TwitchService: ObservableObject {
 
     /// PATCH helix/chat/settings, scope moderator:manage:chat_settings. `moderator_id` = the broadcaster
     /// themself. ponytail: fixed 10-min follower gate / 10s slow mode, no duration tuning UI.
-    func lockdownChat(on: Bool) async {
+    public func lockdownChat(on: Bool) async {
         guard !p.twitchUserID.isEmpty else { return }
         let body: [String: Any] = on
             ? ["follower_mode": true, "follower_mode_duration": 10, "slow_mode": true, "slow_mode_wait_time": 10]
@@ -298,7 +306,7 @@ final class TwitchService: ObservableObject {
 
     /// POST helix/chat/announcements, scope moderator:manage:announcements. ponytail: always
     /// default ("primary") color — a color picker is a screen-attention feature this app doesn't need.
-    func announce(_ message: String) async {
+    public func announce(_ message: String) async {
         let m = message.trimmingCharacters(in: .whitespaces)
         guard !p.twitchUserID.isEmpty, !m.isEmpty else { return }
         await PlatformFlow.attempt(status: { self.p.status = $0 }) {
@@ -309,7 +317,7 @@ final class TwitchService: ObservableObject {
 
     /// POST helix/raids, scope channel:manage:raids. Takes a login name (what a user would type/say),
     /// resolves it to an id via GET /users first.
-    func raid(_ targetLogin: String) async {
+    public func raid(_ targetLogin: String) async {
         let login = targetLogin.trimmingCharacters(in: .whitespaces).lowercased()
         guard !p.twitchUserID.isEmpty, !login.isEmpty else { return }
         do {

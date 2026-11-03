@@ -2,6 +2,7 @@ import CoreLogging
 import CoreModel
 import CoreUI
 import Foundation
+import Platforms
 
 /// Slash commands typed in the chat input (see CONTEXT.md): parsed here, carried out through the platform's
 /// own moderation API by `SlashRunner`, never posted as a message.

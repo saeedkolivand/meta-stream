@@ -4,9 +4,9 @@ import Foundation
 /// YouTube Google OAuth for iOS (PKCE, no secret, bundle-id scheme redirect), broadcast
 /// discovery, metadata apply, live-chat send/poll. State lives on Platforms.
 @MainActor
-final class YouTubeService: ObservableObject {
-    unowned let p: Platforms
-    init(owner: Platforms) { p = owner }
+public final class YouTubeService {
+    public unowned let p: Platforms
+    public init(owner: Platforms) { p = owner }
 
     private func api() -> PlatformEndpoint {
         PlatformEndpoint(base: "https://www.googleapis.com/youtube/v3", tokenKey: "ytAccess", headers: [:], store: p.store) {
@@ -16,7 +16,7 @@ final class YouTubeService: ObservableObject {
         }
     }
 
-    func connect() {
+    public func connect() {
         // The only `try` is inside codeFlow's exchange closure, which codeFlow catches and reports via status.
         // swiftlint:disable:next unhandled_throwing_task
         Task {
@@ -40,7 +40,7 @@ final class YouTubeService: ObservableObject {
         }
     }
 
-    func refresh() async {
+    public func refresh() async {
         do {
             if let ch = ((try await api().call("GET", "/channels", query: [.init(name: "part", value: "snippet"), .init(name: "mine", value: "true")]))["items"] as? [[String: Any]])?.first {
                 p.ytUser = (ch["snippet"] as? [String: Any])?["title"] as? String ?? ""
@@ -76,7 +76,7 @@ final class YouTubeService: ObservableObject {
     /// `liveBroadcasts.update` REPLACES every field in each part you send — so every part below is rebuilt from
     /// the last full fetch (`ytBroadcast`) with only the intended field changed, never sent as a bare title.
     /// Otherwise this would silently wipe the description, scheduledStartTime, and contentDetails/status.
-    func apply(title: String, description: String, privacy: String, latency: String) async {
+    public func apply(title: String, description: String, privacy: String, latency: String) async {
         guard !p.ytVideoID.isEmpty, let sn = p.ytBroadcast["snippet"] as? [String: Any] else { p.status = "No YouTube broadcast found. Create one in YouTube Studio first."; return }
         var st = p.ytBroadcast["status"] as? [String: Any] ?? [:]
         st["privacyStatus"] = privacy
@@ -92,7 +92,7 @@ final class YouTubeService: ObservableObject {
         }
     }
 
-    func send(_ text: String) async {
+    public func send(_ text: String) async {
         guard !p.ytLiveChatID.isEmpty else { p.status = "No live chat on this broadcast yet"; return }
         await PlatformFlow.attempt(status: { self.p.status = $0 }) {
             _ = try await self.api().call("POST", "/liveChatMessages", query: [.init(name: "part", value: "snippet")],
@@ -100,7 +100,7 @@ final class YouTubeService: ObservableObject {
         }
     }
 
-    func disconnect() {
+    public func disconnect() {
         p.store.forget("yt")
         p.ytUser = ""; p.ytTitle = ""; p.ytVideoID = ""; p.ytStreamKey = ""
         p.ytDescription = ""; p.ytPrivacy = "public"; p.ytLatency = "normal"
@@ -109,7 +109,7 @@ final class YouTubeService: ObservableObject {
     /// One page of `liveChat/messages` for the broadcast's live chat (same id `send` posts to).
     /// Needs no new scope - `youtube.force-ssl` already covers reading. nil when there's no live chat yet
     /// (broadcast not started/found), so the poller backs off instead of erroring.
-    func pollLiveChat(pageToken: String?) async throws -> (items: [[String: Any]], nextPageToken: String?, pollingIntervalMillis: Int)? {
+    public func pollLiveChat(pageToken: String?) async throws -> (items: [[String: Any]], nextPageToken: String?, pollingIntervalMillis: Int)? {
         guard !p.ytLiveChatID.isEmpty else { return nil }
         var query = [URLQueryItem(name: "liveChatId", value: p.ytLiveChatID), URLQueryItem(name: "part", value: "snippet,authorDetails")]
         if let pageToken { query.append(.init(name: "pageToken", value: pageToken)) }

@@ -1,4 +1,5 @@
 import CoreUI
+import Platforms
 import SwiftUI
 
 /// Fixed bottom controls: GO LIVE, source picker, chat/settings shortcuts plus the always-on-screen
@@ -6,7 +7,7 @@ import SwiftUI
 /// must never live in the scrolling status strip where a long run of pills can push them off the edge.
 struct GoLiveControlsView: View {
     @EnvironmentObject var streamer: Streamer
-    @EnvironmentObject var platforms: Platforms
+    @Environment(Platforms.self) var platforms
     @AppStorage("askStreamInfo") private var askStreamInfo = true
     @State private var showInfo = false
     @AppStorage("blurOn") var blurOn = false
@@ -25,7 +26,7 @@ struct GoLiveControlsView: View {
 
     var body: some View {
         controls.padding(.bottom, 12)
-            .sheet(isPresented: $showInfo) { StreamInfoSheet { streamer.goLiveFromSettings() }.environmentObject(platforms) }
+            .sheet(isPresented: $showInfo) { StreamInfoSheet { streamer.goLiveFromSettings() }.environment(platforms) }
     }
 
     private var controls: some View {

@@ -1,6 +1,7 @@
 import CoreLogging
 import CoreModel
 import Foundation
+import Platforms
 
 /// Live chat as one AsyncStream<ChatEvent> (text-to-speech drives off it) plus a recent-messages buffer
 /// for a future chat UI. Kick, Twitch and YouTube each run independently and funnel into the same stream —

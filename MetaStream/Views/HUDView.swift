@@ -1,5 +1,6 @@
 import CoreUI
 import MWDATCore
+import Platforms
 import SwiftUI
 
 /// Top status strip: connection, bitrate, battery, heat, source, mute, photo, manage, camera buttons.
@@ -8,7 +9,7 @@ struct HUDView: View {
     @EnvironmentObject var streamer: Streamer
     @EnvironmentObject var speaker: Speaker
     @EnvironmentObject var privacy: Privacy
-    @EnvironmentObject var platforms: Platforms
+    @Environment(Platforms.self) var platforms
     @AppStorage("blurOn") var blurOn = false
     @AppStorage("bitrateKbps") var bitrateKbps = 4000
     @AppStorage("glassesEnabled") private var glassesEnabled = false

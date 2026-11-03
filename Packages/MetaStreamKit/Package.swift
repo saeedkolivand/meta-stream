@@ -17,7 +17,8 @@ let package = Package(
         .library(name: "ScreenIPC", targets: ["ScreenIPC"]),
         .library(name: "ActivityShared", targets: ["ActivityShared"]),
         .library(name: "CoreUI", targets: ["CoreUI"]),
-        .library(name: "Camera", targets: ["Camera"])
+        .library(name: "Camera", targets: ["Camera"]),
+        .library(name: "Platforms", targets: ["Platforms"])
     ],
     targets: [
         // Plain data shared by every feature: chat events, money, text patterns. Foundation only.
@@ -34,6 +35,8 @@ let package = Package(
         // The shared look: theme colours, display names, strip pills/round buttons, settings sliders and toggles.
         .target(name: "CoreUI", dependencies: ["CoreModel"], swiftSettings: strict),
         // Phone camera: lens discovery, capabilities, CameraSettings and applying them to an AVCaptureDevice.
-        .target(name: "Camera", dependencies: ["CoreLogging"], swiftSettings: strict)
+        .target(name: "Camera", dependencies: ["CoreLogging"], swiftSettings: strict),
+        // Kick, Twitch, Restream, YouTube accounts: OAuth, tokens, stream info, categories, ingest.
+        .target(name: "Platforms", dependencies: ["CoreLogging", "CoreNetwork", "CoreStorage"], swiftSettings: strict)
     ]
 )

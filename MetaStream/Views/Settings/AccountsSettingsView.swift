@@ -1,9 +1,10 @@
+import Platforms
 import SwiftUI
 
 /// Settings › Accounts: every login in one place -- streaming platforms, chat bots, services and donation sites.
 /// Connecting here and in Stream Manager use the same Platforms methods, so either shows the other's state.
 struct AccountsSettingsView: View {
-    @EnvironmentObject var platforms: Platforms
+    @Environment(Platforms.self) var platforms
     @ObservedObject private var bot = AppBot.shared
     @ObservedObject private var spotify = SpotifyNowPlaying.shared
     @ObservedObject private var hub = DonationHub.shared

@@ -1,3 +1,4 @@
+import Platforms
 import SwiftUI
 import UIKit
 
@@ -5,7 +6,7 @@ import UIKit
 /// entered last time. Reuses the Stream Manager's adapters (load/apply/search); "Ask before going live" turns it off.
 struct StreamInfoSheet: View {
     let onGoLive: () -> Void
-    @EnvironmentObject var platforms: Platforms
+    @Environment(Platforms.self) var platforms
     @Environment(\.dismiss) private var dismiss
     @AppStorage("askStreamInfo") private var ask = true
     @AppStorage("streamInfoShared") private var shared = true   // one title + tags for every platform
@@ -174,7 +175,7 @@ private struct PlatformCard: View {
     let edited: Bool
     let failure: String?
     let editsText: Bool   // false while "same title and tags" copies them from the first platform
-    @EnvironmentObject var platforms: Platforms
+    @Environment(Platforms.self) var platforms
     @State private var search = ""
     @State private var results: [StreamCategory] = []
     @State private var searching = false

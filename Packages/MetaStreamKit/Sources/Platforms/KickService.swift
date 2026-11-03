@@ -5,11 +5,11 @@ import Foundation
 /// Kick OAuth 2.1 + PKCE, channel info, chat send. State lives on Platforms (the views'
 /// source of truth); this service only mutates it, so existing callers keep working.
 @MainActor
-final class KickService: ObservableObject {
-    unowned let p: Platforms
-    init(owner: Platforms) { p = owner }
+public final class KickService {
+    public unowned let p: Platforms
+    public init(owner: Platforms) { p = owner }
 
-    func api() -> PlatformEndpoint {
+    public func api() -> PlatformEndpoint {
         PlatformEndpoint(base: "https://api.kick.com", tokenKey: "kickAccess", headers: [:], store: p.store) {
             let json = try await PlatformNet.form("https://id.kick.com/oauth/token", [
                 "grant_type": "refresh_token", "client_id": PlatformConfig.kickID, "client_secret": PlatformConfig.kickSecret,
@@ -18,7 +18,7 @@ final class KickService: ObservableObject {
         }
     }
 
-    func connect() {
+    public func connect() {
         // The only `try` is inside codeFlow's exchange closure, which codeFlow catches and reports via status.
         // swiftlint:disable:next unhandled_throwing_task
         Task {
@@ -42,7 +42,7 @@ final class KickService: ObservableObject {
         }
     }
 
-    func refresh() async {
+    public func refresh() async {
         do {
             if let u = ((try await api().call("GET", "/public/v1/users"))["data"] as? [[String: Any]])?.first {
                 p.kickUserID = u["user_id"] as? Int ?? 0
@@ -65,7 +65,7 @@ final class KickService: ObservableObject {
     }
 
     /// Viewers + live only, for the while-live poll: refresh() is 2 calls and a status message.
-    func refreshViewers() async {
+    public func refreshViewers() async {
         do {
             let ch = ((try await api().call("GET", "/public/v1/channels"))["data"] as? [[String: Any]])?.first
             if let ch { Self.keepTitle(ch, into: p) }
@@ -83,7 +83,7 @@ final class KickService: ObservableObject {
         if let title = ch["stream_title"] as? String, !title.isEmpty { platforms.kickTitle = title }
     }
 
-    func search(_ q: String) async -> [StreamCategory] {
+    public func search(_ q: String) async -> [StreamCategory] {
         guard q.count >= 3 else { return [] }
         let r = try? await api().call("GET", "/public/v2/categories", query: [.init(name: "name", value: q), .init(name: "limit", value: "8")])
         return ((r?["data"] as? [[String: Any]]) ?? []).compactMap {
@@ -92,7 +92,7 @@ final class KickService: ObservableObject {
         }
     }
 
-    func apply(title: String, category: StreamCategory?, tags: [String] = []) async {
+    public func apply(title: String, category: StreamCategory?, tags: [String] = []) async {
         var body: [String: Any] = ["stream_title": title]
         if let category, let id = Int(category.id) { body["category_id"] = id }
         let cleanTags = Array(tags.prefix(10))                          // Kick caps custom_tags at 10
@@ -104,13 +104,13 @@ final class KickService: ObservableObject {
         }
     }
 
-    func send(_ text: String) async {
+    public func send(_ text: String) async {
         await PlatformFlow.attempt(status: { self.p.status = $0 }) {
             _ = try await self.api().call("POST", "/public/v1/chat", body: ["content": text, "type": "user", "broadcaster_user_id": self.p.kickUserID])
         }
     }
 
-    func disconnect() {
+    public func disconnect() {
         p.store.forget("kick")
         p.kickUser = ""; p.kickTitle = ""; p.kickCategory = nil; p.kickStreamKey = ""; p.kickTags = []
     }

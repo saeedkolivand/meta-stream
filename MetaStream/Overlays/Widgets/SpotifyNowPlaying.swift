@@ -6,6 +6,7 @@ import CoreLogging
 import CoreNetwork
 import CoreStorage
 import Foundation
+import Platforms
 import UIKit
 
 struct NowPlayingTrack: Equatable, Sendable {

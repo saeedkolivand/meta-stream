@@ -1,5 +1,6 @@
 import CoreLogging
 import Foundation
+import Platforms
 
 /// A saved chat command ("!giveaway start") sent as the streamer. The list lives in AppStorage("botCommands") as JSON.
 struct BotCommand: Codable, Identifiable, Hashable {

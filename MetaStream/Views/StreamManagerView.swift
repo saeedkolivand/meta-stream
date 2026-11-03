@@ -1,9 +1,10 @@
 import CoreUI
+import Platforms
 import SwiftUI
 
 /// Title / category / viewers / chat / stream key for the connected accounts.
 struct StreamManagerView: View {
-    @EnvironmentObject var platforms: Platforms
+    @Environment(Platforms.self) var platforms
     @Environment(\.dismiss) private var dismiss
     @AppStorage("platform") var platformPref = "kick"
     @AppStorage("rtmpURL") var ingestURL = Platforms.kickIngest

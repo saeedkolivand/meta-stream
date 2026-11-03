@@ -2,102 +2,105 @@ import CoreLogging
 import CoreStorage
 import Foundation
 import AuthenticationServices
+import Observation
 import CryptoKit
 import UIKit
 import os
 
 /// Kick, Twitch, Restream, YouTube accounts: login, channel info (title/category/viewers), chat send, stream key.
-/// Thin facade: all @Published state lives here (the views' source of truth) and every behavior
+/// Thin facade: all observed state lives here (the views' source of truth) and every behavior
 /// delegates to the services in Platforms/ (Kick/Twitch/Restream/YouTubeService + PlatformCore).
 /// ponytail: tokens live in UserDefaults; move to Keychain if the phone is shared.
-@MainActor
-final class Platforms: NSObject, ObservableObject {
-    @Published var status = "" { didSet { applog("api", "status: \(status)") } }
+@MainActor @Observable
+public final class Platforms: NSObject {
+    public var status = "" { didSet { applog("api", "status: \(status)") } }
 
     // Kick
-    @Published var kickUser = ""
-    @Published var kickTitle = ""
-    @Published var kickCategory: StreamCategory?
-    @Published var kickLive = false
-    @Published var kickViewers = 0
-    @Published var kickStreamURL = ""
-    @Published var kickStreamKey = ""
-    @Published var kickTags: [String] = []
-    var kickUserID = 0
+    public var kickUser = ""
+    public var kickTitle = ""
+    public var kickCategory: StreamCategory?
+    public var kickLive = false
+    public var kickViewers = 0
+    public var kickStreamURL = ""
+    public var kickStreamKey = ""
+    public var kickTags: [String] = []
+    public var kickUserID = 0
 
     // Twitch
-    @Published var twitchUser = ""
-    @Published var twitchTitle = ""
-    @Published var twitchCategory: StreamCategory?
-    @Published var twitchLive = false
-    @Published var twitchViewers = 0
-    @Published var twitchStreamKey = ""
-    @Published var twitchUserCode = ""
-    @Published var twitchVerifyURL = ""
-    @Published var twitchTags: [String] = []
-    @Published var twitchLabels: Set<String> = []
-    @Published var twitchDelay = 0
-    @Published var twitchLanguage = ""
-    @Published var twitchScopes: Set<String> = []
-    @Published var twitchAdNextAt: Date?
-    @Published var twitchAdSnoozeCount = 0
+    public var twitchUser = ""
+    public var twitchTitle = ""
+    public var twitchCategory: StreamCategory?
+    public var twitchLive = false
+    public var twitchViewers = 0
+    public var twitchStreamKey = ""
+    public var twitchUserCode = ""
+    public var twitchVerifyURL = ""
+    public var twitchTags: [String] = []
+    public var twitchLabels: Set<String> = []
+    public var twitchDelay = 0
+    public var twitchLanguage = ""
+    public var twitchScopes: Set<String> = []
+    public var twitchAdNextAt: Date?
+    public var twitchAdSnoozeCount = 0
     /// Fetched from an authenticated helix/users call. Readable so Emotes can ask 7TV/BTTV/FFZ for this
     /// channel's sets without going round Twitch's undocumented web GQL for an ID we already hold.
-    var twitchUserID = ""
-    @Published var twitchLabelCatalog: [(id: String, name: String)] = []
+    public var twitchUserID = ""
+    public var twitchLabelCatalog: [(id: String, name: String)] = []
 
     // Restream
-    @Published var restreamUser = ""
-    @Published var restreamDestinations: [RestreamDestination] = []
-    @Published var restreamTitle = ""
-    @Published var restreamStreamKey = ""
-    @Published var restreamChatURL = ""
+    public var restreamUser = ""
+    public var restreamDestinations: [RestreamDestination] = []
+    public var restreamTitle = ""
+    public var restreamStreamKey = ""
+    public var restreamChatURL = ""
 
     // YouTube
-    @Published var ytUser = ""
-    @Published var ytTitle = ""
-    @Published var ytDescription = ""
-    @Published var ytPrivacy = "public"
-    @Published var ytLatency = "normal"
-    @Published var ytLive = false
-    @Published var ytViewers = 0
-    @Published var ytVideoID = ""
-    @Published var ytStreamKey = ""
-    @Published var ytIngest = "rtmps://a.rtmps.youtube.com:443/live2"
-    var ytLiveChatID = ""
-    var ytBroadcast: [String: Any] = [:]
+    public var ytUser = ""
+    public var ytTitle = ""
+    public var ytDescription = ""
+    public var ytPrivacy = "public"
+    public var ytLatency = "normal"
+    public var ytLive = false
+    public var ytViewers = 0
+    public var ytVideoID = ""
+    public var ytStreamKey = ""
+    public var ytIngest = "rtmps://a.rtmps.youtube.com:443/live2"
+    public var ytLiveChatID = ""
+    public var ytBroadcast: [String: Any] = [:]
 
-    let store: TokenStore = UserDefaults.standard
-    let auth = AuthPresenter()
+    public let store: TokenStore = UserDefaults.standard
+    public let auth = AuthPresenter()
 
-    private(set) lazy var kick = KickService(owner: self)
-    private(set) lazy var twitch = TwitchService(owner: self)
-    private(set) lazy var restream = RestreamService(owner: self)
-    private(set) lazy var youTube = YouTubeService(owner: self)
+    @ObservationIgnored private(set) lazy var kick = KickService(owner: self)
+    @ObservationIgnored private(set) lazy var twitch = TwitchService(owner: self)
+    @ObservationIgnored private(set) lazy var restream = RestreamService(owner: self)
+    @ObservationIgnored private(set) lazy var youTube = YouTubeService(owner: self)
 
     // Config compat (single source of truth in PlatformConfig).
-    static var webRedirect: String { PlatformConfig.webRedirect }
-    static var googleRedirect: String { PlatformConfig.googleRedirect }
-    static var kickIngest: String { PlatformConfig.kickIngest }
-    static var twitchIngest: String { PlatformConfig.twitchIngest }
-    static var restreamIngest: String { PlatformConfig.restreamIngest }
-    static var hasRestreamApp: Bool { !PlatformConfig.restreamID.isEmpty }
-    static var hasYouTubeApp: Bool { !PlatformConfig.youtubeID.isEmpty }
+    public static var webRedirect: String { PlatformConfig.webRedirect }
+    public static var googleRedirect: String { PlatformConfig.googleRedirect }
+    public static var kickIngest: String { PlatformConfig.kickIngest }
+    public static var twitchIngest: String { PlatformConfig.twitchIngest }
+    public static var restreamIngest: String { PlatformConfig.restreamIngest }
+    public static var hasRestreamApp: Bool { !PlatformConfig.restreamID.isEmpty }
+    public static var hasYouTubeApp: Bool { !PlatformConfig.youtubeID.isEmpty }
 
     // Twitch scope tables compat (single source of truth in TwitchService; covered by PlatformsTests).
-    static var twitchChatScopes: [String: Set<String>] { TwitchService.chatScopes }
-    static var twitchActionScopes: [String: Set<String>] { TwitchService.actionScopes }
-    static var twitchLabelIDs: [String] { TwitchService.labelIDs }
-    static func missingScopeFeatures(granted: Set<String>) -> [String] { TwitchService.missingScopeFeatures(granted: granted) }
+    public static var twitchChatScopes: [String: Set<String>] { TwitchService.chatScopes }
+    public static var twitchActionScopes: [String: Set<String>] { TwitchService.actionScopes }
+    public static var twitchLabelIDs: [String] { TwitchService.labelIDs }
+    public static func missingScopeFeatures(granted: Set<String>) -> [String] { TwitchService.missingScopeFeatures(granted: granted) }
 
-    typealias TwitchClip = TwitchService.TwitchClip
+    public typealias TwitchClip = TwitchService.TwitchClip
 
-    var kickConnected: Bool { store.string(forKey: "kickAccess") != nil }
-    var twitchConnected: Bool { store.string(forKey: "twitchAccess") != nil }
-    var restreamConnected: Bool { store.string(forKey: "restreamAccess") != nil }
-    var ytConnected: Bool { store.string(forKey: "ytAccess") != nil }
+    // Tokens live in the store, which Observation can't see: reading status and the user name too keeps views that show
+    // "connected" refreshing when a connect or disconnect flow updates them (as ObservableObject's blanket refresh did).
+    public var kickConnected: Bool { _ = (status, kickUser); return store.string(forKey: "kickAccess") != nil }
+    public var twitchConnected: Bool { _ = (status, twitchUser); return store.string(forKey: "twitchAccess") != nil }
+    public var restreamConnected: Bool { _ = (status, restreamUser); return store.string(forKey: "restreamAccess") != nil }
+    public var ytConnected: Bool { _ = (status, ytUser); return store.string(forKey: "ytAccess") != nil }
 
-    override init() {
+    public override init() {
         super.init()
         twitchScopes = Set(store.stringArray(forKey: "twitchScopes") ?? [])
         if kickConnected { Task { await refreshKick() } }
@@ -110,7 +113,7 @@ final class Platforms: NSObject, ObservableObject {
     /// minute): the viewer pill, {viewers} and anything else reading kickViewers/twitchViewers. Ends when the task is
     /// cancelled (ContentView keys it on streamer.live). FOUND BUG: counts used to be fetched only at launch and in the
     /// Stream Manager, so a 7 h stream showed its go-live number throughout.
-    func pollViewersWhileLive() async {
+    public func pollViewersWhileLive() async {
         while !Task.isCancelled {
             if kickConnected { await kick.refreshViewers() }
             if twitchConnected { await twitch.refreshViewers() }
@@ -120,61 +123,61 @@ final class Platforms: NSObject, ObservableObject {
 
     // MARK: - Kick
 
-    func connectKick() { kick.connect() }
-    func refreshKick() async { await kick.refresh() }
-    func kickSearch(_ q: String) async -> [StreamCategory] { await kick.search(q) }
-    func kickApply(title: String, category: StreamCategory?, tags: [String] = []) async {
+    public func connectKick() { kick.connect() }
+    public func refreshKick() async { await kick.refresh() }
+    public func kickSearch(_ q: String) async -> [StreamCategory] { await kick.search(q) }
+    public func kickApply(title: String, category: StreamCategory?, tags: [String] = []) async {
         await kick.apply(title: title, category: category, tags: tags)
     }
-    func kickSend(_ text: String) async { await kick.send(text) }
-    func disconnectKick() { kick.disconnect() }
+    public func kickSend(_ text: String) async { await kick.send(text) }
+    public func disconnectKick() { kick.disconnect() }
 
     // MARK: - Twitch
 
-    func connectTwitch() { twitch.connect() }
-    func refreshTwitch() async { await twitch.refresh() }
-    func twitchSearch(_ q: String) async -> [StreamCategory] { await twitch.search(q) }
-    func fetchTwitchLabelCatalog() async { await twitch.fetchLabelCatalog() }
-    func twitchApply(title: String, category: StreamCategory?, tags: [String] = [], labels: [String: Bool] = [:], delay: Int = 0, language: String = "") async {
+    public func connectTwitch() { twitch.connect() }
+    public func refreshTwitch() async { await twitch.refresh() }
+    public func twitchSearch(_ q: String) async -> [StreamCategory] { await twitch.search(q) }
+    public func fetchTwitchLabelCatalog() async { await twitch.fetchLabelCatalog() }
+    public func twitchApply(title: String, category: StreamCategory?, tags: [String] = [], labels: [String: Bool] = [:], delay: Int = 0, language: String = "") async {
         await twitch.apply(title: title, category: category, tags: tags, labels: labels, delay: delay, language: language)
     }
-    func twitchSend(_ text: String) async { await twitch.send(text) }
-    func disconnectTwitch() { twitch.disconnect() }
+    public func twitchSend(_ text: String) async { await twitch.send(text) }
+    public func disconnectTwitch() { twitch.disconnect() }
 
     /// True when every scope in `required` was granted at the last Twitch auth.
-    func twitchHasScopes(_ required: Set<String>) -> Bool { required.isSubset(of: twitchScopes) }
+    public func twitchHasScopes(_ required: Set<String>) -> Bool { required.isSubset(of: twitchScopes) }
 
     /// Feature names whose scope is missing from the granted set — empty once the user reconnects.
-    var twitchMissingScopeFeatures: [String] { TwitchService.missingScopeFeatures(granted: twitchScopes) }
+    public var twitchMissingScopeFeatures: [String] { TwitchService.missingScopeFeatures(granted: twitchScopes) }
 
-    func twitchSubscribeEventSub(sessionID: String) async { await twitch.subscribeEventSub(sessionID: sessionID) }
-    func twitchCreateClip() async throws -> TwitchClip { try await twitch.createClip() }
-    func twitchCreateMarker() async throws { try await twitch.createMarker() }
-    func twitchRefreshAdSchedule() async { await twitch.refreshAdSchedule() }
-    func twitchSnoozeAd() async { await twitch.snoozeAd() }
-    func twitchStartCommercial(seconds: Int = 90) async { await twitch.startCommercial(seconds: seconds) }
-    func twitchLockdownChat(on: Bool) async { await twitch.lockdownChat(on: on) }
-    func twitchAnnounce(_ message: String) async { await twitch.announce(message) }
-    func twitchRaid(_ targetLogin: String) async { await twitch.raid(targetLogin) }
+    public func twitchSubscribeEventSub(sessionID: String) async { await twitch.subscribeEventSub(sessionID: sessionID) }
+    public func twitchCreateClip() async throws -> TwitchClip { try await twitch.createClip() }
+    public func twitchCreateMarker() async throws { try await twitch.createMarker() }
+    public func twitchRefreshAdSchedule() async { await twitch.refreshAdSchedule() }
+    public func twitchSnoozeAd() async { await twitch.snoozeAd() }
+    public func twitchStartCommercial(seconds: Int = 90) async { await twitch.startCommercial(seconds: seconds) }
+    public func twitchLockdownChat(on: Bool) async { await twitch.lockdownChat(on: on) }
+    public func twitchAnnounce(_ message: String) async { await twitch.announce(message) }
+    public func twitchRaid(_ targetLogin: String) async { await twitch.raid(targetLogin) }
 
     // MARK: - Restream
 
-    func connectRestream() { restream.connect() }
-    func refreshRestream() async { await restream.refresh() }
-    func restreamApply(title: String) async { await restream.apply(title: title) }
-    func restreamSetActive(_ ch: RestreamDestination, _ on: Bool) async { await restream.setActive(ch, on) }
-    func disconnectRestream() { restream.disconnect() }
+    public func connectRestream() { restream.connect() }
+    public func refreshRestream() async { await restream.refresh() }
+    public func restreamApply(title: String) async { await restream.apply(title: title) }
+    public func restreamSetActive(_ ch: RestreamDestination, _ on: Bool) async { await restream.setActive(ch, on) }
+    public func disconnectRestream() { restream.disconnect() }
 
     // MARK: - YouTube
 
-    func connectYouTube() { youTube.connect() }
-    func refreshYouTube() async { await youTube.refresh() }
-    func ytApply(title: String, description: String, privacy: String, latency: String) async {
+    public func connectYouTube() { youTube.connect() }
+    public func refreshYouTube() async { await youTube.refresh() }
+    public func ytApply(title: String, description: String, privacy: String, latency: String) async {
         await youTube.apply(title: title, description: description, privacy: privacy, latency: latency)
     }
-    func ytSend(_ text: String) async { await youTube.send(text) }
-    func disconnectYouTube() { youTube.disconnect() }
-    func ytPollLiveChat(pageToken: String?) async throws -> (items: [[String: Any]], nextPageToken: String?, pollingIntervalMillis: Int)? {
+    public func ytSend(_ text: String) async { await youTube.send(text) }
+    public func disconnectYouTube() { youTube.disconnect() }
+    public func ytPollLiveChat(pageToken: String?) async throws -> (items: [[String: Any]], nextPageToken: String?, pollingIntervalMillis: Int)? {
         try await youTube.pollLiveChat(pageToken: pageToken)
     }
 }

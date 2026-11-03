@@ -1,4 +1,5 @@
 import Foundation
+import Platforms
 
 /// A real problem found in the current settings, and the page that fixes it.
 struct SettingsIssue: Identifiable {

@@ -4,9 +4,9 @@ import Foundation
 /// Restream OAuth 2 code flow (Basic-auth token exchange, no PKCE offered), channel list,
 /// per-destination titles, and stream key. State lives on Platforms.
 @MainActor
-final class RestreamService: ObservableObject {
-    unowned let p: Platforms
-    init(owner: Platforms) { p = owner }
+public final class RestreamService {
+    public unowned let p: Platforms
+    public init(owner: Platforms) { p = owner }
 
     private func api() -> PlatformEndpoint {
         PlatformEndpoint(base: "https://api.restream.io/v2", tokenKey: "restreamAccess", headers: [:], store: p.store) {
@@ -17,7 +17,7 @@ final class RestreamService: ObservableObject {
         }
     }
 
-    func connect() {
+    public func connect() {
         // The only `try` is inside codeFlow's exchange closure, which codeFlow catches and reports via status.
         // swiftlint:disable:next unhandled_throwing_task
         Task {
@@ -37,7 +37,7 @@ final class RestreamService: ObservableObject {
         }
     }
 
-    func refresh() async {
+    public func refresh() async {
         do {
             if let pr = try await api().callAny("GET", "/user/profile") as? [String: Any] { p.restreamUser = pr["username"] as? String ?? "" }
             // The list comes back wrapped: {"channels":[...]}; older docs show a bare array, so accept both.
@@ -63,7 +63,7 @@ final class RestreamService: ObservableObject {
     }
 
     /// One title for every destination Restream fans out to.
-    func apply(title: String) async {
+    public func apply(title: String) async {
         await PlatformFlow.mutate(status: { self.p.status = $0 }, done: "Restream titles updated", refresh: { await self.refresh() }) {
             for ch in self.p.restreamDestinations { _ = try await self.api().callAny("PATCH", "/user/channel-meta/\(ch.id)", body: ["title": title]) }
         }
@@ -71,7 +71,7 @@ final class RestreamService: ObservableObject {
 
     /// Enables or disables one destination. Restream documents the update under the singular path; some
     /// deployments answer on the plural one, so try both before reporting failure.
-    func setActive(_ ch: RestreamDestination, _ on: Bool) async {
+    public func setActive(_ ch: RestreamDestination, _ on: Bool) async {
         func apply() { if let i = p.restreamDestinations.firstIndex(where: { $0.id == ch.id }) { p.restreamDestinations[i].active = on } }
         do {
             _ = try await api().callAny("PATCH", "/user/channel/\(ch.id)", body: ["active": on])
@@ -84,7 +84,7 @@ final class RestreamService: ObservableObject {
         }
     }
 
-    func disconnect() {
+    public func disconnect() {
         p.store.forget("restream")
         p.restreamUser = ""; p.restreamDestinations = []; p.restreamTitle = ""; p.restreamStreamKey = ""; p.restreamChatURL = ""
     }

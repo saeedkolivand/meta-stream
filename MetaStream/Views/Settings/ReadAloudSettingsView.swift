@@ -1,9 +1,10 @@
 import AVFoundation
 import CoreUI
+import Platforms
 import SwiftUI
 
 struct ReadAloudSettingsView: View {
-    @EnvironmentObject var platforms: Platforms
+    @Environment(Platforms.self) var platforms
     @AppStorage("chatOrigin") var chatOrigin = "kick"
     @AppStorage("chatChannel") var chatChannel = ""
     @AppStorage("ttsVoiceID") var ttsVoiceID = ""

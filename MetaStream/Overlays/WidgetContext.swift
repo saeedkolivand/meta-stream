@@ -1,5 +1,6 @@
 // Live data the widgets read each tick. Weak so a widget task never keeps the app's models alive.
 import Foundation
+import Platforms
 
 /// Set once by ContentView; nil until then (widgets render nothing / blank values).
 @MainActor

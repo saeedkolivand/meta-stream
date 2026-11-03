@@ -69,6 +69,8 @@ targets:
         product: CoreUI
       - package: MetaStreamKit
         product: Camera
+      - package: MetaStreamKit
+        product: Platforms
       - package: MetaWearablesDAT
         product: MWDATCore
       - package: MetaWearablesDAT
@@ -102,4 +104,6 @@ targets:
         product: CoreUI
       - package: MetaStreamKit
         product: Camera
+      - package: MetaStreamKit
+        product: Platforms
 

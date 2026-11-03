@@ -1,12 +1,13 @@
 import CoreLogging
 import CoreUI
+import Platforms
 import SwiftUI
 import MWDATCore
 
 @main
 struct MetaStreamApp: App {
     @StateObject private var streamer = Streamer()
-    @StateObject private var platforms = Platforms()
+    @State private var platforms = Platforms()
     @StateObject private var speaker = Speaker()
     // @State, not @StateObject: the App must not re-evaluate per chat message. Views that show chat read it from the environment.
     @State private var chat = ChatFeed()
@@ -31,7 +32,7 @@ struct MetaStreamApp: App {
                 } else {
                     ContentView(chat: chat)
                         .environmentObject(streamer)
-                        .environmentObject(platforms)
+                        .environment(platforms)
                         .environmentObject(speaker)
                         .environmentObject(chat)
                         .environmentObject(privacy)
