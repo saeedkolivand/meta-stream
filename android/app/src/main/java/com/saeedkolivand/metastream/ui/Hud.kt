@@ -10,9 +10,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.camera.Cam
@@ -20,6 +22,8 @@ import com.saeedkolivand.metastream.platforms.Kick
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.platforms.YouTube
 import com.saeedkolivand.metastream.privacy.Privacy
+import com.saeedkolivand.metastream.reach.InstagramStory
+import com.saeedkolivand.metastream.reach.LivePost
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Health
@@ -29,6 +33,7 @@ import com.saeedkolivand.metastream.streaming.Source
 import com.saeedkolivand.metastream.streaming.level
 import com.saeedkolivand.metastream.streaming.thermalLabel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private fun elapsed(ms: Long): String {
     val s = (ms / 1000).coerceAtLeast(0)
@@ -107,6 +112,23 @@ internal fun Hud() {
         if (Engine.source == Source.Glasses) {
             val g = Engine.glasses.status
             Pill(R.drawable.ic_glasses, g.ifEmpty { "idle" }, glassesColor(g))
+        }
+        // iOS HUD: announce the Live post before going live (tap again to withdraw), and the Instagram story card.
+        if (LivePost.enabled && !Engine.live && LivePost.phase != "live") {
+            val announced = LivePost.phase == "announced"
+            Pill(
+                if (announced) R.drawable.ic_cancel else R.drawable.ic_megaphone,
+                if (announced) "cancel announce" else "announce",
+                if (announced) Orange else Color.White
+            ) { if (announced) LivePost.cancelAnnouncement() else LivePost.announce() }
+        }
+        val context = LocalContext.current
+        if (remember { InstagramStory.available(context) }) {
+            val scope = rememberCoroutineScope()
+            // Before GO LIVE it shares a "live soon" card.
+            Pill(R.drawable.ic_camera, if (Engine.live) "IG story" else "IG story · soon", Color(0xFFFF2D55)) {
+                scope.launch { InstagramStory.share(context) }
+            }
         }
         Pill(R.drawable.ic_manage, "manage", Color.Cyan) { ManagerState.open = true }
         val on = Speaker.readAloud

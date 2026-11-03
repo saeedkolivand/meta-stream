@@ -10,9 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.platforms.TokenStore
-import com.saeedkolivand.metastream.reach.LivePost
 import com.saeedkolivand.metastream.reach.Telegram
-import com.saeedkolivand.metastream.streaming.Engine
 import kotlinx.coroutines.launch
 
 /** Settings › Telegram (iOS TelegramSettingsView): the bot and channel behind the Live post, and what it may show. */
@@ -45,17 +43,6 @@ internal fun TelegramPage() {
             }
         }
         if (status.isNotEmpty()) Text(status, color = Secondary, fontSize = 13.sp)
-    }
-    // Android only: iOS announces from the HUD, which Android doesn't have yet.
-    Section(
-        null,
-        "Posts \"going live soon\" now; GO LIVE turns it into the live post. Not live within an hour, it's edited to cancelled."
-    ) {
-        when (LivePost.phase) {
-            "announced" -> ActionRow("Cancel announcement", destructive = true) { LivePost.cancelAnnouncement() }
-            null -> ActionRow("Announce: going live soon", LivePost.enabled && !Engine.live) { LivePost.announce() }
-            else -> Text("The live post is running", color = Secondary, fontSize = 17.sp)
-        }
     }
     Section("Post", "The language only changes the labels; titles and names stay as you typed them.") {
         var lang by remember { mutableStateOf(Prefs.string("telegramLang", "fa")) }
