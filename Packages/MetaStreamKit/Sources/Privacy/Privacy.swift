@@ -32,7 +32,9 @@ import Vision
 @MainActor public final class Privacy: ObservableObject, VideoEffect {
     public struct Options: Sendable {
         public var faces = true, text = true, barcodes = true
-        public init() {}
+        public init(faces: Bool = true, text: Bool = true, barcodes: Bool = true) {
+            (self.faces, self.text, self.barcodes) = (faces, text, barcodes)
+        }
     }
 
     /// True once detection hasn't successfully completed a pass in >1s -- the caller should fail closed
