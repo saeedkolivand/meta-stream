@@ -75,6 +75,8 @@ targets:
         product: Chat
       - package: MetaStreamKit
         product: Goal
+      - package: MetaStreamKit
+        product: Speech
       - package: MetaWearablesDAT
         product: MWDATCore
       - package: MetaWearablesDAT
@@ -114,4 +116,6 @@ targets:
         product: Chat
       - package: MetaStreamKit
         product: Goal
+      - package: MetaStreamKit
+        product: Speech
 

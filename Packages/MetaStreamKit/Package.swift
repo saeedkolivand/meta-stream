@@ -20,7 +20,8 @@ let package = Package(
         .library(name: "Camera", targets: ["Camera"]),
         .library(name: "Platforms", targets: ["Platforms"]),
         .library(name: "Chat", targets: ["Chat"]),
-        .library(name: "Goal", targets: ["Goal"])
+        .library(name: "Goal", targets: ["Goal"]),
+        .library(name: "Speech", targets: ["Speech"])
     ],
     targets: [
         // Plain data shared by every feature: chat events, money, text patterns. Foundation only.
@@ -43,6 +44,8 @@ let package = Package(
         // Chat feed: Kick/Twitch/YouTube providers, emotes, AI moderation and summary, slash commands, kick.com web session.
         .target(name: "Chat", dependencies: ["CoreModel", "CoreLogging", "CoreUI", "Platforms"], swiftSettings: strict),
         // Donation goal: GoalStore, Money, exchange rates, donation-site sources, the donate page publisher.
-        .target(name: "Goal", dependencies: ["CoreModel", "CoreLogging", "CoreStorage", "Chat"], swiftSettings: strict)
+        .target(name: "Goal", dependencies: ["CoreModel", "CoreLogging", "CoreStorage", "Chat"], swiftSettings: strict),
+        // Read-aloud: Speaker's three TTS lanes (System, Alert, Chat).
+        .target(name: "Speech", dependencies: ["CoreModel", "CoreUI", "Goal"], swiftSettings: strict)
     ]
 )
