@@ -167,10 +167,16 @@ final class AlertIslandScreenObject: ScreenObject {
         guard t.isFinite, t >= 0, t <= AlertIsland.total(hold: hold) else {
             if !logged, frames > 0 {
                 logged = true
-                applog("perf", "island alert \(event.kind): \(frames) frames in \(String(format: "%.2f", last)) s "
-                       + "(\(String(format: "%.0f", Double(frames) / max(last, 0.01))) fps), draw avg \(String(format: "%.1f", drawTotal / Double(frames))) ms "
-                       + "max \(String(format: "%.1f", drawMax)) ms, longest gap \(String(format: "%.0f", gapMax * 1000)) ms, "
-                       + "canvas \(Int(bounds.width))x\(Int(bounds.height)), renderer \(type(of: renderer))")
+                // Built in pieces: one long `+` chain of interpolations times out Swift's type checker.
+                let count = Double(frames)
+                let fps = String(format: "%.0f", count / max(last, 0.01))
+                let avg = String(format: "%.1f", drawTotal / count)
+                let peak = String(format: "%.1f", drawMax)
+                let gap = String(format: "%.0f", gapMax * 1000)
+                let size = "\(Int(bounds.width))x\(Int(bounds.height))"
+                let timing = "\(frames) frames in \(String(format: "%.2f", last)) s (\(fps) fps)"
+                applog("perf", "island alert \(event.kind): \(timing), draw avg \(avg) ms max \(peak) ms, longest gap \(gap) ms, "
+                       + "canvas \(size), renderer \(type(of: renderer))")
             }
             return CIImage.empty()
         }
