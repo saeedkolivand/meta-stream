@@ -95,7 +95,9 @@ private enum class Page(val title: String, val parent: Page?, val group: String 
     Voice("Voice", ReadAloud),
     DontRead("Don't read", ReadAloud),
     BotMessages("Messages", AppBot),
-    BotTimers("Timers", AppBot);
+    BotTimers("Timers", AppBot),
+    GoalRates("Rates", Goal),
+    GoalRecent("Recent donations", Goal);
 
     val depth: Int get() = generateSequence(this) { it.parent }.count()
 }
@@ -120,6 +122,7 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
                     }
                     Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
                         if (page == Page.Scenes) ScenesToolbar { page = Page.Transitions }
+                        if (page == Page.Streams) StreamsToolbar()
                         TextButton(onDismiss) { Text("Done", fontWeight = FontWeight.Bold, fontSize = 17.sp) }
                     }
                 }
@@ -169,7 +172,9 @@ private fun PageContent(p: Page, go: (Page) -> Unit) = when (p) {
     Page.BotMessages -> AppBotMessagesPage()
     Page.BotTimers -> AppBotTimersPage()
     Page.Bots -> KnownBotsPage()
-    Page.Goal -> GoalPage()
+    Page.Goal -> GoalPage({ go(Page.GoalRates) }, { go(Page.GoalRecent) })
+    Page.GoalRates -> GoalRatesPage()
+    Page.GoalRecent -> GoalRecentPage()
     Page.DonationSources -> DonationSourcesPage()
     Page.DonatePage -> DonatePagePage()
     Page.Telegram -> TelegramPage()

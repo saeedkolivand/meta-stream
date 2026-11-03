@@ -1,8 +1,9 @@
 package com.saeedkolivand.metastream.ui
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -10,47 +11,56 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.goal.DonationHub
 import com.saeedkolivand.metastream.goal.Site
 
-/** iOS DonationSourcesSettingsView: one key per site, saved on Save; status shows whether it's connected. */
+/** iOS DonationSourcesSettingsView: one card row per site (status, secure key, help, Save). */
 @Composable
 internal fun DonationSourcesPage() {
-    for (site in Site.entries) {
-        Section(site.title) {
-            SecretField(site.keyLabel, DonationHub.key(site)) { DonationHub.setKey(site, it) }
-            Note(DonationHub.status[site].orEmpty())
-            Footnote(site.help)
-            when (site) {
-                Site.Donofa -> {
-                    SecretField("Alert widget link (optional)", DonationHub.donofaWidget(), DonationHub::setDonofaWidget)
-                    Footnote("With the widget link, Donofa's own alert queue drives the alerts and its test button works here.")
+    Section(
+        "Donation sources",
+        "Donations are counted toward the goal once, from the site's own report, and announced once. Ones found later in a " +
+            "site's history count but aren't announced."
+    ) {
+        for (site in Site.entries) {
+            Column(Modifier.padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(site.title, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                DonationHub.status[site]?.takeIf { it.isNotEmpty() }?.let { Text(it, color = Secondary, fontSize = 13.sp) }
+                SecretField(site.keyLabel, DonationHub.key(site), site.help) { DonationHub.setKey(site, it) }
+                when (site) {
+                    Site.Donofa -> SecretField(
+                        "Widget link (alerts)",
+                        DonationHub.donofaWidget(),
+                        "Paste a Donofa widget or widget-group link. Donofa then sends its alerts here (one at a time, like in " +
+                            "OBS); real donations still count through your API key.",
+                        DonationHub::setDonofaWidget
+                    )
+                    Site.Reymit -> SecretField(
+                        "Overlay link (test alerts)",
+                        DonationHub.reymitOverlay(),
+                        "Paste the Reymit overlay link. Reymit's test button only reaches the overlay; tests play the alert and never count.",
+                        DonationHub::setReymitOverlay
+                    )
+                    else -> Unit
                 }
-                Site.Reymit -> {
-                    SecretField("Overlay link (optional)", DonationHub.reymitOverlay(), DonationHub::setReymitOverlay)
-                    Footnote("The overlay link makes Reymit's test donation play here; real ones come through the API token.")
-                }
-                else -> Unit
             }
         }
     }
-    Footnote(
-        "Donations are counted toward the goal once, from the site's own report, and announced once. Ones found later in a site's history count but aren't announced."
-    )
 }
 
-/** A hidden key field with Save; an empty save removes the key. */
+/** A hidden key field, its help and Save (iOS SiteKeyRow); an empty save removes the key. */
 @Composable
-private fun SecretField(label: String, saved: String, onSave: (String) -> Unit) {
+private fun SecretField(label: String, saved: String, help: String, onSave: (String) -> Unit) {
     var text by remember(saved) { mutableStateOf(saved) }
-    OutlinedTextField(
-        text,
-        { text = it },
-        Modifier.fillMaxWidth(),
-        label = { Text(label) },
-        singleLine = true,
-        visualTransformation = PasswordVisualTransformation()
+    TextRow(label, text, { text = it }, secure = true)
+    Text(help, color = Secondary, fontSize = 13.sp)
+    Text(
+        if (text.isEmpty() && saved.isNotEmpty()) "Remove" else "Save",
+        Modifier.clickable(text != saved) { onSave(text) }.padding(vertical = 6.dp),
+        color = if (text != saved) SystemBlue else Secondary,
+        fontSize = 17.sp
     )
-    OutlinedButton({ onSave(text) }, enabled = text != saved) { Text(if (text.isEmpty()) "Remove" else "Save") }
 }

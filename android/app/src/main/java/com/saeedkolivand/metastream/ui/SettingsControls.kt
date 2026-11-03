@@ -181,7 +181,13 @@ internal fun SliderRow(
             enabled = enabled && range.endInclusive > range.start,
             valueRange = range,
             steps = steps,
-            colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = SystemBlue, inactiveTrackColor = Color(0xFF3A3A3C))
+            colors = SliderDefaults.colors(
+                thumbColor = Color.White,
+                activeTrackColor = SystemBlue,
+                inactiveTrackColor = Color(0xFF3A3A3C),
+                activeTickColor = Color.Transparent,
+                inactiveTickColor = Color.Transparent
+            )
         )
     }
 }
