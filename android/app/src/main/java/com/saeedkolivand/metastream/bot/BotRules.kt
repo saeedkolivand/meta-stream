@@ -1,7 +1,6 @@
 package com.saeedkolivand.metastream.bot
 
 import com.saeedkolivand.metastream.chat.Slash
-import com.saeedkolivand.metastream.chat.sanitizeSpeech
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.platforms.Accounts
@@ -60,12 +59,6 @@ object BotRules {
     fun switchKey(cmd: String) = "botCmd" + if (cmd in donateAliases) "Donate" else cmd.drop(1).replaceFirstChar(Char::uppercase)
 
     fun fill(template: String, user: String, count: Int) = template.replace("{user}", user).replace("{count}", count.toString())
-
-    /**
-     * A name is whatever someone typed, and the bot posts it as a trusted account: no links, no leading "!" or "/"
-     * (another bot would run it as a command), at most 25 characters.
-     */
-    fun safeName(raw: String) = sanitizeSpeech(raw).take(25).dropWhile { it in "!/\\.@#" || it.isWhitespace() }.ifEmpty { "Someone" }
 }
 
 /** A saved chat command ("!giveaway start") sent as the streamer (iOS BotCommand); Prefs "botCommands" as JSON. */

@@ -11,3 +11,9 @@ fun sanitizeSpeech(raw: String): String {
     s = mention.replace(s, "$1")
     return s.trim().split(spaces).joinToString(" ").take(200)
 }
+
+/**
+ * A name is whatever someone typed, and the bot posts it as a trusted account: no links, no leading "!" or "/"
+ * (another bot would run it as a command), at most 25 characters.
+ */
+fun safeName(raw: String) = sanitizeSpeech(raw).take(25).dropWhile { it in "!/\\.@#" || it.isWhitespace() }.ifEmpty { "Someone" }

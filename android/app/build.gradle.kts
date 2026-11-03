@@ -46,6 +46,7 @@ dependencies {
     implementation(project(":feature:speech"))
     implementation(project(":feature:privacy"))
     implementation(project(":feature:engine"))
+    implementation(project(":feature:overlay"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.documentfile)
     implementation(platform(libs.androidx.compose.bom))

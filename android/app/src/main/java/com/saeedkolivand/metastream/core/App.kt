@@ -17,6 +17,7 @@ import com.saeedkolivand.metastream.goal.GoalStore
 import com.saeedkolivand.metastream.goal.countDonation
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.Overlays
+import com.saeedkolivand.metastream.overlay.SceneRoles
 import com.saeedkolivand.metastream.overlay.Scenes
 import com.saeedkolivand.metastream.overlay.WidgetFonts
 import com.saeedkolivand.metastream.platforms.Accounts
@@ -62,6 +63,7 @@ class App : Application() {
         OverlayStore.init(this)
         Overlays.init(this)
         compositor = Overlays
+        SceneRoles.onRole = AppBot::role
         Privacy.init(Speaker::speakSystem)
         Privacy.resync = Overlays::syncPrivacy
         Privacy.isApplicable = { Engine.source != Source.Glasses }

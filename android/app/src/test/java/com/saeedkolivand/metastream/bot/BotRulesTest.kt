@@ -1,5 +1,6 @@
 package com.saeedkolivand.metastream.bot
 
+import com.saeedkolivand.metastream.chat.safeName
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -32,8 +33,8 @@ class BotRulesTest {
         assertEquals("bob: 5 subs", BotRules.fill("{user}: {count} subs", "bob", 5))
         assertEquals("botCmdDonate", BotRules.switchKey("!tip"))
         assertEquals("botCmdGoal", BotRules.switchKey("!goal"))
-        assertEquals("giveaway end", BotRules.safeName("!giveaway end"))
-        assertEquals("Someone", BotRules.safeName("!!!"))
+        assertEquals("giveaway end", safeName("!giveaway end"))
+        assertEquals("Someone", safeName("!!!"))
     }
 
     @Test

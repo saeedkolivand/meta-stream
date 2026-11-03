@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import com.saeedkolivand.metastream.chat.ChatSettings
 import com.saeedkolivand.metastream.chat.isBlocked
 import com.saeedkolivand.metastream.chat.offensive
+import com.saeedkolivand.metastream.chat.safeName
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
@@ -160,7 +161,7 @@ object AppBot {
 
     private fun thank(e: ChatEvent, key: String) {
         if (!flag("botThanks") || isBlocked(e.user, ChatSettings.blocked)) return
-        say(e.platform, BotRules.fill(tpl(key), BotRules.safeName(e.user), e.count))
+        say(e.platform, BotRules.fill(tpl(key), safeName(e.user), e.count))
     }
 
     /** One of the app bot's own lines; Kick doesn't name the bot account, so it's learned from the first echo. */
