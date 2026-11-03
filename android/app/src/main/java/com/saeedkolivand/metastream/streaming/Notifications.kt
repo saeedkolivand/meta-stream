@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.core
+package com.saeedkolivand.metastream.streaming
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

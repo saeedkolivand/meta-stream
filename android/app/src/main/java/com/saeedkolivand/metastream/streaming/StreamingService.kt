@@ -11,13 +11,7 @@ import android.os.IBinder
 import android.os.SystemClock
 import androidx.compose.runtime.snapshotFlow
 import com.saeedkolivand.metastream.R
-import com.saeedkolivand.metastream.bot.BotCommand
-import com.saeedkolivand.metastream.bot.send
-import com.saeedkolivand.metastream.core.ensureChannel
 import com.saeedkolivand.metastream.core.logging.applog
-import com.saeedkolivand.metastream.core.storage.Prefs
-import com.saeedkolivand.metastream.platforms.Accounts
-import com.saeedkolivand.metastream.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -69,7 +63,7 @@ class StreamingService : Service() {
             ACTION_MUTE -> Engine.toggleMute()
             ACTION_STOP -> Engine.stop()
             // Re-read at tap time: the saved text, not one baked into the notification, and only while still live.
-            ACTION_COMMAND -> notifyCommand()?.takeIf { Engine.live }?.let { c -> Accounts.scope.launch { c.send() } }
+            ACTION_COMMAND -> if (Engine.live) sendNotifyCommand()
             ACTION_SCREEN -> if (running) {
                 // Android 14+: the media-projection type must be on before the projection is created.
                 startForeground(
@@ -119,13 +113,12 @@ class StreamingService : Service() {
         private fun currentNotice() =
             if (Engine.live) liveNotice(Engine.source, Engine.status, Engine.connected, Engine.liveSince, Engine.muted) else null
 
-        /** The saved command chosen for the live notification (iOS Lock Screen buttons; Android shows three actions, so one). */
-        private fun notifyCommand() = Prefs.string("notifyCommand").takeIf { it.isNotEmpty() }?.let { t ->
-            BotCommand.stored().firstOrNull {
-                it.text ==
-                    t
-            }
-        }
+        /**
+         * Set by the app wiring: the saved chat command for the notification's third action (iOS Lock Screen buttons; Android
+         * shows three actions, so one), null hides it; and sending it.
+         */
+        var notifyCommand: () -> String? = { null }
+        var sendNotifyCommand: () -> Unit = {}
 
         private fun action(c: Context, code: Int, action: String) =
             PendingIntent.getService(c, code, Intent(c, StreamingService::class.java).setAction(action), PendingIntent.FLAG_IMMUTABLE)
@@ -136,14 +129,16 @@ class StreamingService : Service() {
                 .setSmallIcon(android.R.drawable.ic_menu_camera)
                 .setOngoing(true)
                 // Tap to reopen the app and Stop: back-press no longer ends the stream.
-                .setContentIntent(PendingIntent.getActivity(c, 0, Intent(c, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE))
+                .setContentIntent(
+                    PendingIntent.getActivity(c, 0, c.packageManager.getLaunchIntentForPackage(c.packageName), PendingIntent.FLAG_IMMUTABLE)
+                )
             if (n == null) return b.setContentTitle(c.getString(R.string.ready_title)).build()
             b.setContentTitle(n.title).setContentText(n.text)
                 .setOnlyAlertOnce(true)
                 .setRequestPromotedOngoing(true) // Android 16 Live Update; needs POST_PROMOTED_NOTIFICATIONS
                 .addAction(android.R.drawable.ic_btn_speak_now, n.muteLabel, action(c, 1, ACTION_MUTE))
                 .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", action(c, 2, ACTION_STOP))
-            notifyCommand()?.let { b.addAction(android.R.drawable.ic_menu_send, it.text.take(24), action(c, 3, ACTION_COMMAND)) }
+            notifyCommand()?.let { b.addAction(android.R.drawable.ic_menu_send, it.take(24), action(c, 3, ACTION_COMMAND)) }
             n.chronometerSince?.let { b.setWhen(it).setUsesChronometer(true) }
             n.chip?.let { b.setShortCriticalText(it) }
             return b.build()

@@ -17,6 +17,7 @@ import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.privacy.Privacy
 import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
+import com.saeedkolivand.metastream.streaming.SceneCompositor
 import com.saeedkolivand.metastream.streaming.Source
 import java.io.File
 import kotlin.math.min
@@ -47,7 +48,7 @@ internal fun <T : BaseObjectFilterRender> T.placeIn(box: Box, outW: Int, outH: I
  * Draws the active OBS scene onto the stream with RootEncoder filters (Phone/USB only; glasses HEVC can't be drawn on).
  * All calls are on the main thread. [refresh] rebuilds everything, so it is safe to call whenever the GL pipeline restarts.
  */
-object Overlays {
+object Overlays : SceneCompositor {
     private lateinit var app: Application
     private val main = Handler(Looper.getMainLooper())
     private var gl: GlInterface? = null
@@ -65,11 +66,17 @@ object Overlays {
         app = application
     }
 
+    override fun sessionStarted() = SceneRoles.startRole()
+
+    override fun sessionEnded() = SceneRoles.end()
+
+    override fun checkBrb(down: Boolean, queueBytes: Long, kbps: Int) = SceneRoles.checkBrb(down, queueBytes, kbps)
+
     /** Called when the stream is (re)prepared: the output size is only known then. */
     /** The output frame (overlays and blur included), delivered on the GL thread; false when no pipeline is bound. */
     fun grab(done: (Bitmap) -> Unit): Boolean = gl?.let { g -> g.takePhoto { done(it) } } != null
 
-    fun bind(gl: GlInterface, w: Int, h: Int) {
+    override fun bind(gl: GlInterface, w: Int, h: Int) {
         release()
         Privacy.forget() // a new pipeline starts with an empty chain
         Looks.forget()
@@ -79,7 +86,7 @@ object Overlays {
         outH = h
     }
 
-    fun unbind() {
+    override fun unbind() {
         release()
         FaceCam.stop()
         Privacy.forget()
@@ -89,7 +96,7 @@ object Overlays {
     }
 
     /** Filters survive nothing: the GL thread drops them when it stops, so callers refresh after (re)starting it. */
-    fun refresh() {
+    override fun refresh() {
         if (Looper.myLooper() != Looper.getMainLooper()) {
             main.post(::refresh)
             return
@@ -101,7 +108,7 @@ object Overlays {
         // alerts stay sharp. Privacy keeps its filter across refreshes; the face-cam goes back in at index 0, ahead of it.
         Privacy.install(glNow)
         Looks.install(glNow) // the grade goes ahead of the blur and the overlays, so only the camera is graded
-        FaceCam.install(g, outW, outH)
+        FaceCam.install(g::addFirst, outW, outH)
         val pack = OverlayStore.pack
         val scene = OverlayStore.active()?.takeIf { pack != null && Engine.source != Source.Glasses }
         if (scene == null || pack == null) return
@@ -149,19 +156,19 @@ object Overlays {
     }
 
     /** A look edit, a camera flip or a source switch: only the look filter changes. */
-    fun syncLook() {
+    override fun syncLook() {
         if (Looks.key() == "glasses") return
         main.post { gl?.let(Looks::install) }
     }
 
-    fun syncFaceCam() {
+    override fun syncFaceCam() {
         if (Looper.myLooper() != Looper.getMainLooper()) {
             main.post(::syncFaceCam)
             return
         }
         val g = sink ?: return
-        FaceCam.remove(g) // re-installs below with a fresh filter; overlay layers keep their place
-        FaceCam.install(g, outW, outH)
+        FaceCam.remove(g::remove) // re-installs below with a fresh filter; overlay layers keep their place
+        FaceCam.install(g::addFirst, outW, outH)
     }
 
     private fun release() {

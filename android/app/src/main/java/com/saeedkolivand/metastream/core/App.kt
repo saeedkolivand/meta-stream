@@ -2,7 +2,9 @@ package com.saeedkolivand.metastream.core
 
 import android.app.Application
 import com.saeedkolivand.metastream.bot.AppBot
+import com.saeedkolivand.metastream.bot.BotCommand
 import com.saeedkolivand.metastream.bot.BotList
+import com.saeedkolivand.metastream.bot.send
 import com.saeedkolivand.metastream.camera.Looks
 import com.saeedkolivand.metastream.car.Notify
 import com.saeedkolivand.metastream.chat.ChatFeed
@@ -31,6 +33,8 @@ import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Mics
 import com.saeedkolivand.metastream.streaming.Soundboard
 import com.saeedkolivand.metastream.streaming.Source
+import com.saeedkolivand.metastream.streaming.StreamingService
+import com.saeedkolivand.metastream.streaming.compositor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -57,6 +61,8 @@ class App : Application() {
         Speaker.skipMessage = { !BotList.reads(it.user, it.text) || AppBot.isOwn(it) }
         OverlayStore.init(this)
         Overlays.init(this)
+        compositor = Overlays
+        Privacy.init(Speaker::speakSystem)
         Privacy.resync = Overlays::syncPrivacy
         Privacy.isApplicable = { Engine.source != Source.Glasses }
         Privacy.isLive = { Engine.live }
@@ -83,8 +89,14 @@ class App : Application() {
             Speaker.speakSystem("Goal reached")
             AppBot.goalReached(GoalStore.config.title)
         }
+        StreamingService.notifyCommand = { notifyCommand()?.text }
+        StreamingService.sendNotifyCommand = { notifyCommand()?.let { c -> scope.launch { c.send() } } } // re-read at tap time
         Engine.init(this, scope, speak = Speaker::speakSystem, alert = { Notify.alert(this, it) })
         Scenes.init(scope)
         Scenes.updateRotation()
     }
 }
+
+/** The saved command chosen for the live notification's action (Settings › Chat commands). */
+private fun notifyCommand() =
+    Prefs.string("notifyCommand").takeIf { it.isNotEmpty() }?.let { t -> BotCommand.stored().firstOrNull { it.text == t } }

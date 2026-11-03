@@ -19,12 +19,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
+import com.pedro.encoder.input.gl.render.filters.BaseFilterRender
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.storage.Prefs
-import com.saeedkolivand.metastream.overlay.FilterSink
-import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
+import com.saeedkolivand.metastream.streaming.compositor
 import com.saeedkolivand.metastream.streaming.thermalSerious
 
 private const val CLOSE_DELAY_MS = 2000L
@@ -87,7 +87,7 @@ object FaceCam {
             if (hot != overheated) {
                 overheated = hot
                 applog("facecam", if (hot) "dropped: phone is overheating" else "restored: phone cooled down")
-                Overlays.syncFaceCam()
+                compositor?.syncFaceCam()
             }
         }
     }
@@ -117,7 +117,7 @@ object FaceCam {
     fun enable(on: Boolean) {
         enabled = on
         Prefs.put("dualCam", on)
-        Overlays.syncFaceCam()
+        compositor?.syncFaceCam()
     }
 
     fun hide(h: Boolean) {
@@ -140,7 +140,7 @@ object FaceCam {
     }
 
     /** Called from Overlays.refresh() after it cleared the filters; returns whether a face-cam filter is in the chain. */
-    fun install(g: FilterSink, w: Int, h: Int): Boolean {
+    fun install(addFirst: (BaseFilterRender) -> Unit, w: Int, h: Int): Boolean {
         outW = w
         outH = h
         filter = null
@@ -153,14 +153,14 @@ object FaceCam {
         f.show = !hidden
         filter = f
         layout()
-        g.addFirst(f) // under the blur, so a face in the window is hidden too
+        addFirst(f) // under the blur, so a face in the window is hidden too
         active = true
         return true
     }
 
     /** The targeted sync drops the current window filter so [install] can build a fresh one for the new setting. */
-    fun remove(g: FilterSink) {
-        filter?.let(g::remove)
+    fun remove(remove: (BaseFilterRender) -> Unit) {
+        filter?.let(remove)
         filter = null
         active = false
     }
@@ -317,7 +317,7 @@ object FaceCam {
     fun beforeFlip() = closeAll()
 
     fun afterFlip() {
-        Overlays.syncFaceCam()
-        Overlays.syncLook() // front and back keep their own look
+        compositor?.syncFaceCam()
+        compositor?.syncLook() // front and back keep their own look
     }
 }

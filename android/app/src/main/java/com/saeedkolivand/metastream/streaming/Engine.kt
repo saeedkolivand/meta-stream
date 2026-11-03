@@ -32,9 +32,6 @@ import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.storage.VideoParams
 import com.saeedkolivand.metastream.core.storage.toVideoParams
 import com.saeedkolivand.metastream.glasses.Glasses
-import com.saeedkolivand.metastream.overlay.Overlays
-import com.saeedkolivand.metastream.overlay.SceneRoles
-import com.saeedkolivand.metastream.privacy.Privacy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -55,7 +52,8 @@ private val DENY_WEARABLES: suspend (Permission) -> PermissionStatus = { Permiss
 object Engine {
     private lateinit var app: Application
     private lateinit var scope: CoroutineScope
-    private lateinit var speak: (String) -> Unit
+    lateinit var speak: (String) -> Unit
+        private set
     private lateinit var alert: (String) -> Unit
     lateinit var glasses: Glasses
         private set
@@ -102,7 +100,6 @@ object Engine {
         Health.init(app, scope, speak, alert)
         Cam.init(app)
         FaceCam.init(app)
-        Privacy.init(speak)
     }
 
     fun updateUrl(value: String) {
@@ -163,7 +160,7 @@ object Engine {
             false
         }
         if (ok) applyCameraOff(s)
-        if (ok) Overlays.bind(s.getGlInterface(), p.outW, p.outH)
+        if (ok) compositor?.bind(s.getGlInterface(), p.outW, p.outH)
         if (ok) Cam.attach(s)
         if (ok) prepared = want else status = "camera/mic setup failed"
         return ok
@@ -174,7 +171,7 @@ object Engine {
     private fun matchSettings(s: GenericStream): Boolean {
         if (wanted() == prepared) return true
         if (Recording.since != null) Recording.stop() // release() below would drop the running recording
-        Overlays.unbind() // the re-prepare drops the GL filters; prepare() binds again and goLive refreshes
+        compositor?.unbind() // the re-prepare drops the GL filters; prepare() binds again and goLive refreshes
         s.release()
         val ok = prepare(s)
         preview?.let { if (ok) s.startPreview(it, true) }
@@ -187,7 +184,7 @@ object Engine {
         ensure()?.let {
             it.startPreview(view, true)
             applyCameraOff(it)
-            Overlays.refresh()
+            compositor?.refresh()
         }
     }
 
@@ -231,7 +228,7 @@ object Engine {
         source = next
         syncAudio()
         if (next == Source.Glasses) Recording.checkSource()
-        Overlays.refresh()
+        compositor?.refresh()
     }
 
     fun goLive() {
@@ -253,7 +250,7 @@ object Engine {
             return
         }
         Mics.log(app, "go live")
-        Overlays.refresh() // before the encoder starts, so the privacy blur is already in the chain for the first frame
+        compositor?.refresh() // before the encoder starts, so the privacy blur is already in the chain for the first frame
         val full = Bonding.target(app, url.trimEnd('/') + "/" + key) // srtla:// goes through the bonding proxy
         if (s == null) glasses.start(full, askWearables) else startStream(s, full)
         // Glasses passthrough has no encoder knob, so Health only watches it.
@@ -265,7 +262,7 @@ object Engine {
     fun stop(reason: String = "idle") {
         Health.stop()
         Bonding.stop()
-        SceneRoles.end() // a Starting countdown, BRB or Ending still up: back to the scene before it
+        compositor?.sessionEnded() // a Starting countdown, BRB or Ending still up: back to the scene before it
         if (source == Source.Glasses) glasses.stop() else stream?.stopStream()
         live = false
         Session.setLive(false)
@@ -329,7 +326,7 @@ object Engine {
                 Health.markUp()
                 if (live) {
                     connected = true
-                    if (liveSince == null) liveSince = System.currentTimeMillis().also { SceneRoles.startRole() }
+                    if (liveSince == null) liveSince = System.currentTimeMillis().also { compositor?.sessionStarted() }
                 }
                 status = "connected"
                 speak("stream connected")

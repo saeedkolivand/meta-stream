@@ -10,7 +10,6 @@ import androidx.compose.runtime.setValue
 import com.pedro.library.base.recording.RecordController
 import com.pedro.library.generic.GenericStream
 import com.saeedkolivand.metastream.core.logging.applog
-import com.saeedkolivand.metastream.speech.Speaker
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -43,7 +42,7 @@ object Recording {
         if (Engine.source == Source.Glasses) {
             // ponytail: glasses HEVC passthrough bypasses the encoder, so a recording would have no video.
             applog("stream", "recording refused: glasses passthrough has no video")
-            Speaker.speakSystem("Recording needs the phone camera")
+            Engine.speak("Recording needs the phone camera")
             return
         }
         val s = Engine.recorder()
@@ -101,7 +100,7 @@ object Recording {
         if (wasRecording && file != null) {
             applog("stream", "recording stopped ${file.name}")
             io.launch {
-                if (save(file)) main.post { Speaker.speakSystem("Recording saved") }
+                if (save(file)) main.post { Engine.speak("Recording saved") }
             }
         }
     }
@@ -109,7 +108,7 @@ object Recording {
     /** Called when the source changes to Glasses: passthrough leaves the file without video, so end it here. */
     fun checkSource() {
         if (since == null || Engine.source != Source.Glasses) return
-        Speaker.speakSystem("Recording stopped: glasses passthrough can't be recorded")
+        Engine.speak("Recording stopped: glasses passthrough can't be recorded")
         stop()
     }
 

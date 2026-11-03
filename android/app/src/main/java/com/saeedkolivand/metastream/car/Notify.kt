@@ -10,11 +10,11 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.Person
 import androidx.core.app.RemoteInput
-import com.saeedkolivand.metastream.core.ensureChannel
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.platforms.Accounts
+import com.saeedkolivand.metastream.streaming.ensureChannel
 import kotlinx.coroutines.launch
 
 private const val CHAT = "chat"
