@@ -2,7 +2,7 @@ import AVFoundation
 import Foundation
 
 /// Capture orientation without the deprecated AVCaptureVideoOrientation; raw values match its (1...4).
-enum CaptureOrientation: Int, Sendable { case portrait = 1, portraitUpsideDown = 2, landscapeRight = 3, landscapeLeft = 4 }
+public enum CaptureOrientation: Int, Sendable { case portrait = 1, portraitUpsideDown = 2, landscapeRight = 3, landscapeLeft = 4 }
 
 /// Manual phone-camera controls layered on AVFoundation's automatic defaults. Every mode defaults to
 /// "let the system decide" -- manual ISO/shutter/white-balance/lens-position only take effect when their
@@ -11,32 +11,52 @@ enum CaptureOrientation: Int, Sendable { case portrait = 1, portraitUpsideDown =
 /// see loadFromDefaults() below. Re-read and re-applied on every camera attach (switchTo(glasses:) in
 /// Streamer.swift), so a front/back switch always gets the current values, not a Go-Live-time snapshot.
 /// Device discovery lives in CameraDiscovery.swift; device writes live in CameraSettings+Apply.swift.
-struct CameraSettings: Sendable {
+public struct CameraSettings: Sendable {
     // ponytail: no longer a device selector (see captureDevice(position:)'s doc -- the zoom-scale rewrite
     // that fixed the ~6x-on-telephoto bug). Kept only so the lens strip/Settings picker have something to
     // highlight and old stored values keep loading; apply() never reads it.
-    var lens = "wide"                    // "wide" | "ultrawide" | "telephoto"
-    var zoom: Double = 1.0               // videoZoomFactor on whatever captureDevice(position:) attaches
+    public var lens = "wide"                    // "wide" | "ultrawide" | "telephoto"
+    public var zoom: Double = 1.0               // videoZoomFactor on whatever captureDevice(position:) attaches
 
-    var focusMode = "continuous"         // "continuous" | "auto" | "manual"
-    var lensPosition: Double = 0.5       // 0...1, used only when focusMode == "manual"
-    var smoothAutoFocus = true           // designed for video; hunting is very visible while walking
-    var faceDrivenAutoFocus = true
+    public var focusMode = "continuous"         // "continuous" | "auto" | "manual"
+    public var lensPosition: Double = 0.5       // 0...1, used only when focusMode == "manual"
+    public var smoothAutoFocus = true           // designed for video; hunting is very visible while walking
+    public var faceDrivenAutoFocus = true
 
-    var exposureManual = false
-    var exposureBiasEV: Double = 0       // applied under auto exposure; custom mode ignores it (metering only)
-    var manualISO: Double = 200
-    var manualShutterMs: Double = 33.3   // ~1/30s
-    var lowLightBoost = true
+    public var exposureManual = false
+    public var exposureBiasEV: Double = 0       // applied under auto exposure; custom mode ignores it (metering only)
+    public var manualISO: Double = 200
+    public var manualShutterMs: Double = 33.3   // ~1/30s
+    public var lowLightBoost = true
 
-    var whiteBalanceManual = false
-    var whiteBalanceTemperature: Double = 5500   // Kelvin
-    var whiteBalanceTint: Double = 0
+    public var whiteBalanceManual = false
+    public var whiteBalanceTemperature: Double = 5500   // Kelvin
+    public var whiteBalanceTint: Double = 0
 
-    var hdr = "auto"                     // "auto" | "on" | "off"
-    var torchLevel: Double = 0           // 0 = off, else 0<level<=1
-    var mirrored = false
-    var geometricDistortionCorrection = true
+    public var hdr = "auto"                     // "auto" | "on" | "off"
+    public var torchLevel: Double = 0           // 0 = off, else 0<level<=1
+    public var mirrored = false
+    public var geometricDistortionCorrection = true
+
+    public init(
+        zoom: Double = 1.0,
+        lensPosition: Double = 0.5,
+        exposureBiasEV: Double = 0,
+        manualISO: Double = 200,
+        manualShutterMs: Double = 33.3,
+        whiteBalanceTemperature: Double = 5500,
+        whiteBalanceTint: Double = 0,
+        torchLevel: Double = 0
+    ) {
+        self.zoom = zoom
+        self.lensPosition = lensPosition
+        self.exposureBiasEV = exposureBiasEV
+        self.manualISO = manualISO
+        self.manualShutterMs = manualShutterMs
+        self.whiteBalanceTemperature = whiteBalanceTemperature
+        self.whiteBalanceTint = whiteBalanceTint
+        self.torchLevel = torchLevel
+    }
 }
 
 extension CameraSettings {
@@ -45,7 +65,7 @@ extension CameraSettings {
     /// keys -- Settings never opened -- keep the struct's own defaults rather than reading UserDefaults'
     /// zero-value (0.0/false), which would silently mean "0x zoom" / "torch off forever" instead of
     /// "user hasn't chosen yet".
-    static func loadFromDefaults() -> CameraSettings {
+    public static func loadFromDefaults() -> CameraSettings {
         let d = UserDefaults.standard
         var s = CameraSettings()
         if let v = d.object(forKey: "camLens") as? String { s.lens = v }
@@ -74,13 +94,13 @@ extension CameraSettings {
     // MARK: pure clamps -- see Self.demo(). One generic clamp for zoom/ISO/bias/lens-position/torch (all
     // "keep a requested Double in range"); ms->s is the one conversion, kept separate. apply(_:to:) below
     // calls these exact functions, so the self-check exercises production logic, not a parallel copy.
-    static func clamped(_ requested: Double, min lo: Double, max hi: Double) -> Double {
+    public static func clamped(_ requested: Double, min lo: Double, max hi: Double) -> Double {
         Swift.min(Swift.max(requested, lo), hi)
     }
-    static func clampedSeconds(_ requestedMs: Double, minSeconds lo: Double, maxSeconds hi: Double) -> Double {
+    public static func clampedSeconds(_ requestedMs: Double, minSeconds lo: Double, maxSeconds hi: Double) -> Double {
         clamped(requestedMs / 1000, min: lo, max: hi)
     }
-    static func clampedGains(_ g: AVCaptureDevice.WhiteBalanceGains, max hi: Float) -> AVCaptureDevice.WhiteBalanceGains {
+    public static func clampedGains(_ g: AVCaptureDevice.WhiteBalanceGains, max hi: Float) -> AVCaptureDevice.WhiteBalanceGains {
         func c(_ v: Float) -> Float { Swift.min(Swift.max(v, 1.0), hi) }
         return .init(redGain: c(g.redGain), greenGain: c(g.greenGain), blueGain: c(g.blueGain))
     }
@@ -93,7 +113,7 @@ extension CameraSettings {
     /// with the glasses' raw HEVC feed), not an AVCaptureVideoPreviewLayer, so that convenience API isn't
     /// reachable here -- these are the same four 90-degree-rotation cases it computes internally.
     /// mirrored flips the x axis afterward, for the front camera when Settings' "Mirror" output toggle is on.
-    static func devicePoint(forViewPoint p: CGPoint, orientation: CaptureOrientation, mirrored: Bool) -> CGPoint {
+    public static func devicePoint(forViewPoint p: CGPoint, orientation: CaptureOrientation, mirrored: Bool) -> CGPoint {
         var x: CGFloat, y: CGFloat
         switch orientation {
         case .portrait:           x = p.y;     y = 1 - p.x
@@ -110,33 +130,33 @@ extension CameraSettings {
     /// and that practical ceiling is NOT exposed through any API. So, like SettingsView's bitrate ceilings
     /// and codec table, this is fixed, documented knowledge: one named constant instead of a magic 15.
     /// An ADDITIONAL ceiling on top of the device's own bounds, never a replacement.
-    static let maxUsableZoomFactor: Double = 15
+    public static let maxUsableZoomFactor: Double = 15
 }
 
 /// One entry in the live control strip ContentView opens over the preview. Tap-to-focus/expose is
 /// deliberately not a case here -- it's a gesture directly on the preview, not a strip button.
 /// Membership and order are user-configurable; ContentView renders `LiveCameraControl.order(from:)`'s
 /// result rather than a hardcoded HStack, so adding/removing/reordering entries needs no ContentView change.
-enum LiveCameraControl: String, CaseIterable {
+public enum LiveCameraControl: String, CaseIterable {
     // stabilization/mirror: deliberate re-attaches, not live connection tweaks.
     // AE/AF lock and the grid/level overlays are NOT cases here: lock is a long-press gesture on the
     // preview, and grid/level are Settings-only viewfinder toggles, never strip buttons.
     case lens, zoom, exposure, torch, whiteBalanceLock, stabilization, mirror
 
-    static let storageKey = "liveCameraControlOrder"
-    static let defaultOrder: [LiveCameraControl] = [.lens, .zoom, .exposure, .torch, .whiteBalanceLock, .stabilization, .mirror]
-    static let defaultOrderRaw = defaultOrder.map(\.rawValue).joined(separator: ",")
+    public static let storageKey = "liveCameraControlOrder"
+    public static let defaultOrder: [LiveCameraControl] = [.lens, .zoom, .exposure, .torch, .whiteBalanceLock, .stabilization, .mirror]
+    public static let defaultOrderRaw = defaultOrder.map(\.rawValue).joined(separator: ",")
 
     /// Pure parse: comma-joined rawValues -> ordered cases. Unknown tokens are dropped; an empty string
     /// or one that parses to nothing falls back to defaultOrder so there's never a stored value that
     /// leaves the strip with no way to bring controls back. See Self.demo() below.
-    static func order(from raw: String) -> [LiveCameraControl] {
+    public static func order(from raw: String) -> [LiveCameraControl] {
         let parsed = raw.split(separator: ",").compactMap { LiveCameraControl(rawValue: $0.trimmingCharacters(in: .whitespaces)) }
         return parsed.isEmpty ? defaultOrder : parsed
     }
 
     /// Row label for the Customise-strip screen -- the strip itself never shows this text, only icons.
-    var label: String {
+    public var label: String {
         switch self {
         case .lens: return "Lens"
         case .zoom: return "Zoom"
@@ -152,7 +172,7 @@ enum LiveCameraControl: String, CaseIterable {
 #if DEBUG
 extension CameraSettings {
     /// Self-check for the pure conversions -- no device, no capture session.
-    static func demo() {
+    public static func demo() {
         assert(clamped(5, min: 1, max: 3) == 3, "zoom ceilings")
         assert(clamped(0.2, min: 1, max: 3) == 1, "zoom floors")
         assert(clamped(2, min: 1, max: 3) == 2, "zoom passes through in range")

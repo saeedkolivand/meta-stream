@@ -15,7 +15,9 @@ let package = Package(
         .library(name: "CoreStorage", targets: ["CoreStorage"]),
         .library(name: "CoreNetwork", targets: ["CoreNetwork"]),
         .library(name: "ScreenIPC", targets: ["ScreenIPC"]),
-        .library(name: "ActivityShared", targets: ["ActivityShared"])
+        .library(name: "ActivityShared", targets: ["ActivityShared"]),
+        .library(name: "CoreUI", targets: ["CoreUI"]),
+        .library(name: "Camera", targets: ["Camera"])
     ],
     targets: [
         // Plain data shared by every feature: chat events, money, text patterns. Foundation only.
@@ -28,6 +30,10 @@ let package = Package(
         .target(name: "CoreNetwork", dependencies: ["CoreLogging", "CoreStorage"], swiftSettings: strict),
         // Contracts the extensions share with the app: screen-share frame files, Live Activity state.
         .target(name: "ScreenIPC", swiftSettings: strict),
-        .target(name: "ActivityShared", swiftSettings: strict)
+        .target(name: "ActivityShared", swiftSettings: strict),
+        // The shared look: theme colours, display names, strip pills/round buttons, settings sliders and toggles.
+        .target(name: "CoreUI", dependencies: ["CoreModel"], swiftSettings: strict),
+        // Phone camera: lens discovery, capabilities, CameraSettings and applying them to an AVCaptureDevice.
+        .target(name: "Camera", dependencies: ["CoreLogging"], swiftSettings: strict)
     ]
 )

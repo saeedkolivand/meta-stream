@@ -1,3 +1,4 @@
+import CoreUI
 import SwiftUI
 
 /// Build one scene: arrange widgets on a live canvas, pick the camera it switches to, put it on stream.

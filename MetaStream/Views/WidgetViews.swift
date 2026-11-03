@@ -3,6 +3,7 @@
 // Dynamic Type) and every view lays out at exactly its natural size.
 import CoreImage.CIFilterBuiltins
 import CoreModel
+import CoreUI
 import SwiftUI
 import UIKit
 

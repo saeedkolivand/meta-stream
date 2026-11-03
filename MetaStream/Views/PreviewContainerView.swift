@@ -1,5 +1,7 @@
 import AVFoundation
+import Camera
 import CoreMotion
+import CoreUI
 import SwiftUI
 
 final class PreviewUIView: UIView {

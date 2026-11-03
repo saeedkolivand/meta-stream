@@ -1,6 +1,7 @@
 // Ready-made Starting / BRB / Ending scenes (the Mono and Ticker looks), built from ordinary widget layers so every
 // piece stays editable afterwards. Positions are px of a 1920x1080 frame; widgets scale by the short side.
 import CoreGraphics
+import CoreUI
 
 enum SceneTemplate: String, CaseIterable {
     case mono = "Mono", ticker = "Ticker"

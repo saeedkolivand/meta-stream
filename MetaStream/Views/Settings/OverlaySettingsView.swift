@@ -1,3 +1,4 @@
+import CoreUI
 import SwiftUI
 
 /// The Scenes screen: a grid of scene cards (thumbnail, role, on-stream badge). Tap one to arrange its widgets, hold for

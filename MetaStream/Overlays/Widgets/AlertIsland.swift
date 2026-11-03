@@ -2,6 +2,7 @@
 // the render loop just asks for a pose and draws it (and tests can pin the curve without a renderer).
 import CoreGraphics
 import CoreModel
+import CoreUI
 import Foundation
 import HaishinKit
 

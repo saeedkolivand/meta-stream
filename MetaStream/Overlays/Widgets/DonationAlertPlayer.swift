@@ -2,6 +2,7 @@
 // Alerts stay one at a time: the widget loop awaits play() like it awaits AlertPlayer.play.
 import CoreGraphics
 import CoreModel
+import CoreUI
 import Foundation
 import HaishinKit
 

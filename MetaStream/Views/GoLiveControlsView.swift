@@ -1,3 +1,4 @@
+import CoreUI
 import SwiftUI
 
 /// Fixed bottom controls: GO LIVE, source picker, chat/settings shortcuts plus the always-on-screen

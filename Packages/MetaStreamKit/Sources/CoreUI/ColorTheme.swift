@@ -2,17 +2,17 @@ import SwiftUI
 
 /// Named colour sets shared by the scene templates and the Instagram story card. One setting (`colorTheme`).
 /// Values are 0xFFRRGGBB.
-enum ColorTheme: String, CaseIterable, Identifiable {
+public enum ColorTheme: String, CaseIterable, Identifiable {
     case kick, red, saffron, turquoise, purple, paper
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
     /// The chosen theme (Settings > Theme & story); Kick if unset.
-    static var current: ColorTheme {
+    public static var current: ColorTheme {
         UserDefaults.standard.string(forKey: "colorTheme").flatMap(ColorTheme.init(rawValue:)) ?? .kick
     }
 
-    var name: String {
+    public var name: String {
         switch self {
         case .kick: "Kick"
         case .red: "Live red"
@@ -23,7 +23,7 @@ enum ColorTheme: String, CaseIterable, Identifiable {
         }
     }
 
-    var faName: String {
+    public var faName: String {
         switch self {
         case .kick: "سبز کیک"
         case .red: "قرمز لایو"
@@ -46,19 +46,19 @@ enum ColorTheme: String, CaseIterable, Identifiable {
         }
     }
 
-    var bg: UInt32 { palette[0] }
-    var surface: UInt32 { palette[1] }
-    var text: UInt32 { palette[2] }
-    var muted: UInt32 { palette[3] }
-    var accent: UInt32 { palette[4] }
-    var onAccent: UInt32 { palette[5] }
+    public var bg: UInt32 { palette[0] }
+    public var surface: UInt32 { palette[1] }
+    public var text: UInt32 { palette[2] }
+    public var muted: UInt32 { palette[3] }
+    public var accent: UInt32 { palette[4] }
+    public var onAccent: UInt32 { palette[5] }
     /// The Ticker scene's photo-stand-in backdrop: Kick keeps its slate grey, the rest use their surface.
-    var backdrop: UInt32 { self == .kick ? 0xFF2B_3138 : surface }
+    public var backdrop: UInt32 { self == .kick ? 0xFF2B_3138 : surface }
 
     /// "#RRGGBB", for Instagram's background layer colours.
-    static func hex(_ argb: UInt32) -> String { String(format: "#%06X", argb & 0xFF_FFFF) }
+    public static func hex(_ argb: UInt32) -> String { String(format: "#%06X", argb & 0xFF_FFFF) }
 
-    func color(_ argb: UInt32) -> Color {
+    public func color(_ argb: UInt32) -> Color {
         Color(.sRGB, red: Double((argb >> 16) & 0xFF) / 255, green: Double((argb >> 8) & 0xFF) / 255,
               blue: Double(argb & 0xFF) / 255, opacity: 1)
     }

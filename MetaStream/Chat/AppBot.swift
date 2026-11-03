@@ -2,6 +2,7 @@ import CoreLogging
 import CoreModel
 import CoreNetwork
 import CoreStorage
+import CoreUI
 import Foundation
 import UIKit
 

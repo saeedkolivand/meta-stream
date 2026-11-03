@@ -6,7 +6,7 @@ import CoreMedia
 /// helper so focus/exposure/WB/image failures stay local to their group. Callers use `apply(_:to:log:)`
 /// only; the per-group helpers are internal for focus.
 extension CameraSettings {
-    static func apply(_ s: CameraSettings, to device: AVCaptureDevice, log: Bool = true) {
+    public static func apply(_ s: CameraSettings, to device: AVCaptureDevice, log: Bool = true) {
         do { try device.lockForConfiguration() } catch {
             applog("stream", "camera settings: lockForConfiguration failed: \(error.localizedDescription)", error: true)
             return

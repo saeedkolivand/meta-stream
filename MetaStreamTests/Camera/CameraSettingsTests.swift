@@ -1,3 +1,4 @@
+import Camera
 import XCTest
 import AVFoundation
 import CoreGraphics

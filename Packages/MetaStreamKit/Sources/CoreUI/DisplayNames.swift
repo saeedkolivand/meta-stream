@@ -3,13 +3,13 @@ import SwiftUI
 
 /// Shared display names + small chat-presentation helpers. Single home for every mode/id -> label
 /// switch so ContentView, Settings and StreamManager never drift apart with three copies.
-enum DisplayNames {
-    static func platformName(_ id: String) -> String {
+public enum DisplayNames {
+    public static func platformName(_ id: String) -> String {
         ["kick": "Kick", "twitch": "Twitch", "youtube": "YouTube", "restream": "Restream",
          "instagram": "Instagram", "tiktok": "TikTok", "custom": "Custom"][id] ?? id
     }
 
-    static func stabilizationShort(_ mode: String) -> String {
+    public static func stabilizationShort(_ mode: String) -> String {
         switch mode {
         case "standard": return "STD"
         case "cinematic": return "CINE"
@@ -18,7 +18,7 @@ enum DisplayNames {
         }
     }
 
-    static func stabilizationLabel(_ mode: String) -> String {
+    public static func stabilizationLabel(_ mode: String) -> String {
         switch mode {
         case "standard": return "Standard"
         case "cinematic": return "Cinematic"
@@ -27,12 +27,12 @@ enum DisplayNames {
         }
     }
 
-    static func originColor(_ origin: String) -> Color {
+    public static func originColor(_ origin: String) -> Color {
         origin == "twitch" ? .purple : origin == "youtube" ? .red : .green
     }
 
     /// SF Symbol + short label + tint per normalized badge id (see ChatBadges).
-    static func badgeStyle(_ badge: String) -> (symbol: String, label: String, color: Color) {
+    public static func badgeStyle(_ badge: String) -> (symbol: String, label: String, color: Color) {
         switch badge {
         case "broadcaster": return ("video.fill", "HOST", .red)
         case "moderator": return ("shield.fill", "MOD", .green)
@@ -46,12 +46,12 @@ enum DisplayNames {
     }
 
     /// Username color: the sender's own color lifted to a readable luminance, else the origin color.
-    static func nameColor(_ e: ChatEvent) -> Color {
+    public static func nameColor(_ e: ChatEvent) -> Color {
         guard let hex = e.color, let c = ChatBadges.readableRGB(hex: hex) else { return originColor(e.origin) }
         return Color(red: c.r, green: c.g, blue: c.b)
     }
 
-    static func eventSummary(_ e: ChatEvent) -> String {
+    public static func eventSummary(_ e: ChatEvent) -> String {
         switch e.kind {
         case .tip:
             return "\(e.user) tipped \(e.tipMoney.display)" + (e.text.isEmpty ? "" : " — \(e.text)")
@@ -67,12 +67,12 @@ enum DisplayNames {
 
 extension ChatEvent {
     /// A tip in the currency it was given in; events without one carry US cents.
-    var tipMoney: Money { money ?? Money(Decimal(amountCents) / 100, "USD") }
+    public var tipMoney: Money { money ?? Money(Decimal(amountCents) / 100, "USD") }
     /// What a `.cheer` counts: Kick's currency is KICKs, Twitch's is bits.
-    var cheerUnit: String { origin == "kick" ? "KICKs" : "bits" }
+    public var cheerUnit: String { origin == "kick" ? "KICKs" : "bits" }
 
     /// What the goal's donation list says about this event: "Arash · gifted 5 subs", "Sara · 500 KICKs · gg".
-    var goalNote: String {
+    public var goalNote: String {
         let what: String
         switch kind {
         case .cheer: what = "\(count) \(cheerUnit)"
@@ -88,10 +88,10 @@ extension ChatEvent {
 
 /// Migrates the old `chatSite` UserDefaults key to `chatOrigin`. Call before first read; safe to call
 /// repeatedly. Keeps users' existing choice after the rename.
-enum ChatOriginKey {
-    static let newKey = "chatOrigin"
-    static let oldKey = "chatSite"
-    static func migrate() {
+public enum ChatOriginKey {
+    public static let newKey = "chatOrigin"
+    public static let oldKey = "chatSite"
+    public static func migrate() {
         let d = UserDefaults.standard
         if d.object(forKey: newKey) == nil, let old = d.string(forKey: oldKey) {
             d.set(old, forKey: newKey)
@@ -102,8 +102,8 @@ enum ChatOriginKey {
 /// Shared button chrome for the live screen: one capsule pill and one round/strip button so HUD,
 /// quick controls and camera strip share sizing, fonts and haptics instead of three copies.
 @MainActor
-struct StripStyles {
-    static func pill(_ icon: String, _ text: String, _ color: Color) -> some View {
+public struct StripStyles {
+    public static func pill(_ icon: String, _ text: String, _ color: Color) -> some View {
         HStack(spacing: 6) {
             Image(systemName: icon).foregroundStyle(color)
             Text(text).lineLimit(1)
@@ -113,7 +113,7 @@ struct StripStyles {
         .background(.ultraThinMaterial, in: Capsule())
     }
 
-    static func stripButton<Label: View>(@ViewBuilder label: () -> Label, action: @escaping () -> Void) -> some View {
+    public static func stripButton<Label: View>(@ViewBuilder label: () -> Label, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             label()
         }
@@ -121,7 +121,7 @@ struct StripStyles {
     }
 
     /// `tint` fills the circle with a colour (white glyph) and wins over `filled`; nil keeps the white/material look.
-    static func roundButton(_ icon: String, filled: Bool, tint: Color? = nil, size: CGFloat = 52,
+    public static func roundButton(_ icon: String, filled: Bool, tint: Color? = nil, size: CGFloat = 52,
                             action: @escaping () -> Void) -> some View {
         stripButton(label: {
             Image(systemName: icon)
@@ -135,6 +135,6 @@ struct StripStyles {
 }
 
 @MainActor
-func hapticTap(strong: Bool = false) {
+public func hapticTap(strong: Bool = false) {
     UIImpactFeedbackGenerator(style: strong ? .heavy : .light).impactOccurred()
 }

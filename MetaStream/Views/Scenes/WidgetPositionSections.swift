@@ -1,3 +1,4 @@
+import CoreUI
 import SwiftUI
 
 /// The Position tab: a 3x3 anchor grid, size, stacking order, visibility, name and delete.

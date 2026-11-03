@@ -1,3 +1,4 @@
+import CoreUI
 import SwiftUI
 
 /// Four arrows that move the selected widget a hair at a time. Holding one repeats (after 0.4 s, then every 0.08 s).

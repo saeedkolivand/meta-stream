@@ -65,6 +65,10 @@ targets:
         product: ScreenIPC
       - package: MetaStreamKit
         product: ActivityShared
+      - package: MetaStreamKit
+        product: CoreUI
+      - package: MetaStreamKit
+        product: Camera
       - package: MetaWearablesDAT
         product: MWDATCore
       - package: MetaWearablesDAT
@@ -94,4 +98,8 @@ targets:
         product: CoreNetwork
       - package: MetaStreamKit
         product: ActivityShared
+      - package: MetaStreamKit
+        product: CoreUI
+      - package: MetaStreamKit
+        product: Camera
 

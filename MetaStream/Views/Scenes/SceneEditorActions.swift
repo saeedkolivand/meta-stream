@@ -1,3 +1,4 @@
+import CoreUI
 import SwiftUI
 
 /// What the editor does to its working copy of the layers, and how that reaches the store.

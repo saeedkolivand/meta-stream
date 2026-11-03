@@ -8,17 +8,17 @@ import Foundation
 /// Lens choice is not a device property -- it's a different physical AVCaptureDevice. Discovering one
 /// per attach (rather than caching) is what makes "re-evaluated per camera" (front vs back capability)
 /// actually happen: DiscoverySession runs fresh against whichever position is being attached right now.
-enum CameraLens: String, CaseIterable {
+public enum CameraLens: String, CaseIterable {
     case wide, ultrawide, telephoto
 
-    var deviceType: AVCaptureDevice.DeviceType {
+    public var deviceType: AVCaptureDevice.DeviceType {
         switch self {
         case .wide: return .builtInWideAngleCamera
         case .ultrawide: return .builtInUltraWideCamera
         case .telephoto: return .builtInTelephotoCamera
         }
     }
-    var label: String {
+    public var label: String {
         switch self {
         case .wide: return "Wide (1x)"
         case .ultrawide: return "Ultra-wide"
@@ -29,14 +29,20 @@ enum CameraLens: String, CaseIterable {
 
 /// One button in the live lens-switch row: a physical lens paired with the exact zoom factor (and its
 /// display label) THIS device's hardware actually puts it at -- see CameraSettings.lensOptions(position:).
-struct LensOption: Equatable {
-    let lens: CameraLens
-    let zoomFactor: Double
-    let label: String
+public struct LensOption: Equatable {
+    public let lens: CameraLens
+    public let zoomFactor: Double
+    public let label: String
+
+    public init(lens: CameraLens, zoomFactor: Double, label: String) {
+        self.lens = lens
+        self.zoomFactor = zoomFactor
+        self.label = label
+    }
 }
 
 extension CameraSettings {
-    static func device(lens: String, position: AVCaptureDevice.Position) -> AVCaptureDevice? {
+    public static func device(lens: String, position: AVCaptureDevice.Position) -> AVCaptureDevice? {
         let type = CameraLens(rawValue: lens)?.deviceType ?? .builtInWideAngleCamera
         let found = AVCaptureDevice.DiscoverySession(deviceTypes: [type], mediaType: .video, position: position).devices.first
         if let found { return found }
@@ -44,7 +50,7 @@ extension CameraSettings {
         return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
     }
 
-    static func availableLenses(position: AVCaptureDevice.Position) -> [CameraLens] {
+    public static func availableLenses(position: AVCaptureDevice.Position) -> [CameraLens] {
         CameraLens.allCases.filter {
             AVCaptureDevice.DiscoverySession(deviceTypes: [$0.deviceType], mediaType: .video, position: position).devices.first != nil
         }
@@ -56,11 +62,11 @@ extension CameraSettings {
             ?? AVCaptureDevice.default(.builtInDualCamera, for: .video, position: position)
     }
 
-    static func captureDevice(position: AVCaptureDevice.Position) -> AVCaptureDevice? {
+    public static func captureDevice(position: AVCaptureDevice.Position) -> AVCaptureDevice? {
         virtualDevice(position: position) ?? device(lens: "wide", position: position)
     }
 
-    static func lensOptions(position: AVCaptureDevice.Position) -> [LensOption] {
+    public static func lensOptions(position: AVCaptureDevice.Position) -> [LensOption] {
         let available = availableLenses(position: position)
         guard available.count > 1 else { return [] }
 
@@ -98,12 +104,12 @@ extension CameraSettings {
         return zoomMultiplier(wideFOVDegrees: Double(wide.activeFormat.videoFieldOfView), otherFOVDegrees: Double(other.activeFormat.videoFieldOfView))
     }
 
-    static func zoomMultiplier(wideFOVDegrees: Double, otherFOVDegrees: Double) -> Double {
+    public static func zoomMultiplier(wideFOVDegrees: Double, otherFOVDegrees: Double) -> Double {
         let halfWide = wideFOVDegrees / 2 * .pi / 180, halfOther = otherFOVDegrees / 2 * .pi / 180
         return tan(halfWide) / tan(halfOther)
     }
 
-    static func multiplierLabel(_ m: Double) -> String {
+    public static func multiplierLabel(_ m: Double) -> String {
         let rounded = (m * 2).rounded() / 2
         return rounded.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", rounded) : String(format: "%.1f", rounded)
     }
@@ -113,23 +119,23 @@ extension CameraSettings {
 /// camera position picker changes, since front/back genuinely differ. One probe per POSITION, not per
 /// lens: captureDevice(position:) attaches one (virtual, usually) device covering every lens, so that's
 /// the only device whose capabilities matter. `nil` fields mean "camera unavailable".
-struct CameraCapabilities {
-    var zoomRange: ClosedRange<Double>
-    var focusAuto: Bool
-    var focusContinuous: Bool
-    var focusManual: Bool
-    var smoothAutoFocus: Bool
-    var exposureManual: Bool
-    var isoRange: ClosedRange<Double>
-    var shutterRangeMs: ClosedRange<Double>
-    var exposureBiasRange: ClosedRange<Double>
-    var lowLightBoost: Bool
-    var whiteBalanceManual: Bool
-    var hdr: Bool
-    var torch: Bool
-    var geometricDistortionCorrection: Bool
+public struct CameraCapabilities {
+    public var zoomRange: ClosedRange<Double>
+    public var focusAuto: Bool
+    public var focusContinuous: Bool
+    public var focusManual: Bool
+    public var smoothAutoFocus: Bool
+    public var exposureManual: Bool
+    public var isoRange: ClosedRange<Double>
+    public var shutterRangeMs: ClosedRange<Double>
+    public var exposureBiasRange: ClosedRange<Double>
+    public var lowLightBoost: Bool
+    public var whiteBalanceManual: Bool
+    public var hdr: Bool
+    public var torch: Bool
+    public var geometricDistortionCorrection: Bool
 
-    static func probe(position: AVCaptureDevice.Position) -> CameraCapabilities? {
+    public static func probe(position: AVCaptureDevice.Position) -> CameraCapabilities? {
         guard let device = CameraSettings.captureDevice(position: position) else { return nil }
         let f = device.activeFormat
         return CameraCapabilities(
@@ -148,6 +154,38 @@ struct CameraCapabilities {
             torch: device.hasTorch,
             geometricDistortionCorrection: device.isGeometricDistortionCorrectionSupported)
     }
+
+    public init(
+        zoomRange: ClosedRange<Double>,
+        focusAuto: Bool,
+        focusContinuous: Bool,
+        focusManual: Bool,
+        smoothAutoFocus: Bool,
+        exposureManual: Bool,
+        isoRange: ClosedRange<Double>,
+        shutterRangeMs: ClosedRange<Double>,
+        exposureBiasRange: ClosedRange<Double>,
+        lowLightBoost: Bool,
+        whiteBalanceManual: Bool,
+        hdr: Bool,
+        torch: Bool,
+        geometricDistortionCorrection: Bool
+    ) {
+        self.zoomRange = zoomRange
+        self.focusAuto = focusAuto
+        self.focusContinuous = focusContinuous
+        self.focusManual = focusManual
+        self.smoothAutoFocus = smoothAutoFocus
+        self.exposureManual = exposureManual
+        self.isoRange = isoRange
+        self.shutterRangeMs = shutterRangeMs
+        self.exposureBiasRange = exposureBiasRange
+        self.lowLightBoost = lowLightBoost
+        self.whiteBalanceManual = whiteBalanceManual
+        self.hdr = hdr
+        self.torch = torch
+        self.geometricDistortionCorrection = geometricDistortionCorrection
+    }
 }
 
 /// What resolutions THIS position can actually shoot, and for each, the frame rates and stabilisation
@@ -155,27 +193,33 @@ struct CameraCapabilities {
 /// than raw device.formats enumeration -- Streamer's capture pipeline already selects resolution via
 /// mixer.setSessionPreset(phoneQuality.sessionPreset), so probing exactly those presets keeps this
 /// incapable of ever offering a resolution the capture side can't actually set.
-struct CameraFormatCapabilities {
-    struct Resolution: Equatable {
-        let height: Int
-        let frameRates: [Int]
-        let stabilizationModes: [String]
+public struct CameraFormatCapabilities {
+    public struct Resolution: Equatable {
+        public let height: Int
+        public let frameRates: [Int]
+        public let stabilizationModes: [String]
 
-        func nearestFps(to desired: Int) -> Int {
+        public func nearestFps(to desired: Int) -> Int {
             frameRates.min { abs($0 - desired) < abs($1 - desired) } ?? desired
         }
-        func nearestStabilization(to desired: String) -> String {
+        public func nearestStabilization(to desired: String) -> String {
             stabilizationModes.contains(desired) ? desired : "off"
         }
+
+        public init(height: Int, frameRates: [Int], stabilizationModes: [String]) {
+            self.height = height
+            self.frameRates = frameRates
+            self.stabilizationModes = stabilizationModes
+        }
     }
-    let resolutions: [Resolution]
+    public let resolutions: [Resolution]
 
     private static let candidates: [(height: Int, preset: AVCaptureSession.Preset, dims: (Int, Int))] =
         [(720, .hd1280x720, (1280, 720)), (1080, .hd1920x1080, (1920, 1080)), (2160, .hd4K3840x2160, (3840, 2160))]
     private static let standardFps = [15, 24, 25, 30, 50, 60, 120, 240]
     private static let stabilizationNames = ["standard", "cinematic", "action"]
 
-    static func probe(position: AVCaptureDevice.Position) -> CameraFormatCapabilities? {
+    public static func probe(position: AVCaptureDevice.Position) -> CameraFormatCapabilities? {
         guard let device = CameraSettings.captureDevice(position: position) else {
             applog("stream", "format probe: no capture device at position=\(position == .front ? "front" : "back")", error: true)
             return nil
@@ -222,7 +266,11 @@ struct CameraFormatCapabilities {
         return CameraFormatCapabilities(resolutions: resolutions.sorted { $0.height < $1.height })
     }
 
-    func nearestResolution(to desiredHeight: Int) -> Resolution? {
+    public func nearestResolution(to desiredHeight: Int) -> Resolution? {
         resolutions.min { abs($0.height - desiredHeight) < abs($1.height - desiredHeight) }
+    }
+
+    public init(resolutions: [Resolution]) {
+        self.resolutions = resolutions
     }
 }
