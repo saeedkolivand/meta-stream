@@ -10,6 +10,8 @@ sealed interface EventSubFrame {
 
     data class Notification(val event: ChatEvent) : EventSubFrame
 
+    data class Mod(val action: Moderation) : EventSubFrame
+
     data object Ignored : EventSubFrame
 }
 
@@ -21,8 +23,17 @@ internal fun parseEventSubFrame(text: String): EventSubFrame = runCatching {
     when (meta.getString("message_type")) {
         "session_welcome" -> EventSubFrame.Welcome(payload.getJSONObject("session").getString("id"))
         "session_reconnect" -> EventSubFrame.Reconnect(payload.getJSONObject("session").getString("reconnect_url"))
-        "notification" -> parseEventSubEvent(meta.getString("subscription_type"), payload.getJSONObject("event"))
-            ?.let { EventSubFrame.Notification(it) } ?: EventSubFrame.Ignored
+        "notification" -> {
+            val e = payload.getJSONObject("event")
+            when (val type = meta.getString("subscription_type")) {
+                "channel.chat.clear" -> EventSubFrame.Mod(Moderation.Clear)
+                "channel.chat.message_delete" -> EventSubFrame.Mod(Moderation.Remove(msgId = e.getString("message_id")))
+                // a ban or timeout clears that user's messages
+                "channel.chat.clear_user_messages" ->
+                    EventSubFrame.Mod(Moderation.Remove(userId = e.optString("target_user_id"), login = e.optString("target_user_login")))
+                else -> parseEventSubEvent(type, e)?.let { EventSubFrame.Notification(it) } ?: EventSubFrame.Ignored
+            }
+        }
         else -> EventSubFrame.Ignored
     }
 }.getOrDefault(EventSubFrame.Ignored)
@@ -41,20 +52,37 @@ internal fun parseEventSubEvent(type: String, event: JSONObject): ChatEvent? = w
         } else {
             val badges = event.optJSONArray("badges")
             val ids = (0 until (badges?.length() ?: 0)).asSequence().map { badges!!.getJSONObject(it).optString("set_id") }
-            ChatEvent("twitch", user, text, color = hexOrNull(event.optString("color")), badges = normalizeRoles(ids))
+            ChatEvent(
+                "twitch",
+                user,
+                text,
+                color = hexOrNull(event.optString("color")),
+                badges = normalizeRoles(ids),
+                msgId = event.optString("message_id"),
+                userId = event.optString("chatter_user_id")
+            )
         }
     }
     "channel.follow" -> alert(event, "user_name", Kind.Follow)
-    "channel.subscribe" -> alert(event, "user_name", Kind.Subscribe)
+    // Recipients of a gift arrive here too (is_gift); channel.subscription.gift already counts them.
+    "channel.subscribe" -> if (event.optBoolean(
+            "is_gift"
+        )
+    ) {
+        null
+    } else {
+        alert(event, "user_name", Kind.Subscribe)?.copy(tier = twitchTier(event))
+    }
     "channel.subscription.gift" -> ChatEvent(
         "twitch",
         if (event.optBoolean("is_anonymous")) "Anonymous" else event.optString("user_name").ifEmpty { "Anonymous" },
         "",
         kind = Kind.Subscribe,
-        count = event.optInt("total")
+        count = maxOf(event.optInt("total"), 1),
+        tier = twitchTier(event)
     )
     "channel.subscription.message" -> alert(event, "user_name", Kind.Subscribe)
-        ?.copy(text = event.optJSONObject("message")?.optString("text").orEmpty())
+        ?.copy(text = event.optJSONObject("message")?.optString("text").orEmpty(), tier = twitchTier(event))
     "channel.raid" -> alert(event, "from_broadcaster_user_name", Kind.Raid, count = event.optInt("viewers"))
     "channel.cheer" -> ChatEvent(
         "twitch",
@@ -105,3 +133,6 @@ private fun youtubeRoles(author: JSONObject) = sequence {
     if (author.optBoolean("isChatSponsor")) yield("subscriber")
     if (author.optBoolean("isVerified")) yield("verified")
 }
+
+/** Twitch's "1000" / "2000" / "3000" as 1-3. */
+private fun twitchTier(event: JSONObject) = (event.optString("tier").toIntOrNull() ?: 1000) / 1000

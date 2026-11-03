@@ -16,6 +16,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.camera.Cam
+import com.saeedkolivand.metastream.platforms.Kick
+import com.saeedkolivand.metastream.platforms.Twitch
+import com.saeedkolivand.metastream.platforms.YouTube
 import com.saeedkolivand.metastream.privacy.Privacy
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
@@ -60,6 +63,9 @@ internal fun Hud() {
     Row(Modifier.horizontalScroll(rememberScrollState()).padding(top = 4.dp), Arrangement.spacedBy(8.dp)) {
         if (Engine.live) {
             TimerPill()
+            LevelBar()
+            // Same sum as the {viewers} widget token: Kick + Twitch + YouTube.
+            Pill(R.drawable.ic_eye, "${Kick.viewers + Twitch.viewers + YouTube.viewers}", Color.White)
             val rate = if (Health.fps > 0) "${Health.fps} fps · ${Health.kbps} kbps" else "${Health.kbps} kbps"
             val tint = when (level(NetStats.samples)) {
                 Level.Ok -> Color.White
@@ -80,6 +86,7 @@ internal fun Hud() {
             Source.Phone -> R.drawable.ic_phone to "Phone"
             Source.Usb -> R.drawable.ic_usb to "USB"
             Source.Glasses -> R.drawable.ic_glasses to "Glasses"
+            Source.Screen -> R.drawable.ic_screen to "Screen"
         }
         Pill(icon, name, Color.White)
         ScenePill()

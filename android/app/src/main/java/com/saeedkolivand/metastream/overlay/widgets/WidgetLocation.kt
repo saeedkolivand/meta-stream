@@ -54,6 +54,12 @@ internal object WidgetLocation {
         return String.format(Locale.US, if (imperial) "%.1f mi" else "%.1f km", meters / if (imperial) 1609.344 else 1000.0)
     }
 
+    /** Metres driven since [since] (the go-live time); same counter as [distanceText]. */
+    fun metersSince(since: Long?): Double {
+        distanceText(since)
+        return meters
+    }
+
     val cityText: String
         get() {
             ensureStarted()

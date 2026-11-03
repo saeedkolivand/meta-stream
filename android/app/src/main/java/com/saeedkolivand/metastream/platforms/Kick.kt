@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.saeedkolivand.metastream.BuildConfig
+import com.saeedkolivand.metastream.core.applog
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.json.JSONArray
 import org.json.JSONObject
@@ -25,9 +26,10 @@ object Kick : Account("Kick", "kick") {
     var slug by mutableStateOf("")
         private set
     private var streamUrl = ""
-    private var userId = 0
+    internal var userId = 0
+        private set
 
-    private val api = Endpoint("https://api.kick.com", "kickAccess") {
+    internal val api = Endpoint("https://api.kick.com", "kickAccess") {
         saveTokens(
             Net.form(
                 TOKEN_URL,
@@ -48,7 +50,10 @@ object Kick : Account("Kick", "kick") {
             .addQueryParameter("response_type", "code")
             .addQueryParameter("client_id", BuildConfig.KICK_CLIENT_ID)
             .addQueryParameter("redirect_uri", PlatformConfig.WEB_REDIRECT)
-            .addQueryParameter("scope", "user:read channel:read channel:write chat:write streamkey:read")
+            .addQueryParameter(
+                "scope",
+                "user:read channel:read channel:write chat:write streamkey:read moderation:ban moderation:chat_message:manage ads:write"
+            )
             .addQueryParameter("code_challenge", Pkce.s256(verifier))
             .addQueryParameter("code_challenge_method", "S256")
             .addQueryParameter("state", state)
@@ -115,6 +120,16 @@ object Kick : Account("Kick", "kick") {
             "/public/v1/chat",
             body = JSONObject().put("content", text).put("type", "user").put("broadcaster_user_id", userId)
         )
+    }
+
+    override suspend fun refreshViewers() {
+        try {
+            val st = api.call("GET", "/public/v1/channels").objects("data").firstOrNull()?.optJSONObject("stream") ?: return
+            live = st.optBoolean("is_live")
+            viewers = st.optInt("viewer_count")
+        } catch (e: PlatformException) {
+            applog("api", "kick viewers: ${e.message}")
+        }
     }
 
     override fun disconnect() {

@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.saeedkolivand.metastream.streaming.Bonding
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Health
 import com.saeedkolivand.metastream.streaming.NetStats
@@ -107,6 +108,15 @@ private fun PathLine() {
 }
 
 @Composable
+private fun Links() {
+    SectionTitle("Bonding links · last 10 s")
+    Bonding.links.forEach {
+        val state = if (it.up) "${it.share}%" else "down"
+        Figure("${it.label}${if (it.backup) " (backup)" else ""}  $state", 14.sp, FontWeight.Normal, if (it.up) Color.White else Orange)
+    }
+}
+
+@Composable
 private fun Changes() {
     SectionTitle("Bitrate changes")
     if (NetStats.changes.isEmpty()) Note("None yet.")
@@ -146,6 +156,7 @@ internal fun NetworkSheet() {
                 Session(now)
             }
             PathLine()
+            if (Engine.live && Bonding.links.isNotEmpty()) Links()
             if (Engine.live) Changes() else Note("Go live to see bitrate and drops.")
         }
     }

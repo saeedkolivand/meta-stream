@@ -1,7 +1,9 @@
 package com.saeedkolivand.metastream.ui
 
+import android.app.PictureInPictureParams
 import android.content.Intent
 import android.os.Bundle
+import android.util.Rational
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -21,10 +23,15 @@ import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import com.saeedkolivand.metastream.core.AppSettings
+import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.platforms.OAuth
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.StreamingService
 import kotlinx.coroutines.CompletableDeferred
+
+/** True while the activity is a PiP window: MainScreen then shows the preview alone. */
+internal var inPip by mutableStateOf(false)
+    private set
 
 class MainActivity : ComponentActivity() {
     // Camera permission for the glasses is granted in the Meta AI app; one request at a time is enough here.
@@ -45,21 +52,35 @@ class MainActivity : ComponentActivity() {
         splashScreen.setOnExitAnimationListener { it.remove() }
         super.onCreate(savedInstanceState)
         Engine.setWearablesAsker(::askWearables)
+        addOnPictureInPictureModeChangedListener { inPip = it.isInPictureInPictureMode }
         OAuth.handle(intent.data) // cold start from a sign-in redirect
         // Always dark like iOS (.preferredColorScheme(.dark)): white system-bar icons over the black preview.
         val dark = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
         enableEdgeToEdge(dark, dark)
         // Surface gives text a content color; without it plain Text drew black on the dark window.
         setContent {
-            // iOS keepAwake (Settings > Diagnostics), default on.
+            // Read here, not inside the effect: reads in a SideEffect don't trigger a recomposition.
+            val live = Engine.live
+            val awake = AppSettings.keepAwake // iOS keepAwake (Settings > Diagnostics), default on
             SideEffect {
-                if (AppSettings.keepAwake) {
+                // While live, leaving the app shrinks it to a picture-in-picture preview (iOS PiP); the stream carries on.
+                val (w, h) = Overlays.outW to Overlays.outH
+                val ratio = if (w > 0 && h > 0) Rational(w, h) else null
+                setPictureInPictureParams(PictureInPictureParams.Builder().setAutoEnterEnabled(live).setAspectRatio(ratio).build())
+                if (awake) {
                     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 } else {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 }
             }
-            MaterialTheme(darkColorScheme(primary = Color(0xFF0A84FF), onPrimary = Color.White)) {
+            // iOS-like: segmented picks and filled tones in system grey rather than Material's purple.
+            val scheme = darkColorScheme(
+                primary = Color(0xFF0A84FF),
+                onPrimary = Color.White,
+                secondaryContainer = Color(0xFF3A3A3C),
+                onSecondaryContainer = Color.White
+            )
+            MaterialTheme(scheme) {
                 // Cold launch only: rotation/recreation restores false. The app composes underneath right away.
                 var showSplash by rememberSaveable { mutableStateOf(savedInstanceState == null) }
                 Box {

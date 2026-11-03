@@ -24,8 +24,10 @@ import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.overlay.AlertStyle
 import com.saeedkolivand.metastream.overlay.ChatStyle
 import com.saeedkolivand.metastream.overlay.EventListStyle
+import com.saeedkolivand.metastream.overlay.GoalStyle
 import com.saeedkolivand.metastream.overlay.Layer
 import com.saeedkolivand.metastream.overlay.LayerType
+import com.saeedkolivand.metastream.overlay.NowPlayingStyle
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.QrStyle
 import com.saeedkolivand.metastream.overlay.TextStyle as TextWidgetStyle
@@ -40,10 +42,13 @@ internal enum class NewWidget(val title: String) {
     Label("Text"),
     Clock("Clock"),
     LiveTime("Live time"),
+    Viewers("Viewers"),
     Drive("Drive"),
     Socials("Socials"),
     Image("Image or GIF"),
     Qr("QR code"),
+    Goal("Donation goal"),
+    NowPlaying("Now playing"),
     Web("Web widget");
 
     /** One place that knows each kind's defaults, so a new widget looks right the moment it lands. */
@@ -52,11 +57,14 @@ internal enum class NewWidget(val title: String) {
         Alerts -> widgetLayer(LayerType.Alerts, "Alerts", WidgetLayout.inset(1), AlertStyle().toData())
         Events -> widgetLayer(LayerType.Events, "Event list", WidgetLayout.inset(2), EventListStyle().toData())
         Label -> widgetLayer(LayerType.Text, "Text", WidgetLayout.inset(0), TextWidgetStyle(text = "{time}").toData())
-        Clock -> preset("🕒 {time}  {date}  {weather}", 0)
-        LiveTime -> preset("🔴 {uptime}", 2)
-        Drive -> preset("🚗 {speed}  🛣 {distance}", 6)
-        Socials -> preset("📷 IG @yourname\n🎵 TikTok @yourname\n✈️ TG @yourname", 8, rotate = true)
+        Clock -> preset("{i:clock} {time}  {date}  {weather}", 0)
+        LiveTime -> preset("{i:record.circle} {uptime}", 2)
+        Viewers -> preset("{i:eye} {viewers}", 2)
+        Drive -> preset("{i:car.fill} {speed}  {i:road.lanes} {distance}", 6)
+        Socials -> preset("{i:camera} IG @yourname\n{i:music.note} TikTok @yourname\n{i:paperplane} TG @yourname", 8, rotate = true)
         Qr -> widgetLayer(LayerType.Qr, "QR code", WidgetLayout.inset(8), QrStyle(text = "https://example.com").toData())
+        Goal -> widgetLayer(LayerType.Goal, "Goal", WidgetLayout.inset(1), GoalStyle().toData())
+        NowPlaying -> widgetLayer(LayerType.NowPlaying, "Now playing", WidgetLayout.inset(6), NowPlayingStyle().toData())
         Image, Web -> null
     }
 
@@ -100,6 +108,8 @@ internal fun LayerIcon(type: LayerType) {
         LayerType.Events -> "≡"
         LayerType.Text -> "Aa"
         LayerType.Qr -> "▦"
+        LayerType.Goal -> "%"
+        LayerType.NowPlaying -> "♫"
         LayerType.Browser -> "⌘"
         LayerType.Color -> "■"
         else -> "▣"

@@ -102,8 +102,17 @@ object FaceCam {
         { facing(it) == CameraCharacteristics.LENS_FACING_BACK }
     )
 
-    /** Phone source with the back camera as the main one; a flipped (front) main camera owns the front sensor. */
-    private fun wanted() = enabled && unsupported == null && !overheated && Engine.source == Source.Phone && Cam.facingBack()
+    /**
+     * Phone source (the window shows the other camera: front over a back main, back over a front main, iOS 4fd402f), or screen
+     * share, where no camera is busy so any front camera works (iOS b6a8563). Glasses video skips the encoder, so nothing
+     * draws over it. A flip frees the window's camera first (beforeFlip), since one sensor can't feed two outputs.
+     */
+    private fun wanted() =
+        enabled && !overheated && (Engine.source == Source.Screen || (unsupported == null && Engine.source == Source.Phone))
+
+    /** A back camera that may run beside the front [main], per the platform's concurrent sets. */
+    private fun backPartner(main: String) = manager.concurrentCameraIds.filter { main in it }
+        .firstNotNullOfOrNull { s -> s.firstOrNull { facing(it) == CameraCharacteristics.LENS_FACING_BACK } }
 
     fun enable(on: Boolean) {
         enabled = on
@@ -177,8 +186,12 @@ object FaceCam {
     @SuppressLint("MissingPermission") // the stream's own camera permission gate ran before any filter was installed
     private fun open(f: FaceCamFilter, st: SurfaceTexture) {
         if (opening) return
-        val back = Cam.mainCameraId()
-        val id = partner(back)
+        val back = if (Engine.source == Source.Screen) null else Cam.mainCameraId()
+        val id = when {
+            back == null -> manager.cameraIdList.firstOrNull { facing(it) == CameraCharacteristics.LENS_FACING_FRONT }
+            Cam.facingBack() -> partner(back)
+            else -> backPartner(back)
+        }
         if (id == null) {
             applog("facecam", "no front camera can run beside camera $back")
             return
@@ -225,6 +238,7 @@ object FaceCam {
         val size = sizes.filter { it.width * it.height <= MAX_PIXELS }.maxByOrNull { it.width * it.height } ?: return
         st.setDefaultBufferSize(size.width, size.height)
         val sensor = ch.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 270
+        // ponytail: front and back share one formula (exact while the phone is upright, which is how it streams).
         f.setCamera(size.width, size.height, (sensor - displayDegrees() + 360) % 360)
         val gen = ++generation
         val surface = Surface(st)
@@ -302,5 +316,8 @@ object FaceCam {
     /** The main camera is about to switch lens; the front sensor can't serve two openers, so let go of it first. */
     fun beforeFlip() = closeAll()
 
-    fun afterFlip() = Overlays.syncFaceCam()
+    fun afterFlip() {
+        Overlays.syncFaceCam()
+        Overlays.syncLook() // front and back keep their own look
+    }
 }

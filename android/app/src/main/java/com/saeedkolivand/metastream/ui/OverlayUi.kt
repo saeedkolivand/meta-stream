@@ -6,7 +6,6 @@ import androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTre
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,16 +20,24 @@ import com.saeedkolivand.metastream.overlay.Scenes
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 
-/** Optional OBS import: scene collections merge into the in-app scenes; missing files are located afterwards. */
+/** iOS SceneOptionsView import section: OBS scene collections merge into the in-app scenes; missing files are located afterwards. */
 @Composable
 internal fun ObsImportSection() {
     val pickJson = rememberLauncherForActivityResult(OpenDocument()) { it?.let(OverlayStore::import) }
     val pickTree = rememberLauncherForActivityResult(OpenDocumentTree()) { it?.let(OverlayStore::locate) }
-    OutlinedButton({
-        pickJson.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
-    }) { Text("Import OBS scene collection") }
-    if (OverlayStore.message.isNotEmpty()) Text(OverlayStore.message, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
-    if (OverlayStore.missing().isNotEmpty()) OutlinedButton({ pickTree.launch(null) }) { Text("Locate files…") }
+    val skipped = OverlayStore.pack?.skippedText().orEmpty()
+    Section(
+        "Import from OBS (optional)",
+        "In OBS: Scene Collection > Export, then pick that .json here. Imported scenes are added next to yours. Images, text, " +
+            "colors, slideshows, local clips and web pages come across; cameras, game and screen captures and audio are PC-only " +
+            "and skipped.\n\nLocate files takes the folder that holds the images and clips and copies the ones the scenes use " +
+            "into the app.\n\nThe import holds your overlay page links, which can carry account tokens. It stays on this device, " +
+            "out of backups, and the links are never written to the log." + if (skipped.isEmpty()) "" else "\n\n$skipped"
+    ) {
+        ActionRow("Import OBS scene collection") { pickJson.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }
+        if (OverlayStore.missing().isNotEmpty()) ActionRow("Locate files…") { pickTree.launch(null) }
+        if (OverlayStore.message.isNotEmpty()) Text(OverlayStore.message, color = Secondary, fontSize = 13.sp)
+    }
 }
 
 /** HUD pill: the active scene; tap for the list. Glasses can't be drawn on, so it says so there. */

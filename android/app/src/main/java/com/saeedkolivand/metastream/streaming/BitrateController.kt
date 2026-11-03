@@ -10,11 +10,17 @@ fun steppedBitrate(current: Int, up: Boolean, ceilingKbps: Int, floorKbps: Int):
     return next.coerceIn(floorKbps, ceilingKbps.coerceAtLeast(floorKbps))
 }
 
+/**
+ * iOS cleanSecondsBeforeUp: climb back in 5 s steps while well below where the link last failed (a stall that collapses
+ * the bitrate otherwise takes minutes of 15 s steps to undo); near or above it, probe slowly again.
+ */
+fun cleanSecondsBeforeUp(current: Int, failedAt: Int) = if (current < failedAt * 4 / 5) 5 else CLEAN_TICKS_FOR_UP
+
 /** Why the controller moved the bitrate, in the words the NETWORK panel shows. */
 enum class Why(val text: String) {
     Congested("network backed up"),
     Slow("upload slower than target"),
-    Stable("$CLEAN_TICKS_FOR_UP s stable, raising"),
+    Stable("stable, raising"),
     Hot("phone hot")
 }
 
@@ -30,27 +36,38 @@ class BitrateController(private val ceilingKbps: Int, private val floorKbps: Int
     var why = Why.Congested
         private set
     private var cleanTicks = 0
+    private var falling = false
+    private var failedAtKbps = ceilingKbps
     private var lastAdjustMs: Long? = null
     private var thermalCeiling: Int? = null
 
     fun tick(nowMs: Long, congested: Boolean, throughputKbps: Long): Int? {
         if (congested) {
             cleanTicks = 0
+            markFalling()
             why = Why.Congested
             return step(nowMs, false)
         }
         // Short of target by 30%+ (iOS rule); 0 means no sample yet, not a stall.
         if (throughputKbps in 1 until currentKbps * 7L / 10) {
             cleanTicks = 0
+            markFalling()
             why = Why.Slow
             return step(nowMs, false)
         }
-        if (++cleanTicks >= CLEAN_TICKS_FOR_UP) {
+        if (++cleanTicks >= cleanSecondsBeforeUp(currentKbps, failedAtKbps)) {
             cleanTicks = 0
+            falling = false
             why = Why.Stable
             return step(nowMs, true)
         }
         return null
+    }
+
+    /** The first down-step of a run remembers where the link gave out; the rest of the run keeps it. */
+    private fun markFalling() {
+        if (!falling) failedAtKbps = currentKbps
+        falling = true
     }
 
     /** Serious heat forces one step down and caps the ceiling there until it clears (edge-triggered like iOS). */

@@ -9,6 +9,8 @@ import android.speech.tts.Voice
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.saeedkolivand.metastream.bot.AppBot
+import com.saeedkolivand.metastream.bot.BotList
 import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.Kind
 import com.saeedkolivand.metastream.core.Prefs
@@ -132,6 +134,7 @@ object Speaker {
     fun speakChat(e: ChatEvent) {
         if (!readAloud || e.platform == "test") return // the Logs screen's flood test is never spoken
         val message = e.kind == Kind.Message
+        if (message && (!BotList.reads(e.user, e.text) || AppBot.isOwn(e))) return // bots per Read aloud › Bots; never our own lines
         val text = spokenText(e, SpeechSettings.options(), sameSpeaker = message && e.user == lastChatter) ?: return
         val origin = if (showOrigin) "on ${e.platform.replaceFirstChar(Char::uppercase)}, " else ""
         if (pending.get() >= 5) return

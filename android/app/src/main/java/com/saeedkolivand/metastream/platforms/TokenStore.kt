@@ -61,6 +61,8 @@ internal object TokenStore {
         sp.edit { putString(name, Base64.encodeToString(blob, Base64.NO_WRAP)) }
     }
 
+    fun remove(name: String) = sp.edit { remove(name) }
+
     /** Drops `<prefix>Access`, `Refresh` and `Scopes`. */
     fun forget(prefix: String) = sp.edit { listOf("Access", "Refresh", "Scopes").forEach { remove(prefix + it) } }
 

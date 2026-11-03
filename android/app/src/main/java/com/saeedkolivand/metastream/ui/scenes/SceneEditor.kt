@@ -88,6 +88,8 @@ internal val CameraChoices = listOf(
     "glasses" to "Glasses"
 )
 
+private val RoleChoices = listOf("" to "None", "starting" to "Starting", "brb" to "BRB", "ending" to "Ending")
+
 /**
  * Build one scene: arrange widgets on a live canvas, pick the camera it switches to, put it on stream. The canvas stays above
  * the form so every inspector change shows up at once. Layers are read straight from the store; edits write back once per
@@ -112,13 +114,19 @@ internal fun SceneEditor(name: String, onClose: () -> Unit) {
 
     fun save(next: List<Layer>) = OverlayStore.setLayers(current, next)
 
+    // Read the store, not `layers`: callbacks reached through these local funs (the + menu) keep an old composition's list,
+    // so the second widget added replaced the first.
+    fun live() = OverlayStore.scenes.firstOrNull { it.name == current }?.layers.orEmpty()
+
     fun append(l: Layer) {
+        val layers = live()
         save(layers + l)
         selected = layers.size
         haptic(false)
     }
 
     fun remove(i: Int) {
+        val layers = live()
         if (i !in layers.indices) return
         save(layers.filterIndexed { j, _ -> j != i })
         selected = null
@@ -126,6 +134,7 @@ internal fun SceneEditor(name: String, onClose: () -> Unit) {
     }
 
     fun move(i: Int, by: Int) {
+        val layers = live()
         val j = i + by
         if (i !in layers.indices || j !in layers.indices) return
         save(layers.toMutableList().also { it[i] = layers[j] }.also { it[j] = layers[i] })
@@ -202,8 +211,9 @@ internal fun SceneEditor(name: String, onClose: () -> Unit) {
                         keyboardActions = KeyboardActions(onDone = { rename() })
                     )
                     SwitchRow("Show on stream", OverlayStore.scene == current) { Scenes.select(if (it) current else "") }
-                    CameraPicker(scene.camera.orEmpty()) { OverlayStore.setCamera(current, it.ifEmpty { null }) }
+                    MenuPicker("Camera", CameraChoices, scene.camera.orEmpty()) { OverlayStore.setCamera(current, it.ifEmpty { null }) }
                     Footnote("Switching to this scene also switches the camera, so one tap can go from the glasses to the back camera.")
+                    MenuPicker("Role", RoleChoices, scene.role.orEmpty()) { OverlayStore.setRole(current, it.ifEmpty { null }) }
                     Section("Layers") {
                         if (layers.isEmpty()) Footnote("Nothing here yet. Tap + to add chat, alerts, text, an image and more.")
                         for (i in layers.indices.reversed()) {
@@ -259,13 +269,13 @@ internal fun SceneEditor(name: String, onClose: () -> Unit) {
 }
 
 @Composable
-private fun CameraPicker(camera: String, onPick: (String) -> Unit) {
+private fun MenuPicker(title: String, choices: List<Pair<String, String>>, value: String, onPick: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
-    // A scene's current camera (such as "auto") stays listed so the button never goes blank.
-    val options = if (CameraChoices.any { it.first == camera }) CameraChoices else CameraChoices + (camera to camera)
+    // A scene's current value (such as camera "auto") stays listed so the button never goes blank.
+    val options = if (choices.any { it.first == value }) choices else choices + (value to value)
     Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-        Text("Camera")
-        OutlinedButton({ open = true }) { Text(options.first { it.first == camera }.second) }
+        Text(title)
+        OutlinedButton({ open = true }) { Text(options.first { it.first == value }.second) }
         DropdownMenu(open, { open = false }) {
             for ((value, label) in options) {
                 DropdownMenuItem({ Text(label) }, {

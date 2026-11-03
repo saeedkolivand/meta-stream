@@ -91,9 +91,11 @@ internal fun Canvas.withOpacity(bounds: RectF, a: Float, draw: () -> Unit) {
 
 private val emotePaint = Paint(Paint.FILTER_BITMAP_FLAG)
 
-/** An emote drawn inline at [h] px tall; with no bitmap yet it takes no room, like iOS dropping it until it loads. */
-private class EmoteSpan(private val bmp: Bitmap?, private val h: Float) : ReplacementSpan() {
-    private val w get() = bmp?.let { h * it.width / it.height } ?: 0f
+/** An emote drawn inline at [px] tall; with no bitmap yet it takes no room, like iOS dropping it until it loads. */
+internal class EmoteSpan(private val bmp: Bitmap?, val px: Float, val url: String, private val paintIt: Boolean = true) :
+    ReplacementSpan() {
+    val w get() = bmp?.let { px * it.width / it.height } ?: 0f
+    private val h get() = px
 
     override fun getSize(paint: Paint, text: CharSequence?, start: Int, end: Int, fm: Paint.FontMetricsInt?): Int {
         if (bmp != null && fm != null) {
@@ -106,20 +108,32 @@ private class EmoteSpan(private val bmp: Bitmap?, private val h: Float) : Replac
     }
 
     override fun draw(canvas: Canvas, text: CharSequence?, start: Int, end: Int, x: Float, top: Int, y: Int, bottom: Int, paint: Paint) {
+        if (!paintIt) return
         bmp ?: return
         canvas.drawBitmap(bmp, null, RectF(x, y - h * 0.8f, x + w, y + h * 0.2f), emotePaint)
     }
 }
 
-/** The message as one string so bidi resolves mixed-script lines; emotes are ReplacementSpans of height [emotePx]; [animMs] picks the frame of animated ones. */
-internal fun emoteText(text: String, emotePx: Float, animMs: Long = 0): CharSequence {
+/**
+ * The message as one string so bidi resolves mixed-script lines; emotes are ReplacementSpans of height [emotePx]; [animMs]
+ * picks the frame of animated ones. [blankAnimated] leaves animated emotes unpainted for the GPU scene to draw.
+ */
+internal fun emoteText(
+    text: String,
+    emotePx: Float,
+    animMs: Long = 0,
+    blankAnimated: Boolean = false,
+    slots: MutableList<EmoteSpan>? = null
+): CharSequence {
     val out = SpannableStringBuilder()
     for (run in tokenize(text, Emotes.byName)) {
         when (run) {
             is Run.Text -> out.append(run.text)
             is Run.Emote -> {
                 out.append('￼')
-                val span = EmoteSpan(EmoteBitmaps.get(run.url, emotePx.roundToInt(), animMs), emotePx)
+                val blank = blankAnimated && EmoteBitmaps.isAnimated(run.url)
+                val span = EmoteSpan(EmoteBitmaps.get(run.url, emotePx.roundToInt(), animMs), emotePx, run.url, !blank)
+                if (blank) slots?.add(span)
                 out.setSpan(span, out.length - 1, out.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
         }

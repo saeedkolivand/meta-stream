@@ -34,9 +34,12 @@ internal object EmoteBitmaps {
     fun isAnimated(url: String) = url in animatedUrls
 
     /** The frame of [url] showing [t] ms into its loop (a still ignores t); null while it loads. */
-    fun get(url: String, px: Int, t: Long = 0): Bitmap? {
+    fun get(url: String, px: Int, t: Long = 0): Bitmap? = emote(url, px)?.at(t)
+
+    /** The whole emote, so the live scene can pick a frame per draw; null while it loads. */
+    fun emote(url: String, px: Int): Emote? {
         val key = "$url@$px"
-        cache.get(key)?.let { return it.at(t) }
+        cache.get(key)?.let { return it }
         if (key !in failed && pending.add(key)) load(key, url, px)
         return null
     }

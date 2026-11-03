@@ -34,7 +34,7 @@ object OverlayStore {
     var message by mutableStateOf("")
         private set
 
-    /** "fade" or "cut"; applied by [Scenes.select]. */
+    /** "fade", "cut" or "stinger"; applied by [Scenes.select]. */
     var transition by mutableStateOf("fade")
         private set
     var rotateOn by mutableStateOf(false)
@@ -44,10 +44,23 @@ object OverlayStore {
     var rotateSeconds by mutableStateOf(60)
         private set
 
+    private fun iconized(l: Layer) = if (l.type == LayerType.Text &&
+        l.layout != null
+    ) {
+        l.copy(data = l.data + ("text" to InlineIcons.iconized(l.data["text"].orEmpty())))
+    } else {
+        l
+    }
+
     fun init(application: Application) {
         app = application
         scene = Prefs.string("overlayScene")
-        pack = runCatching { Pack.fromJson(packFile.readText()) }.getOrNull()
+        pack = runCatching { Pack.fromJson(packFile.readText()) }.getOrNull()?.let { p ->
+            // In-app text layers move from emoji to icon tokens (idempotent, like iOS); saved back only when something changed.
+            val moved = p.copy(scenes = p.scenes.map { sc -> sc.copy(layers = sc.layers.map(::iconized)) })
+            if (moved != p) runCatching { packFile.writeText(moved.toJson()) }
+            moved
+        }
         transition = Prefs.string("sceneTransition", "fade")
         rotateOn = Prefs.bool("sceneRotateOn")
         rotateSeconds = Prefs.int("sceneRotateSeconds", 60)
@@ -136,6 +149,25 @@ object OverlayStore {
         return name
     }
 
+    /** Adds a template's Starting / BRB / Ending set ("Mono · BRB"); each takes its role off whichever scene had it. */
+    fun addTemplate(t: SceneTemplate, channel: String) {
+        var p = pack ?: Pack(1920, 1080, emptyList(), emptyMap())
+        for (s in t.scenes(channel)) {
+            val base = "${t.title} · ${s.name}"
+            val name = generateSequence(1) { it + 1 }.map {
+                if (it ==
+                    1
+                ) {
+                    base
+                } else {
+                    "$base $it"
+                }
+            }.first { n -> p.scenes.none { it.name == n } }
+            p = p.copy(scenes = p.scenes.map { if (it.role == s.role) it.copy(role = null) else it } + s.copy(name = name))
+        }
+        commit(p)
+    }
+
     /** Copies as "<name> copy", "<name> copy 2"...; null when [name] doesn't exist. */
     fun duplicateScene(name: String): String? {
         val p = pack ?: return null
@@ -174,6 +206,19 @@ object OverlayStore {
     /** [camera] is "back"|"front"|"external"|"glasses"|"auto", or null to keep whatever is current. */
     fun setCamera(scene: String, camera: String?) = mapScene(scene) { it.copy(camera = camera) }
 
+    /** One scene per role: giving [scene] a role takes it off whichever scene had it. */
+    fun setRole(scene: String, role: String?) {
+        val p = pack ?: return
+        val scenes = p.scenes.map {
+            when {
+                it.name == scene -> it.copy(role = role)
+                role != null && it.role == role -> it.copy(role = null)
+                else -> it
+            }
+        }
+        commit(p.copy(scenes = scenes))
+    }
+
     /** Copies a picked image into app storage as img-uuid.ext (extension sniffed from the bytes); returns the name for data["file"]. */
     fun saveImage(uri: Uri): String? {
         val bytes = runCatching {
@@ -205,6 +250,8 @@ object OverlayStore {
             LayerType.Alerts -> AlertStyle.from(d).natural
             LayerType.Events -> EventListStyle.from(d).natural
             LayerType.Qr -> QrStyle.from(d).natural
+            LayerType.Goal -> GoalStyle.from(d).natural
+            LayerType.NowPlaying -> NowPlayingStyle.from(d).natural
             LayerType.Browser -> (d["width"]?.toFloatOrNull() ?: 800f) to (d["height"]?.toFloatOrNull() ?: 600f)
             LayerType.Color -> (d["width"]?.toFloatOrNull() ?: 1920f) to (d["height"]?.toFloatOrNull() ?: 1080f)
             LayerType.Image -> local(d["file"].orEmpty())?.let(::imageSize)?.let { (w, h) ->

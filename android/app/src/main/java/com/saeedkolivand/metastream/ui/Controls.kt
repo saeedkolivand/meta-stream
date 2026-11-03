@@ -1,5 +1,8 @@
 package com.saeedkolivand.metastream.ui
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,7 +19,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -27,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -35,21 +41,53 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.camera.FaceCam
+import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.overlay.SceneRoles
 import com.saeedkolivand.metastream.privacy.BlurState
 import com.saeedkolivand.metastream.privacy.Privacy
+import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
+import com.saeedkolivand.metastream.streaming.Recording
+import com.saeedkolivand.metastream.streaming.ScreenShare
+import com.saeedkolivand.metastream.streaming.Soundboard
 import com.saeedkolivand.metastream.streaming.Source
+import kotlinx.coroutines.delay
 
 private fun sourceIcon(s: Source) = when (s) {
     Source.Phone -> R.drawable.ic_phone
     Source.Usb -> R.drawable.ic_usb
     Source.Glasses -> R.drawable.ic_glasses
+    Source.Screen -> R.drawable.ic_screen
 }
 
-// The glasses mic and HEVC passthrough video can't be muted or blanked here, so Glasses gets no quick buttons.
+/** Record is independent of Go Live; the elapsed time is its accessibility label, so it stays a plain round button. */
+@Composable
+private fun RecordButton(granted: Boolean, size: Dp) {
+    val start = Recording.since
+    var now by remember(start) { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(start) {
+        while (start != null) {
+            delay(1000)
+            now = System.currentTimeMillis()
+        }
+    }
+    val secs = start?.let { ((now - it) / 1000).coerceAtLeast(0) }
+    RoundButton(
+        R.drawable.ic_record,
+        false,
+        size,
+        if (start != null) Red else null,
+        if (secs != null) "%d:%02d".format(secs / 60, secs % 60) else "Record",
+        granted
+    ) { Recording.toggle() }
+}
+
+// The glasses mic and HEVC passthrough video can't be muted or blanked here, so Glasses gets no mic/camera/blur buttons.
 @Composable
 private fun QuickControls(granted: Boolean, size: Dp) {
+    RecordButton(granted, size) // tap on Glasses explains why it can't record instead of hiding the button
     if (Engine.source == Source.Glasses) return
+    SoundboardButton(size)
     RoundButton(
         if (Engine.muted) R.drawable.ic_car_mic_off else R.drawable.ic_car_mic,
         false,
@@ -87,17 +125,52 @@ private fun QuickControls(granted: Boolean, size: Dp) {
     ) { Privacy.updateOn(!Privacy.on) }
 }
 
+/** iOS soundboard (music note): while live with sounds saved, a menu that plays one into the mix. */
+@Composable
+private fun SoundboardButton(size: Dp) {
+    if (!Engine.live || Soundboard.sounds.isEmpty()) return
+    var open by remember { mutableStateOf(false) }
+    Box {
+        RoundButton(R.drawable.ic_music_note, false, size, label = "Sounds") { open = true }
+        DropdownMenu(open, { open = false }) {
+            Soundboard.sounds.forEach { s ->
+                DropdownMenuItem({ Text(s.name) }, {
+                    AudioMix.playSound(s)
+                    open = false
+                })
+            }
+        }
+    }
+}
+
 @Composable
 private fun SourcePicker(size: Dp) {
     var open by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    // Screen asks Android first; the share starts once the service has taken the consent (ScreenShare).
+    val consent = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        val data = r.data
+        if (r.resultCode == Activity.RESULT_OK && data != null) ScreenShare.consent(context, r.resultCode, data)
+    }
     Box {
         RoundButton(sourceIcon(Engine.source), false, size) { open = true }
         DropdownMenu(open, { open = false }) {
-            listOf(Source.Phone to "Phone", Source.Usb to "USB camera", Source.Glasses to "Glasses").forEach { (s, name) ->
+            listOf(
+                Source.Phone to "Phone",
+                Source.Usb to "USB camera",
+                Source.Glasses to "Glasses",
+                Source.Screen to "Screen"
+            ).filter { it.first != Source.Glasses || Prefs.bool("glassesEnabled") }.forEach { (s, name) ->
                 DropdownMenuItem(
                     { Text(name) },
                     {
-                        Engine.pick(s)
+                        if (s == Source.Screen &&
+                            !ScreenShare.sharing
+                        ) {
+                            consent.launch(ScreenShare.consentIntent(context))
+                        } else {
+                            Engine.pick(s)
+                        }
                         open = false
                     },
                     leadingIcon = { Icon(painterResource(sourceIcon(s)), null, Modifier.size(20.dp)) }
@@ -117,12 +190,12 @@ private fun GoLive(enabled: Boolean, size: Dp) {
             .clip(CircleShape).background(color)
             .clickable(enabled) {
                 haptic(true)
-                if (Engine.live) Engine.stop() else Engine.goLive()
+                if (Engine.live) SceneRoles.requestStop() else GoLiveSheet.goLive()
             },
         Alignment.Center
     ) {
         Text(
-            if (Engine.live) "END" else "GO\nLIVE",
+            if (Engine.live) SceneRoles.endingIn?.let { "Ending\n${it}s" } ?: "END" else "GO\nLIVE",
             color = Color.White,
             fontSize = if (size < 80.dp) 13.sp else 15.sp,
             fontWeight = FontWeight.ExtraBold,

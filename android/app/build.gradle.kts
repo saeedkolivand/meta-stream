@@ -43,6 +43,10 @@ android {
             "YOUTUBE_CLIENT_ID"
         )
             .forEach { buildConfigField("String", it, "\"${credential(it)}\"") }
+        // Instagram's source_application for story sharing: the Meta Wearables app's ID (public, not a secret).
+        // The META_APP_ID secret (env, as on iOS) or local.properties; falls back to the local mwdat_application_id.
+        val metaAppId = credential("META_APP_ID").ifEmpty { localProperties.getProperty("mwdat_application_id", "").trim() }
+        buildConfigField("String", "META_APP_ID", "\"$metaAppId\"")
     }
 
     buildFeatures { buildConfig = true }

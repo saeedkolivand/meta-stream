@@ -2,6 +2,7 @@ package com.saeedkolivand.metastream.speech
 
 import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.goal.tipCents
 
 /** Which event kinds are read aloud, and the tip floor. */
 data class SpeechOptions(
@@ -40,7 +41,13 @@ internal fun spokenText(e: ChatEvent, o: SpeechOptions, sameSpeaker: Boolean = f
         Kind.Message ->
             n.takeIf { o.messages && it.isNotEmpty() && !isNoise(e.user, e.text, o.ignored) }
                 ?.let { if (sameSpeaker) it else "$user says $it" }
-        Kind.Tip -> if (!o.tips || e.amountCents < o.minTipCents) null else note(n, "$user tipped ${spokenAmount(e.amountCents)}")
+        Kind.Tip -> if (!o.tips ||
+            e.tipCents < o.minTipCents
+        ) {
+            null
+        } else {
+            note(n, "$user tipped ${e.money?.display ?: spokenAmount(e.amountCents)}")
+        }
         Kind.Cheer -> if (o.tips) note(n, "$user cheered ${e.count} bits") else null // bits are money: same gate as tips
         Kind.Follow -> if (o.follows) "$user followed" else null
         Kind.Subscribe -> if (o.subs) subscribeText(user, e.count) else null
@@ -59,7 +66,7 @@ private fun note(n: String, lead: String) = if (n.isEmpty()) lead else "$lead: $
 /** Compact one-line text for the chat list (iOS DisplayNames.eventSummary). */
 fun eventSummary(e: ChatEvent): String = when (e.kind) {
     Kind.Message -> e.text
-    Kind.Tip -> "${e.user} tipped $${"%.2f".format(java.util.Locale.US, e.amountCents / 100.0)}" +
+    Kind.Tip -> "${e.user} tipped ${e.money?.display ?: "$" + "%.2f".format(java.util.Locale.US, e.amountCents / 100.0)}" +
         if (e.text.isEmpty()) "" else " — ${e.text}"
     Kind.Cheer -> "${e.user} cheered ${e.count} bits" + if (e.text.isEmpty()) "" else " — ${e.text}"
     Kind.Follow -> "${e.user} followed"

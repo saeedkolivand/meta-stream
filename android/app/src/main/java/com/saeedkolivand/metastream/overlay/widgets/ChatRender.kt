@@ -9,6 +9,8 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import android.graphics.Shader
+import android.text.Layout
+import android.text.Spanned
 import androidx.core.graphics.ColorUtils
 import com.saeedkolivand.metastream.chat.ChatEvent
 import com.saeedkolivand.metastream.chat.Kind
@@ -49,8 +51,11 @@ internal fun chatAppear(e: ChatEvent, now: Long): Float {
     return 1f - (1f - t).pow(3)
 }
 
-/** A laid-out row: [draw] paints it with its top-left at x, y. */
-private class Row(val w: Float, val h: Float, val draw: (Canvas, Float, Float) -> Unit)
+/** An animated emote the GPU draws over its row's blank spot, relative to the row's top-left. */
+internal class EmoteSlot(val url: String, val x: Float, val y: Float, val w: Float, val h: Float)
+
+/** A laid-out row: [draw] paints it with its top-left at x, y; [slots] are the animated emotes left blank. */
+internal class Row(val w: Float, val h: Float, val slots: List<EmoteSlot>, val draw: (Canvas, Float, Float) -> Unit)
 
 /** Names are read on video: lighten dark colours until they pass a minimum luminance. */
 private fun readable(hex: String?, fallback: Int): Int {
@@ -76,7 +81,16 @@ private fun highlighted(e: ChatEvent, style: ChatStyle, channel: String): Boolea
  * gradients or borders; with the background off the text sits flush left on the video. The layout never mirrors; only
  * the message text runs RTL.
  */
-private fun messageCard(e: ChatEvent, st: ChatStyle, size: Float, avail: Float, s: Float, channel: String, animMs: Long): Row {
+private fun messageCard(
+    e: ChatEvent,
+    st: ChatStyle,
+    size: Float,
+    avail: Float,
+    s: Float,
+    channel: String,
+    animMs: Long,
+    animate: Boolean = false
+): Row {
     val padL = if (st.background) size * 0.5f else 0f
     val padR = if (st.background) size * 0.55f else 0f
     val padV = size * if (st.background) 0.36f else 0.15f
@@ -98,7 +112,8 @@ private fun messageCard(e: ChatEvent, st: ChatStyle, size: Float, avail: Float, 
     val nameW = minOf(inner - iconsW, ceil(namePaint.measureText(e.user)) + 1f)
     val name = textLayout(e.user, namePaint, nameW.toInt(), maxLines = 1)
     val msgPaint = widgetPaint(st.face, if (st.bold) 600 else 400, size, st.textColor, textShadow)
-    val text = emoteText(e.text, size * 1.3f, animMs)
+    val spans = if (animate) mutableListOf<EmoteSpan>() else null
+    val text = emoteText(e.text, size * 1.3f, animMs, blankAnimated = animate, slots = spans)
     val spacing = size * 0.08f
     val wide = textLayout(text, msgPaint, inner.toInt(), spacing = spacing)
     val blockW = max(iconsW + name.widest(), wide.widest())
@@ -115,7 +130,8 @@ private fun messageCard(e: ChatEvent, st: ChatStyle, size: Float, avail: Float, 
         color = st.highlightColor
     }
     val hot = highlighted(e, st, channel)
-    return Row(w, h) { c, x, y ->
+    val slots = emoteSlots(msg, spans, padL, padV + headerH + gap)
+    return Row(w, h, slots) { c, x, y ->
         val r = RectF(x, y, x + w, y + h)
         val radius = size * 0.55f
         if (st.background) c.drawRoundRect(r, radius, radius, fill)
@@ -139,6 +155,24 @@ private fun messageCard(e: ChatEvent, st: ChatStyle, size: Float, avail: Float, 
     }
 }
 
+/** Where the blank animated emotes landed in the final (re-wrapped) message layout, relative to the row. */
+private fun emoteSlots(layout: Layout, spans: List<EmoteSpan>?, left: Float, top: Float): List<EmoteSlot> {
+    if (spans.isNullOrEmpty()) return emptyList()
+    val text = layout.text as? Spanned ?: return emptyList()
+    return spans.mapNotNull { span ->
+        val start = text.getSpanStart(span)
+        if (start < 0) return@mapNotNull null
+        val baseline = layout.getLineBaseline(layout.getLineForOffset(start))
+        EmoteSlot(
+            span.url,
+            left + layout.getPrimaryHorizontal(start),
+            top + baseline - span.px * 0.8f,
+            span.w,
+            span.px
+        )
+    }
+}
+
 /** Follows/subs/tips/raids/cheers: one flat pill in the event's colour, so they pop without shouting. */
 private fun eventPill(e: ChatEvent, st: ChatStyle, size: Float, avail: Float): Row {
     val padH = size * 0.55f
@@ -155,11 +189,29 @@ private fun eventPill(e: ChatEvent, st: ChatStyle, size: Float, avail: Float): R
     val w = 2 * padH + iconD + gap + text.widest()
     val h = 2 * padV + max(text.height.toFloat(), iconD)
     val fill = fillPaint(eventColor(e.kind), if (st.shadow) size * 0.3f else 0f, 0x59)
-    return Row(w, h) { c, x, y ->
+    return Row(w, h, emptyList()) { c, x, y ->
         c.drawRoundRect(RectF(x, y, x + w, y + h), h / 2, h / 2, fill)
         c.kindIcon(e.kind, x + padH + iconD / 2, y + h / 2, iconD / 2, Color.WHITE)
         c.drawLayout(text, x + padH + iconD + gap, y + (h - text.height) / 2)
     }
+}
+
+/** One row, message card or event pill, laid out at [size] px for the given [avail]. */
+internal fun chatRow(
+    e: ChatEvent,
+    style: ChatStyle,
+    size: Float,
+    avail: Float,
+    scale: Float,
+    channel: String,
+    animMs: Long,
+    animate: Boolean
+): Row = if (e.kind ==
+    Kind.Message
+) {
+    messageCard(e, style, size, avail, scale, channel, animMs, animate)
+} else {
+    eventPill(e, style, size, avail)
 }
 
 /** Newest at the bottom, clipped, with the top 18% dissolving into the video; animated emotes show their frame at [animMs]; [burst] skips the entry slide. Null when nothing is drawn. */
@@ -181,9 +233,8 @@ internal fun renderChat(
     val avail = bmp.width - 2 * pad
     var y = bmp.height - pad
     for ((k, e) in rows.asReversed().withIndex()) {
-        val isMsg = e.kind == Kind.Message
         val rowAnim = if (k < ANIMATED_ROWS) animMs else 0L // k = 0 is the newest
-        val row = if (isMsg) messageCard(e, style, size, avail, scale, channel, rowAnim) else eventPill(e, style, size, avail)
+        val row = chatRow(e, style, size, avail, scale, channel, rowAnim, false)
         y -= row.h
         val appear = if (burst) 1f else chatAppear(e, now)
         val top = y + (1f - appear) * size * 0.7f

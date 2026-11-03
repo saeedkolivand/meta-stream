@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import com.pedro.library.util.streamclient.StreamBaseClient
 import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.overlay.SceneRoles
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -139,6 +140,9 @@ object Health {
                     speak("phone getting hot")
                 }
                 escalate(now)
+                DeadAir.tick(now, speak)
+                Bonding.setCut(capKbps in 1 until ceiling * 7 / 10)
+                SceneRoles.checkBrb(downSince != null, client?.getQueueBytesOut() ?: 0, capKbps.takeIf { it > 0 } ?: ceiling)
             }
         }
     }
@@ -158,6 +162,7 @@ object Health {
         downSince = null
         lastEscalation = 0
         outKbps = 0
+        DeadAir.reset()
     }
 
     private fun updateBattery() {

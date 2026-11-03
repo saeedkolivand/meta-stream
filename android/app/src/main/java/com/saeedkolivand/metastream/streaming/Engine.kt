@@ -2,6 +2,7 @@ package com.saeedkolivand.metastream.streaming
 
 import android.Manifest
 import android.app.Application
+import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.hardware.usb.UsbManager
@@ -18,7 +19,6 @@ import com.pedro.common.StreamingStatsReport
 import com.pedro.common.VideoCodec
 import com.pedro.encoder.input.sources.audio.MicrophoneSource
 import com.pedro.encoder.input.sources.video.Camera2Source
-import com.pedro.encoder.input.sources.video.VideoSource
 import com.pedro.encoder.utils.gl.AspectRatioMode
 import com.pedro.library.generic.GenericStream
 import com.pedro.library.util.streamclient.SrtStreamClient
@@ -32,11 +32,12 @@ import com.saeedkolivand.metastream.core.redactFromLogs
 import com.saeedkolivand.metastream.core.toVideoParams
 import com.saeedkolivand.metastream.glasses.Glasses
 import com.saeedkolivand.metastream.overlay.Overlays
+import com.saeedkolivand.metastream.overlay.SceneRoles
 import com.saeedkolivand.metastream.privacy.Privacy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-enum class Source { Phone, Usb, Glasses }
+enum class Source { Phone, Usb, Glasses, Screen }
 
 const val DEFAULT_INGEST_URL = "rtmp://100.124.231.50:1935/live"
 
@@ -116,8 +117,6 @@ object Engine {
         askWearables = ask ?: DENY_WEARABLES
     }
 
-    private fun video(s: Source): VideoSource = if (s == Source.Usb) UvcSource() else Camera2Source(app)
-
     /** Creates the stream on first use (needs CAMERA + RECORD_AUDIO); callable without any activity. */
     private fun ensure(): GenericStream? {
         stream?.let { return it }
@@ -128,7 +127,7 @@ object Engine {
             return null
         }
         val mic = MicrophoneSource().also { Mics.apply(app, it) }
-        val s = GenericStream(app, checker, video(source), mic)
+        val s = GenericStream(app, checker, videoSource(app, source), mic)
         s.getGlInterface().autoHandleOrientation = true // output follows device rotation
         s.getGlInterface().setAspectRatioMode(AspectRatioMode.Fill) // the preview crops to fill the screen like iOS
         s.getStreamClient().setReTries(10) // RootEncoder's built-in reconnect, driven from onConnectionFailed
@@ -136,6 +135,12 @@ object Engine {
         stream = s
         return s
     }
+
+    /** The prepared stream local recording writes from; it shares the preview's instance. */
+    internal fun recorder(): GenericStream? = ensure()?.takeIf { matchSettings(it) }
+
+    /** Application context for helpers outside Engine (recording's cache dir and gallery save). */
+    internal val appContext: Context get() = app
 
     private var preview: SurfaceView? = null
     private var prepared: Pair<VideoParams, Boolean>? = null
@@ -146,6 +151,7 @@ object Engine {
 
     /** Applies the saved ingest settings; an upright phone with no lock = 720x1280 out (rotation 90, as RootEncoder's sample). */
     private fun prepare(s: GenericStream): Boolean {
+        if (Recording.since != null) Recording.stop() // re-preparing drops the encoders; save the file first
         val want = wanted()
         val (p, h265) = want
         val ok = try {
@@ -166,6 +172,7 @@ object Engine {
     // autoHandleOrientation instead of re-encoding. Re-preparing needs a released stream, so the preview restarts.
     private fun matchSettings(s: GenericStream): Boolean {
         if (wanted() == prepared) return true
+        if (Recording.since != null) Recording.stop() // release() below would drop the running recording
         Overlays.unbind() // the re-prepare drops the GL filters; prepare() binds again and goLive refreshes
         s.release()
         val ok = prepare(s)
@@ -200,7 +207,7 @@ object Engine {
     }
 
     fun pick(next: Source) {
-        if (next == source) return
+        if (next == source && next != Source.Screen) return // Screen again = a new projection to swap in
         if (live && (next == Source.Glasses || source == Source.Glasses)) {
             status = "stop the stream to switch to or from glasses"
             return
@@ -210,9 +217,10 @@ object Engine {
             return
         }
         val s = stream
-        if (s != null && next != Source.Glasses && (next == Source.Usb) != (s.videoSource is UvcSource)) {
+        if (s != null && next != Source.Glasses && s.videoSource.javaClass != sourceClass(next)) {
+            if (Recording.since != null) Recording.stop() // swapping the source re-creates the encoder
             try {
-                s.changeVideoSource(video(next))
+                s.changeVideoSource(videoSource(app, next))
                 Cam.attach(s)
             } catch (e: IllegalArgumentException) {
                 status = "source unsupported: ${e.message}"
@@ -220,6 +228,8 @@ object Engine {
             }
         }
         source = next
+        syncAudio()
+        if (next == Source.Glasses) Recording.checkSource()
         Overlays.refresh()
     }
 
@@ -241,8 +251,9 @@ object Engine {
             status = "open the app on the phone once, then retry"
             return
         }
+        Mics.log(app, "go live")
         Overlays.refresh() // before the encoder starts, so the privacy blur is already in the chain for the first frame
-        val full = url.trimEnd('/') + "/" + key
+        val full = Bonding.target(app, url.trimEnd('/') + "/" + key) // srtla:// goes through the bonding proxy
         if (s == null) glasses.start(full, askWearables) else startStream(s, full)
         // Glasses passthrough has no encoder knob, so Health only watches it.
         Health.start(AppSettings.ingest.bitrateKbps, s?.getStreamClient()) { s?.setVideoBitrateOnFly(it * 1000) }
@@ -251,6 +262,8 @@ object Engine {
 
     fun stop(reason: String = "idle") {
         Health.stop()
+        Bonding.stop()
+        SceneRoles.end() // a Starting countdown, BRB or Ending still up: back to the scene before it
         if (source == Source.Glasses) glasses.stop() else stream?.stopStream()
         live = false
         connected = false
@@ -289,15 +302,16 @@ object Engine {
     }
 
     /** Re-applies the picked microphone to the running source (a new choice from Settings). */
-    fun refreshMic() {
-        (stream?.audioSource as? MicrophoneSource)?.let { Mics.apply(app, it) }
-    }
+    fun refreshMic() = stream?.audioSource?.let { Mics.apply(app, it) }
 
     fun toggleMute() {
-        val mic = stream?.audioSource as? MicrophoneSource ?: return
+        val src = stream?.audioSource ?: return
         muted = !muted
-        if (muted) mic.mute() else mic.unMute()
+        Mics.mute(src, muted)
     }
+
+    /** Screen share mixes the apps' audio with the mic (see [Mics.sync]); every other source is the mic alone. */
+    fun syncAudio() = stream?.let { Mics.sync(app, it, source == Source.Screen, muted) }
 
     // Callbacks run on RootEncoder threads: decide there, then mutate state on the main scope.
     private val checker = object : ConnectChecker {
@@ -312,7 +326,7 @@ object Engine {
                 Health.markUp()
                 if (live) {
                     connected = true
-                    if (liveSince == null) liveSince = System.currentTimeMillis()
+                    if (liveSince == null) liveSince = System.currentTimeMillis().also { SceneRoles.startRole() }
                 }
                 status = "connected"
                 speak("stream connected")

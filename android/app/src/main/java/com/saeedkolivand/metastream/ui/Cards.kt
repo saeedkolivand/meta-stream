@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
 
-private val Secondary = Color.White.copy(alpha = 0.6f)
+private val CardSecondary = Color.White.copy(alpha = 0.6f)
 
 @Composable
 private fun Card(icon: Int, title: String, body: String, button: String, footer: String?, onClick: () -> Unit) {
@@ -36,12 +36,12 @@ private fun Card(icon: Int, title: String, body: String, button: String, footer:
     ) {
         Icon(painterResource(icon), null, Modifier.size(40.dp), tint = Color.White)
         Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-        Text(body, fontSize = 13.sp, color = Secondary, textAlign = TextAlign.Center)
+        Text(body, fontSize = 13.sp, color = CardSecondary, textAlign = TextAlign.Center)
         Button({
             haptic(false)
             onClick()
         }, Modifier.fillMaxWidth()) { Text(button) }
-        footer?.let { Text(it, fontSize = 11.sp, fontFamily = FontFamily.Monospace, color = Secondary) }
+        footer?.let { Text(it, fontSize = 11.sp, fontFamily = FontFamily.Monospace, color = CardSecondary) }
     }
 }
 

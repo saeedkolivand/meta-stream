@@ -30,6 +30,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.speech.Speaker
@@ -184,7 +185,11 @@ private class ControlsScreen(c: CarContext) : Screen(c) {
 
     override fun onGetTemplate(): Template {
         val list = ItemList.Builder()
-        for ((s, name) in listOf(Source.Phone to "Phone", Source.Usb to "USB camera", Source.Glasses to "Glasses")) {
+        for ((s, name) in listOf(Source.Phone to "Phone", Source.Usb to "USB camera", Source.Glasses to "Glasses").filter {
+            it.first !=
+                Source.Glasses ||
+                Prefs.bool("glassesEnabled")
+        }) {
             list.addItem(
                 row("Source: $name", if (Engine.source == s) "Selected" else null) {
                     Engine.pick(s)

@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.RectF
 import com.pedro.encoder.input.gl.render.filters.`object`.ImageFilterRender
+import com.saeedkolivand.metastream.platforms.Spotify
 import kotlin.math.ceil
 import kotlin.math.min
 import kotlinx.coroutines.CoroutineScope
@@ -30,8 +31,9 @@ internal fun inAppTextBitmap(style: TextStyle, scale: Float): Bitmap? {
     val px = style.size * scale
     val pad = if (style.background) px * 0.3f else 0f
     val paint = widgetPaint(style.face, if (style.bold) 700 else 400, px, style.color, if (style.shadow) px * 0.06f else 0f)
-    val wide = textLayout(style.text, paint, MEASURE_WIDTH)
-    val layout = textLayout(style.text, paint, ceil(wide.widest()).toInt() + 1)
+    val text = InlineIcons.spans(style.text)
+    val wide = textLayout(text, paint, MEASURE_WIDTH)
+    val layout = textLayout(text, paint, ceil(wide.widest()).toInt() + 1)
     val bmp = newBitmap(layout.width + 2 * pad, layout.height + 2 * pad)
     val c = Canvas(bmp)
     if (style.background) {
@@ -81,6 +83,8 @@ internal fun liveTextWidget(l: Layer, box: Box, outW: Int, outH: Int, scope: Cor
     val job = scope.launch {
         val location = WidgetVariables.needsLocation(template)
         if (location) WidgetLocation.retain()
+        val spotify = WidgetVariables.needsSpotify(template)
+        if (spotify) Spotify.retain()
         try {
             var shown = first
             while (isActive) {
@@ -93,6 +97,7 @@ internal fun liveTextWidget(l: Layer, box: Box, outW: Int, outH: Int, scope: Cor
             }
         } finally {
             if (location) WidgetLocation.release()
+            if (spotify) Spotify.release()
         }
     }
     return WidgetBuild(filter, job)

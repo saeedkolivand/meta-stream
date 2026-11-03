@@ -61,6 +61,6 @@ class NetStatsTest {
         assertEquals("upload slower than target", c.why.text)
         c.thermal(30_000, true)
         assertEquals("phone hot", c.why.text)
-        assertEquals("15 s stable, raising", Why.Stable.text)
+        assertEquals("stable, raising", Why.Stable.text)
     }
 }

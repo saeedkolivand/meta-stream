@@ -6,13 +6,16 @@ import android.media.MediaPlayer
 import android.os.Handler
 import android.os.Looper
 import android.view.Surface
+import com.pedro.encoder.input.gl.render.filters.BaseFilterRender
 import com.pedro.encoder.input.gl.render.filters.`object`.BaseObjectFilterRender
 import com.pedro.encoder.input.gl.render.filters.`object`.ImageFilterRender
 import com.pedro.encoder.input.gl.render.filters.`object`.SurfaceFilterRender
 import com.pedro.library.view.GlInterface
 import com.saeedkolivand.metastream.camera.FaceCam
+import com.saeedkolivand.metastream.camera.Looks
 import com.saeedkolivand.metastream.core.applog
 import com.saeedkolivand.metastream.privacy.Privacy
+import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 import java.io.File
@@ -29,7 +32,7 @@ private const val MAX_SLIDES = 30
 private val IDENTITY = Fit(1f, 0f, 0f)
 
 /** A live widget: its filter, plus the coroutine that keeps its bitmap current (null for render-once widgets). */
-internal class WidgetBuild(val filter: BaseObjectFilterRender, val job: Job?)
+internal class WidgetBuild(val filter: BaseFilterRender, val job: Job?)
 
 /** RootEncoder object filters take position and size as percent of the output, top-left based. [box] is in output px. */
 internal fun <T : BaseObjectFilterRender> T.placeIn(box: Box, outW: Int, outH: Int, rotation: Float = 0f): T {
@@ -49,8 +52,10 @@ object Overlays {
     private val main = Handler(Looper.getMainLooper())
     private var gl: GlInterface? = null
     private var sink: FilterSink? = null
-    private var outW = 0
-    private var outH = 0
+    var outW = 0
+        private set
+    var outH = 0
+        private set
     private var browser: BrowserOverlay? = null
     private val players = mutableListOf<MediaPlayer>()
     private var widgetScope: CoroutineScope? = null
@@ -61,9 +66,13 @@ object Overlays {
     }
 
     /** Called when the stream is (re)prepared: the output size is only known then. */
+    /** The output frame (overlays and blur included), delivered on the GL thread; false when no pipeline is bound. */
+    fun grab(done: (Bitmap) -> Unit): Boolean = gl?.let { g -> g.takePhoto { done(it) } } != null
+
     fun bind(gl: GlInterface, w: Int, h: Int) {
         release()
         Privacy.forget() // a new pipeline starts with an empty chain
+        Looks.forget()
         this.gl = gl
         sink = FilterSink(gl)
         outW = w
@@ -74,6 +83,7 @@ object Overlays {
         release()
         FaceCam.stop()
         Privacy.forget()
+        Looks.forget()
         gl = null
         sink = null
     }
@@ -90,6 +100,7 @@ object Overlays {
         // Chain order is face-cam -> blur -> overlays: the blur must see (and hide faces in) the face-cam window, while
         // alerts stay sharp. Privacy keeps its filter across refreshes; the face-cam goes back in at index 0, ahead of it.
         Privacy.install(glNow)
+        Looks.install(glNow) // the grade goes ahead of the blur and the overlays, so only the camera is graded
         FaceCam.install(g, outW, outH)
         val pack = OverlayStore.pack
         val scene = OverlayStore.active()?.takeIf { pack != null && Engine.source != Source.Glasses }
@@ -108,6 +119,14 @@ object Overlays {
         // ponytail: browser sources share one view drawn above the image/text/media layers, whatever their OBS order.
         // Upgrade path: one view per run of consecutive browser layers.
         if (!web.isEmpty) g.addLayer(web.filter())
+    }
+
+    /** The output size when there's a chain for a stinger to draw in: prepared, and not glasses passthrough (no GL). */
+    fun stingerCanvas(): Pair<Int, Int>? = if (sink != null && Engine.source != Source.Glasses) outW to outH else null
+
+    /** The stinger above the whole scene; null takes it away. */
+    fun showStinger(f: BaseFilterRender?) {
+        sink?.setTail(f)
     }
 
     /** Scene-transition opacity for everything the scene drew (not the privacy blur or face-cam). */
@@ -129,6 +148,12 @@ object Overlays {
         Privacy.install(glNow, if (FaceCam.inChain) 1 else 0)
     }
 
+    /** A look edit, a camera flip or a source switch: only the look filter changes. */
+    fun syncLook() {
+        if (Looks.key() == "glasses") return
+        main.post { gl?.let(Looks::install) }
+    }
+
     fun syncFaceCam() {
         if (Looper.myLooper() != Looper.getMainLooper()) {
             main.post(::syncFaceCam)
@@ -145,6 +170,7 @@ object Overlays {
         browser = null
         players.forEach { it.release() }
         players.clear()
+        AudioMix.stopClips()
         widgetJobs.forEach { it.cancel() }
         widgetJobs.clear()
         widgetScope?.cancel()
@@ -177,6 +203,8 @@ object Overlays {
             LayerType.Alerts -> alertWidget(l, box, outW, outH, scope)
             LayerType.Events -> eventListWidget(l, box, outW, outH, scope)
             LayerType.Qr -> qrWidget(l, box, outW, outH)
+            LayerType.Goal -> goalWidget(l, box, scope)
+            LayerType.NowPlaying -> nowPlayingWidget(l, box, scope)
             LayerType.Text -> liveTextWidget(l, box, outW, outH, scope)
             LayerType.Image -> gifWidget(l, box, outW, outH)
             else -> null
@@ -229,7 +257,8 @@ object Overlays {
         g.addLayer(imageFilter(bmp, place(l, bmp.width / fit.scale, bmp.height / fit.scale), fit, l))
     }
 
-    // ponytail: the media player is muted and a rotated phone video isn't corrected; sizes come from the container metadata.
+    // The player is muted: its audio goes into the stream's mix (AudioMix) instead of the phone speaker.
+    // ponytail: a rotated phone video isn't corrected; sizes come from the container metadata.
     private fun addMedia(g: FilterSink, l: Layer, f: File, fit: Fit) {
         val (w, h) = mediaSize(f) ?: return
         val mp = MediaPlayer()
@@ -237,6 +266,7 @@ object Overlays {
         mp.setDataSource(f.path)
         mp.isLooping = l.data["loop"] == "true"
         mp.setVolume(0f, 0f)
+        AudioMix.playClip(f, mp.isLooping)
         g.addLayer(
             SurfaceFilterRender { st ->
                 runCatching {

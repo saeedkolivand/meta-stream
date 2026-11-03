@@ -1,19 +1,32 @@
 package com.saeedkolivand.metastream.core
 
 import android.app.Application
+import com.saeedkolivand.metastream.bot.AppBot
+import com.saeedkolivand.metastream.camera.Looks
 import com.saeedkolivand.metastream.car.Notify
 import com.saeedkolivand.metastream.chat.ChatFeed
+import com.saeedkolivand.metastream.goal.DonatePage
+import com.saeedkolivand.metastream.goal.DonationHub
+import com.saeedkolivand.metastream.goal.GoalStore
+import com.saeedkolivand.metastream.goal.countDonation
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.overlay.Scenes
 import com.saeedkolivand.metastream.overlay.WidgetFonts
 import com.saeedkolivand.metastream.platforms.Accounts
+import com.saeedkolivand.metastream.platforms.Spotify
+import com.saeedkolivand.metastream.reach.LivePost
+import com.saeedkolivand.metastream.reach.SessionLog
+import com.saeedkolivand.metastream.remote.ObsServer
 import com.saeedkolivand.metastream.speech.Speaker
+import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Mics
+import com.saeedkolivand.metastream.streaming.Soundboard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /** Creates the process-wide singletons and wires them together; this is the only place that knows all of them. */
 class App : Application() {
@@ -26,12 +39,37 @@ class App : Application() {
         Prefs.init(this)
         WidgetFonts.init(this)
         AppSettings.init()
-        Mics.init()
+        Mics.init(this)
+        com.saeedkolivand.metastream.platforms.KickWeb.init(this)
+        Mics.log(this, "at launch")
+        Soundboard.init(this)
+        Looks.init(this)
+        AudioMix.init()
         Speaker.init(this)
         OverlayStore.init(this)
         Overlays.init(this)
         Accounts.init(this, scope)
-        ChatFeed.init(scope, onMessage = Speaker::speakChat)
+        Spotify.init()
+        ChatFeed.init(scope) {
+            Speaker.speakChat(it)
+            // providers call from their socket thread; the bot and the goal are main-thread
+            scope.launch {
+                countDonation(it)
+                AppBot.handle(it)
+                SessionLog.record(it)
+            }
+        }
+        AppBot.init()
+        GoalStore.init(this, scope)
+        DonationHub.start(scope)
+        DonatePage.start(scope)
+        SessionLog.init(this)
+        LivePost.start(scope)
+        ObsServer.sync(scope)
+        GoalStore.onReached = {
+            Speaker.speakSystem("Goal reached")
+            AppBot.goalReached(GoalStore.config.title)
+        }
         Engine.init(this, scope, speak = Speaker::speakSystem, alert = { Notify.alert(this, it) })
         Scenes.init(scope)
         Scenes.updateRotation()

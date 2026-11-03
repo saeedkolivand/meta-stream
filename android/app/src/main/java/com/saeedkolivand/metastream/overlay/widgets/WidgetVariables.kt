@@ -3,6 +3,7 @@ package com.saeedkolivand.metastream.overlay
 import android.os.BatteryManager
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.platforms.Kick
+import com.saeedkolivand.metastream.platforms.Spotify
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.platforms.YouTube
 import com.saeedkolivand.metastream.speech.SpeechSettings
@@ -22,14 +23,19 @@ internal object WidgetVariables {
         "{uptime}" to "Live time",
         "{viewers}" to "Viewers",
         "{bitrate}" to "Bitrate",
+        "{countdown}" to "Starting countdown",
         "{battery}" to "Battery",
         "{speed}" to "Speed",
         "{distance}" to "Distance",
         "{city}" to "City",
         "{weather}" to "Weather",
         "{follower}" to "Latest follower",
-        "{sub}" to "Latest sub"
+        "{sub}" to "Latest sub",
+        "{song}" to "Spotify song",
+        "{artist}" to "Spotify artist"
     )
+
+    fun needsSpotify(template: String) = "{song}" in template || "{artist}" in template
 
     fun needsLocation(template: String) = listOf("{speed}", "{city}", "{distance}", "{weather}").any { it in template }
 
@@ -47,6 +53,7 @@ internal object WidgetVariables {
         "{uptime}" -> uptime(Engine.liveSince)
         "{viewers}" -> (Kick.viewers + Twitch.viewers + YouTube.viewers).toString()
         "{bitrate}" -> "${Health.bitrateKbps} kbps"
+        "{countdown}" -> SceneRoles.countdownText
         "{battery}" -> battery()
         "{speed}" -> WidgetLocation.speedText
         "{distance}" -> WidgetLocation.distanceText(Engine.liveSince)
@@ -54,6 +61,8 @@ internal object WidgetVariables {
         "{weather}" -> WidgetWeather.text
         "{follower}" -> ChatFeed.lastFollower.takeUnless { isBlocked(it, SpeechSettings.blocked) }.orEmpty()
         "{sub}" -> ChatFeed.lastSubscriber.takeUnless { isBlocked(it, SpeechSettings.blocked) }.orEmpty()
+        "{song}" -> Spotify.track?.title.orEmpty()
+        "{artist}" -> Spotify.track?.artist.orEmpty()
         else -> token
     }
 

@@ -4,9 +4,9 @@ import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateCentroid
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -14,14 +14,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.contentDescription
@@ -60,7 +64,7 @@ private class Live(val rect: Rect, val gx: List<Float>, val gy: List<Float>)
 private fun natural(l: Layer): Pair<Float, Float> = OverlayStore.naturalSize(l) ?: (400f to 200f)
 
 /** The layer's rectangle in output px: widgets by their frame-relative layout, OBS layers through fit + place. */
-private fun layerBox(l: Layer, outW: Int, outH: Int): Box? {
+internal fun layerBox(l: Layer, outW: Int, outH: Int): Box? {
     val (nw, nh) = natural(l)
     l.layout?.let { return widgetBox(it, nw, nh, outW.toFloat(), outH.toFloat()) }
     val pack = OverlayStore.pack ?: return null
@@ -139,7 +143,12 @@ internal fun SceneCanvas(
     val measurer = rememberTextMeasurer()
     val cache = remember { PreviewCache() }
     var width by remember { mutableStateOf(0f) }
+    var height by remember { mutableStateOf(0f) }
     var gesture by remember { mutableStateOf<Gesture?>(null) }
+    // The view: pinch empty canvas to zoom 1-4x about the fingers, drag to pan, double-tap to fit. Content = (p - vo) / vz.
+    var vz by remember { mutableStateOf(1f) }
+    var vo by remember { mutableStateOf(Offset.Zero) }
+    var lastTap by remember { mutableStateOf(0L) }
     val k = if (width > 0f) width / outW else 0f
     val boxes = remember(layers, outW, outH) { layers.map { layerBox(it, outW, outH) } }
     val images = remember(layers, boxes, k) {
@@ -166,74 +175,124 @@ internal fun SceneCanvas(
         return selectedNow?.takeIf { it in layersNow.indices && at(it) } ?: layersNow.indices.reversed().firstOrNull(::at)
     }
 
-    Canvas(
-        Modifier.fillMaxSize().onSizeChanged { width = it.width.toFloat() }.semantics { contentDescription = "Scene canvas" }
-            .pointerInput(outW, outH) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    val i = hit(down.position)
-                    select(i)
-                    if (i == null) {
-                        waitForUpOrCancellation()
-                        return@awaitEachGesture
-                    }
-                    var drag = Offset.Zero
-                    var zoom = 1f
-                    var lastGuides = ""
-                    do {
-                        val ev = awaitPointerEvent()
-                        zoom *= ev.calculateZoom()
-                        drag += ev.calculatePan()
-                        val g = Gesture(i, drag, zoom)
-                        gesture = g
-                        val guides = liveOf(i, g)?.let { it.gx.toString() + it.gy.toString() }.orEmpty()
-                        if (guides != lastGuides && guides != "[][]") haptic(false)
-                        lastGuides = guides
-                        ev.changes.forEach { it.consume() }
-                    } while (ev.changes.any { it.pressed })
-                    gesture = null
-                    val moved = drag.getDistance() > grab / 2 || abs(zoom - 1f) > 0.01f
-                    val b = boxesNow[i]
-                    val r = liveOf(i, Gesture(i, drag, zoom))?.rect
-                    if (moved && b != null && r != null) {
-                        val kk = kNow
-                        val out = Box(r.left / kk, r.top / kk, r.width / kk, r.height / kk)
-                        commit(i, committed(layersNow[i], b, out, zoom, outW, outH))
+    fun clamp(o: Offset, z: Float) = Offset(o.x.coerceIn(width * (1 - z), 0f), o.y.coerceIn(height * (1 - z), 0f))
+
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
+        Canvas(
+            Modifier.fillMaxSize().onSizeChanged {
+                width = it.width.toFloat()
+                height = it.height.toFloat()
+            }.semantics { contentDescription = "Scene canvas" }
+                .pointerInput(outW, outH) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val i = hit((down.position - vo) / vz)
+                        select(i)
+                        if (i == null) {
+                            var moved = false
+                            do {
+                                val ev = awaitPointerEvent()
+                                val z = ev.calculateZoom()
+                                val pan = ev.calculatePan()
+                                val c = ev.calculateCentroid()
+                                if (abs(z - 1f) > 0.001f || pan.getDistance() > grab / 4) moved = true
+                                val nz = (vz * z).coerceIn(1f, 4f)
+                                if (c.isSpecified) vo = clamp(c - (c - vo) * (nz / vz) + pan, nz)
+                                vz = nz
+                                ev.changes.forEach { it.consume() }
+                            } while (ev.changes.any { it.pressed })
+                            val now = System.currentTimeMillis()
+                            if (!moved && now - lastTap < 300) {
+                                vz = 1f
+                                vo = Offset.Zero
+                            }
+                            lastTap = if (moved) 0L else now
+                            return@awaitEachGesture
+                        }
+                        var drag = Offset.Zero
+                        var zoom = 1f
+                        var lastGuides = ""
+                        do {
+                            val ev = awaitPointerEvent()
+                            zoom *= ev.calculateZoom()
+                            drag += ev.calculatePan() / vz
+                            val g = Gesture(i, drag, zoom)
+                            gesture = g
+                            val guides = liveOf(i, g)?.let { it.gx.toString() + it.gy.toString() }.orEmpty()
+                            if (guides != lastGuides && guides != "[][]") haptic(false)
+                            lastGuides = guides
+                            ev.changes.forEach { it.consume() }
+                        } while (ev.changes.any { it.pressed })
+                        gesture = null
+                        val moved = drag.getDistance() > grab / 2 || abs(zoom - 1f) > 0.01f
+                        val b = boxesNow[i]
+                        val r = liveOf(i, Gesture(i, drag, zoom))?.rect
+                        if (moved && b != null && r != null) {
+                            val kk = kNow
+                            val out = Box(r.left / kk, r.top / kk, r.width / kk, r.height / kk)
+                            commit(i, committed(layersNow[i], b, out, zoom, outW, outH))
+                        }
                     }
                 }
+        ) {
+            drawRect(Color(0xFF141416))
+            withTransform({
+                translate(vo.x, vo.y)
+                scale(vz, vz, Offset.Zero)
+            }) {
+                for (f in listOf(1f / 3, 2f / 3)) {
+                    drawLine(Color.White.copy(alpha = 0.07f), Offset(size.width * f, 0f), Offset(size.width * f, size.height))
+                    drawLine(Color.White.copy(alpha = 0.07f), Offset(0f, size.height * f), Offset(size.width, size.height * f))
+                }
+                val g = gesture
+                layers.forEachIndexed { i, l ->
+                    val r = (if (l.visible) liveOf(i, g)?.rect else null) ?: return@forEachIndexed
+                    val img = images.getOrNull(i)
+                    if (img != null) {
+                        drawImage(
+                            img,
+                            dstOffset = IntOffset(r.left.roundToInt(), r.top.roundToInt()),
+                            dstSize = IntSize(r.width.roundToInt().coerceAtLeast(1), r.height.roundToInt().coerceAtLeast(1))
+                        )
+                    } else {
+                        drawRect(Color.White.copy(alpha = 0.08f), r.topLeft, r.size)
+                        val dash = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f)))
+                        drawRect(Color.White.copy(alpha = 0.5f), r.topLeft, r.size, style = dash)
+                        val label = if (l.type == LayerType.Browser) Uri.parse(l.data["url"].orEmpty()).host ?: l.name else l.name
+                        drawText(measurer, label, r.topLeft + Offset(6.dp.toPx(), 4.dp.toPx()), TextStyle(Color.White, 11.sp))
+                    }
+                }
+                val sel = selected?.takeIf { it in layers.indices && layers[it].visible }?.let { liveOf(it, g)?.rect }
+                if (sel != null) {
+                    drawRect(SystemBlue, sel.topLeft, sel.size, style = Stroke(1.5.dp.toPx()))
+                    for (c in listOf(sel.topLeft, sel.topRight, sel.bottomLeft, sel.bottomRight)) drawCircle(SystemBlue, 4.dp.toPx(), c)
+                }
+                g?.let { liveOf(it.index, it) }?.let { lv ->
+                    for (x in lv.gx) drawLine(GuideColor, Offset(x, 0f), Offset(x, size.height), 1.dp.toPx())
+                    for (y in lv.gy) drawLine(GuideColor, Offset(0f, y), Offset(size.width, y), 1.dp.toPx())
+                }
             }
-    ) {
-        drawRect(Color(0xFF141416))
-        for (f in listOf(1f / 3, 2f / 3)) {
-            drawLine(Color.White.copy(alpha = 0.07f), Offset(size.width * f, 0f), Offset(size.width * f, size.height))
-            drawLine(Color.White.copy(alpha = 0.07f), Offset(0f, size.height * f), Offset(size.width, size.height * f))
-        }
-        val g = gesture
-        layers.forEachIndexed { i, l ->
-            val r = (if (l.visible) liveOf(i, g)?.rect else null) ?: return@forEachIndexed
-            val img = images.getOrNull(i)
-            if (img != null) {
-                drawImage(
-                    img,
-                    dstOffset = IntOffset(r.left.roundToInt(), r.top.roundToInt()),
-                    dstSize = IntSize(r.width.roundToInt().coerceAtLeast(1), r.height.roundToInt().coerceAtLeast(1))
+            if (vz > 1.01f) {
+                val badge = measurer.measure("%.1f×".format(vz), TextStyle(Color.White, 11.sp))
+                val pad = 6.dp.toPx()
+                val tl = Offset(size.width - badge.size.width - pad * 3, pad)
+                drawRoundRect(
+                    Color.Black.copy(alpha = 0.6f),
+                    tl,
+                    Size(badge.size.width + pad * 2f, badge.size.height + pad),
+                    CornerRadius(pad)
                 )
-            } else {
-                drawRect(Color.White.copy(alpha = 0.08f), r.topLeft, r.size)
-                val dash = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f)))
-                drawRect(Color.White.copy(alpha = 0.5f), r.topLeft, r.size, style = dash)
-                val label = if (l.type == LayerType.Browser) Uri.parse(l.data["url"].orEmpty()).host ?: l.name else l.name
-                drawText(measurer, label, r.topLeft + Offset(6.dp.toPx(), 4.dp.toPx()), TextStyle(Color.White, 11.sp))
+                drawText(badge, topLeft = tl + Offset(pad, pad / 2))
             }
         }
-        val sel = selected?.takeIf { it in layers.indices && layers[it].visible }?.let { liveOf(it, g)?.rect }
-        if (sel != null) {
-            drawRect(SystemBlue, sel.topLeft, sel.size, style = Stroke(1.5.dp.toPx()))
-            for (c in listOf(sel.topLeft, sel.topRight, sel.bottomLeft, sel.bottomRight)) drawCircle(SystemBlue, 4.dp.toPx(), c)
-        }
-        g?.let { liveOf(it.index, it) }?.let { lv ->
-            for (x in lv.gx) drawLine(GuideColor, Offset(x, 0f), Offset(x, size.height), 1.dp.toPx())
-            for (y in lv.gy) drawLine(GuideColor, Offset(0f, y), Offset(size.width, y), 1.dp.toPx())
+        selected?.takeIf { it in layers.indices }?.let { i ->
+            NudgePad(Modifier.align(Alignment.BottomEnd)) { dx, dy -> commit(i, nudged(layersNow[i], dx, dy, outW, outH)) }
         }
     }
+}
+
+/** [l] moved by (dx, dy) output px, through the same commit path as a drag. */
+internal fun nudged(l: Layer, dx: Float, dy: Float, outW: Int, outH: Int): Layer {
+    val b = layerBox(l, outW, outH) ?: return l
+    return committed(l, b, Box(b.x + dx, b.y + dy, b.w, b.h), 1f, outW, outH)
 }
