@@ -20,7 +20,7 @@ data class SpeechOptions(
 )
 
 /** Whole dollars read as a number ("5 dollars"); anything with cents stays "12.50 dollars"; unknown amounts are just "money". */
-internal fun spokenAmount(cents: Int): String {
+fun spokenAmount(cents: Int): String {
     if (cents <= 0) return "money"
     val dollars = cents / 100
     return if (cents % 100 ==
@@ -36,7 +36,7 @@ internal fun spokenAmount(cents: Int): String {
  * The sentence for [e] (iOS Speaker.sentence), or null when its kind is switched off / empty / noise. [sameSpeaker]: the
  * previous spoken message was theirs too, so the name isn't repeated.
  */
-internal fun spokenText(e: ChatEvent, o: SpeechOptions, sameSpeaker: Boolean = false): String? {
+fun spokenText(e: ChatEvent, o: SpeechOptions, sameSpeaker: Boolean = false): String? {
     // Reading a slur aloud on stream can get the streamer banned, even when a viewer typed it.
     val user = if (isBlocked(e.user, o.blocked)) "someone" else e.user
     val n = if (isBlocked(e.text, o.blocked)) "" else sanitizeSpeech(e.text)

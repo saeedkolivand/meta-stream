@@ -2,6 +2,7 @@ package com.saeedkolivand.metastream.core
 
 import android.app.Application
 import com.saeedkolivand.metastream.bot.AppBot
+import com.saeedkolivand.metastream.bot.BotList
 import com.saeedkolivand.metastream.camera.Looks
 import com.saeedkolivand.metastream.car.Notify
 import com.saeedkolivand.metastream.chat.ChatFeed
@@ -51,6 +52,7 @@ class App : Application() {
         Looks.init(this)
         AudioMix.init()
         Speaker.init(this)
+        Speaker.skipMessage = { !BotList.reads(it.user, it.text) || AppBot.isOwn(it) }
         OverlayStore.init(this)
         Overlays.init(this)
         Accounts.init(this, scope)

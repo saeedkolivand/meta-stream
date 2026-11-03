@@ -43,6 +43,7 @@ dependencies {
     implementation(project(":feature:platforms"))
     implementation(project(":feature:chat"))
     implementation(project(":feature:goal"))
+    implementation(project(":feature:speech"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.documentfile)
     implementation(platform(libs.androidx.compose.bom))
