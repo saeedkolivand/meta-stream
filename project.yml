@@ -77,6 +77,8 @@ targets:
         product: Goal
       - package: MetaStreamKit
         product: Speech
+      - package: MetaStreamKit
+        product: Privacy
       - package: MetaWearablesDAT
         product: MWDATCore
       - package: MetaWearablesDAT
@@ -118,4 +120,6 @@ targets:
         product: Goal
       - package: MetaStreamKit
         product: Speech
+      - package: MetaStreamKit
+        product: Privacy
 

@@ -21,8 +21,11 @@ let package = Package(
         .library(name: "Platforms", targets: ["Platforms"]),
         .library(name: "Chat", targets: ["Chat"]),
         .library(name: "Goal", targets: ["Goal"]),
-        .library(name: "Speech", targets: ["Speech"])
+        .library(name: "Speech", targets: ["Speech"]),
+        .library(name: "Privacy", targets: ["Privacy"])
     ],
+    // Same URL and floor as project.yml, so Xcode resolves one copy for the app and the package.
+    dependencies: [.package(url: "https://github.com/HaishinKit/HaishinKit.swift", from: "2.3.0")],
     targets: [
         // Plain data shared by every feature: chat events, money, text patterns. Foundation only.
         .target(name: "CoreModel", swiftSettings: strict),
@@ -46,6 +49,9 @@ let package = Package(
         // Donation goal: GoalStore, Money, exchange rates, donation-site sources, the donate page publisher.
         .target(name: "Goal", dependencies: ["CoreModel", "CoreLogging", "CoreStorage", "Chat"], swiftSettings: strict),
         // Read-aloud: Speaker's three TTS lanes (System, Alert, Chat).
-        .target(name: "Speech", dependencies: ["CoreModel", "CoreUI", "Goal"], swiftSettings: strict)
+        .target(name: "Speech", dependencies: ["CoreModel", "CoreUI", "Goal"], swiftSettings: strict),
+        // Privacy blur: a HaishinKit VideoEffect that pixellates faces, text and barcodes found by Vision.
+        .target(name: "Privacy", dependencies: ["CoreLogging", .product(name: "HaishinKit", package: "HaishinKit.swift")],
+                swiftSettings: strict)
     ]
 )
