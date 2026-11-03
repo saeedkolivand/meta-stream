@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.overlay.ColorTheme
 import com.saeedkolivand.metastream.reach.InstagramStory
-import com.saeedkolivand.metastream.streaming.Engine
 import kotlinx.coroutines.launch
 
 /** Settings › Theme & story (iOS ThemeSettingsView): the colour theme for scene templates and the Instagram story. */
@@ -72,10 +71,6 @@ internal fun ThemePage() {
             Text("Preview without a stream frame", Modifier.padding(top = 8.dp), color = Secondary, fontSize = 13.sp)
         }
         ActionRow("Test share to Instagram", ready) { scope.launch { InstagramStory.share(ctx, test = true) } }
-        // Android only: iOS shares from the HUD's story button, which Android doesn't have yet.
-        ActionRow(if (Engine.live) "Share to Instagram story" else "Share \"live soon\" story", ready) {
-            scope.launch { InstagramStory.share(ctx) }
-        }
     }
 }
 

@@ -89,8 +89,8 @@ struct NPDraw {
     var progress: Double { min(1, max(0, track.progress(now))) }
     var elapsed: String { Self.mmss(track.elapsedMs(now)) }
     var total: String { Self.mmss(track.durationMs) }
-    /// "Title · Artist"; just the title for a track without artists.
-    var line: String { track.artist.isEmpty ? track.title : "\(track.title) · \(track.artist)" }
+    /// "Artist - Title"; just the title for a track without artists.
+    var line: String { track.artist.isEmpty ? track.title : "\(track.artist) - \(track.title)" }
 
     static func mmss(_ ms: Int) -> String {
         let secs = max(0, ms) / 1000

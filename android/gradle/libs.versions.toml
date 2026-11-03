@@ -35,6 +35,7 @@ org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 mlkit-face = { group = "com.google.mlkit", name = "face-detection", version = "16.1.7" }
 mlkit-text = { group = "com.google.mlkit", name = "text-recognition", version = "16.0.1" }
 mlkit-barcode = { group = "com.google.mlkit", name = "barcode-scanning", version = "17.3.0" }
+mlkit-genai-prompt = { group = "com.google.mlkit", name = "genai-prompt", version = "1.0.0-beta5" } # Gemini Nano: AI chat moderation
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 
 [plugins]

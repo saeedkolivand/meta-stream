@@ -134,7 +134,7 @@ final class SpotifyNowPlaying: ObservableObject {
     }
 
     private func set(_ next: NowPlayingTrack?) {
-        if next?.id != track?.id { applog("spotify", next.map { "now playing: \($0.title) · \($0.artist)" } ?? "nothing playing") }
+        if next?.id != track?.id { applog("spotify", next.map { "now playing: \($0.artist) - \($0.title)" } ?? "nothing playing") }
         track = next
         guard let url = next?.artURL, url != artFor else { return }
         artFor = url; art = nil

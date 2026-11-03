@@ -28,8 +28,8 @@ struct NPContext {
     var elapsed: String { Self.mmss(track.elapsedMs(now)) }
     var total: String { Self.mmss(track.durationMs) }
     var progress: CGFloat { CGFloat(min(1, max(0, track.progress(now)))) }
-    /// "Title · Artist"; just the title for a track without artists.
-    var line: String { track.artist.isEmpty ? track.title : "\(track.title) · \(track.artist)" }
+    /// "Artist - Title"; just the title for a track without artists.
+    var line: String { track.artist.isEmpty ? track.title : "\(track.artist) - \(track.title)" }
 
     static func mmss(_ ms: Int) -> String {
         let secs = max(0, ms) / 1000
@@ -131,7 +131,7 @@ extension View {
         .environment(\.layoutDirection, WidgetFonts.isRTL(text) ? .rightToLeft : .leftToRight)
 }
 
-/// Several styled runs on one line ("Title · Artist" with a dim dot). Direction follows the first run.
+/// Several styled runs on one line ("Artist - Title" with a dim dash). Direction follows the first run.
 @MainActor func npRuns(_ parts: [(text: String, font: Font, color: Color)]) -> some View {
     var out = AttributedString()
     for part in parts {

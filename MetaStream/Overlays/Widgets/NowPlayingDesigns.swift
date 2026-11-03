@@ -111,7 +111,7 @@ struct NPDisc: View {
     }
 }
 
-/// Slim strip: small cover (flips), equaliser bars, "Title · Artist". The text clip-wipes out and in; the strip hugs it.
+/// Slim strip: small cover (flips), equaliser bars, "Artist - Title". The text clip-wipes out and in; the strip hugs it.
 struct NPTicker: View {
     let x: NPContext
 
@@ -125,8 +125,9 @@ struct NPTicker: View {
                 }
             }
             .frame(height: 32)
-            npRuns([(x.track.title, x.font(32), .white), (" · ", x.font(32, .regular), .npDim),
-                    (x.track.artist, x.font(32, .regular), .npGrey)])
+            npRuns(x.track.artist.isEmpty ? [(x.track.title, x.font(32), Color.white)]
+                : [(x.track.artist, x.font(32, .regular), Color.npGrey), (" - ", x.font(32, .regular), Color.npDim),
+                   (x.track.title, x.font(32), Color.white)])
                 .frame(maxWidth: 720, alignment: .leading)
                 .clipShape(NPWipe(shut: 0, reveal: x.pose.reveal, trail: x.pose.trail))
         }

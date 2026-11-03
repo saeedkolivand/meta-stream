@@ -25,7 +25,7 @@ struct NPBox<Content: View>: View {
     }
 }
 
-/// "Note + Title · Artist"; a song change wipes the box back to just the note, then open again.
+/// "Note + Artist - Title"; a song change wipes the box back to just the note, then open again.
 struct NPText: View {
     let x: NPContext
 
@@ -79,14 +79,16 @@ struct NPCornerCover: View {
         NPBox(x: x, shut: 60, maxWidth: 920, pad: EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 12)) {
             HStack(spacing: 14) {
                 x.cover(44, radius: 0).npLane(x.pose.cover)
-                npRuns([(x.track.title, x.font(32), .white), (" · ", x.font(32), .white), (x.track.artist, x.font(32, .semibold), .white)])
+                npRuns(x.track.artist.isEmpty ? [(x.track.title, x.font(32), Color.white)]
+                    : [(x.track.artist, x.font(32, .semibold), Color.white), (" - ", x.font(32), Color.white),
+                       (x.track.title, x.font(32), Color.white)])
                     .npShadow()
             }
         }
     }
 }
 
-/// "Note + Now playing: Title · Artist" wipes open on each song change; the widget task closes it after the hold time.
+/// "Note + Now playing: Artist - Title" wipes open on each song change; the widget task closes it after the hold time.
 struct NPPopup: View {
     let x: NPContext
 

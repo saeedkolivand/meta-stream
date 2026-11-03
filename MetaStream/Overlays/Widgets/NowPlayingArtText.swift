@@ -29,10 +29,10 @@ extension NPDraw {
         return wiped(content, size: size, shut: shut)
     }
 
-    /// Note, then "Title · Artist"; a song change wipes the box back to just the note, then open again.
+    /// Note, then "Artist - Title"; a song change wipes the box back to just the note, then open again.
     func text() -> CIImage { noted([NPRun(text: line, size: 32)], maxWidth: 920, shut: 62) }
 
-    /// Note, then "Now playing: Title · Artist"; the widget task closes it after the hold time.
+    /// Note, then "Now playing: Artist - Title"; the widget task closes it after the hold time.
     func popup() -> CIImage {
         noted([NPRun(text: "Now playing: ", size: 32, weight: .semibold), NPRun(text: line, size: 32)], maxWidth: 1040, shut: 0)
     }
@@ -58,8 +58,8 @@ extension NPDraw {
 
     /// A small square cover instead of the note; the box wipes and the cover flips on a song change.
     func cornerCover() -> CIImage {
-        let parts = [NPRun(text: track.title, size: 32), NPRun(text: " · ", size: 32),
-                     NPRun(text: track.artist, size: 32, weight: .semibold)]
+        let artist = track.artist.isEmpty ? [] : [NPRun(text: track.artist, size: 32, weight: .semibold), NPRun(text: " - ", size: 32)]
+        let parts = artist + [NPRun(text: track.title, size: 32)]
         let left: CGFloat = 8 + 44 + 14
         let laid = layout(parts, maxWidth: 920 - left - 12)
         let size = CGSize(width: left + laid.width + 12, height: 60)

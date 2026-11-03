@@ -5,6 +5,7 @@ import com.saeedkolivand.metastream.bot.AppBot
 import com.saeedkolivand.metastream.camera.Looks
 import com.saeedkolivand.metastream.car.Notify
 import com.saeedkolivand.metastream.chat.ChatFeed
+import com.saeedkolivand.metastream.chat.ChatModerator
 import com.saeedkolivand.metastream.goal.DonatePage
 import com.saeedkolivand.metastream.goal.DonationHub
 import com.saeedkolivand.metastream.goal.GoalStore
@@ -50,6 +51,7 @@ class App : Application() {
         Overlays.init(this)
         Accounts.init(this, scope)
         Spotify.init()
+        ChatModerator.init(scope)
         ChatFeed.init(scope) {
             Speaker.speakChat(it)
             // providers call from their socket thread; the bot and the goal are main-thread

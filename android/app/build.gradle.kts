@@ -84,6 +84,7 @@ dependencies {
     implementation(libs.mlkit.face)
     implementation(libs.mlkit.text)
     implementation(libs.mlkit.barcode)
+    implementation(libs.mlkit.genai.prompt) // on-device Gemini Nano (AICore) for AI chat moderation, like iOS FoundationModels
     implementation(libs.okhttp)
     implementation(libs.zxing.core) // QR widget: encoding a QR code by hand is ~600 lines; core is pure Java, no Android deps
     implementation(libs.carapp)

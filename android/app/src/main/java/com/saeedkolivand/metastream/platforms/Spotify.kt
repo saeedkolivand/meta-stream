@@ -146,7 +146,7 @@ object Spotify {
     }
 
     private fun set(next: NowPlayingTrack?) {
-        if (next?.id != track?.id) applog("spotify", next?.let { "now playing: ${it.title} · ${it.artist}" } ?: "nothing playing")
+        if (next?.id != track?.id) applog("spotify", next?.let { "now playing: ${it.artist} - ${it.title}" } ?: "nothing playing")
         track = next
         val url = next?.artURL?.takeIf { it.isNotEmpty() && it != artFor } ?: return
         artFor = url

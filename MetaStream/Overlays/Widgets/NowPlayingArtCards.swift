@@ -92,11 +92,11 @@ extension NPDraw {
         return pen.clip(pen.stack(layers), to: card)   // the disc leaves and arrives through the card's edge
     }
 
-    /// Slim strip: small cover (flips), equaliser bars, "Title · Artist". The text clip-wipes out and in; the strip hugs it.
+    /// Slim strip: small cover (flips), equaliser bars, "Artist - Title". The text clip-wipes out and in; the strip hugs it.
     func ticker() -> CIImage {
-        let parts = [NPRun(text: track.title, size: 32),
-                     NPRun(text: " · ", size: 32, weight: .regular, color: Self.dim),
-                     NPRun(text: track.artist, size: 32, weight: .regular, color: Self.grey)]
+        let artist = track.artist.isEmpty ? [] : [NPRun(text: track.artist, size: 32, weight: .regular, color: Self.grey),
+                                                  NPRun(text: " - ", size: 32, weight: .regular, color: Self.dim)]
+        let parts = artist + [NPRun(text: track.title, size: 32)]
         let laid = layout(parts, maxWidth: 720)
         let textLeft: CGFloat = 158
         let card = pill(CGRect(x: 0, y: 0, width: min(920, textLeft + laid.width + 32), height: 96), 20, Self.card)

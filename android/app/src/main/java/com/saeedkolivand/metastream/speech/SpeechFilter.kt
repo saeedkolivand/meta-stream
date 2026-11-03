@@ -50,6 +50,9 @@ fun isBlocked(text: String, extra: String): Boolean {
     return terms.any { t -> if (t.length >= 5) t in joined else words.any { it == t || it == t + "s" } }
 }
 
-/** A slur or blocked word (Read aloud settings) in the name or text: never read aloud and kept off the stream widgets. */
+/**
+ * A slur or blocked word (Read aloud settings) in the name or text, or AI moderation flagged it: never read aloud and kept
+ * off the stream widgets.
+ */
 val ChatEvent.offensive: Boolean
-    get() = isBlocked(user, SpeechSettings.blocked) || isBlocked(text, SpeechSettings.blocked)
+    get() = flagged || isBlocked(user, SpeechSettings.blocked) || isBlocked(text, SpeechSettings.blocked)
