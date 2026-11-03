@@ -34,7 +34,18 @@ internal class NowPlayingArt(
 
     private val line = when (st.design) {
         "slab", "twoLine", "island", "disc" -> null
-        else -> t("${tr.title} · ${tr.artist}".trimEnd(' ', '·'), if (st.design == "ticker") 32f else h * 0.5f, 600, 0xFFFFFFFF.toInt())
+        else -> t(
+            if (tr.artist.isEmpty()) tr.title else "${tr.artist} - ${tr.title}",
+            if (st.design ==
+                "ticker"
+            ) {
+                32f
+            } else {
+                h * 0.5f
+            },
+            600,
+            0xFFFFFFFF.toInt()
+        )
     }
     private val title = t(
         tr.title,

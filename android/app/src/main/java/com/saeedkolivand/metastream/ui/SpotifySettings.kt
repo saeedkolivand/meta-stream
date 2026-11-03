@@ -21,7 +21,7 @@ internal fun SpotifyPage() {
     ) {
         if (Spotify.connected) {
             Text("Connected", fontSize = 17.sp)
-            Spotify.track?.let { Text("Playing: ${it.title} · ${it.artist}", color = Secondary, fontSize = 17.sp) }
+            Spotify.track?.let { Text("Playing: ${it.artist} - ${it.title}", color = Secondary, fontSize = 17.sp) }
             ActionRow("Disconnect", destructive = true) { Spotify.disconnect() }
         } else {
             ActionRow("Connect Spotify") { Spotify.connect() }
