@@ -18,7 +18,8 @@ let package = Package(
         .library(name: "ActivityShared", targets: ["ActivityShared"]),
         .library(name: "CoreUI", targets: ["CoreUI"]),
         .library(name: "Camera", targets: ["Camera"]),
-        .library(name: "Platforms", targets: ["Platforms"])
+        .library(name: "Platforms", targets: ["Platforms"]),
+        .library(name: "Chat", targets: ["Chat"])
     ],
     targets: [
         // Plain data shared by every feature: chat events, money, text patterns. Foundation only.
@@ -37,6 +38,8 @@ let package = Package(
         // Phone camera: lens discovery, capabilities, CameraSettings and applying them to an AVCaptureDevice.
         .target(name: "Camera", dependencies: ["CoreLogging"], swiftSettings: strict),
         // Kick, Twitch, Restream, YouTube accounts: OAuth, tokens, stream info, categories, ingest.
-        .target(name: "Platforms", dependencies: ["CoreLogging", "CoreNetwork", "CoreStorage"], swiftSettings: strict)
+        .target(name: "Platforms", dependencies: ["CoreLogging", "CoreNetwork", "CoreStorage"], swiftSettings: strict),
+        // Chat feed: Kick/Twitch/YouTube providers, emotes, AI moderation and summary, slash commands, kick.com web session.
+        .target(name: "Chat", dependencies: ["CoreModel", "CoreLogging", "CoreUI", "Platforms"], swiftSettings: strict)
     ]
 )

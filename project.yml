@@ -71,6 +71,8 @@ targets:
         product: Camera
       - package: MetaStreamKit
         product: Platforms
+      - package: MetaStreamKit
+        product: Chat
       - package: MetaWearablesDAT
         product: MWDATCore
       - package: MetaWearablesDAT
@@ -106,4 +108,6 @@ targets:
         product: Camera
       - package: MetaStreamKit
         product: Platforms
+      - package: MetaStreamKit
+        product: Chat
 
