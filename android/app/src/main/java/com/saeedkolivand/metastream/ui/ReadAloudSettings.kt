@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.chat.ChatFeed
+import com.saeedkolivand.metastream.chat.ChatModerator
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.speech.BoolPref
@@ -127,7 +128,7 @@ internal fun VoicePage() {
     }
 }
 
-/** iOS ReadAloudBlockedView: names and words that are never read or shown. ponytail: no AI moderation (Apple Intelligence only). */
+/** iOS ReadAloudBlockedView: names and words that are never read or shown, and AI moderation (Gemini Nano here). */
 @Composable
 internal fun DontReadPage() {
     Section(
@@ -139,5 +140,21 @@ internal fun DontReadPage() {
     ) {
         TextRow("Names, e.g. nightbot, spammer123", SpeechSettings.ignored, SpeechSettings::pickIgnored)
         TextRow("Blocked words, comma separated", SpeechSettings.blocked, SpeechSettings::pickBlocked)
+    }
+    val note = when (ChatModerator.status) {
+        "available" -> ""
+        "downloading" -> " The on-device model is downloading; this turns on when it's ready."
+        else -> " Not available on this device."
+    }
+    Section(
+        null,
+        "Uses Gemini Nano on this device to hide hateful or harassing English messages from stream and speech. Held up to " +
+            "1.5 s for review.$note"
+    ) {
+        var on by remember { mutableStateOf(Prefs.bool("aiModeration", true)) }
+        SwitchRow("AI moderation (English)", on, ChatModerator.available) {
+            on = it
+            Prefs.put("aiModeration", it)
+        }
     }
 }

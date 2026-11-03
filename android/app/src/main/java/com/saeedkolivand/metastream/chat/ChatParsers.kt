@@ -26,6 +26,8 @@ data class ChatEvent(
     // A tip's exact amount in its own currency (donation sites); Twitch sub tier 1-3.
     val money: com.saeedkolivand.metastream.goal.Money? = null,
     val tier: Int = 0,
+    // Set by ChatModerator when the on-device model judged the message unsafe: kept in the in-app chat, nowhere else.
+    val flagged: Boolean = false,
     // Unique per message, set by ChatFeed so the LazyColumn can key its rows.
     val id: Long = 0
 )
