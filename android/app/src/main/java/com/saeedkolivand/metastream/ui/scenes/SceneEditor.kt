@@ -61,8 +61,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import com.saeedkolivand.metastream.R
-import com.saeedkolivand.metastream.core.AppSettings
-import com.saeedkolivand.metastream.core.toVideoParams
+import com.saeedkolivand.metastream.core.storage.AppSettings
+import com.saeedkolivand.metastream.core.storage.toVideoParams
 import com.saeedkolivand.metastream.core.ui.Choice
 import com.saeedkolivand.metastream.core.ui.Footnote
 import com.saeedkolivand.metastream.core.ui.Hairline

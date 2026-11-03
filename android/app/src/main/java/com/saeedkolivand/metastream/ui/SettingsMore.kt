@@ -22,8 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.meta.wearable.dat.core.types.RegistrationState
 import com.saeedkolivand.metastream.chat.ChatFlood
-import com.saeedkolivand.metastream.core.AppSettings
 import com.saeedkolivand.metastream.core.logging.LogBuffer
+import com.saeedkolivand.metastream.core.storage.AppSettings
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.ui.ActionRow
 import com.saeedkolivand.metastream.core.ui.Choice

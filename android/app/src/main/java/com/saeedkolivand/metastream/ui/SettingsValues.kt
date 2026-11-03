@@ -2,9 +2,10 @@ package com.saeedkolivand.metastream.ui
 
 import com.saeedkolivand.metastream.bot.BotCommand
 import com.saeedkolivand.metastream.bot.TwitchBot
+import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.chat.ChatFeed
-import com.saeedkolivand.metastream.core.AppSettings
 import com.saeedkolivand.metastream.core.model.Money
+import com.saeedkolivand.metastream.core.storage.AppSettings
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.goal.DonationHub
 import com.saeedkolivand.metastream.goal.GoalStore
@@ -61,7 +62,7 @@ internal object SettingsValues {
         Source.Usb
     ) {
         "USB camera"
-    } else if (com.saeedkolivand.metastream.camera.Cam.facingBack()) {
+    } else if (Cam.facingBack()) {
         "Back"
     } else {
         "Front"

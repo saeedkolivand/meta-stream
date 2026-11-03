@@ -6,10 +6,10 @@ import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.camera.CameraSettings
 import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.camera.shutterLabel
-import com.saeedkolivand.metastream.core.AppSettings
-import com.saeedkolivand.metastream.core.FPS_CHOICES
-import com.saeedkolivand.metastream.core.Lock
-import com.saeedkolivand.metastream.core.RESOLUTIONS
+import com.saeedkolivand.metastream.core.storage.AppSettings
+import com.saeedkolivand.metastream.core.storage.FPS_CHOICES
+import com.saeedkolivand.metastream.core.storage.Lock
+import com.saeedkolivand.metastream.core.storage.RESOLUTIONS
 import com.saeedkolivand.metastream.core.ui.Choice
 import com.saeedkolivand.metastream.core.ui.NavRow
 import com.saeedkolivand.metastream.core.ui.Orange

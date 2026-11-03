@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.core
+package com.saeedkolivand.metastream.core.storage
 
 enum class Lock { Auto, Portrait, Landscape }
 

@@ -74,6 +74,8 @@ dependencies {
     implementation(project(":core:storage"))
     implementation(project(":core:network"))
     implementation(project(":core:ui"))
+    implementation(project(":feature:camera"))
+    implementation(project(":feature:glasses"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.documentfile)
     implementation(platform(libs.androidx.compose.bom))

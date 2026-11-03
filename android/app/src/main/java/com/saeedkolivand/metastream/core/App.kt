@@ -7,6 +7,7 @@ import com.saeedkolivand.metastream.car.Notify
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.chat.ChatModerator
 import com.saeedkolivand.metastream.core.logging.LogFile
+import com.saeedkolivand.metastream.core.storage.AppSettings
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.goal.DonatePage
 import com.saeedkolivand.metastream.goal.DonationHub
