@@ -14,10 +14,14 @@ public enum KickRules {
         public init(
             kind: ChatEvent.Kind,
             user: [String] = [], text: [String] = [], count: [String] = [], amount: [String] = [],
-            require: String? = nil
+            minCount: Int = 0, require: String? = nil
         ) {
             self.kind = kind
             self.user = user
+            self.text = text
+            self.count = count
+            self.amount = amount
+            self.minCount = minCount
             self.require = require
         }
     }
