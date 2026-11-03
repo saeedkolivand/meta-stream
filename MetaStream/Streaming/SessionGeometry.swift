@@ -377,7 +377,7 @@ extension Streamer {
     /// 2.1.0 feeds Screen from every mixer.append/attachVideo call unconditionally, 2.2.5 gates that same
     /// feed on videoMixerSettings.mode already being .offscreen (checked both directly; this call always sets
     /// mode before frames need to arrive, so the ordering holds either way). .passthrough skips
-    /// Screen/VideoTrackScreenObject rendering entirely and forwards raw buffers straight to the encoder,
+    /// Screen/VideoScreenObject rendering entirely and forwards raw buffers straight to the encoder,
     /// which is why blur silently did nothing before this. Offscreen costs more (an extra render pass), so
     /// it's only switched on while blur is actually enabled. See retimestamped() near blackPixelBuffer()
     /// above for the offscreen-mode freeze this uncovered on the glasses path specifically, and what fixed it.

@@ -1,6 +1,6 @@
 # One grouped pull request per ecosystem per week, instead of one per package.
 # The iOS packages are declared in XcodeGen's project.yml, which Dependabot can't read. HaishinKit is a range
-# ("from: 2.1.0"), so each CI build already takes its newest 2.x; the Meta DAT SDK is pinned exactly and bumped by hand.
+# ("from: 2.3.0"), so each CI build already takes its newest 2.x; the Meta DAT SDK is pinned exactly and bumped by hand.
 version: 2
 updates:
   - package-ecosystem: "github-actions"

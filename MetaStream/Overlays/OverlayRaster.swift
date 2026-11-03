@@ -1,6 +1,6 @@
 // Draws overlay layers (image, text, color, browser snapshot) into bitmaps at their final output size.
-// HaishinKit's CPU renderer blits an ImageScreenObject's CGImage 1:1 at its origin (no scaling, and overflow past the
-// canvas is only guarded by cropping), so every bitmap is pre-scaled and pre-clipped to the stream canvas here.
+// HaishinKit draws an ImageScreenObject's image scaled to the object's size and only crops what overflows the canvas,
+// so every bitmap is pre-scaled (1:1, no resampling) and pre-clipped to the stream canvas here.
 import AVFoundation
 import UIKit
 
