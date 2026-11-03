@@ -256,7 +256,7 @@ final class Streamer: ObservableObject {
 
     var offscreenOn = false                  // mirrors videoMixerSettings.mode == .offscreen
 
-    var overlayObject: VideoTrackScreenObject?   // the face-cam window; created once per mixer
+    var overlayObject: VideoScreenObject?   // the face-cam window; created once per mixer
 
     let overlays = OverlayCompositor()           // scene layers on the mixer's Screen, see StreamerOverlays.swift
     var sceneRotationTask: Task<Void, Never>?    // auto-rotate loop, see updateSceneRotation()

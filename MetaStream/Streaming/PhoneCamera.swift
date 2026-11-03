@@ -398,7 +398,7 @@ extension Streamer {
     func pushOverlayLayout() async {
         guard let o = overlayObject, dualCamCanvas.width > 0 else { return }
         let s = Self.pipSettings()
-        await Self.layoutOverlay(o, canvas: dualCamCanvas, corner: s.corner, size: s.size, shape: s.shape,
+        await Self.layoutOverlay(o, canvas: dualCamCanvas, pip: s,
                                  track: dualCamSwapped ? 0 : 1, visible: dualCamActive && !dualCamHidden && !blurWanted)
     }
 
@@ -413,27 +413,28 @@ extension Streamer {
     /// cam would also defeat its point. Either flag counts, so the window hides the moment the toggle flips.
     var blurWanted: Bool { privacy?.enabled == true || blurEffectActive }
 
-    @ScreenActor static func makeOverlay(_ mixer: MediaMixer) -> VideoTrackScreenObject {
-        let o = VideoTrackScreenObject()
-        o.isVisible = false
-        o.videoGravity = .resizeAspectFill   // fill the rect (needed for the circle) instead of letterboxing inside it
-        try? mixer.screen.addChild(o)
-        return o
+    @ScreenActor static func makeOverlay(_ mixer: MediaMixer) -> VideoScreenObject {
+        let overlay = VideoScreenObject()
+        overlay.isVisible = false
+        overlay.videoGravity = .resizeAspectFill   // fill the rect (needed for the circle) instead of letterboxing inside it
+        try? mixer.screen.addChild(overlay)
+        return overlay
     }
 
     /// pipRect -> ScreenObject geometry: size + corner alignment + a margin inset (ScreenObject lays itself
     /// out against its parent, top-left origin, so this reproduces pipRect's rect exactly).
-    @ScreenActor static func layoutOverlay(_ o: VideoTrackScreenObject, canvas: CGSize, corner: String, size: String, shape: String, track: UInt8, visible: Bool) {
-        let r = pipRect(canvas: canvas, corner: corner, size: size, shape: shape)
+    @ScreenActor static func layoutOverlay(_ overlay: VideoScreenObject, canvas: CGSize, pip: (corner: String, size: String, shape: String),
+                                           track: UInt8, visible: Bool) {
+        let rect = pipRect(canvas: canvas, corner: pip.corner, size: pip.size, shape: pip.shape)
         let m = min(canvas.width, canvas.height) * 0.04
-        o.size = r.size
-        o.horizontalAlignment = corner.hasSuffix("Left") ? .left : .right
-        o.verticalAlignment = corner.hasPrefix("top") ? .top : .bottom
-        o.layoutMargin = UIEdgeInsets(top: m, left: m, bottom: m, right: m)
-        o.cornerRadius = pipCornerRadius(r, shape: shape)
-        o.track = track
-        o.isVisible = visible
-        o.invalidateLayout()
+        overlay.size = rect.size
+        overlay.horizontalAlignment = pip.corner.hasSuffix("Left") ? .left : .right
+        overlay.verticalAlignment = pip.corner.hasPrefix("top") ? .top : .bottom
+        overlay.layoutMargin = UIEdgeInsets(top: m, left: m, bottom: m, right: m)
+        overlay.cornerRadius = pipCornerRadius(rect, shape: pip.shape)
+        overlay.track = track
+        overlay.isVisible = visible
+        overlay.invalidateLayout()
     }
 
     @ScreenActor static func setPrivacyEffect(_ mixer: MediaMixer, privacy: Privacy, on: Bool) {

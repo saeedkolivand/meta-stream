@@ -16,7 +16,7 @@ import Vision
 /// Threading: `execute` is `nonisolated` and touches plain (non-actor) state, on purpose -- HaishinKit calls
 /// it synchronously, once per rendered frame, from its own ScreenActor/rendering context, never from the
 /// main actor. Calling it concurrently from two threads at once is not safe (matches HaishinKit's own
-/// contract: one VideoTrackScreenObject drives its registered effects serially). Only `stalled` is
+/// contract: one VideoScreenObject drives its registered effects serially). Only `stalled` is
 /// actor-isolated, since it's the one thing SwiftUI needs to observe.
 ///
 /// Coordinates: Vision's normalized boxes (0...1) use a bottom-left origin, y increasing upward -- the same

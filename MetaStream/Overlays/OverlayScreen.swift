@@ -21,13 +21,13 @@ enum OverlayScreen {
     @ScreenActor static func makeImage(_ rect: CGRect, _ bitmap: OverlayBitmap?) -> ImageScreenObject {
         let o = ImageScreenObject()
         layout(o, rect)
-        o.cgImage = bitmap?.image
+        o.ciImage = bitmap.map { CIImage(cgImage: $0.image) }
         return o
     }
 
     /// nil blanks the object (an alert between alerts, a faded-out still).
     @ScreenActor static func setImage(_ o: ImageScreenObject, _ bitmap: OverlayBitmap?) {
-        o.cgImage = bitmap?.image
+        o.ciImage = bitmap.map { CIImage(cgImage: $0.image) }
     }
 
     /// Re-lays an object out at a new rect (live text whose width follows its content).
@@ -73,10 +73,9 @@ enum OverlayScreen {
     }
 
     /// Z-order is add order: later layers draw on top (the camera frame is the Screen's own first child).
-    /// Overlays composite on the GPU (Core Image on Metal): the CPU renderer converts and alpha-blends every overlay on
-    /// the CPU each frame. Switched before the first overlay goes on; HaishinKit's camera object re-lays out every frame.
+    /// Overlays composite on the GPU (Core Image on Metal; HaishinKit 2.3 has no CPU renderer any more). HaishinKit's camera
+    /// object re-lays out every frame.
     @ScreenActor static func add(_ objects: [ScreenObject], to mixer: MediaMixer) {
-        if !mixer.screen.isGPURendererEnabled { mixer.screen.isGPURendererEnabled = true }
         for o in objects { try? mixer.screen.addChild(o) }
     }
 
@@ -109,7 +108,7 @@ enum OverlayScreen {
 }
 
 /// A built-in stinger as a screen object. It draws the frame for each video frame's own timestamp, so it moves in step
-/// with the video instead of racing it. GPU renderer only (the CPU renderer asks for a CGImage, which this never makes).
+/// with the video instead of racing it.
 final class StingerScreenObject: ScreenObject {
     private let kind: StingerKind
     private let style: StingerStyle
@@ -139,7 +138,7 @@ final class StingerScreenObject: ScreenObject {
                 applog("perf", "stinger \(kind.rawValue): \(frames) frames in \(String(format: "%.2f", last)) s "
                        + "(\(String(format: "%.0f", Double(frames) / max(last, 0.01))) fps), draw avg \(String(format: "%.1f", drawTotal / Double(frames))) ms "
                        + "max \(String(format: "%.1f", drawMax)) ms, longest gap \(String(format: "%.0f", gapMax * 1000)) ms, "
-                       + "canvas \(Int(bounds.width))x\(Int(bounds.height)), renderer \(type(of: renderer))")
+                       + "canvas \(Int(bounds.width))x\(Int(bounds.height)), renderer \(Swift.type(of: renderer))")
             }
             return CIImage.empty()
         }
@@ -192,7 +191,7 @@ final class DonationAlertScreenObject: ScreenObject {
                 applog("perf", "donation alert \(kind.rawValue): \(frames) frames in \(String(format: "%.2f", last)) s "
                        + "(\(String(format: "%.0f", Double(frames) / max(last, 0.01))) fps), draw avg \(String(format: "%.1f", drawTotal / Double(frames))) ms "
                        + "max \(String(format: "%.1f", drawMax)) ms, longest gap \(String(format: "%.0f", gapMax * 1000)) ms, "
-                       + "canvas \(Int(bounds.width))x\(Int(bounds.height)), renderer \(type(of: renderer))")
+                       + "canvas \(Int(bounds.width))x\(Int(bounds.height)), renderer \(Swift.type(of: renderer))")
             }
             return CIImage.empty()
         }
