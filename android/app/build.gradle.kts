@@ -73,6 +73,7 @@ dependencies {
     implementation(project(":core:logging"))
     implementation(project(":core:storage"))
     implementation(project(":core:network"))
+    implementation(project(":core:ui"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.documentfile)
     implementation(platform(libs.androidx.compose.bom))

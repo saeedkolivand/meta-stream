@@ -18,6 +18,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.camera.Cam
+import com.saeedkolivand.metastream.core.ui.Green
+import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.Pill
+import com.saeedkolivand.metastream.core.ui.Red
 import com.saeedkolivand.metastream.platforms.Kick
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.platforms.YouTube

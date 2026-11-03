@@ -18,6 +18,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.saeedkolivand.metastream.core.ui.Choice
+import com.saeedkolivand.metastream.core.ui.Stepper
+import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.platforms.Account
 import com.saeedkolivand.metastream.platforms.Category
 import com.saeedkolivand.metastream.platforms.Kick
@@ -109,7 +112,7 @@ private fun TwitchInfo() {
     Field("Tags, comma separated", tags, { tags = it })
     Field("Language (e.g. en)", language, { language = it })
     Stepper("Stream delay: ${delay}s", delay, 0..900, 15) { delay = it }
-    for ((id, name) in options) ToggleRow(name, labels[id] == true) { labels = labels + (id to it) }
+    for ((id, name) in options) SwitchRow(name, labels[id] == true) { labels = labels + (id to it) }
     Note("Stream delay is Partner-only; Twitch ignores or errors it otherwise. It's the anti-stream-sniping delay, worth it for IRL.")
     ApplyButton("Apply changes", title.isNotEmpty()) { Twitch.apply(title, category, cleanTags(tags), labels, delay, language) }
 }

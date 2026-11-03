@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.core.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,6 +23,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,11 +44,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.saeedkolivand.metastream.R
 
 /** iOS inset-grouped colours. */
-internal val CardColor = Color(0xFF1C1C1E)
-internal val Secondary = Color(0xFF8E8E93)
+val CardColor = Color(0xFF1C1C1E)
+val Secondary = Color(0xFF8E8E93)
 private val SwitchOff = Color(0xFF39393D)
 private val SwitchOn = Color(0xFF34C759)
 
@@ -56,7 +56,7 @@ private val SwitchOn = Color(0xFF34C759)
  * centred), and a grey [footer] under the card. No title = card alone.
  */
 @Composable
-internal fun Section(title: String?, footer: String? = null, content: @Composable () -> Unit) {
+fun Section(title: String?, footer: String? = null, content: @Composable () -> Unit) {
     // iOS inset-grouped spacing: 35 pt between sections (27 here + the page's 8), header 7 pt over its card.
     Column(Modifier.padding(top = 27.dp)) {
         if (title != null) {
@@ -100,11 +100,11 @@ private fun Rows(content: @Composable () -> Unit) {
 
 /** A grey explanatory line inside a card (iOS puts most of these in the section footer instead). */
 @Composable
-internal fun Footnote(text: String) = Text(text, color = Secondary, fontSize = 13.sp)
+fun Footnote(text: String) = Text(text, color = Secondary, fontSize = 13.sp)
 
 /** iOS UISwitch: green when on, a full-size white thumb both ways. */
 @Composable
-internal fun IosSwitch(checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) = Switch(
+fun IosSwitch(checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) = Switch(
     checked,
     onChange,
     enabled = enabled,
@@ -120,7 +120,7 @@ internal fun IosSwitch(checked: Boolean, onChange: (Boolean) -> Unit, enabled: B
 )
 
 @Composable
-internal fun SwitchRow(label: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
+fun SwitchRow(label: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f), color = if (enabled) Color.White else Secondary, fontSize = 17.sp)
         IosSwitch(checked, onChange, enabled)
@@ -129,7 +129,7 @@ internal fun SwitchRow(label: String, checked: Boolean, enabled: Boolean = true,
 
 /** iOS NavigationLink row, with the Settings-style colour tile when [icon] is set and a grey [value] before the chevron. */
 @Composable
-internal fun NavRow(title: String, icon: Int? = null, tint: Color = Secondary, value: String = "", badge: Int = 0, onClick: () -> Unit) {
+fun NavRow(title: String, icon: Int? = null, tint: Color = Secondary, value: String = "", badge: Int = 0, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         if (icon != null) {
             Box(Modifier.size(30.dp).clip(RoundedCornerShape(7.dp)).background(tint), Alignment.Center) {
@@ -153,7 +153,7 @@ internal fun NavRow(title: String, icon: Int? = null, tint: Color = Secondary, v
 
 /** iOS LabeledContent: a label and a grey value on one row. */
 @Composable
-internal fun ValueRow(label: String, value: String) {
+fun ValueRow(label: String, value: String) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f), fontSize = 17.sp)
         Text(value, color = Secondary, fontSize = 17.sp, maxLines = 1)
@@ -162,13 +162,14 @@ internal fun ValueRow(label: String, value: String) {
 
 /** iOS labeledSlider: the label and its value on one line, the slider under them, all one row. */
 @Composable
-internal fun SliderRow(
+fun SliderRow(
     label: String,
     valueText: String,
     value: Float,
     range: ClosedFloatingPointRange<Float>,
     enabled: Boolean = true,
     steps: Int = 0,
+    onChangeFinished: (() -> Unit)? = null,
     onChange: (Float) -> Unit
 ) {
     Column(Modifier.fillMaxWidth().padding(top = 6.dp)) {
@@ -182,6 +183,7 @@ internal fun SliderRow(
             enabled = enabled && range.endInclusive > range.start,
             valueRange = range,
             steps = steps,
+            onValueChangeFinished = onChangeFinished,
             colors = SliderDefaults.colors(
                 thumbColor = Color.White,
                 activeTrackColor = SystemBlue,
@@ -193,9 +195,16 @@ internal fun SliderRow(
     }
 }
 
+/** A [SliderRow] that commits once the finger lifts: for values whose every change re-renders the stream. */
+@Composable
+fun SliderRow(label: String, value: Float, range: ClosedFloatingPointRange<Float>, format: String, onCommit: (Float) -> Unit) {
+    var draft by remember(value) { mutableFloatStateOf(value) }
+    SliderRow(label, format.format(draft), draft, range, onChangeFinished = { onCommit(draft) }) { draft = it }
+}
+
 /** iOS Stepper: the label, then a grey − | + pill stepping [value] by [step] inside [range]. */
 @Composable
-internal fun Stepper(label: String, value: Int, range: IntRange, step: Int = 1, enabled: Boolean = true, onChange: (Int) -> Unit) {
+fun Stepper(label: String, value: Int, range: IntRange, step: Int = 1, enabled: Boolean = true, onChange: (Int) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f), color = if (enabled) Color.White else Secondary, fontSize = 17.sp)
         Row(Modifier.clip(RoundedCornerShape(8.dp)).background(Color(0xFF3A3A3C)), verticalAlignment = Alignment.CenterVertically) {
@@ -224,7 +233,7 @@ internal fun Stepper(label: String, value: Int, range: IntRange, step: Int = 1, 
 
 /** iOS Form Button: a full-width blue (or red) text row. */
 @Composable
-internal fun ActionRow(text: String, enabled: Boolean = true, destructive: Boolean = false, onClick: () -> Unit) = Text(
+fun ActionRow(text: String, enabled: Boolean = true, destructive: Boolean = false, onClick: () -> Unit) = Text(
     text,
     Modifier.fillMaxWidth().clickable(enabled, onClick = onClick).padding(vertical = 4.dp),
     color = if (!enabled) {
@@ -239,7 +248,7 @@ internal fun ActionRow(text: String, enabled: Boolean = true, destructive: Boole
 
 /** iOS Form TextField / SecureField: borderless, the label as its placeholder. */
 @Composable
-internal fun TextRow(
+fun TextRow(
     placeholder: String,
     value: String,
     onChange: (String) -> Unit,
@@ -273,7 +282,7 @@ internal fun TextRow(
 
 /** iOS menu Picker: the label, the picked value in grey with ⌃⌄; a tap opens the list with a check on the current one. */
 @Composable
-internal fun <T> Choice(label: String, options: List<Pair<T, String>>, selected: T, enabled: Boolean = true, onSelect: (T) -> Unit) {
+fun <T> Choice(label: String, options: List<Pair<T, String>>, selected: T, enabled: Boolean = true, onSelect: (T) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth().clickable(enabled) { open = true }, verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f), color = if (enabled) Color.White else Secondary, fontSize = 17.sp)
@@ -300,7 +309,7 @@ internal fun <T> Choice(label: String, options: List<Pair<T, String>>, selected:
 
 /** iOS .pickerStyle(.segmented): a grey track with the picked segment raised as a lighter pill. */
 @Composable
-internal fun <T> Segmented(options: List<Pair<T, String>>, selected: T, enabled: Boolean = true, onSelect: (T) -> Unit) {
+fun <T> Segmented(options: List<Pair<T, String>>, selected: T, enabled: Boolean = true, onSelect: (T) -> Unit) {
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).background(Color(0xFF2C2C2E)).padding(2.dp)) {
         options.forEach { (value, text) ->
             val on = selected == value
@@ -320,7 +329,7 @@ internal fun <T> Segmented(options: List<Pair<T, String>>, selected: T, enabled:
 
 /** One check row of an inline iOS picker (long lists such as microphones or themes). */
 @Composable
-internal fun RadioRow(label: String, selected: Boolean, onClick: () -> Unit) {
+fun RadioRow(label: String, selected: Boolean, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f), fontSize = 17.sp)
         if (selected) Text("✓", color = SystemBlue, fontSize = 17.sp)

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
+import com.saeedkolivand.metastream.core.ui.rememberHaptic
 
 private val CardSecondary = Color.White.copy(alpha = 0.6f)
 

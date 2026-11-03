@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.saeedkolivand.metastream.core.network.PlatformException
+import com.saeedkolivand.metastream.core.ui.Orange
 import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.platforms.TwitchScopes

@@ -18,6 +18,10 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.saeedkolivand.metastream.core.ui.Green
+import com.saeedkolivand.metastream.core.ui.Hairline
+import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.Red
 import com.saeedkolivand.metastream.streaming.SAMPLE_WINDOW
 import com.saeedkolivand.metastream.streaming.Sample
 import com.saeedkolivand.metastream.streaming.chartMax

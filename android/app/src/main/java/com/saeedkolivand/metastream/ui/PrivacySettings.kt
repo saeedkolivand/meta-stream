@@ -1,6 +1,8 @@
 package com.saeedkolivand.metastream.ui
 
 import androidx.compose.runtime.Composable
+import com.saeedkolivand.metastream.core.ui.Section
+import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.privacy.Privacy
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source

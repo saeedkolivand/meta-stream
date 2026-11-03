@@ -20,6 +20,12 @@ import com.saeedkolivand.metastream.core.KBPS_STEP
 import com.saeedkolivand.metastream.core.MIN_KBPS
 import com.saeedkolivand.metastream.core.snapKbps
 import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.core.ui.Choice
+import com.saeedkolivand.metastream.core.ui.Secondary
+import com.saeedkolivand.metastream.core.ui.Section
+import com.saeedkolivand.metastream.core.ui.SliderRow
+import com.saeedkolivand.metastream.core.ui.Stepper
+import com.saeedkolivand.metastream.core.ui.TextRow
 import com.saeedkolivand.metastream.streaming.BONDING_TRANSPORTS
 import com.saeedkolivand.metastream.streaming.Engine
 

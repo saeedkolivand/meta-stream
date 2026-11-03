@@ -39,6 +39,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.core.ui.CardColor
+import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.Red
+import com.saeedkolivand.metastream.core.ui.Secondary
+import com.saeedkolivand.metastream.core.ui.SystemBlue
 import com.saeedkolivand.metastream.overlay.LayerType
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.Scene
@@ -47,11 +52,6 @@ import com.saeedkolivand.metastream.overlay.Scenes
 import com.saeedkolivand.metastream.platforms.Kick
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
-import com.saeedkolivand.metastream.ui.CardColor
-import com.saeedkolivand.metastream.ui.Orange
-import com.saeedkolivand.metastream.ui.Red
-import com.saeedkolivand.metastream.ui.Secondary
-import com.saeedkolivand.metastream.ui.SystemBlue
 
 /** The scene being arranged; the toolbar's New scene sets it too. */
 private var editing by mutableStateOf<String?>(null)

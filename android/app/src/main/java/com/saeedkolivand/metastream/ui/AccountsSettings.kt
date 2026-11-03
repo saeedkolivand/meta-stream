@@ -26,6 +26,12 @@ import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.bot.TwitchBot
 import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.core.ui.Green
+import com.saeedkolivand.metastream.core.ui.NavRow
+import com.saeedkolivand.metastream.core.ui.Red
+import com.saeedkolivand.metastream.core.ui.Secondary
+import com.saeedkolivand.metastream.core.ui.Section
+import com.saeedkolivand.metastream.core.ui.SystemBlue
 import com.saeedkolivand.metastream.goal.DonationHub
 import com.saeedkolivand.metastream.goal.Site
 import com.saeedkolivand.metastream.platforms.Accounts

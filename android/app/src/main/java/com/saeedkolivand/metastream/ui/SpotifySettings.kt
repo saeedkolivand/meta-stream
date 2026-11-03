@@ -4,6 +4,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.unit.sp
+import com.saeedkolivand.metastream.core.ui.ActionRow
+import com.saeedkolivand.metastream.core.ui.Secondary
+import com.saeedkolivand.metastream.core.ui.Section
 import com.saeedkolivand.metastream.platforms.Spotify
 
 /** Settings › Spotify (iOS SpotifySettingsView): the account the Now playing widget, {song} / {artist} and !song read from. */

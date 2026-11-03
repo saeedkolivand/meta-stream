@@ -13,12 +13,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -30,11 +28,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.saeedkolivand.metastream.core.ui.Choice
+import com.saeedkolivand.metastream.core.ui.SliderRow
+import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.overlay.Layer
 import com.saeedkolivand.metastream.overlay.WidgetFonts
-import com.saeedkolivand.metastream.ui.Choice
-import com.saeedkolivand.metastream.ui.SwitchRow
 import kotlinx.coroutines.delay
 
 private val Presets = listOf(
@@ -71,16 +69,6 @@ internal class DataKeys(
 }
 
 /** The slider moves a local draft; the layer is written once, when the finger lifts, because each write rebuilds the scene on stream. */
-@Composable
-internal fun SliderRow(label: String, value: Float, range: ClosedFloatingPointRange<Float>, format: String, onCommit: (Float) -> Unit) {
-    var draft by remember(value) { mutableFloatStateOf(value) }
-    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-        Text(label)
-        Text(format.format(draft), color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
-    }
-    Slider(draft, { draft = it }, valueRange = range, onValueChangeFinished = { onCommit(draft) })
-}
-
 @Composable
 internal fun DataKeys.NumSlider(key: String, label: String, range: ClosedFloatingPointRange<Float>, unit: String = "") =
     SliderRow(label, num(key).coerceIn(range), range, "%.0f$unit") { putNum(key, it) }

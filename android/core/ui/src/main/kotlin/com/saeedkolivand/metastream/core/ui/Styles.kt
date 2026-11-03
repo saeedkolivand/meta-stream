@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.core.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,23 +26,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 // iOS system colors (dark appearance), so the two apps read the same.
-internal val Green = Color(0xFF30D158)
-internal val Red = Color(0xFFFF453A)
-internal val Orange = Color(0xFFFF9F0A)
-internal val SystemBlue = Color(0xFF0A84FF)
-internal val Scrim = Color.Black.copy(alpha = 0.45f)
-internal val Hairline = Color.White.copy(alpha = 0.15f)
+val Green = Color(0xFF30D158)
+val Red = Color(0xFFFF453A)
+val Orange = Color(0xFFFF9F0A)
+val SystemBlue = Color(0xFF0A84FF)
+val Scrim = Color.Black.copy(alpha = 0.45f)
+val Hairline = Color.White.copy(alpha = 0.15f)
 
 /** Light tap for buttons, strong for GO LIVE and the quick tiles (iOS hapticTap). */
 @Composable
-internal fun rememberHaptic(): (Boolean) -> Unit {
+fun rememberHaptic(): (Boolean) -> Unit {
     val h = LocalHapticFeedback.current
     return { strong -> h.performHapticFeedback(if (strong) HapticFeedbackType.LongPress else HapticFeedbackType.ContextClick) }
 }
 
 /** iOS StripStyles.pill: translucent capsule, colored icon, small white monospaced-digit text. */
 @Composable
-internal fun Pill(icon: Int, text: String, color: Color, onClick: (() -> Unit)? = null) {
+fun Pill(icon: Int, text: String, color: Color, onClick: (() -> Unit)? = null) {
     val haptic = rememberHaptic()
     val tap = if (onClick == null) {
         Modifier
@@ -72,7 +72,7 @@ internal fun Pill(icon: Int, text: String, color: Color, onClick: (() -> Unit)? 
 
 /** iOS StripStyles.roundButton: 52dp circle, white with a black icon when [filled]; [fill] paints it a status colour instead. */
 @Composable
-internal fun RoundButton(
+fun RoundButton(
     icon: Int,
     filled: Boolean,
     size: Dp = 52.dp,

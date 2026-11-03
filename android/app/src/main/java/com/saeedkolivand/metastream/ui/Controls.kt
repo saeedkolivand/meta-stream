@@ -42,6 +42,12 @@ import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.core.ui.Green
+import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.Red
+import com.saeedkolivand.metastream.core.ui.RoundButton
+import com.saeedkolivand.metastream.core.ui.SystemBlue
+import com.saeedkolivand.metastream.core.ui.rememberHaptic
 import com.saeedkolivand.metastream.overlay.SceneRoles
 import com.saeedkolivand.metastream.privacy.BlurState
 import com.saeedkolivand.metastream.privacy.Privacy

@@ -51,6 +51,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.saeedkolivand.metastream.R
+import com.saeedkolivand.metastream.core.ui.CardColor
+import com.saeedkolivand.metastream.core.ui.Green
+import com.saeedkolivand.metastream.core.ui.NavRow
+import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.Red
+import com.saeedkolivand.metastream.core.ui.Secondary
+import com.saeedkolivand.metastream.core.ui.Section
+import com.saeedkolivand.metastream.core.ui.SystemBlue
 import com.saeedkolivand.metastream.ui.scenes.ScenesPage
 import com.saeedkolivand.metastream.ui.scenes.ScenesToolbar
 import com.saeedkolivand.metastream.ui.scenes.StingerSettings

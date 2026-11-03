@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.saeedkolivand.metastream.core.ui.TextRow
 
 /** Small building blocks shared by the Stream Manager and read-aloud settings. */
 @Composable
@@ -22,11 +23,6 @@ internal fun SectionTitle(title: String) = Text(
 
 @Composable
 internal fun Note(text: String, color: Color = Color.White.copy(alpha = 0.6f)) = Text(text, color = color, fontSize = 12.sp)
-
-@Composable
-internal fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    SwitchRow(label, checked, onChange = onChange)
-}
 
 @Composable
 internal fun Field(label: String, value: String, onChange: (String) -> Unit, singleLine: Boolean = true) =

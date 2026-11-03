@@ -14,6 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.saeedkolivand.metastream.core.ui.Secondary
+import com.saeedkolivand.metastream.core.ui.Section
+import com.saeedkolivand.metastream.core.ui.SystemBlue
+import com.saeedkolivand.metastream.core.ui.TextRow
 import com.saeedkolivand.metastream.goal.DonationHub
 import com.saeedkolivand.metastream.goal.Site
 

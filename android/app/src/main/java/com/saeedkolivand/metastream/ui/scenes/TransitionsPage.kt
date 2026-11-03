@@ -6,17 +6,17 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.core.ui.Choice
+import com.saeedkolivand.metastream.core.ui.NavRow
+import com.saeedkolivand.metastream.core.ui.RadioRow
+import com.saeedkolivand.metastream.core.ui.Section
+import com.saeedkolivand.metastream.core.ui.Segmented
+import com.saeedkolivand.metastream.core.ui.Stepper
+import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.Scenes
 import com.saeedkolivand.metastream.overlay.StingerKind
-import com.saeedkolivand.metastream.ui.Choice
-import com.saeedkolivand.metastream.ui.NavRow
 import com.saeedkolivand.metastream.ui.ObsImportSection
-import com.saeedkolivand.metastream.ui.RadioRow
-import com.saeedkolivand.metastream.ui.Section
-import com.saeedkolivand.metastream.ui.Segmented
-import com.saeedkolivand.metastream.ui.Stepper
-import com.saeedkolivand.metastream.ui.SwitchRow
 
 private val Intervals = listOf(15 to "15 seconds", 30 to "30 seconds", 60 to "1 min", 120 to "2 min", 300 to "5 min")
 

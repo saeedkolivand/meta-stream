@@ -24,6 +24,10 @@ import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
+import com.saeedkolivand.metastream.core.ui.Green
+import com.saeedkolivand.metastream.core.ui.Hairline
+import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.Red
 import com.saeedkolivand.metastream.speech.eventSummary
 
 private val Kick = Color(0xFF53FC18)

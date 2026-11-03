@@ -46,6 +46,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.meta.wearable.dat.core.types.RegistrationState
 import com.saeedkolivand.metastream.camera.Cam
+import com.saeedkolivand.metastream.core.ui.Red
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 import com.saeedkolivand.metastream.streaming.StreamingService

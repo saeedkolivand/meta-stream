@@ -10,6 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.camera.LiveControl
+import com.saeedkolivand.metastream.core.ui.ActionRow
+import com.saeedkolivand.metastream.core.ui.Red
+import com.saeedkolivand.metastream.core.ui.Secondary
+import com.saeedkolivand.metastream.core.ui.Section
 
 /** Pure list edit behind the reorder buttons; [to] is clamped, so moving past either end is a no-op. */
 internal fun <T> List<T>.moved(from: Int, to: Int): List<T> {

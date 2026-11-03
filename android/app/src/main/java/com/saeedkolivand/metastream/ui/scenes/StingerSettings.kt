@@ -6,16 +6,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.core.ui.ActionRow
+import com.saeedkolivand.metastream.core.ui.Choice
+import com.saeedkolivand.metastream.core.ui.Section
+import com.saeedkolivand.metastream.core.ui.SliderRow
+import com.saeedkolivand.metastream.core.ui.SwitchRow
+import com.saeedkolivand.metastream.core.ui.TextRow
 import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.overlay.Scenes
 import com.saeedkolivand.metastream.overlay.StingerKind
 import com.saeedkolivand.metastream.overlay.StingerStyle
-import com.saeedkolivand.metastream.ui.ActionRow
-import com.saeedkolivand.metastream.ui.Choice
-import com.saeedkolivand.metastream.ui.Section
-import com.saeedkolivand.metastream.ui.SliderRow
-import com.saeedkolivand.metastream.ui.SwitchRow
-import com.saeedkolivand.metastream.ui.TextRow
 
 /**
  * iOS StingerSettingsView, built-in stingers only. ponytail: no looping preview in Settings; "Play on preview" runs the real

@@ -17,6 +17,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.saeedkolivand.metastream.core.ui.Choice
+import com.saeedkolivand.metastream.core.ui.Footnote
+import com.saeedkolivand.metastream.core.ui.Red
+import com.saeedkolivand.metastream.core.ui.Section
+import com.saeedkolivand.metastream.core.ui.SliderRow
+import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.overlay.AlertStyle
 import com.saeedkolivand.metastream.overlay.ChatStyle
 import com.saeedkolivand.metastream.overlay.DonationKind
@@ -29,11 +35,6 @@ import com.saeedkolivand.metastream.overlay.NowPlayingStyle
 import com.saeedkolivand.metastream.overlay.QrStyle
 import com.saeedkolivand.metastream.overlay.TextStyle as TextWidgetStyle
 import com.saeedkolivand.metastream.overlay.WidgetVariables
-import com.saeedkolivand.metastream.ui.Choice
-import com.saeedkolivand.metastream.ui.Footnote
-import com.saeedkolivand.metastream.ui.Red
-import com.saeedkolivand.metastream.ui.Section
-import com.saeedkolivand.metastream.ui.SwitchRow
 
 private fun defaultsOf(type: LayerType): Map<String, String> = when (type) {
     LayerType.Chat -> ChatStyle().toData()

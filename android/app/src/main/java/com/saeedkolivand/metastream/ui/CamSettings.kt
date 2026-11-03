@@ -10,6 +10,13 @@ import com.saeedkolivand.metastream.core.AppSettings
 import com.saeedkolivand.metastream.core.FPS_CHOICES
 import com.saeedkolivand.metastream.core.Lock
 import com.saeedkolivand.metastream.core.RESOLUTIONS
+import com.saeedkolivand.metastream.core.ui.Choice
+import com.saeedkolivand.metastream.core.ui.NavRow
+import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.Section
+import com.saeedkolivand.metastream.core.ui.Segmented
+import com.saeedkolivand.metastream.core.ui.SliderRow
+import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 
