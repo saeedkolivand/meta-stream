@@ -51,9 +51,11 @@ final class LiveActivityController {
                                                      commands: lockCommands())
     }
 
+    /// The bot commands offered as Lock Screen buttons; App.swift sets it (the engine doesn't know the bot).
+    var commands: () -> [LockCommand] = { [] }
+
     private func lockCommands() -> [LockCommand] {
-        guard UserDefaults.standard.bool(forKey: "lockScreenCommands") else { return [] }
-        return BotCommand.stored().filter(\.lockScreen).prefix(3).map { LockCommand(id: $0.id.uuidString, text: $0.text) }
+        UserDefaults.standard.bool(forKey: "lockScreenCommands") ? commands() : []
     }
 
     func sync(_ streamer: Streamer) {

@@ -353,7 +353,7 @@ final class Streamer: ObservableObject {
                 self.checkBlurStall()
                 self.checkDeadAir()
                 self.checkBRB()
-                AppBot.shared.tick(); LivePost.shared.second(self)   // one line: this init is already over the length rule (baseline)
+                self.onSecond(self)
                 self.checkRecordingSource()
                 self.liveActivity.sync(self)
                 if self.live, tick % 5 == 0 {
@@ -366,9 +366,14 @@ final class Streamer: ObservableObject {
 
     var rotateTask: Task<Void, Never>?
     let liveActivity = LiveActivityController()   // Lock Screen / Dynamic Island card, see LiveActivity.swift
+    /// Session events for the features the engine doesn't know (app bot, Telegram live post, session log); App.swift
+    /// sets them (Android: Session.live). onSecond runs on the stats tick, live or not.
+    var onSessionStarted: (Streamer) -> Void = { _ in }
+    var onSecond: (Streamer) -> Void = { _ in }
+    var onSessionEnded: () -> Void = {}
 
     func stopLive() {
-        if live { LivePost.shared.sessionEnded(SessionLog.shared.end()) }
+        if live { onSessionEnded() }
         reconnectTask?.cancel()
         reconnectTask = nil
         srtla?.stop(); srtla = nil; srtlaLinks = []

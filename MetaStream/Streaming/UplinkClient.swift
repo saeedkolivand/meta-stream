@@ -359,8 +359,7 @@ extension Streamer {
                     liveSince = now
                     evaluateSource()
                     startRole()
-                    SessionLog.shared.begin(title: LivePost.shared.title)
-                    LivePost.shared.sessionStarted(self)
+                    onSessionStarted(self)
                 }
             } catch {
                 if Task.isCancelled { return }

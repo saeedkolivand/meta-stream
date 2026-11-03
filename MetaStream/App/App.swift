@@ -1,3 +1,4 @@
+import ActivityShared
 import Chat
 import CoreLogging
 import CoreUI
@@ -47,6 +48,12 @@ struct MetaStreamApp: App {
             // Streamer speaks connection changes on Speaker's System lane (never muted).
             .onAppear {
                 streamer.speaker = speaker; streamer.privacy = privacy
+                streamer.onSessionStarted = { SessionLog.shared.begin(title: LivePost.shared.title); LivePost.shared.sessionStarted($0) }
+                streamer.onSecond = { AppBot.shared.tick(); LivePost.shared.second($0) }
+                streamer.onSessionEnded = { LivePost.shared.sessionEnded(SessionLog.shared.end()) }
+                streamer.liveActivity.commands = {
+                    BotCommand.stored().filter(\.lockScreen).prefix(3).map { LockCommand(id: $0.id.uuidString, text: $0.text) }
+                }
                 speaker.skipMessage = { !BotList.reads($0.user, $0.text) || AppBot.shared.isOwn($0) }
                 AppBot.shared.streamer = streamer; AppBot.shared.platforms = platforms
                 LivePost.shared.platforms = platforms; LivePost.shared.resume()
