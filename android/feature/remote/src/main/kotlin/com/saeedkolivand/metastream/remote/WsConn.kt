@@ -12,7 +12,7 @@ import java.util.Base64
  * to 64 KB, ping/pong and close. ponytail: no fragmented messages and no extensions (obs-websocket clients send neither);
  * a fragment closes the connection. Blocking; one IO coroutine per connection.
  */
-internal class WsConn(private val sock: Socket) {
+class WsConn(private val sock: Socket) {
     private val input = DataInputStream(sock.getInputStream().buffered())
     private val out = sock.getOutputStream()
     val peer: InetAddress = sock.inetAddress

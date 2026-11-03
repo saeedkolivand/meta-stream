@@ -257,15 +257,15 @@ object ObsServer {
             .apply { if (data.length() > 0) put("responseData", data) }
     }
 
-    internal fun out(on: Boolean): JSONObject =
+    fun out(on: Boolean): JSONObject =
         JSONObject().put("outputActive", on).put("outputState", if (on) "OBS_WEBSOCKET_OUTPUT_STARTED" else "OBS_WEBSOCKET_OUTPUT_STOPPED")
 
     /** OBS lists scenes bottom-to-top. */
-    internal fun sceneList() = JSONArray(
+    fun sceneList() = JSONArray(
         OverlayStore.scenes.map {
             it.name
         }.reversed().mapIndexed { i, n -> JSONObject().put("sceneIndex", i).put("sceneName", n).put("sceneUuid", n) }
     )
 
-    internal val requests get() = supported
+    val requests get() = supported
 }

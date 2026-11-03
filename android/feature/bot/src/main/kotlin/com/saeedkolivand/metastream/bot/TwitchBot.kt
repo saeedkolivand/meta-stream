@@ -23,7 +23,7 @@ private const val TOKEN_URL = "https://id.twitch.tv/oauth2/token"
 private const val SCOPES = "user:read:chat user:write:chat user:bot"
 
 /** The app bot's own Twitch account (iOS AppBot.connectTwitch): a second device-code login, tokens under "twitchBot". */
-internal object TwitchBot {
+object TwitchBot {
     var name by mutableStateOf(Prefs.string("botTwitchName"))
         private set
     val id get() = Prefs.string("botTwitchID")

@@ -13,7 +13,6 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
 import androidx.core.content.FileProvider
-import com.saeedkolivand.metastream.BuildConfig
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.overlay.ColorTheme

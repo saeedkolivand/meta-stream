@@ -55,6 +55,7 @@ import com.saeedkolivand.metastream.core.ui.CardColor
 import com.saeedkolivand.metastream.core.ui.Green
 import com.saeedkolivand.metastream.core.ui.NavRow
 import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.R as CoreR
 import com.saeedkolivand.metastream.core.ui.Red
 import com.saeedkolivand.metastream.core.ui.Secondary
 import com.saeedkolivand.metastream.core.ui.Section
@@ -81,7 +82,7 @@ private enum class Page(val title: String, val parent: Page?, val group: String 
     Ingest("Destination", Root, "Stream", R.drawable.ic_antenna, Red),
     Camera("Camera", Root, "Stream", R.drawable.ic_camera, Grey),
     Glasses("Meta glasses", Root, "Stream", R.drawable.ic_glasses, Indigo),
-    Audio("Audio", Root, "Stream", R.drawable.ic_car_mic, Pink),
+    Audio("Audio", Root, "Stream", CoreR.drawable.ic_car_mic, Pink),
     Privacy("Privacy blur", Root, "Stream", R.drawable.ic_eye_off, Teal),
     Scenes("Scenes & widgets", Root, "On screen", R.drawable.ic_layers, Orange),
     Transitions("Transitions", Root, "On screen", R.drawable.ic_swap, Purple),

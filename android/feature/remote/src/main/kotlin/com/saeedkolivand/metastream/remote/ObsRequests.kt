@@ -13,7 +13,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** The request handlers: plain main-thread calls into the app. */
-internal object ObsRequests {
+object ObsRequests {
     private val none = JSONObject()
 
     private fun ok(data: JSONObject = JSONObject()) = Triple(100, null, data)

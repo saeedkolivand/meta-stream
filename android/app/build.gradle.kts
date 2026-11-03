@@ -13,14 +13,7 @@ android {
         // Meta DAT credentials; empty is fine with Developer Mode on.
         manifestPlaceholders["mwdat_application_id"] = localProperty("mwdat_application_id")
         manifestPlaceholders["mwdat_client_token"] = localProperty("mwdat_client_token")
-
-        // Instagram's source_application for story sharing: the Meta Wearables app's ID (public, not a secret).
-        // The META_APP_ID secret (env, as on iOS) or local.properties; falls back to the local mwdat_application_id.
-        val metaAppId = credential("META_APP_ID").ifEmpty { localProperty("mwdat_application_id") }
-        buildConfigField("String", "META_APP_ID", "\"$metaAppId\"")
     }
-
-    buildFeatures { buildConfig = true }
 
     buildTypes {
         release {
@@ -47,6 +40,10 @@ dependencies {
     implementation(project(":feature:privacy"))
     implementation(project(":feature:engine"))
     implementation(project(":feature:overlay"))
+    implementation(project(":feature:bot"))
+    implementation(project(":feature:remote"))
+    implementation(project(":feature:reach"))
+    implementation(project(":feature:car"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.documentfile)
     implementation(platform(libs.androidx.compose.bom))
@@ -60,7 +57,6 @@ dependencies {
     implementation(libs.rootencoder.extra)
     implementation(libs.uvcandroid) // UvcSource picks the camera format; extra-sources keeps UVCAndroid off our compile classpath
     implementation(libs.okhttp)
-    implementation(libs.zxing.core) // QR widget: encoding a QR code by hand is ~600 lines; core is pure Java, no Android deps
     implementation(libs.carapp)
 
     testImplementation(libs.junit)

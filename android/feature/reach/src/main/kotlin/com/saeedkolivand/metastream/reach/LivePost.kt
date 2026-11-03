@@ -275,7 +275,7 @@ object LivePost {
     }
 
     /** The output frame after blur and overlays; null unless live, not ending and blur isn't stalled (also the story card's). */
-    internal suspend fun frame(): Bitmap? {
+    suspend fun frame(): Bitmap? {
         val bmp =
             withTimeoutOrNull(3000) { suspendCancellableCoroutine<Bitmap?> { c -> if (!Overlays.grab { c.resume(it) }) c.resume(null) } }
                 ?: return null

@@ -43,6 +43,7 @@ import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.ui.Green
 import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.R as CoreR
 import com.saeedkolivand.metastream.core.ui.Red
 import com.saeedkolivand.metastream.core.ui.RoundButton
 import com.saeedkolivand.metastream.core.ui.SystemBlue
@@ -95,7 +96,7 @@ private fun QuickControls(granted: Boolean, size: Dp) {
     if (Engine.source == Source.Glasses) return
     SoundboardButton(size)
     RoundButton(
-        if (Engine.muted) R.drawable.ic_car_mic_off else R.drawable.ic_car_mic,
+        if (Engine.muted) CoreR.drawable.ic_car_mic_off else CoreR.drawable.ic_car_mic,
         false,
         size,
         if (Engine.muted) Red else Green,
