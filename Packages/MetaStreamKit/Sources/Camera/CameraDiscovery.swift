@@ -8,7 +8,7 @@ import Foundation
 /// Lens choice is not a device property -- it's a different physical AVCaptureDevice. Discovering one
 /// per attach (rather than caching) is what makes "re-evaluated per camera" (front vs back capability)
 /// actually happen: DiscoverySession runs fresh against whichever position is being attached right now.
-public enum CameraLens: String, CaseIterable {
+public enum CameraLens: String, CaseIterable, Sendable {
     case wide, ultrawide, telephoto
 
     public var deviceType: AVCaptureDevice.DeviceType {
@@ -29,7 +29,7 @@ public enum CameraLens: String, CaseIterable {
 
 /// One button in the live lens-switch row: a physical lens paired with the exact zoom factor (and its
 /// display label) THIS device's hardware actually puts it at -- see CameraSettings.lensOptions(position:).
-public struct LensOption: Equatable {
+public struct LensOption: Equatable, Sendable {
     public let lens: CameraLens
     public let zoomFactor: Double
     public let label: String
@@ -119,7 +119,7 @@ extension CameraSettings {
 /// camera position picker changes, since front/back genuinely differ. One probe per POSITION, not per
 /// lens: captureDevice(position:) attaches one (virtual, usually) device covering every lens, so that's
 /// the only device whose capabilities matter. `nil` fields mean "camera unavailable".
-public struct CameraCapabilities {
+public struct CameraCapabilities: Sendable {
     public var zoomRange: ClosedRange<Double>
     public var focusAuto: Bool
     public var focusContinuous: Bool
@@ -193,8 +193,8 @@ public struct CameraCapabilities {
 /// than raw device.formats enumeration -- Streamer's capture pipeline already selects resolution via
 /// mixer.setSessionPreset(phoneQuality.sessionPreset), so probing exactly those presets keeps this
 /// incapable of ever offering a resolution the capture side can't actually set.
-public struct CameraFormatCapabilities {
-    public struct Resolution: Equatable {
+public struct CameraFormatCapabilities: Sendable {
+    public struct Resolution: Equatable, Sendable {
         public let height: Int
         public let frameRates: [Int]
         public let stabilizationModes: [String]

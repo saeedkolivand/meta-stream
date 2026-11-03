@@ -137,7 +137,7 @@ extension CameraSettings {
 /// deliberately not a case here -- it's a gesture directly on the preview, not a strip button.
 /// Membership and order are user-configurable; ContentView renders `LiveCameraControl.order(from:)`'s
 /// result rather than a hardcoded HStack, so adding/removing/reordering entries needs no ContentView change.
-public enum LiveCameraControl: String, CaseIterable {
+public enum LiveCameraControl: String, CaseIterable, Sendable {
     // stabilization/mirror: deliberate re-attaches, not live connection tweaks.
     // AE/AF lock and the grid/level overlays are NOT cases here: lock is a long-press gesture on the
     // preview, and grid/level are Settings-only viewfinder toggles, never strip buttons.
