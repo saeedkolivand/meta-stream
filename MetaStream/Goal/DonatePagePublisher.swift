@@ -68,13 +68,13 @@ final class DonatePagePublisher: ObservableObject {
 
     // MARK: triggers
 
-    /// Once, from the App: watches the goal and the streamer's live state.
-    func start(streamer: Streamer) {
+    /// Once, from the App: watches the goal and the live state (Streamer.$live; Android: Session.live).
+    func start(live: some Publisher<Bool, Never>) {
         guard cancellables.isEmpty else { return }
         GoalStore.shared.objectWillChange
             .sink { [weak self] _ in Task { @MainActor in self?.request() } }   // the Task runs after the change landed
             .store(in: &cancellables)
-        streamer.$live
+        live
             .sink { [weak self] v in Task { @MainActor in self?.liveChanged(v) } }   // $live emits the new value
             .store(in: &cancellables)
     }
