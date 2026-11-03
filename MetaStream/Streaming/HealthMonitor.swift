@@ -1,4 +1,5 @@
 // Health monitoring + diagnostics: battery/thermal observers, probes, device descriptions.
+import CoreLogging
 import Foundation
 import AVFoundation
 import UIKit

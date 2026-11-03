@@ -1,3 +1,4 @@
+import CoreNetwork
 import Foundation
 
 /// YouTube Google OAuth for iOS (PKCE, no secret, bundle-id scheme redirect), broadcast

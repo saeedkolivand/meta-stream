@@ -1,3 +1,6 @@
+import CoreLogging
+import CoreNetwork
+import CoreStorage
 import Foundation
 import AuthenticationServices
 import CryptoKit
@@ -5,32 +8,6 @@ import UIKit
 
 struct StreamCategory: Identifiable, Hashable { let id: String; let name: String }
 struct RestreamDestination: Identifiable, Hashable { let id: Int; let name: String; let url: String; var active: Bool }
-
-// MARK: - TokenStore helpers
-
-/// Canonical TokenStore lives in Core/Storage/TokenStore.swift; these helpers
-/// persist access/refresh tokens so services never touch Platforms internals.
-
-extension TokenStore {
-    /// Persists access/refresh tokens; returns the granted scope list when the provider sends one.
-    /// Only Twitch sends `scope` as an array, and only Twitch's token can carry fewer scopes than
-    /// requested, so only Twitch callers need the return value.
-    @discardableResult
-    func saveTokens(_ json: [String: Any], prefix: String) throws -> [String]? {
-        guard let access = json["access_token"] as? String else { throw PlatformNet.err("no access_token in \(json)") }
-        set(access, forKey: prefix + "Access")
-        if let r = json["refresh_token"] as? String { set(r, forKey: prefix + "Refresh") }
-        if let scopes = json["scope"] as? [String] {
-            set(scopes, forKey: prefix + "Scopes")
-            return scopes
-        }
-        return nil
-    }
-
-    func forget(_ prefix: String) {
-        [prefix + "Access", prefix + "Refresh", prefix + "Scopes"].forEach { removeObject(forKey: $0) }
-    }
-}
 
 // MARK: - PlatformConfig
 
@@ -48,83 +25,6 @@ enum PlatformConfig {
     static let kickIngest = "rtmps://fa723fc1b171.global-contribute.live-video.net:443/app/"
     static let twitchIngest = "rtmps://live.twitch.tv:443/app/"
     static let restreamIngest = "rtmp://live.restream.io/live"
-}
-
-// MARK: - PlatformNet
-
-enum PlatformNet {
-    /// POST application/x-www-form-urlencoded → JSON object. Non-2xx throws unless allowError (device-flow polling).
-    static func form(_ url: String, _ fields: [String: String], allowError: Bool = false, basic: (String, String)? = nil) async throws -> [String: Any] {
-        var req = URLRequest(url: URL(string: url)!)
-        req.httpMethod = "POST"
-        req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        if let (u, p) = basic { req.setValue("Basic " + Data("\(u):\(p)".utf8).base64EncodedString(), forHTTPHeaderField: "Authorization") }
-        var c = URLComponents(); c.queryItems = fields.map { URLQueryItem(name: $0.key, value: $0.value) }
-        req.httpBody = c.percentEncodedQuery?.data(using: .utf8)
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
-        applog("auth", "POST \(url) [\(fields.keys.sorted().joined(separator: ","))] -> \(code) \(code < 300 ? "ok" : redact(String(decoding: data.prefix(400), as: UTF8.self)))", error: code >= 400)
-        let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
-        guard allowError || (200..<300).contains(code) else { throw err("HTTP \(code): \(String(data: data, encoding: .utf8) ?? "")") }
-        return json
-    }
-
-    static func s256(_ verifier: String) -> String {
-        Data(SHA256.hash(data: Data(verifier.utf8))).base64EncodedString()
-            .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
-    }
-
-    static func random(_ n: Int) -> String {
-        let chars = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
-        return String((0..<n).map { _ in chars.randomElement()! })
-    }
-
-    /// A request that failed because iOS paused the app (the user went to Safari to enter a login code) or the network
-    /// blinked: a login poll retries these instead of giving up.
-    static func isTransient(_ error: Error) -> Bool {
-        guard let url = error as? URLError else { return false }
-        return [.cancelled, .networkConnectionLost, .notConnectedToInternet, .timedOut, .cannotConnectToHost].contains(url.code)
-    }
-
-    static func err(_ s: String) -> NSError { applog("api", "error: \(s)", error: true); return NSError(domain: "Platforms", code: 1, userInfo: [NSLocalizedDescriptionKey: s]) }
-}
-
-// MARK: - PlatformEndpoint
-
-/// The single authenticated-API factory. Replaces the four per-platform wrappers
-/// (kick/helix/restream/yt): each service builds one with its base URL, token key,
-/// extra headers, and refresh closure.
-@MainActor
-struct PlatformEndpoint {
-    let base: String
-    let tokenKey: String
-    let headers: [String: String]
-    let store: TokenStore
-    let refresh: @MainActor () async throws -> Void
-
-    /// Authenticated JSON-object call with one token refresh + retry on 401.
-    func call(_ method: String, _ path: String, query: [URLQueryItem] = [], body: [String: Any]? = nil) async throws -> [String: Any] {
-        try await callAny(method, path, query: query, body: body) as? [String: Any] ?? [:]
-    }
-
-    func callAny(_ method: String, _ path: String, query: [URLQueryItem] = [], body: [String: Any]? = nil, retried: Bool = false) async throws -> Any {
-        var c = URLComponents(string: base + path)!
-        if !query.isEmpty { c.queryItems = query }
-        var req = URLRequest(url: c.url!)
-        req.httpMethod = method
-        req.setValue("Bearer \(store.string(forKey: tokenKey) ?? "")", forHTTPHeaderField: "Authorization")
-        headers.forEach { req.setValue($0.value, forHTTPHeaderField: $0.key) }
-        if let body { req.httpBody = try JSONSerialization.data(withJSONObject: body); req.setValue("application/json", forHTTPHeaderField: "Content-Type") }
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
-        applog("api", "\(method) \(c.url!.absoluteString) -> \(code) \(redact(String(decoding: data.prefix(700), as: UTF8.self)))", error: code >= 400)
-        if code == 401, !retried {
-            try await refresh()
-            return try await callAny(method, path, query: query, body: body, retried: true)
-        }
-        guard (200..<300).contains(code) else { throw PlatformNet.err("\((base + path).split(separator: "/").suffix(2).joined(separator: "/")) → HTTP \(code): \(String(data: data, encoding: .utf8) ?? "")") }
-        return data.isEmpty ? [:] : ((try? JSONSerialization.jsonObject(with: data)) ?? [:])
-    }
 }
 
 // MARK: - AuthPresenter

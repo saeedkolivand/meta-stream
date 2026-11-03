@@ -1,5 +1,6 @@
 import AVFoundation
 import AVKit
+import CoreLogging
 import SwiftUI
 
 /// "Microphone and mic mode…" row: opens the system input picker (iOS 26), which also offers

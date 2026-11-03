@@ -2,6 +2,7 @@
 // stopLive(). Streamer calls sync() from its 1 s tick, end() from stopLive() and attach() from init.
 // Without the widget extension in the build (see liveactivity.yml) Activity.request fails; we log it once.
 import ActivityKit
+import CoreLogging
 import Foundation
 
 /// Pure push decision, split out so the throttle is unit-testable.

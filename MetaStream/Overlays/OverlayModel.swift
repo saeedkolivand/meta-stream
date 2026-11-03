@@ -1,5 +1,6 @@
 // OBS scene import model: value types only, so a parsed pack crosses actors freely and persists as plain JSON.
 import CoreGraphics
+import CoreLogging
 import Foundation
 
 enum OverlayLayerType: String, Codable, Sendable {

@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreLogging
 import CoreMedia
 import Foundation
 

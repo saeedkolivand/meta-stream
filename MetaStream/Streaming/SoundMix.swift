@@ -1,6 +1,7 @@
 // Sounds into the mix: alert chime, clip audio and the soundboard play through a private AVAudioEngine, and its
 // output is fed to HaishinKit as mixer track 1 (the mic stays on track 0). The engine paces the audio in real time,
 // which track 1's tiny ring buffer needs. Nothing is audible on the phone: the engine's main mixer is silent.
+import CoreLogging
 import Foundation
 import AVFoundation
 import AudioToolbox

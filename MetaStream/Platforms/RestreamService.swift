@@ -1,3 +1,4 @@
+import CoreNetwork
 import Foundation
 
 /// Restream OAuth 2 code flow (Basic-auth token exchange, no PKCE offered), channel list,

@@ -1,3 +1,4 @@
+import CoreLogging
 import CoreModel
 import Foundation
 

@@ -55,6 +55,12 @@ targets:
     dependencies:
       - package: MetaStreamKit
         product: CoreModel
+      - package: MetaStreamKit
+        product: CoreLogging
+      - package: MetaStreamKit
+        product: CoreStorage
+      - package: MetaStreamKit
+        product: CoreNetwork
       - package: MetaWearablesDAT
         product: MWDATCore
       - package: MetaWearablesDAT
@@ -76,4 +82,10 @@ targets:
       - target: MetaStream
       - package: MetaStreamKit
         product: CoreModel
+      - package: MetaStreamKit
+        product: CoreLogging
+      - package: MetaStreamKit
+        product: CoreStorage
+      - package: MetaStreamKit
+        product: CoreNetwork
 

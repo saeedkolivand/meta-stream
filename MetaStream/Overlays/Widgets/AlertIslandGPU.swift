@@ -4,6 +4,7 @@
 import AVFoundation
 import CoreGraphics
 import CoreImage
+import CoreLogging
 import CoreModel
 import HaishinKit
 import SwiftUI

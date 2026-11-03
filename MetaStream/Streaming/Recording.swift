@@ -7,6 +7,7 @@
 //
 
 import AVFoundation
+import CoreLogging
 import HaishinKit
 import Photos
 

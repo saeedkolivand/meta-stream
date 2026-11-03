@@ -1,4 +1,5 @@
 // Uplink transport: RTMP/SRT enum, session start, connection supervision with backoff.
+import CoreLogging
 import Foundation
 import AVFoundation
 import CoreMedia

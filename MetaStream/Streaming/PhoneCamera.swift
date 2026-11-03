@@ -1,4 +1,5 @@
 // Phone sources + overlay composition: source selection, phone/dual-camera attach, mixer mode.
+import CoreLogging
 import Foundation
 import AVFoundation
 import CoreMedia

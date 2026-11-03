@@ -1,6 +1,7 @@
 // The goal and its ledger (CONTEXT.md: Goal, Donation, Pending/Missed donation; adr/0006). Every donation is recorded
 // once under "<source>:<id>", converted into the goal currency when it arrives and kept at that value. Persisted as
 // JSON in Application Support, so a goal lasts across streams until the streamer resets it.
+import CoreLogging
 import CoreModel
 import Foundation
 

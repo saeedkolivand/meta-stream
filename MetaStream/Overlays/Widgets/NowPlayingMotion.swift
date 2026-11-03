@@ -3,6 +3,7 @@
 // half; the first appearance plays only the "in" half, and a song going away only the "out" half. Offsets are in widget
 // points at the 1080-short-side scale, i.e. the mockup's px x 2.
 import CoreGraphics
+import CoreLogging
 import Foundation
 
 /// One animated element: where it sits relative to its resting place, and how visible it is.

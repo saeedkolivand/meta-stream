@@ -1,6 +1,7 @@
 // Which microphone the app is really hearing: logged at launch, at go-live and whenever iOS changes the audio route
 // (a DJI/USB receiver or Bluetooth mic plugged in or out), so "pull logs" shows what a stream used.
 import AVFoundation
+import CoreLogging
 
 enum AudioRouteLog {
     @MainActor private static var observer: NSObjectProtocol?

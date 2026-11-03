@@ -4,6 +4,7 @@
 // ponytail: JSON only (no msgpack), no studio mode, no per-input audio beyond Mic, unknown requests answer 204.
 import AVFoundation
 import Combine
+import CoreLogging
 import CryptoKit
 import Foundation
 import Network

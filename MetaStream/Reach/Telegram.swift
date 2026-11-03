@@ -1,3 +1,4 @@
+import CoreStorage
 import Foundation
 
 /// Minimal Telegram Bot API client for the Live post. Plain text only (no parse_mode, so nothing needs escaping).

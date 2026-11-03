@@ -2,6 +2,7 @@
 // Only frames that go through the mixer's Screen (offscreen mode) show them: the phone camera and the H.264
 // transcode path. Glasses HEVC passthrough never reaches the mixer, so it can't be drawn on.
 import AVFoundation
+import CoreLogging
 import HaishinKit
 import UIKit
 

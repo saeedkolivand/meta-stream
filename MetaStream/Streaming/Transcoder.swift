@@ -1,3 +1,4 @@
+import CoreLogging
 import CoreMedia
 import VideoToolbox
 

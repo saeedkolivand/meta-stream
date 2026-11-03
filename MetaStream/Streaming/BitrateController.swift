@@ -1,4 +1,5 @@
 // Adaptive bitrate: AIMD loop over the uplink queue telemetry. No-ops on HEVC passthrough.
+import CoreLogging
 import Foundation
 
 extension Streamer {

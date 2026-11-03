@@ -3,6 +3,7 @@
 // hands the widget a GPUScene. A transition, and the always-moving designs (island, disc, ticker), are moving scenes
 // whose pose is computed from t inside the renderer (video frame rate, no main-thread work); the static designs are
 // still scenes, re-shown only when the elapsed second, the progress bar's pixel width or the cover changes.
+import CoreLogging
 import HaishinKit
 import QuartzCore
 import UIKit

@@ -1,6 +1,7 @@
 import Combine
 import CoreGraphics
 import CoreImage
+import CoreLogging
 import Foundation
 import HaishinKit
 import Vision

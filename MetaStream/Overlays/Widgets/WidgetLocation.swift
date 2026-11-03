@@ -1,6 +1,7 @@
 // Speed, distance, city and weather for the {speed}/{distance}/{city}/{weather} tokens. Location runs only while a live text widget uses it
 // (retain/release), so a scene without those tokens never touches the GPS or asks for permission.
 import CoreLocation
+import CoreLogging
 import MapKit
 import Network
 import UIKit

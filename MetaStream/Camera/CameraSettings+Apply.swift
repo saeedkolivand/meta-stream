@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreLogging
 import CoreMedia
 
 /// CameraApplier: writes a CameraSettings value to a live AVCaptureDevice. Each control group owns one

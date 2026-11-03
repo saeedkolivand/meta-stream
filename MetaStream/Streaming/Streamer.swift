@@ -1,5 +1,6 @@
 // Streamer: session state + lifecycle facade. Capture, transport, bitrate, health and geometry
 // live in the Streamer/ extensions; this file keeps stored state, init and stopLive.
+import CoreLogging
 import Foundation
 import Combine
 import AVFoundation

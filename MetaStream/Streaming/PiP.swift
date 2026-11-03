@@ -1,4 +1,5 @@
 import AVKit
+import CoreLogging
 import CoreMedia
 
 /// Picture in Picture for the glasses preview layer. Starts automatically when the app goes to the background while live

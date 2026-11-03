@@ -2,6 +2,7 @@
 // Counts and types only reach the log: browser-source URLs carry account tokens.
 import Combine
 import CoreGraphics
+import CoreLogging
 import Foundation
 
 @MainActor

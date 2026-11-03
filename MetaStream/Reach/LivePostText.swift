@@ -1,3 +1,4 @@
+import CoreLogging
 import Foundation
 
 /// The words of the Live post, as pure functions of plain values (so `demo()` can check them). Labels are the only

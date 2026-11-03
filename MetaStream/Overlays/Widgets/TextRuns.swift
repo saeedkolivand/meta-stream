@@ -1,6 +1,7 @@
 // Inline icons in text widgets: "{i:clock} {time}" draws the SF Symbol named in the token where it stands, sized to the text
 // and centred on its cap height, in the text colour. This file parses a (resolved) text into runs and measures them; the
 // GPU text widget (GPUTextWidget.swift) and the editor preview both go through it, so they agree on every size.
+import CoreLogging
 import UIKit
 
 enum TextRun: Equatable, Sendable {

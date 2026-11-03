@@ -10,10 +10,19 @@ let package = Package(
     name: "MetaStreamKit",
     platforms: [.iOS(.v26)],
     products: [
-        .library(name: "CoreModel", targets: ["CoreModel"])
+        .library(name: "CoreModel", targets: ["CoreModel"]),
+        .library(name: "CoreLogging", targets: ["CoreLogging"]),
+        .library(name: "CoreStorage", targets: ["CoreStorage"]),
+        .library(name: "CoreNetwork", targets: ["CoreNetwork"])
     ],
     targets: [
-        // Plain data shared by every feature: chat events and money. Foundation only.
-        .target(name: "CoreModel", swiftSettings: strict)
+        // Plain data shared by every feature: chat events, money, text patterns. Foundation only.
+        .target(name: "CoreModel", swiftSettings: strict),
+        // applog, the Logs screen's store and file, secret redaction.
+        .target(name: "CoreLogging", dependencies: ["CoreModel"], swiftSettings: strict),
+        // TokenStore (Keychain).
+        .target(name: "CoreStorage", swiftSettings: strict),
+        // OAuth form posts, PKCE, the authenticated PlatformEndpoint.
+        .target(name: "CoreNetwork", dependencies: ["CoreLogging", "CoreStorage"], swiftSettings: strict)
     ]
 )

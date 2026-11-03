@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreLogging
 import UIKit
 
 /// Clean program feed on a USB-C display. Hot.enqueue feeds `layer` from the same taps as the on-device preview

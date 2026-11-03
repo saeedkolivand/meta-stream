@@ -1,4 +1,5 @@
 import Charts
+import CoreLogging
 import SwiftUI
 
 /// The best-time heatmap (Settings > Streams): weekday x hour of day over every recorded sample, in the current time zone.

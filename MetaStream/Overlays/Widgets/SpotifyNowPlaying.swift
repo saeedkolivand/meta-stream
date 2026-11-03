@@ -2,6 +2,9 @@
 // then GET /me/player/currently-playing every 3 s while something on screen uses it (retain / release, like
 // WidgetLocation). Spotify reports whatever the account plays on any device, so the phone's Spotify app is enough.
 // Since Feb 2026 a Development Mode app only works while the account that owns it has Premium.
+import CoreLogging
+import CoreNetwork
+import CoreStorage
 import Foundation
 import UIKit
 

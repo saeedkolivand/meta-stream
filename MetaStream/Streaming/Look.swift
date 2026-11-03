@@ -1,4 +1,5 @@
 import CoreImage
+import CoreLogging
 import Foundation
 import HaishinKit
 

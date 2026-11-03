@@ -1,6 +1,7 @@
 // Scene roles: scenes the app switches to on its own. Starting (countdown after going live), BRB (while the link is
 // too weak) and Ending (held briefly after Stop). Role switches go through applyScene, not selectScene, so they don't
 // cancel themselves; any manual selectScene ends the role (see clearRole).
+import CoreLogging
 import Foundation
 
 extension Streamer {

@@ -2,6 +2,7 @@
 // ring of files in the App Group folder and posts a Darwin notification per frame. This reads them, rebuilds
 // CMSampleBuffers and decodes them with the glasses' Transcoder; the decoded frames go to the mixer through `sink`.
 import CoreImage
+import CoreLogging
 import CoreMedia
 import Foundation
 import ImageIO

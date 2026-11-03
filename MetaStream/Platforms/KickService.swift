@@ -1,3 +1,5 @@
+import CoreLogging
+import CoreNetwork
 import Foundation
 
 /// Kick OAuth 2.1 + PKCE, channel info, chat send. State lives on Platforms (the views'

@@ -1,6 +1,7 @@
 // Bonding: SRTLA sender (BELABOX/srtla srtla_send.c + common.h). libsrt, inside HaishinKit, talks to a loopback UDP
 // socket; this proxy sends those packets to the receiver over one UDP socket per network interface and merges the
 // replies back. Constants and logic are copied from the reference; names in comments are its identifiers.
+import CoreLogging
 import Foundation
 import Network
 

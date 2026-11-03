@@ -1,6 +1,7 @@
 // iPhone -> Wi-Fi-only iPad GPS over Personal Hotspot. Those iPads have no GPS chip and tethering doesn't pass the
 // phone's fix along, so with "Share GPS with iPad" on, the iPhone answers each UDP ping with its latest fix.
 import CoreLocation
+import CoreLogging
 import Network
 
 struct SharedFix: Equatable {

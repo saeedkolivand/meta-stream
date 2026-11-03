@@ -1,5 +1,6 @@
 // Session geometry + phone picture: qualities, canvas math, blur/offscreen, camera controls,
 // black fallback and audio inputs.
+import CoreLogging
 import Foundation
 import AVFoundation
 import CoreMedia
