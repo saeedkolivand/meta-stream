@@ -1,4 +1,3 @@
-import Privacy
 import SwiftUI
 
 struct PrivacySettingsView: View {
