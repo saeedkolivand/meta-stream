@@ -3,6 +3,7 @@
 import CoreLocation
 import CoreLogging
 import Network
+import Observation
 
 struct SharedFix: Equatable {
     // ponytail: Apple's Personal Hotspot always puts the iPhone at 172.20.10.1; other hotspots are not found.
@@ -30,14 +31,14 @@ struct SharedFix: Equatable {
 }
 
 /// The iPhone side. Runs location in the background while on (needs UIBackgroundModes "location").
-@MainActor
-final class GPSShare: NSObject, ObservableObject, CLLocationManagerDelegate {
+@MainActor @Observable
+final class GPSShare: NSObject, CLLocationManagerDelegate {
     static let shared = GPSShare()
 
-    private let manager = CLLocationManager()
+    @ObservationIgnored private let manager = CLLocationManager()
     private var listener: NWListener?
-    @Published private(set) var latest: SharedFix?
-    @Published private(set) var lastAsked: Date?   // last iPad ping answered, for GPSOnlyView
+    private(set) var latest: SharedFix?
+    private(set) var lastAsked: Date?   // last iPad ping answered, for GPSOnlyView
     private var loggedReject = false
 
     func setEnabled(_ on: Bool) {

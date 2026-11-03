@@ -6,6 +6,7 @@ import CoreLogging
 import CoreNetwork
 import CoreStorage
 import Foundation
+import Observation
 import Platforms
 import UIKit
 
@@ -24,16 +25,16 @@ struct NowPlayingTrack: Equatable, Sendable {
     func progress(_ now: Date = Date()) -> Double { durationMs > 0 ? Double(elapsedMs(now)) / Double(durationMs) : 0 }
 }
 
-@MainActor
-final class SpotifyNowPlaying: ObservableObject {
+@MainActor @Observable
+final class SpotifyNowPlaying {
     static let shared = SpotifyNowPlaying()
 
     /// nil while nothing plays (paused, stopped, an ad, not connected): widgets hide.
-    @Published private(set) var track: NowPlayingTrack?
+    private(set) var track: NowPlayingTrack?
     /// Cover of `track`, nil until downloaded (designs draw their placeholder until then).
-    @Published private(set) var art: UIImage?
-    @Published private(set) var connected: Bool
-    @Published var status = ""
+    private(set) var art: UIImage?
+    private(set) var connected: Bool
+    var status = ""
 
     // ponytail: public PKCE client id (no secret exists), so it lives in code rather than a CI secret.
     static let clientID = "b8b8964ddeab49809d9f9ae1cf9b468e"

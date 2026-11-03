@@ -7,7 +7,7 @@ import SwiftUI
 struct AccountsSettingsView: View {
     @Environment(Platforms.self) var platforms
     @ObservedObject private var bot = AppBot.shared
-    @ObservedObject private var spotify = SpotifyNowPlaying.shared
+    private let spotify = SpotifyNowPlaying.shared
     private let hub = DonationHub.shared
     @AppStorage("telegramOn") private var telegramOn = false
     @AppStorage("telegramChannel") private var telegramChannel = ""
