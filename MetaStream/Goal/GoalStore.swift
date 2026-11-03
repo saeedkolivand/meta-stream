@@ -4,9 +4,10 @@
 import CoreLogging
 import CoreModel
 import Foundation
+import Observation
 
-@MainActor
-final class GoalStore: ObservableObject {
+@MainActor @Observable
+final class GoalStore {
     static let shared = GoalStore()
 
     struct Config: Codable, Equatable {
@@ -30,11 +31,13 @@ final class GoalStore: ObservableObject {
         var note = ""
     }
 
-    @Published private(set) var config = Config()
-    @Published private(set) var entries: [Entry] = []   // newest first
-    @Published private(set) var reached = false
+    private(set) var config = Config() { didSet { onChange?() } }
+    private(set) var entries: [Entry] = [] { didSet { onChange?() } }   // newest first
+    private(set) var reached = false { didSet { onChange?() } }
     /// Fires once when the total first reaches the target (the widget celebrates, read-aloud says it).
-    var onReached: (() -> Void)?
+    @ObservationIgnored var onReached: (() -> Void)?
+    /// Any goal state changed (DonatePagePublisher republishes); was a sink on objectWillChange.
+    @ObservationIgnored var onChange: (() -> Void)?
 
     private static let maxEntries = 1000
     private var file: URL {
@@ -104,7 +107,6 @@ final class GoalStore: ObservableObject {
         let key = "test:\(UUID().uuidString)"
         entries.insert(Entry(id: key, source: "test", original: money, value: Rates.shared.convert(money, to: config.currency)?.rounded(4),
                              at: Date(), state: .test, note: "Test"), at: 0)
-        objectWillChange.send()
         Task { [weak self] in
             try? await Task.sleep(for: .seconds(10))
             self?.entries.removeAll { $0.id == key }

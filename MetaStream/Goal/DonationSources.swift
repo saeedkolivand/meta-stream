@@ -6,6 +6,7 @@ import CoreLogging
 import CoreModel
 import CoreStorage
 import Foundation
+import Observation
 
 private struct Parsed {
     enum State { case paid, pending, refunded }
@@ -26,8 +27,8 @@ private struct Shape: Sendable {
                               date: ["created_at", "date", "time"])
 }
 
-@MainActor
-final class DonationHub: ObservableObject {
+@MainActor @Observable
+final class DonationHub {
     static let shared = DonationHub()
 
     enum Site: String, CaseIterable, Sendable {
@@ -60,9 +61,9 @@ final class DonationHub: ObservableObject {
 
     private enum Outcome { case ok, rejected, unreachable }
 
-    @Published private(set) var status: [Site: String] = [:]
-    @Published private(set) var widgetStatus = ""
-    @Published private(set) var reymitOverlayStatus = ""
+    private(set) var status: [Site: String] = [:]
+    private(set) var widgetStatus = ""
+    private(set) var reymitOverlayStatus = ""
     private var widgetIds: [Int: String] = [:]   // Donofa widget: child numeric id -> identifier (a single widget maps itself)
     private var widgetSeen: Set<Int> = []   // action ids already handled
 

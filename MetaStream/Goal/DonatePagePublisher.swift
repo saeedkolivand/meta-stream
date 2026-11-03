@@ -5,16 +5,17 @@ import CoreLogging
 import CoreModel
 import CoreStorage
 import Foundation
+import Observation
 import Combine
 
-@MainActor
-final class DonatePagePublisher: ObservableObject {
+@MainActor @Observable
+final class DonatePagePublisher {
     static let shared = DonatePagePublisher()
     static let defaultURL = "https://donate.iamsaeed.dev"
 
     enum Outcome: Equatable { case none, ok(Date), rejected, unreachable, http(Int), badURL }
 
-    @Published private(set) var outcome = Outcome.none
+    private(set) var outcome = Outcome.none
 
     private let keychain = KeychainTokenStore()
     private var live = false
@@ -22,7 +23,7 @@ final class DonatePagePublisher: ObservableObject {
     private var scheduled = false
     private var beat: Task<Void, Never>?
     private var loggedKind: String?                  // one log line per kind of failure until it works again
-    private var cancellables: Set<AnyCancellable> = []
+    @ObservationIgnored private var cancellables: Set<AnyCancellable> = []
 
     // MARK: settings
 
@@ -71,9 +72,8 @@ final class DonatePagePublisher: ObservableObject {
     /// Once, from the App: watches the goal and the live state (Streamer.$live; Android: Session.live).
     func start(live: some Publisher<Bool, Never>) {
         guard cancellables.isEmpty else { return }
-        GoalStore.shared.objectWillChange
-            .sink { [weak self] _ in Task { @MainActor in self?.request() } }   // the Task runs after the change landed
-            .store(in: &cancellables)
+        // The Task runs after the whole change landed (a load sets config, entries and reached one by one).
+        GoalStore.shared.onChange = { [weak self] in Task { @MainActor in self?.request() } }
         live
             .sink { [weak self] v in Task { @MainActor in self?.liveChanged(v) } }   // $live emits the new value
             .store(in: &cancellables)

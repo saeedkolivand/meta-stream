@@ -4,9 +4,10 @@
 import CoreLogging
 import CoreModel
 import Foundation
+import Observation
 
-@MainActor
-final class Rates: ObservableObject {
+@MainActor @Observable
+final class Rates {
     static let shared = Rates()
 
     struct Quote: Codable, Equatable {
@@ -14,11 +15,11 @@ final class Rates: ObservableObject {
         var at: Date
     }
 
-    @Published private(set) var tomanPerUSD: Quote?   // Nobitex USDT in toman
-    @Published private(set) var usdPerEUR: Quote?     // ECB
-    @Published private(set) var cryptoUSD: [String: Quote] = [:]
+    private(set) var tomanPerUSD: Quote?   // Nobitex USDT in toman
+    private(set) var usdPerEUR: Quote?     // ECB
+    private(set) var cryptoUSD: [String: Quote] = [:]
     /// Called after every refresh: pending donations may be convertible now.
-    var onUpdate: (() -> Void)?
+    @ObservationIgnored var onUpdate: (() -> Void)?
 
     /// A market rate older than this is not used (the streamer's rate or pending instead). The ECB publishes
     /// working days only, so its euro rate may be up to a long weekend old.

@@ -6,8 +6,8 @@ import SwiftUI
 /// The donation-site keys and the donate page have their own screens. Money is Decimal throughout (parsed from text, never Double).
 struct GoalSettingsView: View {
     @Environment(ChatFeed.self) var chat
-    @ObservedObject private var goal = GoalStore.shared
-    @ObservedObject private var rates = Rates.shared
+    private var goal = GoalStore.shared
+    private var rates = Rates.shared
 
     @State private var title = ""
     @State private var target = ""
