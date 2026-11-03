@@ -33,7 +33,7 @@ suspend fun backoff(label: String, work: suspend () -> Unit) {
 }
 
 /** One WebSocket lifetime: returns on close, throws on failure, closes the socket when cancelled. */
-internal suspend fun socket(url: String, onOpen: (WebSocket) -> Unit, onText: (WebSocket, String) -> Unit) {
+suspend fun socket(url: String, onOpen: (WebSocket) -> Unit, onText: (WebSocket, String) -> Unit) {
     val done = CompletableDeferred<Unit>()
     val ws = http.newWebSocket(
         Request.Builder().url(url).build(),
@@ -67,7 +67,7 @@ private val FALLBACK_PUSHER = "34bf7a0ff419a2a775b9" to "us2"
 private const val KICK_UA = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36"
 
 /** kick.com's channel lookup (chatroom.id, id, user_id), with the User-Agent the site's own client sends. */
-internal suspend fun kickChannel(slug: String): JSONObject {
+suspend fun kickChannel(slug: String): JSONObject {
     val req = Request.Builder().url("https://kick.com/api/v2/channels/$slug").header("User-Agent", KICK_UA).build()
     val (code, text) = Net.exec(req)
     check(code == 200) { "Kick channel lookup failed for $slug (HTTP $code)" }

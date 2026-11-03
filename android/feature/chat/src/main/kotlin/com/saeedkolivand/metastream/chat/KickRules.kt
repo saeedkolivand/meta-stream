@@ -15,7 +15,7 @@ import org.json.JSONObject
 
 // Kick's Pusher events are undocumented and get renamed, so alerts are parsed by a rules table (same JSON as iOS and
 // docs/kick-events.json): a remote copy wins, then the cached one, then this built-in.
-internal val DEFAULT_KICK_RULES = """
+val DEFAULT_KICK_RULES = """
 {
   "version": 1,
   "channels": ["chatrooms.{chatroomId}.v2", "channel.{channelId}"],
@@ -43,7 +43,7 @@ private fun valid(raw: String): JSONObject? = runCatching { JSONObject(raw).take
 /** Remote rules (cached on success), else the cached copy, else the built-in default. Never throws. */
 private val rulesHttp = http.newBuilder().callTimeout(10, TimeUnit.SECONDS).build() // shares the app pool
 
-internal suspend fun loadKickRules(): JSONObject = withContext(Dispatchers.IO) {
+suspend fun loadKickRules(): JSONObject = withContext(Dispatchers.IO) {
     val cache = File(Accounts.app.cacheDir, "kick-events.json")
     val remote = runCatching {
         rulesHttp.newCall(Request.Builder().url(RULES_URL).build()).execute().use { r ->
@@ -65,7 +65,7 @@ internal suspend fun loadKickRules(): JSONObject = withContext(Dispatchers.IO) {
 }
 
 /** `channels` with {chatroomId}/{channelId} filled in; a channel with any other placeholder is skipped. */
-internal fun kickChannels(rules: JSONObject, chatroomId: Int, channelId: Int): List<String> {
+fun kickChannels(rules: JSONObject, chatroomId: Int, channelId: Int): List<String> {
     val list = rules.optJSONArray("channels") ?: return emptyList()
     return (0 until list.length()).mapNotNull { i ->
         list.optString(i).replace("{chatroomId}", "$chatroomId").replace("{channelId}", "$channelId")
@@ -96,7 +96,7 @@ private fun number(d: JSONObject, paths: JSONArray?) = when (val v = first(d, pa
 }
 
 /** One Kick event's `data` JSON string -> alert via its rule in [rules]; null when unmatched, malformed or dropped by the rule. */
-internal fun parseKickRule(rules: JSONObject, eventName: String, dataJson: String): ChatEvent? = runCatching {
+fun parseKickRule(rules: JSONObject, eventName: String, dataJson: String): ChatEvent? = runCatching {
     val rule = rules.optJSONObject("events")?.optJSONObject(eventName) ?: return null
     val kind = KINDS[rule.optString("kind")] ?: return null
     val d = JSONObject(dataJson)

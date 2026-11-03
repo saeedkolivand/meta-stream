@@ -18,7 +18,7 @@ sealed interface EventSubFrame {
 }
 
 /** Raw EventSub frame -> [EventSubFrame]; keepalives, unknown subscription types and malformed JSON are [EventSubFrame.Ignored]. */
-internal fun parseEventSubFrame(text: String): EventSubFrame = runCatching {
+fun parseEventSubFrame(text: String): EventSubFrame = runCatching {
     val obj = JSONObject(text)
     val meta = obj.getJSONObject("metadata")
     val payload = obj.getJSONObject("payload")
@@ -45,7 +45,7 @@ private fun hexOrNull(raw: String): String? = raw.takeIf {
 }?.uppercase()
 
 /** One EventSub `event` object for [type] -> chat message or alert (iOS TwitchEventSubProvider.parseEvent). */
-internal fun parseEventSubEvent(type: String, event: JSONObject): ChatEvent? = when (type) {
+fun parseEventSubEvent(type: String, event: JSONObject): ChatEvent? = when (type) {
     "channel.chat.message" -> {
         val user = event.optString("chatter_user_name")
         val text = event.optJSONObject("message")?.optString("text")
@@ -100,7 +100,7 @@ private fun alert(event: JSONObject, nameKey: String, kind: Kind, count: Int = 0
     event.optString(nameKey).takeIf { it.isNotEmpty() }?.let { ChatEvent("twitch", it, "", kind = kind, count = count) }
 
 /** One `liveChat/messages` item -> message or Super Chat/Sticker tip; membership and other types are null. */
-internal fun parseYouTubeItem(item: JSONObject): ChatEvent? {
+fun parseYouTubeItem(item: JSONObject): ChatEvent? {
     val snippet = item.optJSONObject("snippet") ?: return null
     val author = item.optJSONObject("authorDetails") ?: return null
     val user = author.optString("displayName").ifEmpty { return null }

@@ -60,7 +60,7 @@ private fun wordRuns(text: String, byName: Map<String, String>): List<Run> {
 }
 
 /** 7TV emote list -> name to URL. Animated emotes (`data.animated`) use the animated file itself, static ones `static_name`. */
-internal fun sevenTvEmotes(emotes: JSONArray?): Map<String, String> = buildMap {
+fun sevenTvEmotes(emotes: JSONArray?): Map<String, String> = buildMap {
     for (e in emotes.objects()) {
         val data = e.optJSONObject("data")
         val host = data?.optJSONObject("host") ?: continue
@@ -72,12 +72,12 @@ internal fun sevenTvEmotes(emotes: JSONArray?): Map<String, String> = buildMap {
 }
 
 /** BTTV serves the image straight off `/emote/{id}/2x` with no extension; the content type comes from the response. */
-internal fun bttvEmotes(emotes: List<JSONObject>): Map<String, String> = emotes.filter { it.has("code") && it.has("id") }.associate {
+fun bttvEmotes(emotes: List<JSONObject>): Map<String, String> = emotes.filter { it.has("code") && it.has("id") }.associate {
     it.optString("code") to
         "https://cdn.betterttv.net/emote/${it.optString("id")}/2x"
 }
 
-internal fun ffzEmotes(json: JSONObject, setIds: List<Int>): Map<String, String> = buildMap {
+fun ffzEmotes(json: JSONObject, setIds: List<Int>): Map<String, String> = buildMap {
     val sets = json.optJSONObject("sets") ?: return@buildMap
     for (id in setIds) {
         for (e in sets.optJSONObject("$id")?.objects("emoticons").orEmpty()) {
