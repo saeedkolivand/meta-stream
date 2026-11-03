@@ -22,7 +22,8 @@ let package = Package(
         .library(name: "Chat", targets: ["Chat"]),
         .library(name: "Goal", targets: ["Goal"]),
         .library(name: "Speech", targets: ["Speech"]),
-        .library(name: "Privacy", targets: ["Privacy"])
+        .library(name: "Privacy", targets: ["Privacy"]),
+        .library(name: "Signals", targets: ["Signals"])
     ],
     // Same URL and floor as project.yml, so Xcode resolves one copy for the app and the package.
     dependencies: [.package(url: "https://github.com/HaishinKit/HaishinKit.swift", from: "2.3.0")],
@@ -52,6 +53,8 @@ let package = Package(
         .target(name: "Speech", dependencies: ["CoreModel", "CoreUI", "Goal"], swiftSettings: strict),
         // Privacy blur: a HaishinKit VideoEffect that pixellates faces, text and barcodes found by Vision.
         .target(name: "Privacy", dependencies: ["CoreLogging", .product(name: "HaishinKit", package: "HaishinKit.swift")],
-                swiftSettings: strict)
+                swiftSettings: strict),
+        // Real-world signals: location (city, distance), weather, Spotify now playing, iPhone-to-iPad GPS share.
+        .target(name: "Signals", dependencies: ["CoreLogging", "CoreNetwork", "CoreStorage", "Platforms"], swiftSettings: strict)
     ]
 )
