@@ -13,7 +13,7 @@ extension Rates {
 
 /// Settings › Goal › Rates: the exchange rates behind the goal and what subs and Bits are worth in it.
 struct GoalRatesView: View {
-    private var rates = Rates.shared
+    private let rates = Rates.shared
     @AppStorage("goalManualTomanPerEUR") private var manualRate = ""
 
     var body: some View {
@@ -58,7 +58,7 @@ private struct PriceField: View {
 
 /// Settings › Goal › Recent donations: the last 50, newest first; swipe to remove one from the total.
 struct GoalRecentView: View {
-    private var goal = GoalStore.shared
+    private let goal = GoalStore.shared
 
     private func money(_ amount: Decimal) -> String { Money(amount, goal.config.currency).display }
 

@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Settings › Donate page: where the public donate page lives and the key the app uses to push the live goal to it.
 struct DonatePageSettingsView: View {
-    private var page = DonatePagePublisher.shared
+    private let page = DonatePagePublisher.shared
     @AppStorage("donatePageURL") private var pageURL = DonatePagePublisher.defaultURL
     @State private var pageKey = ""
 

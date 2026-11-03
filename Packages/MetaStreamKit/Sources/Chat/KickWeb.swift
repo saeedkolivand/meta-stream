@@ -232,7 +232,7 @@ public final class KickWeb {
 
 /// Settings row: the kick.com session the unofficial commands run through.
 public struct KickSessionSection: View {
-    private var kick = KickWeb.shared
+    private let kick = KickWeb.shared
     @State private var signingIn = false
 
     public init() {}

@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Settings › Donation sources: one key per donation site (status, secure key, Save).
 struct DonationSourcesSettingsView: View {
-    private var hub = DonationHub.shared
+    private let hub = DonationHub.shared
 
     var body: some View {
         Form {
@@ -22,7 +22,7 @@ struct DonationSourcesSettingsView: View {
 private struct SiteKeyRow: View {
     let site: DonationHub.Site
     let status: String
-    private var hub = DonationHub.shared
+    private let hub = DonationHub.shared
     @State private var key = ""
     @State private var widget = ""
     @State private var overlay = ""
