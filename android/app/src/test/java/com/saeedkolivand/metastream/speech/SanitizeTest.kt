@@ -1,5 +1,6 @@
 package com.saeedkolivand.metastream.speech
 
+import com.saeedkolivand.metastream.chat.sanitizeSpeech
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

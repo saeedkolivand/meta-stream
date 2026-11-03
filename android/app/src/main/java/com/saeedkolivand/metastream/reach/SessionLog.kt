@@ -5,6 +5,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.saeedkolivand.metastream.bot.AppBot
+import com.saeedkolivand.metastream.chat.ChatSettings
+import com.saeedkolivand.metastream.chat.isBlocked
+import com.saeedkolivand.metastream.chat.offensive
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
@@ -13,9 +16,6 @@ import com.saeedkolivand.metastream.goal.DonationPrices
 import com.saeedkolivand.metastream.goal.GoalStore
 import com.saeedkolivand.metastream.goal.Rates
 import com.saeedkolivand.metastream.overlay.WidgetLocation
-import com.saeedkolivand.metastream.speech.SpeechSettings
-import com.saeedkolivand.metastream.speech.isBlocked
-import com.saeedkolivand.metastream.speech.offensive
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 import java.io.File
@@ -136,7 +136,7 @@ object SessionLog {
         val key = "${e.platform}|${e.userId}"
         val first = key !in rec.chatterCounts
         rec.chatterCounts[key] = (rec.chatterCounts[key] ?: 0) + 1
-        rec.chatterNames[key] = if (isBlocked(e.user, SpeechSettings.blocked)) "" else e.user // Wrapped may publish it later
+        rec.chatterNames[key] = if (isBlocked(e.user, ChatSettings.blocked)) "" else e.user // Wrapped may publish it later
         if (!first) return
         val now = System.currentTimeMillis()
         val known = registry[key]

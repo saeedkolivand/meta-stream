@@ -36,10 +36,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.chat.ChatFeed
+import com.saeedkolivand.metastream.chat.Slash
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.ui.Orange
 import com.saeedkolivand.metastream.platforms.Accounts
-import com.saeedkolivand.metastream.platforms.Slash
 import kotlinx.coroutines.launch
 
 private val NAMES = mapOf("kick" to "Kick", "twitch" to "Twitch", "youtube" to "YouTube")

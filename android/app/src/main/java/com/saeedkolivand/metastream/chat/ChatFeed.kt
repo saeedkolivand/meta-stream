@@ -9,8 +9,6 @@ import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.platforms.YouTube
-import com.saeedkolivand.metastream.speech.Speaker
-import com.saeedkolivand.metastream.speech.SpeechSettings
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -38,6 +36,10 @@ object ChatFeed {
         private set
 
     /** Latest follower/subscriber names for the {follower}/{sub} text tokens. */
+    /** More than one chat origin is live, so read-aloud says "on Kick, ...". */
+    @Volatile var multiOrigin = false
+        private set
+
     var lastFollower by mutableStateOf("")
         private set
     var lastSubscriber by mutableStateOf("")
@@ -114,7 +116,7 @@ object ChatFeed {
     fun restartKick(wait: Long = 0) {
         kickJob?.cancel()
         val slug = kickSlug.trim()
-        kickJob = if (slug.isEmpty() || !SpeechSettings.kickChat.value) {
+        kickJob = if (slug.isEmpty() || !ChatSettings.kickChat.value) {
             null
         } else {
             launchSource("kick", wait) {
@@ -129,7 +131,7 @@ object ChatFeed {
         twitchJob?.cancel()
         val channel = twitchChannel.trim()
         twitchJob = when {
-            !SpeechSettings.twitchChat.value -> null
+            !ChatSettings.twitchChat.value -> null
             Twitch.connected -> launchSource("twitch eventsub", wait) { twitchEventSub(::onChat) }
             channel.isNotEmpty() -> launchSource("twitch", wait) { twitchChat(channel, ::onChat) }
             else -> null
@@ -140,13 +142,13 @@ object ChatFeed {
     fun restartYouTube() {
         youtubeJob?.cancel()
         youtubeJob =
-            if (YouTube.connected && SpeechSettings.youtubeChat.value) launchSource("youtube", 0) { youtubeChat(::onChat) } else null
+            if (YouTube.connected && ChatSettings.youtubeChat.value) launchSource("youtube", 0) { youtubeChat(::onChat) } else null
         updateOrigins()
     }
 
     // Only prefix "on Kick, ..." when more than one origin is live; otherwise it is noise on every line.
     private fun updateOrigins() {
-        Speaker.showOrigin = listOfNotNull(kickJob, twitchJob, youtubeJob).size > 1
+        multiOrigin = listOfNotNull(kickJob, twitchJob, youtubeJob).size > 1
     }
 
     /** True when at least one origin could produce chat (drives the sheet's empty state). */

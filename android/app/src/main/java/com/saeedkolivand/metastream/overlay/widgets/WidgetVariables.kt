@@ -2,12 +2,12 @@ package com.saeedkolivand.metastream.overlay
 
 import android.os.BatteryManager
 import com.saeedkolivand.metastream.chat.ChatFeed
+import com.saeedkolivand.metastream.chat.ChatSettings
+import com.saeedkolivand.metastream.chat.isBlocked
 import com.saeedkolivand.metastream.platforms.Kick
 import com.saeedkolivand.metastream.platforms.Spotify
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.platforms.YouTube
-import com.saeedkolivand.metastream.speech.SpeechSettings
-import com.saeedkolivand.metastream.speech.isBlocked
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Health
 import java.text.DateFormat
@@ -59,8 +59,8 @@ internal object WidgetVariables {
         "{distance}" -> WidgetLocation.distanceText(Engine.liveSince)
         "{city}" -> WidgetLocation.cityText
         "{weather}" -> WidgetWeather.text
-        "{follower}" -> ChatFeed.lastFollower.takeUnless { isBlocked(it, SpeechSettings.blocked) }.orEmpty()
-        "{sub}" -> ChatFeed.lastSubscriber.takeUnless { isBlocked(it, SpeechSettings.blocked) }.orEmpty()
+        "{follower}" -> ChatFeed.lastFollower.takeUnless { isBlocked(it, ChatSettings.blocked) }.orEmpty()
+        "{sub}" -> ChatFeed.lastSubscriber.takeUnless { isBlocked(it, ChatSettings.blocked) }.orEmpty()
         "{song}" -> Spotify.track?.title.orEmpty()
         "{artist}" -> Spotify.track?.artist.orEmpty()
         else -> token

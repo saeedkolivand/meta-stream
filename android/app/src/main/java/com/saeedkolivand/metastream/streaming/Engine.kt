@@ -26,6 +26,7 @@ import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.logging.redactFromLogs
+import com.saeedkolivand.metastream.core.model.Session
 import com.saeedkolivand.metastream.core.storage.AppSettings
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.storage.VideoParams
@@ -258,6 +259,7 @@ object Engine {
         // Glasses passthrough has no encoder knob, so Health only watches it.
         Health.start(AppSettings.ingest.bitrateKbps, s?.getStreamClient()) { s?.setVideoBitrateOnFly(it * 1000) }
         live = true
+        Session.setLive(true)
     }
 
     fun stop(reason: String = "idle") {
@@ -266,6 +268,7 @@ object Engine {
         SceneRoles.end() // a Starting countdown, BRB or Ending still up: back to the scene before it
         if (source == Source.Glasses) glasses.stop() else stream?.stopStream()
         live = false
+        Session.setLive(false)
         connected = false
         liveSince = null
         cameraOff = false

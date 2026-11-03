@@ -1,10 +1,19 @@
-package com.saeedkolivand.metastream.platforms
+package com.saeedkolivand.metastream.chat
 
-import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.core.network.PlatformException
 import com.saeedkolivand.metastream.core.network.objects
+import com.saeedkolivand.metastream.platforms.Accounts
+import com.saeedkolivand.metastream.platforms.Kick
+import com.saeedkolivand.metastream.platforms.KickWeb
+import com.saeedkolivand.metastream.platforms.Twitch
+import com.saeedkolivand.metastream.platforms.TwitchScopes
+import com.saeedkolivand.metastream.platforms.announce
+import com.saeedkolivand.metastream.platforms.createClip
+import com.saeedkolivand.metastream.platforms.createMarker
+import com.saeedkolivand.metastream.platforms.raid
+import com.saeedkolivand.metastream.platforms.startCommercial
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import org.json.JSONObject

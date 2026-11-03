@@ -4,6 +4,9 @@ import android.os.BatteryManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.saeedkolivand.metastream.chat.ChatSettings
+import com.saeedkolivand.metastream.chat.isBlocked
+import com.saeedkolivand.metastream.chat.offensive
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
@@ -17,9 +20,6 @@ import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.platforms.Kick
 import com.saeedkolivand.metastream.platforms.Spotify
 import com.saeedkolivand.metastream.platforms.Twitch
-import com.saeedkolivand.metastream.speech.SpeechSettings
-import com.saeedkolivand.metastream.speech.isBlocked
-import com.saeedkolivand.metastream.speech.offensive
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Health
 import kotlinx.coroutines.CancellationException
@@ -159,7 +159,7 @@ object AppBot {
     }
 
     private fun thank(e: ChatEvent, key: String) {
-        if (!flag("botThanks") || isBlocked(e.user, SpeechSettings.blocked)) return
+        if (!flag("botThanks") || isBlocked(e.user, ChatSettings.blocked)) return
         say(e.platform, BotRules.fill(tpl(key), BotRules.safeName(e.user), e.count))
     }
 

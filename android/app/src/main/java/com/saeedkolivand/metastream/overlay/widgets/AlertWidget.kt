@@ -1,9 +1,9 @@
 package com.saeedkolivand.metastream.overlay
 
 import com.saeedkolivand.metastream.chat.ChatFeed
+import com.saeedkolivand.metastream.chat.offensive
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
-import com.saeedkolivand.metastream.speech.offensive
 import com.saeedkolivand.metastream.streaming.AudioMix
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay

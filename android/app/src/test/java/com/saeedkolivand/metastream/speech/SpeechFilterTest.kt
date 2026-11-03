@@ -1,5 +1,7 @@
 package com.saeedkolivand.metastream.speech
 
+import com.saeedkolivand.metastream.chat.isBlocked
+import com.saeedkolivand.metastream.chat.isNoise
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
 import org.junit.Assert.assertEquals

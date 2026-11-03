@@ -5,10 +5,10 @@ import android.graphics.Canvas
 import android.graphics.RectF
 import com.pedro.encoder.input.gl.render.filters.`object`.ImageFilterRender
 import com.saeedkolivand.metastream.chat.ChatFeed
+import com.saeedkolivand.metastream.chat.offensive
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.speech.eventSummary
-import com.saeedkolivand.metastream.speech.offensive
 import kotlin.math.max
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged

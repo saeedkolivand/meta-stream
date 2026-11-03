@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.saeedkolivand.metastream.bot.AppBot
 import com.saeedkolivand.metastream.bot.BotList
+import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.core.storage.Prefs
@@ -25,8 +26,8 @@ object Speaker {
     var voices by mutableStateOf<List<Voice>>(emptyList())
         private set
 
-    /** Set by ChatFeed when more than one chat origin is live, so lines say "on Kick, ...". */
-    @Volatile var showOrigin = false
+    /** More than one chat origin is live, so lines say "on Kick, ...". */
+    private val showOrigin get() = ChatFeed.multiOrigin
 
     @Volatile private var tts: TextToSpeech? = null
 

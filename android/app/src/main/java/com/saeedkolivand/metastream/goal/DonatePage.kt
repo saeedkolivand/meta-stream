@@ -5,10 +5,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import com.saeedkolivand.metastream.core.logging.applog
+import com.saeedkolivand.metastream.core.model.Session
 import com.saeedkolivand.metastream.core.network.http
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.storage.TokenStore
-import com.saeedkolivand.metastream.streaming.Engine
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.net.URI
@@ -66,7 +66,7 @@ object DonatePage {
         this.scope = scope
         scope.launch { snapshotFlow { GoalStore.total to GoalStore.config }.collect { request() } }
         scope.launch {
-            snapshotFlow { Engine.live }.collectLatest { live ->
+            Session.live.collectLatest { live ->
                 request()
                 while (live) {
                     delay(60_000)
@@ -120,7 +120,7 @@ object DonatePage {
                 (e.value ?: BigDecimal.ZERO)
         }
         val c = GoalStore.config
-        val json = body(c.title, GoalStore.total - tests, c.target, c.currency, Engine.live, Instant.now())
+        val json = body(c.title, GoalStore.total - tests, c.target, c.currency, Session.live.value, Instant.now())
         val code = withContext(Dispatchers.IO) {
             runCatching {
                 val req = Request.Builder().url(url).header("Authorization", "Bearer $key")

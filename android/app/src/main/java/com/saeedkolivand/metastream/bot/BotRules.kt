@@ -1,11 +1,11 @@
 package com.saeedkolivand.metastream.bot
 
+import com.saeedkolivand.metastream.chat.Slash
+import com.saeedkolivand.metastream.chat.sanitizeSpeech
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.platforms.Accounts
-import com.saeedkolivand.metastream.platforms.Slash
 import com.saeedkolivand.metastream.platforms.Twitch
-import com.saeedkolivand.metastream.speech.sanitizeSpeech
 import org.json.JSONArray
 import org.json.JSONObject
 

@@ -3,18 +3,9 @@ package com.saeedkolivand.metastream.speech
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.saeedkolivand.metastream.chat.ChatSettings
+import com.saeedkolivand.metastream.core.storage.BoolPref
 import com.saeedkolivand.metastream.core.storage.Prefs
-
-/** A persisted on/off setting that Compose can observe. */
-class BoolPref(private val key: String, default: Boolean) {
-    var value by mutableStateOf(Prefs.bool(key, default))
-        private set
-
-    fun set(v: Boolean) {
-        value = v
-        Prefs.put(key, v)
-    }
-}
 
 /** Read-aloud settings, same keys and defaults as iOS ReadAloudSettingsView/Speaker (@AppStorage). */
 object SpeechSettings {
@@ -23,11 +14,6 @@ object SpeechSettings {
     val follows = BoolPref("ttsFollowsOn", true)
     val subs = BoolPref("ttsSubsOn", true)
     val raids = BoolPref("ttsRaidsOn", true)
-
-    // Per-platform chat toggles: an off platform is not connected at all (no list rows, no speech).
-    val kickChat = BoolPref("voiceKick", true)
-    val twitchChat = BoolPref("voiceTwitch", true)
-    val youtubeChat = BoolPref("voiceYouTube", true)
 
     /** TextToSpeech voice name; empty = engine default. */
     var voice by mutableStateOf(Prefs.string("ttsVoiceID"))
@@ -45,18 +31,9 @@ object SpeechSettings {
     var ignored by mutableStateOf(Prefs.string("ttsIgnore"))
         private set
 
-    /** Extra words that keep a message from being read or shown on stream, comma separated (iOS ttsBlocked). */
-    var blocked by mutableStateOf(Prefs.string("ttsBlocked"))
-        private set
-
     fun pickIgnored(s: String) {
         ignored = s
         Prefs.put("ttsIgnore", s)
-    }
-
-    fun pickBlocked(s: String) {
-        blocked = s
-        Prefs.put("ttsBlocked", s)
     }
 
     fun pickVoice(name: String) {
@@ -74,7 +51,8 @@ object SpeechSettings {
         Prefs.put("ttsMinTipCents", c.toString())
     }
 
-    fun options() = SpeechOptions(messages.value, tips.value, follows.value, subs.value, raids.value, minTipCents, ignored, blocked)
+    fun options() =
+        SpeechOptions(messages.value, tips.value, follows.value, subs.value, raids.value, minTipCents, ignored, ChatSettings.blocked)
 
     const val DEFAULT_RATE = 0.5f
 }

@@ -4,12 +4,11 @@ import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import com.saeedkolivand.metastream.core.logging.applog
+import com.saeedkolivand.metastream.core.model.Session
 import com.saeedkolivand.metastream.core.network.PlatformException
 import com.saeedkolivand.metastream.core.network.strings
 import com.saeedkolivand.metastream.core.storage.TokenStore
-import com.saeedkolivand.metastream.streaming.Engine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -50,7 +49,7 @@ object Accounts {
         // While live, viewer counts are re-read every 60 s (both platforms update theirs about once a minute), so the
         // viewer pill and {viewers} don't show the go-live number all stream.
         scope.launch {
-            snapshotFlow { Engine.live }.collectLatest { live ->
+            Session.live.collectLatest { live ->
                 while (live) {
                     all.filter { it.connected }.forEach { it.refreshViewers() }
                     delay(60_000)

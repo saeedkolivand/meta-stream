@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.speech
+package com.saeedkolivand.metastream.chat
 
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import java.text.Normalizer
@@ -9,7 +9,7 @@ import java.text.Normalizer
 private val knownBots = setOf("streamelements", "streamlabs", "botrix", "kicklet", "soundalerts")
 
 /** Bots (names ending in "bot" plus the big ones that don't), !commands, and names in [ignored] (comma or space separated). */
-internal fun isNoise(user: String, text: String, ignored: String): Boolean {
+fun isNoise(user: String, text: String, ignored: String): Boolean {
     val u = user.lowercase()
     val names = ignored.lowercase().split(',', ' ', '\n', '\t').map { it.removePrefix("@") }
     return u.endsWith("bot") || u in knownBots || u in names || text.trimStart().startsWith("!")
@@ -27,7 +27,7 @@ private val marks = Regex("\\p{Mn}+")
 private val separators = Regex("[^\\p{L}013457@\$!|]+")
 
 /** Lowercased letters only, accents dropped, leetspeak undone and repeats collapsed: "N1iiGG3R" -> "niger". */
-internal fun squash(s: String): String {
+fun squash(s: String): String {
     val out = StringBuilder()
     for (raw in Normalizer.normalize(s.lowercase(), Normalizer.Form.NFD).replace(marks, "")) {
         val c = leet[raw] ?: raw
@@ -55,4 +55,4 @@ fun isBlocked(text: String, extra: String): Boolean {
  * off the stream widgets.
  */
 val ChatEvent.offensive: Boolean
-    get() = flagged || isBlocked(user, SpeechSettings.blocked) || isBlocked(text, SpeechSettings.blocked)
+    get() = flagged || isBlocked(user, ChatSettings.blocked) || isBlocked(text, ChatSettings.blocked)

@@ -11,6 +11,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.chat.ChatModerator
+import com.saeedkolivand.metastream.chat.ChatSettings
+import com.saeedkolivand.metastream.core.storage.BoolPref
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.ui.Choice
 import com.saeedkolivand.metastream.core.ui.NavRow
@@ -22,7 +24,6 @@ import com.saeedkolivand.metastream.core.ui.Stepper
 import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.core.ui.TextRow
 import com.saeedkolivand.metastream.platforms.Twitch
-import com.saeedkolivand.metastream.speech.BoolPref
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.speech.SpeechSettings
 
@@ -83,7 +84,7 @@ internal fun ReadAloudSettings(openVoice: () -> Unit, openBlocked: () -> Unit) {
         )
     }
     Section(null, "Blocked names and words.") {
-        val count = listOf(SpeechSettings.ignored, SpeechSettings.blocked).flatMap { it.split(",") }.count { it.isNotBlank() }
+        val count = listOf(SpeechSettings.ignored, ChatSettings.blocked).flatMap { it.split(",") }.count { it.isNotBlank() }
         NavRow("Don't read", value = if (count == 0) "None" else "$count", onClick = openBlocked)
     }
     Section(
@@ -107,9 +108,9 @@ internal fun ReadAloudSettings(openVoice: () -> Unit, openBlocked: () -> Unit) {
             100,
             onChange = SpeechSettings::pickMinTip
         )
-        PrefSwitch("Kick chat", SpeechSettings.kickChat) { ChatFeed.restartKick() }
-        PrefSwitch("Twitch chat", SpeechSettings.twitchChat) { ChatFeed.restartTwitch() }
-        PrefSwitch("YouTube chat", SpeechSettings.youtubeChat) { ChatFeed.restartYouTube() }
+        PrefSwitch("Kick chat", ChatSettings.kickChat) { ChatFeed.restartKick() }
+        PrefSwitch("Twitch chat", ChatSettings.twitchChat) { ChatFeed.restartTwitch() }
+        PrefSwitch("YouTube chat", ChatSettings.youtubeChat) { ChatFeed.restartYouTube() }
         val missing = Twitch.missingScopeFeatures
         if (Twitch.connected && missing.isNotEmpty()) {
             Text("Reconnect Twitch in Stream Manager to enable ${missing.joinToString(", ")}.", color = Orange, fontSize = 13.sp)
@@ -148,7 +149,7 @@ internal fun DontReadPage() {
             "in any language, Persian included."
     ) {
         TextRow("Names, e.g. nightbot, spammer123", SpeechSettings.ignored, SpeechSettings::pickIgnored)
-        TextRow("Blocked words, comma separated", SpeechSettings.blocked, SpeechSettings::pickBlocked)
+        TextRow("Blocked words, comma separated", ChatSettings.blocked, ChatSettings::pickBlocked)
     }
     val note = when (ChatModerator.status) {
         "available" -> ""

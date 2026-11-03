@@ -12,10 +12,10 @@ import android.graphics.Shader
 import android.text.Layout
 import android.text.Spanned
 import androidx.core.graphics.ColorUtils
+import com.saeedkolivand.metastream.chat.offensive
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.speech.eventSummary
-import com.saeedkolivand.metastream.speech.offensive
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.pow
