@@ -8,8 +8,8 @@ import WebKit
 @MainActor @Observable
 public final class KickWeb {
     public static let shared = KickWeb()
-    public static let commands = ["slow", "emoteonly", "followers", "followonly", "subscribers", "raid", "clip", "clear", "poll", "polldelete",
-                           "mod", "unmod", "vip", "unvip", "og", "unog", "prediction"]
+    public static let commands = ["slow", "emoteonly", "followers", "followonly", "subscribers", "raid", "clip", "clear",
+                                  "poll", "polldelete", "mod", "unmod", "vip", "unvip", "og", "unog", "prediction"]
     public private(set) var user = ""     // signed-in username; "" = not signed in
     public var signedIn: Bool { !user.isEmpty }
     @ObservationIgnored private var slug = ""
