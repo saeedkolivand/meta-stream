@@ -37,7 +37,7 @@ internal fun TimersEditor() {
         OutlinedTextField(t.text, { v -> edit(list.toMutableList().also { it[i] = t.copy(text = v) }) }, Modifier.fillMaxWidth(), label = {
             Text("Timer ${i + 1}")
         })
-        Stepper("Every ${t.minutes} min", t.minutes, 5, 5..240) { m -> edit(list.toMutableList().also { it[i] = t.copy(minutes = m) }) }
+        Stepper("Every ${t.minutes} min", t.minutes, 5..240, 5) { m -> edit(list.toMutableList().also { it[i] = t.copy(minutes = m) }) }
         TextButton({ edit(list.filterIndexed { j, _ -> j != i }) }) { Text("Remove timer") }
     }
     TextButton({ edit(list + BotTimer("")) }) { Text("Add timer") }

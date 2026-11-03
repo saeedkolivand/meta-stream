@@ -57,7 +57,15 @@ internal object SettingsValues {
 
     fun quality() = AppSettings.ingest.let { "${it.height}p · ${it.fps} fps" }
 
-    fun camera() = if (Engine.source == Source.Usb) "USB camera" else "Back"
+    fun camera() = if (Engine.source ==
+        Source.Usb
+    ) {
+        "USB camera"
+    } else if (com.saeedkolivand.metastream.camera.Cam.facingBack()) {
+        "Back"
+    } else {
+        "Front"
+    }
 
     fun glasses() = onOff("glassesEnabled")
 

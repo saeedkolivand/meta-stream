@@ -64,7 +64,7 @@ private class Live(val rect: Rect, val gx: List<Float>, val gy: List<Float>)
 private fun natural(l: Layer): Pair<Float, Float> = OverlayStore.naturalSize(l) ?: (400f to 200f)
 
 /** The layer's rectangle in output px: widgets by their frame-relative layout, OBS layers through fit + place. */
-private fun layerBox(l: Layer, outW: Int, outH: Int): Box? {
+internal fun layerBox(l: Layer, outW: Int, outH: Int): Box? {
     val (nw, nh) = natural(l)
     l.layout?.let { return widgetBox(it, nw, nh, outW.toFloat(), outH.toFloat()) }
     val pack = OverlayStore.pack ?: return null

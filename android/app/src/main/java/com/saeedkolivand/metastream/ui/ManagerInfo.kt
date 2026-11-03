@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -17,7 +16,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.saeedkolivand.metastream.platforms.Account
@@ -58,17 +56,6 @@ internal fun CategoryPicker(selected: Category?, search: suspend (String) -> Lis
 private fun Choice(options: List<Pair<String, String>>, value: String, onPick: (String) -> Unit) {
     Row(Modifier.horizontalScroll(rememberScrollState()), Arrangement.spacedBy(8.dp)) {
         for ((id, label) in options) FilterChip(value == id, { onPick(id) }, { Text(label) })
-    }
-}
-
-@Composable
-internal fun Stepper(label: String, value: Int, step: Int, range: IntRange, onChange: (Int) -> Unit) {
-    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-        Text(label)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton({ onChange((value - step).coerceAtLeast(range.first)) }, enabled = value > range.first) { Text("−") }
-            OutlinedButton({ onChange((value + step).coerceAtMost(range.last)) }, enabled = value < range.last) { Text("+") }
-        }
     }
 }
 
@@ -121,7 +108,7 @@ private fun TwitchInfo() {
     CategoryPicker(category, Twitch::search) { category = it }
     Field("Tags, comma separated", tags, { tags = it })
     Field("Language (e.g. en)", language, { language = it })
-    Stepper("Stream delay: ${delay}s", delay, 15, 0..900) { delay = it }
+    Stepper("Stream delay: ${delay}s", delay, 0..900, 15) { delay = it }
     for ((id, name) in options) ToggleRow(name, labels[id] == true) { labels = labels + (id to it) }
     Note("Stream delay is Partner-only; Twitch ignores or errors it otherwise. It's the anti-stream-sniping delay, worth it for IRL.")
     ApplyButton("Apply changes", title.isNotEmpty()) { Twitch.apply(title, category, cleanTags(tags), labels, delay, language) }

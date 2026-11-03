@@ -1,26 +1,21 @@
 package com.saeedkolivand.metastream.ui.scenes
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.overlay.Scenes
 import com.saeedkolivand.metastream.overlay.StingerKind
 import com.saeedkolivand.metastream.overlay.StingerStyle
+import com.saeedkolivand.metastream.ui.ActionRow
 import com.saeedkolivand.metastream.ui.Choice
-import com.saeedkolivand.metastream.ui.Footnote
-import com.saeedkolivand.metastream.ui.RadioRow
 import com.saeedkolivand.metastream.ui.Section
+import com.saeedkolivand.metastream.ui.SliderRow
 import com.saeedkolivand.metastream.ui.SwitchRow
+import com.saeedkolivand.metastream.ui.TextRow
 
 /**
  * iOS StingerSettingsView, built-in stingers only. ponytail: no looping preview in Settings; "Play on preview" runs the real
@@ -35,21 +30,23 @@ internal fun StingerSettings() {
         next.save()
     }
     val kind = StingerKind.of(kindId) ?: StingerKind.Lens
-    Section("Stinger") {
-        for (k in StingerKind.entries) {
-            RadioRow(k.title, k == kind) {
-                kindId = k.id
-                Prefs.put("stingerKind", k.id)
-            }
+    Section(null) {
+        Choice("Stinger", StingerKind.entries.map { it to it.title }, kind) {
+            kindId = it.id
+            Prefs.put("stingerKind", it.id)
         }
-        OutlinedButton({ Scenes.previewStinger() }, Modifier.fillMaxWidth(), enabled = Overlays.stingerCanvas() != null) {
-            Text("Play on preview")
-        }
-        Footnote("The scene switches underneath at the moment the screen is fully covered.")
+    }
+    Section(null, "The scene switches underneath at the moment the screen is fully covered, exactly as on stream.") {
+        ActionRow("Play on preview", Overlays.stingerCanvas() != null) { Scenes.previewStinger() }
     }
     Section("Motion") {
-        Text("Speed: ${"%.1f".format(style.speed)}× · ${"%.1f".format(kind.seconds(style))} s")
-        Slider(style.speed, { edit(style.copy(speed = (it * 10).toInt() / 10f)) }, valueRange = 0.4f..2f)
+        SliderRow(
+            "Speed",
+            "${"%.1f".format(style.speed)}× · ${"%.1f".format(kind.seconds(style))} s",
+            style.speed,
+            0.4f..2f,
+            steps = 15
+        ) { edit(style.copy(speed = Math.round(it * 10) / 10f)) }
     }
     Section("Look") {
         when (kind) {
@@ -68,14 +65,6 @@ internal fun StingerSettings() {
     }
     Section("Name") {
         SwitchRow("Show name", style.showName) { edit(style.copy(showName = it)) }
-        if (style.showName) {
-            OutlinedTextField(
-                style.name,
-                { edit(style.copy(name = it)) },
-                Modifier.fillMaxWidth(),
-                label = { Text("Channel name") },
-                singleLine = true
-            )
-        }
+        if (style.showName) TextRow("Channel name", style.name, { edit(style.copy(name = it)) })
     }
 }

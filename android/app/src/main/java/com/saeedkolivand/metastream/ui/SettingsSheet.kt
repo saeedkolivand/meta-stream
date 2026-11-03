@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -48,6 +49,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.ui.scenes.ScenesPage
+import com.saeedkolivand.metastream.ui.scenes.ScenesToolbar
+import com.saeedkolivand.metastream.ui.scenes.StingerSettings
 import com.saeedkolivand.metastream.ui.scenes.TransitionsPage
 
 private val Teal = Color(0xFF40C8E0)
@@ -86,7 +89,9 @@ private enum class Page(val title: String, val parent: Page?, val group: String 
     Diagnostics("Diagnostics & about", Root, "System", R.drawable.ic_info, Grey),
     Logs("Logs", Diagnostics),
     CamStrip("Customise controls", Camera),
-    CamPro("Pro controls", Camera);
+    CamPro("Pro controls", Camera),
+    Soundboard("Soundboard", Audio),
+    Stinger("Stinger", Transitions);
 
     val depth: Int get() = generateSequence(this) { it.parent }.count()
 }
@@ -99,10 +104,20 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
         BackHandler(page != Page.Root) { page = page.parent ?: Page.Root }
         Surface(Modifier.fillMaxSize(), color = Color.Black, contentColor = Color.White) {
             Column(Modifier.safeDrawingPadding()) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                    val parent = page.parent
-                    if (parent != null) TextButton({ page = parent }) { Text("‹ ${parent.title}", fontSize = 17.sp) } else Spacer(Modifier)
-                    TextButton(onDismiss) { Text("Done", fontWeight = FontWeight.Bold, fontSize = 17.sp) }
+                // iOS bar: back on the left, the sub-page's title inline in the middle, the page's actions and Done on the right.
+                Box(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 4.dp)) {
+                    page.parent?.let { parent ->
+                        TextButton({ page = parent }, Modifier.align(Alignment.CenterStart)) {
+                            Text("‹ ${parent.title}", fontSize = 17.sp, maxLines = 1)
+                        }
+                    }
+                    if (page != Page.Root) {
+                        Text(page.title, Modifier.align(Alignment.Center), fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    }
+                    Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically) {
+                        if (page == Page.Scenes) ScenesToolbar { page = Page.Transitions }
+                        TextButton(onDismiss) { Text("Done", fontWeight = FontWeight.Bold, fontSize = 17.sp) }
+                    }
                 }
                 AnimatedContent(page, transitionSpec = {
                     val forward = targetState.depth > initialState.depth
@@ -113,7 +128,11 @@ internal fun SettingsSheet(onDismiss: () -> Unit) {
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 32.dp),
                         Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(p.title, Modifier.padding(start = 4.dp, bottom = 4.dp), fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                        if (p ==
+                            Page.Root
+                        ) {
+                            Text(p.title, Modifier.padding(start = 4.dp, bottom = 4.dp), fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                        }
                         PageContent(p) { page = it }
                     }
                 }
@@ -131,10 +150,12 @@ private fun PageContent(p: Page, go: (Page) -> Unit) = when (p) {
     Page.CamStrip -> CamCustomize()
     Page.CamPro -> CameraProPage()
     Page.Glasses -> GlassesVideoPage()
-    Page.Audio -> AudioPage()
+    Page.Audio -> AudioPage { go(Page.Soundboard) }
+    Page.Soundboard -> SoundboardPage()
     Page.Privacy -> PrivacySettings()
     Page.Scenes -> ScenesPage()
-    Page.Transitions -> TransitionsPage()
+    Page.Transitions -> TransitionsPage { go(Page.Stinger) }
+    Page.Stinger -> StingerSettings()
     Page.Theme -> ThemePage()
     Page.ReadAloud -> ReadAloudSettings()
     Page.Commands -> CommandsPage()

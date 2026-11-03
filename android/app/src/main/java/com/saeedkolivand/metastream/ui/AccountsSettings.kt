@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,82 +41,41 @@ private val TwitchPurple = Color(0xFF9146FF)
 /** iOS AccountsSettingsView: every login in one place -- streaming platforms, chat bots, services and donation sites. */
 @Composable
 internal fun AccountsPage(openAppBot: () -> Unit, openTelegram: () -> Unit, openSources: () -> Unit) {
-    Section("Streaming") {
-        Rows(
-            listOf(
-                { Platform(Kick, "K", KickGreen) },
-                { Platform(Twitch, "T", TwitchPurple) },
-                { Platform(YouTube, "Y", Red) },
-                { Platform(Restream, "R", SystemBlue) }
-            )
-        )
+    Section("Streaming", "Title, category and stream key live in Stream Manager. " + Accounts.status) {
+        Platform(Kick, "K", KickGreen)
+        Platform(Twitch, "T", TwitchPurple)
+        Platform(YouTube, "Y", Red)
+        Platform(Restream, "R", SystemBlue)
     }
-    Footnote("Title, category and stream key live in Stream Manager. " + Accounts.status)
     Section("Chat bots") {
-        Rows(
-            listOf(
-                { AccountRow(KickGreen, "K", "Kick app bot", "Uses your Kick login") },
-                {
-                    if (TwitchBot.name.isEmpty()) {
-                        AccountRow(TwitchPurple, "T", "Twitch bot account", "Not connected", "Connect", TwitchBot::connect)
-                    } else {
-                        AccountRow(TwitchPurple, "T", "Twitch bot account", TwitchBot.name, "Disconnect", TwitchBot::disconnect, true)
-                    }
-                },
-                { NavRow("App bot settings", onClick = openAppBot) }
-            )
-        )
+        AccountRow(KickGreen, "K", "Kick app bot", "Uses your Kick login")
+        if (TwitchBot.name.isEmpty()) {
+            AccountRow(TwitchPurple, "T", "Twitch bot account", "Not connected", "Connect", TwitchBot::connect)
+        } else {
+            AccountRow(TwitchPurple, "T", "Twitch bot account", TwitchBot.name, "Disconnect", TwitchBot::disconnect, true)
+        }
+        NavRow("App bot settings", onClick = openAppBot)
     }
     Section("Services") {
-        Rows(
-            listOf(
-                {
-                    val on = Spotify.connected
-                    AccountRow(
-                        Green,
-                        null,
-                        "Spotify",
-                        if (on) "Connected" else "Not connected",
-                        if (on) "Disconnect" else "Connect",
-                        if (on) {
-                            ({ Spotify.disconnect() })
-                        } else {
-                            (
-                                {
-                                    Spotify.connect()
-                                    Unit
-                                }
-                                )
-                        },
-                        on,
-                        R.drawable.ic_music_note
-                    )
-                },
-                {
-                    val channel = Prefs.string("telegramChannel")
-                    val detail = if (!Prefs.bool("telegramOn")) "Live post off" else channel.ifEmpty { "No channel yet" }
-                    AccountRow(Color(0xFF64D2FF), null, "Telegram", detail, icon = R.drawable.ic_send, onRow = openTelegram)
-                }
-            )
+        val on = Spotify.connected
+        val spotify: () -> Unit = if (on) Spotify::disconnect else ({ Spotify.connect() })
+        AccountRow(
+            Green,
+            null,
+            "Spotify",
+            if (on) "Connected" else "Not connected",
+            if (on) "Disconnect" else "Connect",
+            spotify,
+            on,
+            R.drawable.ic_music_note
         )
+        val channel = Prefs.string("telegramChannel")
+        val detail = if (!Prefs.bool("telegramOn")) "Live post off" else channel.ifEmpty { "No channel yet" }
+        AccountRow(Color(0xFF64D2FF), null, "Telegram", detail, icon = R.drawable.ic_send, onRow = openTelegram)
     }
-    Section("Donation sites") {
-        Rows(
-            Site.entries.map { site ->
-                { AccountRow(Red, site.title.take(1), site.title, DonationHub.status[site] ?: "Not set up", onRow = openSources) }
-            }
-        )
-    }
-    Footnote("Keys are set on the Donation sources screen.")
-}
-
-/** Rows with iOS-style hairlines between them. */
-@Composable
-private fun Rows(rows: List<@Composable () -> Unit>) {
-    Column {
-        rows.forEachIndexed { i, row ->
-            if (i > 0) HorizontalDivider(Modifier.padding(start = 42.dp), color = Hairline)
-            row()
+    Section("Donation sites", "Keys are set on the Donation sources screen.") {
+        Site.entries.forEach { site ->
+            AccountRow(Red, site.title.take(1), site.title, DonationHub.status[site] ?: "Not set up", onRow = openSources)
         }
     }
 }
@@ -143,7 +101,7 @@ private fun AccountRow(
     onRow: (() -> Unit)? = null
 ) {
     val m = if (onRow != null) Modifier.clickable(onClick = onRow) else Modifier
-    Row(m.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(m.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(30.dp).clip(RoundedCornerShape(7.dp)).background(tint), Alignment.Center) {
             if (icon != null) {
                 Icon(painterResource(icon), null, Modifier.size(18.dp), tint = Color.White)
@@ -154,7 +112,7 @@ private fun AccountRow(
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(title, fontSize = 17.sp)
-            Text(detail, color = Color.White.copy(alpha = 0.55f), fontSize = 13.sp, maxLines = 2)
+            Text(detail, color = Secondary, fontSize = 13.sp, maxLines = 2)
         }
         if (action != null) TextButton(run) { Text(action, color = if (destructive) Red else SystemBlue) }
         if (onRow != null) Text("\u203A", color = Color.White.copy(alpha = 0.35f), fontSize = 22.sp)

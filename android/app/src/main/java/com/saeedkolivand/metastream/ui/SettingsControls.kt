@@ -15,11 +15,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
@@ -40,9 +36,11 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
@@ -293,18 +291,21 @@ internal fun <T> Choice(label: String, options: List<Pair<T, String>>, selected:
     }
 }
 
-/** iOS .pickerStyle(.segmented): the few pickers iOS shows as a segmented control. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** iOS .pickerStyle(.segmented): a grey track with the picked segment raised as a lighter pill. */
 @Composable
 internal fun <T> Segmented(options: List<Pair<T, String>>, selected: T, enabled: Boolean = true, onSelect: (T) -> Unit) {
-    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-        options.forEachIndexed { i, (value, text) ->
-            SegmentedButton(
-                selected == value,
-                { onSelect(value) },
-                SegmentedButtonDefaults.itemShape(i, options.size),
-                enabled = enabled,
-                label = { Text(text, maxLines = 1, fontSize = 13.sp) }
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).background(Color(0xFF2C2C2E)).padding(2.dp)) {
+        options.forEach { (value, text) ->
+            val on = selected == value
+            Text(
+                text,
+                Modifier.weight(1f).clip(RoundedCornerShape(7.dp)).background(if (on) Color(0xFF636366) else Color.Transparent)
+                    .clickable(enabled) { onSelect(value) }.padding(vertical = 6.dp),
+                color = if (enabled) Color.White else Secondary,
+                fontSize = 13.sp,
+                fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
+                textAlign = TextAlign.Center,
+                maxLines = 1
             )
         }
     }

@@ -11,12 +11,13 @@ import com.saeedkolivand.metastream.core.FPS_CHOICES
 import com.saeedkolivand.metastream.core.Lock
 import com.saeedkolivand.metastream.core.RESOLUTIONS
 import com.saeedkolivand.metastream.streaming.Engine
+import com.saeedkolivand.metastream.streaming.Source
 
 private fun edit(change: CameraSettings.() -> CameraSettings) = Cam.update { it.change() }
 
 /**
- * iOS CameraSettingsView: live strip, lens, zoom, resolution, stabilisation, mirror, face cam, then Pro controls on their own
- * page. ponytail: no Back/Front picker, the stream camera on Android is always the back one (the front one is the face cam).
+ * iOS CameraSettingsView: live strip, camera and lens, zoom, resolution, stabilisation, mirror, face cam, then Pro controls on
+ * their own page.
  */
 @Composable
 fun CameraSettingsContent(openStrip: () -> Unit = {}, openPro: () -> Unit = {}) {
@@ -34,6 +35,8 @@ fun CameraSettingsContent(openStrip: () -> Unit = {}, openPro: () -> Unit = {}) 
         "Lens",
         "Sets the starting zoom for that lens (also the fallback camera while the glasses are disconnected); a lens this phone lacks is skipped."
     ) {
+        val back = Cam.facingBack()
+        Segmented(listOf(true to "Back", false to "Front"), back, Engine.source == Source.Phone) { if (it != back) Engine.switchCamera() }
         Choice(
             "Lens",
             c.lenses.map { it.label to "${it.label}x" },
