@@ -107,11 +107,11 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
 
     private func sentence(for e: ChatEvent) -> String? {
         // Reading a slur aloud on stream can get the streamer banned, even when a viewer typed it.
-        let user = Self.isBlocked(e.user, extra: blocked) ? "someone" : e.user
-        let note = Self.isBlocked(e.text, extra: blocked) ? "" : Self.sanitize(e.text)
+        let user = ChatFilter.isBlocked(e.user, extra: blocked) ? "someone" : e.user
+        let note = ChatFilter.isBlocked(e.text, extra: blocked) ? "" : ChatFilter.sanitize(e.text)
         switch e.kind {
         case .message:
-            guard messagesOn, !Self.isNoise(user: e.user, text: e.text, ignored: ignored), !note.isEmpty, BotList.reads(e.user, e.text),
+            guard messagesOn, !ChatFilter.isNoise(user: e.user, text: e.text, ignored: ignored), !note.isEmpty, BotList.reads(e.user, e.text),
                   !AppBot.shared.isOwn(e) else { return nil }
             defer { lastChatter = e.user }
             return e.user == lastChatter ? note : "\(user) says \(note)"
@@ -197,53 +197,6 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         return best?.quality == .default ? nil : best
     }()
 
-    // ponytail: the slurs and self-harm phrases most often behind hateful-conduct bans; `blocked` adds any language.
-    nonisolated static let bannedTerms = ["nigger", "nigga", "faggot", "fag", "retard", "tranny", "kike", "chink", "spic",
-                              "wetback", "gook", "kys", "kill yourself", "heil hitler"]
-    private nonisolated static let squashedBanned = bannedTerms.map(squash)   // the widgets check every row many times a second
-    private nonisolated static let leet: [Character: Character] = ["0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t",
-                                                       "@": "a", "$": "s", "!": "i", "|": "i"]
-
-    /// Lowercased letters only, leetspeak undone and repeats collapsed: "N1iiGG3R" -> "niger".
-    nonisolated static func squash(_ s: String) -> String {
-        var out = ""
-        for raw in s.lowercased().folding(options: .diacriticInsensitive, locale: nil) {
-            let c = leet[raw] ?? raw
-            if c.isLetter, out.last != c { out.append(c) }
-        }
-        return out
-    }
-
-    /// True if `text` holds a banned term or one of `extra` (comma separated), through leetspeak and stretched letters;
-    /// terms of 5+ letters also through spacing ("n i g g e r"). Shorter ones match whole words only, so "spicy" passes.
-    /// ponytail: errs toward silence; a skipped harmless message costs nothing, a spoken slur can cost the channel.
-    nonisolated static func isBlocked(_ text: String, extra: String) -> Bool {
-        let terms = squashedBanned + extra.split(separator: ",").map { squash(String($0)) }.filter { !$0.isEmpty }
-        let words = text.split { !$0.isLetter && leet[$0] == nil }.map { squash(String($0)) }
-        let joined = squash(text)
-        return terms.contains { t in t.count >= 5 ? joined.contains(t) : words.contains { $0 == t || $0 == t + "s" } }
-    }
-
-    /// !commands and names in `ignored`. Bots are decided separately (BotList + botReadMode).
-    static func isNoise(user: String, text: String, ignored: String) -> Bool {
-        let u = user.lowercased()
-        let names = ignored.lowercased().split { $0 == "," || $0.isWhitespace }.map { $0.hasPrefix("@") ? String($0.dropFirst()) : String($0) }
-        // Skip spaces, line breaks and invisible format characters (zero-width space, BOM) before the "!".
-        let start = text.unicodeScalars.drop { $0.properties.isWhitespace || $0.properties.generalCategory == .format }
-        return names.contains(u) || start.first == "!"
-    }
-
-    /// Strips URLs/emotes/@ (keeping the name), collapses whitespace, caps length so one troll can't hog the queue.
-    static func sanitize(_ raw: String, maxLength: Int = 200) -> String {
-        var s = raw
-        for re in [SharedPatterns.url, SharedPatterns.kickEmote, SharedPatterns.colonEmote] {
-            s = re.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "")
-        }
-        s = SharedPatterns.mention.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "$1")
-        s = s.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
-        return s.count > maxLength ? String(s.prefix(maxLength)) : s
-    }
-
     /// "one million toman", "ten euros", "five dollars and fifty cents"; other currencies as a plain number and code.
     static func spokenMoney(_ money: Money) -> String {
         let m = money.inToman
@@ -274,15 +227,5 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         let f = NumberFormatter(); f.numberStyle = .spellOut
         let words = f.string(from: NSNumber(value: dollars)) ?? String(dollars)
         return "\(words) dollar\(dollars == 1 ? "" : "s")"
-    }
-}
-
-extension ChatEvent {
-    /// A slur or blocked word (Settings → Read aloud) in the name or text, or flagged by AI moderation:
-    /// never read aloud and kept off the stream widgets.
-    var offensive: Bool {
-        if flagged { return true }
-        let extra = UserDefaults.standard.string(forKey: "ttsBlocked") ?? ""
-        return Speaker.isBlocked(user, extra: extra) || Speaker.isBlocked(text, extra: extra)
     }
 }

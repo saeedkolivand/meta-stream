@@ -26,7 +26,7 @@ enum ChatSummary {
         let lines = events.filter { $0.kind == .message && $0.origin != "test" && !$0.offensive }
             .suffix(maxMessages)
             .compactMap { e -> String? in
-                let text = Speaker.sanitize(e.text, maxLength: 120)
+                let text = ChatFilter.sanitize(e.text, maxLength: 120)
                 return ChatModeration.isMostlyLatin(text) ? "\(e.user): \(text)" : nil
             }
         return String(lines.joined(separator: "\n").suffix(maxChars))
@@ -49,7 +49,7 @@ enum ChatSummary {
         }
         // A summary may be spoken aloud, so it gets the same word list as everything else.
         let extra = UserDefaults.standard.string(forKey: "ttsBlocked") ?? ""
-        if Speaker.isBlocked(text, extra: extra) { throw Failure.unsafe }
+        if ChatFilter.isBlocked(text, extra: extra) { throw Failure.unsafe }
         return text.trimmingCharacters(in: .whitespacesAndNewlines)
         #else
         throw Failure.unavailable

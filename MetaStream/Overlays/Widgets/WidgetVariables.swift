@@ -1,4 +1,5 @@
 // {tokens} for on-stream text, resolved from the live app state once per second by the live text widget.
+import CoreModel
 import UIKit
 
 @MainActor
@@ -62,7 +63,7 @@ enum WidgetVariables {
 
     /// A name with a slur or blocked word never goes on stream.
     private static func clean(_ name: String) -> String {
-        Speaker.isBlocked(name, extra: UserDefaults.standard.string(forKey: "ttsBlocked") ?? "") ? "" : name
+        ChatFilter.isBlocked(name, extra: UserDefaults.standard.string(forKey: "ttsBlocked") ?? "") ? "" : name
     }
 
     private static func uptime(_ since: Date?) -> String {

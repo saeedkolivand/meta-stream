@@ -1,3 +1,4 @@
+import CoreModel
 import XCTest
 import Foundation
 @testable import MetaStream
@@ -5,12 +6,12 @@ import Foundation
 @MainActor
 final class SpeakerTests: XCTestCase {
     func testDemoSanitize() {
-        let s = Speaker.sanitize("hey @Bob check https://x.co/y :LUL: [emote:12345:catJAM]   nice   clip")
+        let s = ChatFilter.sanitize("hey @Bob check https://x.co/y :LUL: [emote:12345:catJAM]   nice   clip")
         XCTAssertEqual(s, "hey Bob check nice clip", "sanitize: \(s)")
     }
 
     func testDemoSanitizeCapsLength() {
-        let capped = Speaker.sanitize(String(repeating: "a", count: 250))
+        let capped = ChatFilter.sanitize(String(repeating: "a", count: 250))
         XCTAssertEqual(capped.count, 200, "cap: \(capped.count)")
     }
 
@@ -21,21 +22,21 @@ final class SpeakerTests: XCTestCase {
     func testIsNoise() {
         XCTAssertTrue(BotList.isBot("Nightbot"))
         XCTAssertTrue(BotList.isBot("BotRix"))
-        XCTAssertTrue(Speaker.isNoise(user: "bob", text: " !discord", ignored: ""))
-        XCTAssertTrue(Speaker.isNoise(user: "Spammer", text: "hi", ignored: "alice, @spammer"))
-        XCTAssertFalse(Speaker.isNoise(user: "bob", text: "nice drive!", ignored: "alice"))
-        XCTAssertFalse(Speaker.isNoise(user: "botanist", text: "hi", ignored: ""))
+        XCTAssertTrue(ChatFilter.isNoise(user: "bob", text: " !discord", ignored: ""))
+        XCTAssertTrue(ChatFilter.isNoise(user: "Spammer", text: "hi", ignored: "alice, @spammer"))
+        XCTAssertFalse(ChatFilter.isNoise(user: "bob", text: "nice drive!", ignored: "alice"))
+        XCTAssertFalse(ChatFilter.isNoise(user: "botanist", text: "hi", ignored: ""))
     }
 
     func testIsBlocked() {
         for bad in ["you N1GG3R", "niiiiggers lol", "n i g g e r", "just kys", "F@G"] {
-            XCTAssertTrue(Speaker.isBlocked(bad, extra: ""), bad)
+            XCTAssertTrue(ChatFilter.isBlocked(bad, extra: ""), bad)
         }
         for ok in ["spicy food", "nice fagioli", "skyscraper", "good drive!"] {
-            XCTAssertFalse(Speaker.isBlocked(ok, extra: ""), ok)
+            XCTAssertFalse(ChatFilter.isBlocked(ok, extra: ""), ok)
         }
-        XCTAssertTrue(Speaker.isBlocked("what a jerkface", extra: "foo, jerkface"))
-        XCTAssertTrue(Speaker.isBlocked("کصافت", extra: "کصافت"))
+        XCTAssertTrue(ChatFilter.isBlocked("what a jerkface", extra: "foo, jerkface"))
+        XCTAssertTrue(ChatFilter.isBlocked("کصافت", extra: "کصافت"))
     }
 
     func testDemoDropOldestBounding() {

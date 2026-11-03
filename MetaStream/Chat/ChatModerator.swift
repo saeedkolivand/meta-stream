@@ -30,7 +30,7 @@ enum ChatModeration {
     /// by the word list, or not Latin script.
     static func reviewText(for e: ChatEvent) -> String? {
         guard e.kind == .message, e.origin != "test", !e.offensive else { return nil }
-        let text = Speaker.sanitize(e.text, maxLength: 300)   // no URLs/emotes: fewer tokens, less noise
+        let text = ChatFilter.sanitize(e.text, maxLength: 300)   // no URLs/emotes: fewer tokens, less noise
         return isMostlyLatin(text) ? text : nil
     }
 }

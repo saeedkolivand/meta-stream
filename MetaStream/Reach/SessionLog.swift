@@ -138,7 +138,7 @@ final class SessionLog: ObservableObject {
         let key = "\(e.origin)|\(e.userId)"
         let first = current?.chatterCounts[key] == nil
         current?.chatterCounts[key, default: 0] += 1
-        let blocked = Speaker.isBlocked(e.user, extra: UserDefaults.standard.string(forKey: "ttsBlocked") ?? "")
+        let blocked = ChatFilter.isBlocked(e.user, extra: UserDefaults.standard.string(forKey: "ttsBlocked") ?? "")
         current?.chatterNames[key] = blocked ? "" : e.user   // kept locally, but Wrapped may publish it later
         guard first else { return }
         let now = Date()

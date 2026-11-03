@@ -3,7 +3,6 @@
 // holds the attributes). Keep this file free of anything app-only (Streamer, HaishinKit...).
 import AppIntents
 import Foundation
-import Platforms
 
 /// What the Lock Screen / Dynamic Island buttons trigger. LiveActivityIntent.perform() runs in the APP
 /// process, but the intents below are also compiled into the extension (Button(intent:) needs the type),

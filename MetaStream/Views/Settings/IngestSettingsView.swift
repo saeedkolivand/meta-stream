@@ -1,4 +1,3 @@
-import Platforms
 import SwiftUI
 
 struct IngestSettingsView: View {
