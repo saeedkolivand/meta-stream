@@ -4,6 +4,7 @@ import CoreGraphics
 import CoreModel
 import CoreUI
 import Foundation
+import Goal
 import HaishinKit
 
 @MainActor

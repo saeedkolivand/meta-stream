@@ -1,6 +1,7 @@
 import CoreModel
 import CoreUI
 import Foundation
+import Goal
 import Platforms
 
 /// The grey summaries on the settings rows. Each reads the same UserDefaults key (and default) as the screen it

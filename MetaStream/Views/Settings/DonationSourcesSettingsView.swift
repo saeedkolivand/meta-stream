@@ -1,3 +1,4 @@
+import Goal
 import SwiftUI
 
 /// Settings › Donation sources: one key per donation site (status, secure key, Save).

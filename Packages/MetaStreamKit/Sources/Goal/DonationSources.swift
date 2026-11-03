@@ -28,12 +28,12 @@ private struct Shape: Sendable {
 }
 
 @MainActor @Observable
-final class DonationHub {
-    static let shared = DonationHub()
+public final class DonationHub {
+    public static let shared = DonationHub()
 
-    enum Site: String, CaseIterable, Sendable {
+    public enum Site: String, CaseIterable, Sendable {
         case donofa, reymit, streamelements, donito
-        var title: String {
+        public var title: String {
             switch self {
             case .donito: return "Donito"
             case .donofa: return "Donofa"
@@ -41,7 +41,7 @@ final class DonationHub {
             case .streamelements: return "StreamElements"
             }
         }
-        var keyLabel: String {
+        public var keyLabel: String {
             switch self {
             case .donito: return "Overlay link"
             case .donofa: return "API key"
@@ -49,7 +49,7 @@ final class DonationHub {
             case .streamelements: return "JWT token"
             }
         }
-        var help: String {
+        public var help: String {
             switch self {
             case .donito: return "Donito › Overlays: copy any overlay's link."
             case .donofa: return "Find it in your Donofa panel under API settings."
@@ -61,9 +61,9 @@ final class DonationHub {
 
     private enum Outcome { case ok, rejected, unreachable }
 
-    private(set) var status: [Site: String] = [:]
-    private(set) var widgetStatus = ""
-    private(set) var reymitOverlayStatus = ""
+    public private(set) var status: [Site: String] = [:]
+    public private(set) var widgetStatus = ""
+    public private(set) var reymitOverlayStatus = ""
     private var widgetIds: [Int: String] = [:]   // Donofa widget: child numeric id -> identifier (a single widget maps itself)
     private var widgetSeen: Set<Int> = []   // action ids already handled
 
@@ -95,13 +95,13 @@ final class DonationHub {
     private var loggedTypes: Set<String> = []   // StreamElements event types whose keys were logged this run
     private var channelIds: [Site: String] = [:]   // StreamElements channel id, shared by the poll and the socket's tip lookup
 
-    init() {
+    public init() {
         for s in Site.allCases { status[s] = "Not set up" }
     }
 
-    func key(_ site: Site) -> String { store.string(forKey: "donationKey." + site.rawValue) ?? "" }
+    public func key(_ site: Site) -> String { store.string(forKey: "donationKey." + site.rawValue) ?? "" }
 
-    func setKey(_ site: Site, _ key: String) {
+    public func setKey(_ site: Site, _ key: String) {
         var k = key.trimmingCharacters(in: .whitespacesAndNewlines)
         if site == .donito, let c = URLComponents(string: k), c.host != nil, let t = c.path.split(separator: "/").last { k = String(t) }   // link -> token
         if k.isEmpty { store.removeObject(forKey: "donationKey." + site.rawValue) } else { store.set(k, forKey: "donationKey." + site.rawValue) }
@@ -109,7 +109,7 @@ final class DonationHub {
         run(site)
     }
 
-    func start(chat: ChatFeed) {
+    public func start(chat: ChatFeed) {
         self.chat = chat
         for s in Site.allCases { run(s) }
     }
@@ -291,9 +291,9 @@ final class DonationHub {
         return r
     }
 
-    func donofaWidget() -> String { store.string(forKey: "donationKey.donofaWidget") ?? "" }
+    public func donofaWidget() -> String { store.string(forKey: "donationKey.donofaWidget") ?? "" }
 
-    func setDonofaWidget(_ link: String) {
+    public func setDonofaWidget(_ link: String) {
         let l = link.trimmingCharacters(in: .whitespacesAndNewlines)
         if l.isEmpty { store.removeObject(forKey: "donationKey.donofaWidget") } else { store.set(l, forKey: "donationKey.donofaWidget") }
         widgetIds = [:]
@@ -395,9 +395,9 @@ final class DonationHub {
 
     // MARK: Reymit overlay (test alerts)
 
-    func reymitOverlay() -> String { store.string(forKey: "donationKey.reymitOverlay") ?? "" }
+    public func reymitOverlay() -> String { store.string(forKey: "donationKey.reymitOverlay") ?? "" }
 
-    func setReymitOverlay(_ link: String) {
+    public func setReymitOverlay(_ link: String) {
         let l = link.trimmingCharacters(in: .whitespacesAndNewlines)
         if l.isEmpty { store.removeObject(forKey: "donationKey.reymitOverlay") } else { store.set(l, forKey: "donationKey.reymitOverlay") }
         reymitOverlayStatus = ""

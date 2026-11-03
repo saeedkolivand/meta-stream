@@ -3,6 +3,7 @@
 // comes from the scene clock); the object redraws every frame only until that scene ends, then holds a still one.
 import CoreModel
 import Foundation
+import Goal
 
 @MainActor
 enum GoalPlayer {

@@ -4,6 +4,7 @@ import CoreNetwork
 import CoreStorage
 import CoreUI
 import Foundation
+import Goal
 import Platforms
 import UIKit
 

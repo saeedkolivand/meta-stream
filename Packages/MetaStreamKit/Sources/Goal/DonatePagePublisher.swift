@@ -9,13 +9,13 @@ import Observation
 import Combine
 
 @MainActor @Observable
-final class DonatePagePublisher {
-    static let shared = DonatePagePublisher()
-    static let defaultURL = "https://donate.iamsaeed.dev"
+public final class DonatePagePublisher {
+    public static let shared = DonatePagePublisher()
+    public static let defaultURL = "https://donate.iamsaeed.dev"
 
-    enum Outcome: Equatable { case none, ok(Date), rejected, unreachable, http(Int), badURL }
+    public enum Outcome: Equatable { case none, ok(Date), rejected, unreachable, http(Int), badURL }
 
-    private(set) var outcome = Outcome.none
+    public private(set) var outcome = Outcome.none
 
     private let keychain = KeychainTokenStore()
     private var live = false
@@ -27,12 +27,12 @@ final class DonatePagePublisher {
 
     // MARK: settings
 
-    var pageURL: String { UserDefaults.standard.string(forKey: "donatePageURL") ?? Self.defaultURL }
-    var token: String { keychain.string(forKey: "donatePageToken") ?? "" }
-    var enabled: Bool { !token.isEmpty }
+    public var pageURL: String { UserDefaults.standard.string(forKey: "donatePageURL") ?? Self.defaultURL }
+    public var token: String { keychain.string(forKey: "donatePageToken") ?? "" }
+    public var enabled: Bool { !token.isEmpty }
 
     /// The page for chat, scheme kept ("https://donate.iamsaeed.dev"): Kick only makes a link tappable with it.
-    var chatURL: String {
+    public var chatURL: String {
         var u = pageURL.trimmingCharacters(in: .whitespaces)
         while u.hasSuffix("/") { u.removeLast() }
         return u.lowercased().hasPrefix("http") ? u : "https://" + u
@@ -40,13 +40,13 @@ final class DonatePagePublisher {
 
     /// The key is bound to the host it was saved for: pointing the URL at another site stops sending it until the
     /// key is entered again, so a typo or a changed URL can never hand the key to someone else.
-    var hasToken: Bool { !token.isEmpty }
+    public var hasToken: Bool { !token.isEmpty }
 
     private var host: String? {
         URL(string: pageURL.trimmingCharacters(in: .whitespaces))?.host?.lowercased()
     }
 
-    func setToken(_ raw: String) {
+    public func setToken(_ raw: String) {
         let t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         keychain.set(t.isEmpty ? nil : t, forKey: "donatePageToken")
         UserDefaults.standard.set(t.isEmpty ? nil : host, forKey: "donatePageTokenHost")
@@ -55,7 +55,7 @@ final class DonatePagePublisher {
     }
 
     /// "Published 12 s ago" / "Token rejected" / "Can't reach the page"; empty when off.
-    var statusText: String {
+    public var statusText: String {
         guard enabled else { return "Off: no page key" }
         switch outcome {
         case .none: return "Waiting to publish"
@@ -70,7 +70,7 @@ final class DonatePagePublisher {
     // MARK: triggers
 
     /// Once, from the App: watches the goal and the live state (Streamer.$live; Android: Session.live).
-    func start(live: some Publisher<Bool, Never>) {
+    public func start(live: some Publisher<Bool, Never>) {
         guard cancellables.isEmpty else { return }
         // The Task runs after the whole change landed (a load sets config, entries and reached one by one).
         GoalStore.shared.onChange = { [weak self] in Task { @MainActor in self?.request() } }
@@ -95,7 +95,7 @@ final class DonatePagePublisher {
     }
 
     /// Sends now, or when 5 s have passed since the last send; calls in between share that one request.
-    func request() {
+    public func request() {
         guard enabled, !scheduled else { return }
         scheduled = true
         let wait = max(0, 5 - Date().timeIntervalSince(lastSent))
@@ -118,7 +118,7 @@ final class DonatePagePublisher {
     }
 
     /// The JSON body: money as numbers rounded to 2 decimals (toman to 0).
-    static func body(title: String, total: Decimal, target: Decimal, currency: String, live: Bool, at: Date) throws -> Data {
+    public static func body(title: String, total: Decimal, target: Decimal, currency: String, live: Bool, at: Date) throws -> Data {
         func num(_ d: Decimal) -> Double { NSDecimalNumber(decimal: d.rounded(currency == "IRT" ? 0 : 2)).doubleValue }
         return try JSONEncoder().encode(Payload(title: title, total: num(total), target: num(target), currency: currency,
                                                 live: live, updatedAt: ISO8601DateFormatter().string(from: at)))
@@ -160,7 +160,7 @@ final class DonatePagePublisher {
     }
 
     #if DEBUG
-    static func demo() throws {
+    public static func demo() throws {
         let t = Date(timeIntervalSince1970: 1_000_000)
         let eur = try JSONSerialization.jsonObject(with: body(title: "Camera", total: Decimal(string: "12.345")!, target: 500, currency: "EUR", live: true, at: t)) as? [String: Any]
         assert(Set(eur?.keys.map { $0 } ?? []) == ["title", "total", "target", "currency", "live", "updatedAt"])

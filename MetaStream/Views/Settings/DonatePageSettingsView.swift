@@ -1,3 +1,4 @@
+import Goal
 import SwiftUI
 
 /// Settings › Donate page: where the public donate page lives and the key the app uses to push the live goal to it.

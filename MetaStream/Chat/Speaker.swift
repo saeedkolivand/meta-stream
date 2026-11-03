@@ -1,6 +1,7 @@
 import CoreModel
 import CoreUI
 import Foundation
+import Goal
 import SwiftUI
 import AVFoundation
 

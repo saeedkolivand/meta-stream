@@ -7,27 +7,32 @@ import Foundation
 import Observation
 
 @MainActor @Observable
-final class Rates {
-    static let shared = Rates()
+public final class Rates {
+    public static let shared = Rates()
 
-    struct Quote: Codable, Equatable {
-        var value: Decimal
-        var at: Date
+    public struct Quote: Codable, Equatable {
+        public var value: Decimal
+        public var at: Date
+
+        public init(value: Decimal, at: Date) {
+            self.value = value
+            self.at = at
+        }
     }
 
-    private(set) var tomanPerUSD: Quote?   // Nobitex USDT in toman
-    private(set) var usdPerEUR: Quote?     // ECB
-    private(set) var cryptoUSD: [String: Quote] = [:]
+    public private(set) var tomanPerUSD: Quote?   // Nobitex USDT in toman
+    public private(set) var usdPerEUR: Quote?     // ECB
+    public private(set) var cryptoUSD: [String: Quote] = [:]
     /// Called after every refresh: pending donations may be convertible now.
-    @ObservationIgnored var onUpdate: (() -> Void)?
+    @ObservationIgnored public var onUpdate: (() -> Void)?
 
     /// A market rate older than this is not used (the streamer's rate or pending instead). The ECB publishes
     /// working days only, so its euro rate may be up to a long weekend old.
-    static let maxAge: TimeInterval = 24 * 3600
-    static let ecbMaxAge: TimeInterval = 4 * 24 * 3600
+    public static let maxAge: TimeInterval = 24 * 3600
+    public static let ecbMaxAge: TimeInterval = 4 * 24 * 3600
 
     /// CoinGecko ids for the coins donation sites take.
-    nonisolated static let coins: [String: String] = [
+    public nonisolated static let coins: [String: String] = [
         "BTC": "bitcoin", "ETH": "ethereum", "TON": "the-open-network", "TRX": "tron", "BNB": "binancecoin",
         "SOL": "solana", "LTC": "litecoin", "DOGE": "dogecoin", "XRP": "ripple", "ADA": "cardano", "NOT": "notcoin",
         "USDT": "tether", "USDC": "usd-coin", "DAI": "dai",
@@ -38,18 +43,18 @@ final class Rates {
 
     private struct Saved: Codable { var toman: Quote?; var eur: Quote?; var crypto: [String: Quote] }
 
-    init() {
+    public init() {
         if let d = UserDefaults.standard.data(forKey: key), let s = try? JSONDecoder().decode(Saved.self, from: d) {
             tomanPerUSD = s.toman; usdPerEUR = s.eur; cryptoUSD = s.crypto
         }
     }
 
     /// The streamer's rate in toman per euro, 0 = none (Settings › Goal).
-    var manualTomanPerEUR: Decimal {
+    public var manualTomanPerEUR: Decimal {
         UserDefaults.standard.string(forKey: "goalManualTomanPerEUR").flatMap { Decimal(string: $0) } ?? 0
     }
 
-    func start() {
+    public func start() {
         guard loop == nil else { return }
         loop = Task { [weak self] in
             while !Task.isCancelled {
@@ -59,7 +64,7 @@ final class Rates {
         }
     }
 
-    func refresh() async {
+    public func refresh() async {
         async let toman = Self.fetchNobitex()
         async let eur = Self.fetchECB()
         async let crypto = Self.fetchCoinGecko()
@@ -78,7 +83,7 @@ final class Rates {
     // MARK: converting
 
     /// `m` in `target` ("IRT", "USD" or "EUR"), or nil when a rate it needs is missing or too old.
-    func convert(_ m: Money, to target: String, now: Date = Date()) -> Decimal? {
+    public func convert(_ m: Money, to target: String, now: Date = Date()) -> Decimal? {
         let m = m.inToman
         if m.currency == target { return m.amount }
         guard let usd = usdValue(m, now) else { return nil }
@@ -102,7 +107,7 @@ final class Rates {
     private func eurRate(_ now: Date) -> Decimal? { fresh(usdPerEUR, now, Self.ecbMaxAge) }
 
     /// Toman per dollar: the streamer's rate when set (it overrides), else Nobitex if under a day old.
-    func tomanRate(_ now: Date = Date()) -> Decimal? {
+    public func tomanRate(_ now: Date = Date()) -> Decimal? {
         let manual = manualTomanPerEUR
         if manual > 0 {
             // ponytail: the euro-dollar rate barely moves; 1.08 only if it was never fetched.
@@ -118,7 +123,7 @@ final class Rates {
     }
 
     /// For Settings: where the toman rate comes from right now.
-    var tomanSource: String {
+    public var tomanSource: String {
         if manualTomanPerEUR > 0 { return "Your rate" }
         guard let q = tomanPerUSD else { return "No rate yet" }
         let mins = Int(Date().timeIntervalSince(q.at) / 60)
@@ -130,7 +135,7 @@ final class Rates {
 
     /// Nobitex market stats: {"stats": {"usdt-rls": {"latest": "<rials>"}}}. apiv2 answers from abroad (api.nobitex.ir
     /// doesn't even resolve outside Iran); api is the fallback for networks inside Iran that only reach that one.
-    nonisolated static func fetchNobitex() async -> Decimal? {
+    public nonisolated static func fetchNobitex() async -> Decimal? {
         for host in ["apiv2.nobitex.ir", "api.nobitex.ir"] {
             guard let url = URL(string: "https://\(host)/market/stats") else { continue }
             var req = URLRequest(url: url, timeoutInterval: 15)
@@ -149,7 +154,7 @@ final class Rates {
     }
 
     /// {"rates": {"USD": 1.08}}: dollars per euro.
-    nonisolated static func fetchECB() async -> Decimal? {
+    public nonisolated static func fetchECB() async -> Decimal? {
         guard let url = URL(string: "https://api.frankfurter.app/latest?from=EUR&to=USD"),
               let (data, _) = try? await URLSession.shared.data(from: url),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -159,7 +164,7 @@ final class Rates {
     }
 
     /// {"bitcoin": {"usd": 64000}, ...} for every coin in `coins`.
-    nonisolated static func fetchCoinGecko() async -> [String: Decimal] {
+    public nonisolated static func fetchCoinGecko() async -> [String: Decimal] {
         let ids = Set(coins.values).sorted().joined(separator: ",")
         guard let url = URL(string: "https://api.coingecko.com/api/v3/simple/price?ids=\(ids)&vs_currencies=usd"),
               let (data, _) = try? await URLSession.shared.data(from: url),
@@ -173,7 +178,7 @@ final class Rates {
     }
 
     /// A JSON number or numeric string as an exact Decimal (via its text, never through Double arithmetic).
-    nonisolated static func decimal(_ v: Any?) -> Decimal? {
+    public nonisolated static func decimal(_ v: Any?) -> Decimal? {
         if let s = v as? String { return Decimal(string: s) }
         if let n = v as? NSNumber { return Decimal(string: n.stringValue) }
         return nil

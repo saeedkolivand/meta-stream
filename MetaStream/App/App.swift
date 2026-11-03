@@ -1,6 +1,7 @@
 import Chat
 import CoreLogging
 import CoreUI
+import Goal
 import Platforms
 import SwiftUI
 import MWDATCore

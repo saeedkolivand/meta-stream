@@ -1,3 +1,4 @@
+import Goal
 import SwiftUI
 
 /// Review a month's Wrapped before it goes public: toggles and per-row exclusions edit what is sent, nothing is

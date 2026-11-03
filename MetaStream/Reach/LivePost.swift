@@ -2,6 +2,7 @@ import CoreLogging
 import CoreModel
 import CoreStorage
 import Foundation
+import Goal
 import Platforms
 
 /// The Live post (CONTEXT.md "Reach"): the one Telegram channel message a stream session owns. Announced before the

@@ -1,4 +1,5 @@
 import CoreModel
+import Goal
 import SwiftUI
 
 extension Rates {

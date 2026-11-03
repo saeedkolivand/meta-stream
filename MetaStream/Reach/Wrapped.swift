@@ -1,6 +1,7 @@
 import CoreLogging
 import CoreModel
 import Foundation
+import Goal
 
 /// The body of the monthly Wrapped page (CONTEXT.md "Wrapped"): exactly the keys the donate page accepts. Never a date
 /// or a place, only city names. `km`, `donations` and `bestMoment` encode as JSON null when absent (the server rejects

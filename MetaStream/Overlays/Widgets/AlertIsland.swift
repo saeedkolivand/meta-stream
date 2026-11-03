@@ -4,6 +4,7 @@ import CoreGraphics
 import CoreModel
 import CoreUI
 import Foundation
+import Goal
 import HaishinKit
 
 /// Everything AlertBannerView needs to draw one frame. The default value is the fully open, settled card.
