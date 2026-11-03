@@ -8,9 +8,10 @@ targets:
   MetaStreamScreen:
     type: app-extension
     platform: iOS
-    sources:
-      - MetaStreamScreen
-      - MetaStream/Streaming/ScreenShared.swift   # shared with the app target
+    sources: [MetaStreamScreen]
+    dependencies:
+      - package: MetaStreamKit
+        product: ScreenIPC   # the frame-file contract it shares with the app
     settings:
       base:
         INFOPLIST_FILE: MetaStreamScreen/Info.plist

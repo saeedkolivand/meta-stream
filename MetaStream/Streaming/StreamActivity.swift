@@ -1,27 +1,8 @@
-// Live Activity contract: compiled into BOTH the app and the MetaStreamLiveActivity widget extension.
-// The widget renders ContentState; the app owns the Activity (LiveActivity.swift). Keep this file free of
-// anything app-only (Streamer, HaishinKit...) or the extension target will not build.
-import ActivityKit
+// Lock Screen / Dynamic Island intents: compiled into BOTH the app and the MetaStreamLiveActivity widget extension
+// (App Intents metadata is extracted per binary, so these can't live in the ActivityShared package target, which
+// holds the attributes). Keep this file free of anything app-only (Streamer, HaishinKit...).
 import AppIntents
 import Foundation
-
-struct StreamActivityAttributes: ActivityAttributes {
-    struct ContentState: Codable, Hashable {
-        var phase: String        // "live" | "reconnecting" | "ended"
-        var liveSince: Date      // the widget ticks a timer from this, so no per-second updates are needed
-        var kbps: Int
-        var source: String       // Streamer.source: "phone" | "glasses" | "back" ...
-        var drops: Int
-        var muted: Bool
-        var endedAt: Date?       // set only with phase "ended", so the lingering card shows the final duration
-        var commands: [LockCommand] = []   // up to 3 saved chat commands shown as buttons (Settings > Chat commands)
-    }
-}
-
-struct LockCommand: Codable, Hashable {
-    var id: String           // BotCommand.id.uuidString
-    var text: String
-}
 
 /// What the Lock Screen / Dynamic Island buttons trigger. LiveActivityIntent.perform() runs in the APP
 /// process, but the intents below are also compiled into the extension (Button(intent:) needs the type),

@@ -61,6 +61,10 @@ targets:
         product: CoreStorage
       - package: MetaStreamKit
         product: CoreNetwork
+      - package: MetaStreamKit
+        product: ScreenIPC
+      - package: MetaStreamKit
+        product: ActivityShared
       - package: MetaWearablesDAT
         product: MWDATCore
       - package: MetaWearablesDAT
@@ -88,4 +92,6 @@ targets:
         product: CoreStorage
       - package: MetaStreamKit
         product: CoreNetwork
+      - package: MetaStreamKit
+        product: ActivityShared
 

@@ -4,6 +4,7 @@
 import CoreMedia
 import Foundation
 import ReplayKit
+import ScreenIPC
 import VideoToolbox
 import os
 

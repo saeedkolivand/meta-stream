@@ -6,6 +6,7 @@ import CoreLogging
 import CoreMedia
 import Foundation
 import ImageIO
+import ScreenIPC
 
 @MainActor
 final class ScreenSource: ObservableObject {

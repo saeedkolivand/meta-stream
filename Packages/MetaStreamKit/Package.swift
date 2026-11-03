@@ -13,7 +13,9 @@ let package = Package(
         .library(name: "CoreModel", targets: ["CoreModel"]),
         .library(name: "CoreLogging", targets: ["CoreLogging"]),
         .library(name: "CoreStorage", targets: ["CoreStorage"]),
-        .library(name: "CoreNetwork", targets: ["CoreNetwork"])
+        .library(name: "CoreNetwork", targets: ["CoreNetwork"]),
+        .library(name: "ScreenIPC", targets: ["ScreenIPC"]),
+        .library(name: "ActivityShared", targets: ["ActivityShared"])
     ],
     targets: [
         // Plain data shared by every feature: chat events, money, text patterns. Foundation only.
@@ -23,6 +25,9 @@ let package = Package(
         // TokenStore (Keychain).
         .target(name: "CoreStorage", swiftSettings: strict),
         // OAuth form posts, PKCE, the authenticated PlatformEndpoint.
-        .target(name: "CoreNetwork", dependencies: ["CoreLogging", "CoreStorage"], swiftSettings: strict)
+        .target(name: "CoreNetwork", dependencies: ["CoreLogging", "CoreStorage"], swiftSettings: strict),
+        // Contracts the extensions share with the app: screen-share frame files, Live Activity state.
+        .target(name: "ScreenIPC", swiftSettings: strict),
+        .target(name: "ActivityShared", swiftSettings: strict)
     ]
 )

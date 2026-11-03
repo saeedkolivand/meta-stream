@@ -1,3 +1,4 @@
+import ActivityShared
 import XCTest
 @testable import MetaStream
 

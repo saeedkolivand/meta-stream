@@ -2,6 +2,7 @@
 // two big buttons. The .small family is the Apple Watch Smart Stack / CarPlay Dashboard layout (no buttons:
 // CarPlay ignores them).
 import ActivityKit
+import ActivityShared
 import AppIntents
 import SwiftUI
 import WidgetKit
