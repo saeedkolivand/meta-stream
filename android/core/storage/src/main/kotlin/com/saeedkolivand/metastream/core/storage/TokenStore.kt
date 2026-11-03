@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.platforms
+package com.saeedkolivand.metastream.core.storage
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -6,8 +6,8 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.core.content.edit
-import com.saeedkolivand.metastream.core.applog
-import com.saeedkolivand.metastream.core.redactFromLogs
+import com.saeedkolivand.metastream.core.logging.applog
+import com.saeedkolivand.metastream.core.logging.redactFromLogs
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -18,7 +18,7 @@ import javax.crypto.spec.GCMParameterSpec
  * OAuth tokens, AES-256-GCM encrypted with a non-exportable Android Keystore key (androidx security-crypto is deprecated).
  * The prefs file only ever holds `base64(iv + ciphertext)`; every token read is also registered for log redaction.
  */
-internal object TokenStore {
+object TokenStore {
     private const val ALIAS = "metastream.tokens"
     private lateinit var sp: SharedPreferences
 

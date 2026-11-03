@@ -27,7 +27,7 @@ import com.pedro.common.ConnectChecker
 import com.pedro.common.VideoCodec
 import com.pedro.rtmp.rtmp.RtmpClient
 import com.saeedkolivand.metastream.core.AppSettings
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
 import java.nio.ByteBuffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

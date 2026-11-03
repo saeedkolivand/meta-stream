@@ -16,8 +16,8 @@ import com.pedro.encoder.input.sources.video.Camera2Source
 import com.pedro.encoder.input.video.CameraHelper
 import com.pedro.library.generic.GenericStream
 import com.pedro.library.view.GlInterface
-import com.saeedkolivand.metastream.core.Prefs
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
+import com.saeedkolivand.metastream.core.storage.Prefs
 
 private const val KEY = "camera"
 private const val TRIGGER_MS = 120L

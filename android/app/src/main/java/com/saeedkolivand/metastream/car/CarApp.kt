@@ -29,8 +29,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.chat.ChatFeed
-import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.model.Kind
+import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.speech.Speaker

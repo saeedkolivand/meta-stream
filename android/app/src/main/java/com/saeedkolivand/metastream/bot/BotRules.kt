@@ -1,7 +1,7 @@
 package com.saeedkolivand.metastream.bot
 
-import com.saeedkolivand.metastream.core.Prefs
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
+import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.platforms.Slash
 import com.saeedkolivand.metastream.platforms.Twitch

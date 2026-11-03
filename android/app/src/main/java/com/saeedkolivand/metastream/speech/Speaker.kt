@@ -11,9 +11,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.saeedkolivand.metastream.bot.AppBot
 import com.saeedkolivand.metastream.bot.BotList
-import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
+import com.saeedkolivand.metastream.core.storage.Prefs
 import java.util.concurrent.atomic.AtomicInteger
 
 /** Text-to-speech for chat read-aloud and system alerts. State is Compose snapshot state with a private setter. */

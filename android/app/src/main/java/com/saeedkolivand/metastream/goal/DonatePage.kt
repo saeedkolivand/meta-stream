@@ -4,10 +4,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import com.saeedkolivand.metastream.core.Prefs
-import com.saeedkolivand.metastream.core.applog
-import com.saeedkolivand.metastream.platforms.TokenStore
-import com.saeedkolivand.metastream.platforms.http
+import com.saeedkolivand.metastream.core.logging.applog
+import com.saeedkolivand.metastream.core.network.http
+import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.core.storage.TokenStore
 import com.saeedkolivand.metastream.streaming.Engine
 import java.math.BigDecimal
 import java.math.RoundingMode

@@ -4,8 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.saeedkolivand.metastream.bot.AppBot
-import com.saeedkolivand.metastream.core.Prefs
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
+import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.duration
 import kotlinx.coroutines.CoroutineScope

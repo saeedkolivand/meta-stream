@@ -1,8 +1,8 @@
 package com.saeedkolivand.metastream.remote
 
 import androidx.compose.runtime.snapshotFlow
-import com.saeedkolivand.metastream.core.Prefs
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
+import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Recording

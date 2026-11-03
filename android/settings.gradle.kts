@@ -26,3 +26,6 @@ rootProject.name = "MetaStream"
 
 include(":app")
 include(":core:model")
+include(":core:logging")
+include(":core:storage")
+include(":core:network")

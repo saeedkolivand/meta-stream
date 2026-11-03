@@ -1,7 +1,8 @@
 package com.saeedkolivand.metastream.platforms
 
-import com.saeedkolivand.metastream.core.redactFromLogs
-import com.saeedkolivand.metastream.core.scrub
+import com.saeedkolivand.metastream.core.logging.redactFromLogs
+import com.saeedkolivand.metastream.core.logging.scrub
+import com.saeedkolivand.metastream.core.network.Pkce
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

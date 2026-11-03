@@ -25,10 +25,10 @@ import com.pedro.library.util.streamclient.SrtStreamClient
 import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.camera.FaceCam
 import com.saeedkolivand.metastream.core.AppSettings
-import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.VideoParams
-import com.saeedkolivand.metastream.core.applog
-import com.saeedkolivand.metastream.core.redactFromLogs
+import com.saeedkolivand.metastream.core.logging.applog
+import com.saeedkolivand.metastream.core.logging.redactFromLogs
+import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.toVideoParams
 import com.saeedkolivand.metastream.glasses.Glasses
 import com.saeedkolivand.metastream.overlay.Overlays

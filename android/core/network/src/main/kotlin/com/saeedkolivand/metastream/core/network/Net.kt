@@ -1,6 +1,7 @@
-package com.saeedkolivand.metastream.platforms
+package com.saeedkolivand.metastream.core.network
 
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
+import com.saeedkolivand.metastream.core.storage.TokenStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -19,25 +20,25 @@ import org.json.JSONObject
 import org.json.JSONTokener
 
 /** A failed platform call; the message is shown in the Stream Manager footer, like iOS `PlatformNet.err`. */
-internal class PlatformException(message: String) : Exception(message)
+class PlatformException(message: String) : Exception(message)
 
-internal val http = OkHttpClient()
+val http = OkHttpClient()
 private val JSON = "application/json".toMediaType()
 
-internal fun JSONObject.objects(key: String): List<JSONObject> = optJSONArray(key).objects()
+fun JSONObject.objects(key: String): List<JSONObject> = optJSONArray(key).objects()
 
-internal fun JSONArray?.objects(): List<JSONObject> = if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }
+fun JSONArray?.objects(): List<JSONObject> = if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }
 
-internal fun JSONArray?.strings(): List<String> = if (this == null) emptyList() else (0 until length()).map { optString(it) }
+fun JSONArray?.strings(): List<String> = if (this == null) emptyList() else (0 until length()).map { optString(it) }
 
-internal fun parseJson(text: String): Any = if (text.isBlank()) {
+fun parseJson(text: String): Any = if (text.isBlank()) {
     JSONObject()
 } else {
     runCatching { JSONTokener(text).nextValue() }.getOrNull()
         ?: JSONObject()
 }
 
-internal object Net {
+object Net {
     /** POST application/x-www-form-urlencoded -> JSON object. Non-2xx throws unless [allowError] (device-flow polling). */
     suspend fun form(
         url: String,
@@ -65,7 +66,7 @@ internal object Net {
  * The single authenticated-API factory (iOS PlatformEndpoint): base URL, token key, extra headers and a refresh
  * routine. One token refresh + retry on 401.
  */
-internal class Endpoint(
+class Endpoint(
     private val base: String,
     private val tokenKey: String,
     private val headers: Map<String, String> = emptyMap(),

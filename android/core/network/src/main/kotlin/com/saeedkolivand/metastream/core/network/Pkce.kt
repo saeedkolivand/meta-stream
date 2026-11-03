@@ -1,11 +1,11 @@
-package com.saeedkolivand.metastream.platforms
+package com.saeedkolivand.metastream.core.network
 
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.Base64
 
 /** PKCE (RFC 7636) helpers; also the source of OAuth `state` values. */
-internal object Pkce {
+object Pkce {
     private const val UNRESERVED = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
     private val rng = SecureRandom()
 

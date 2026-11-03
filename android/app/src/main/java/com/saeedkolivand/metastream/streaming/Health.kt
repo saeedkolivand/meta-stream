@@ -9,7 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import com.pedro.library.util.streamclient.StreamBaseClient
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.overlay.SceneRoles
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job

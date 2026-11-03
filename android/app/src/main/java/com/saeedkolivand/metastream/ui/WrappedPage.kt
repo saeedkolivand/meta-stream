@@ -15,7 +15,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.goal.DonatePage
 import com.saeedkolivand.metastream.reach.SessionRecord
 import com.saeedkolivand.metastream.reach.WrappedBuilder

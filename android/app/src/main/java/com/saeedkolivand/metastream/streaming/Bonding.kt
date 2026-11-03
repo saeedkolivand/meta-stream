@@ -7,7 +7,7 @@ import android.os.Looper
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
 
 /** One bonding link for the network sheet: up or down, and its share of the last 10 s of packets. */
 data class LinkStat(val label: String, val backup: Boolean, val up: Boolean, val share: Int)

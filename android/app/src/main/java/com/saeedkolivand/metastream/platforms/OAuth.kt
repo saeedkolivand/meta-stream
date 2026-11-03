@@ -3,7 +3,7 @@ package com.saeedkolivand.metastream.platforms
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.withTimeoutOrNull

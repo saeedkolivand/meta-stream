@@ -1,9 +1,9 @@
 package com.saeedkolivand.metastream.goal
 
-import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.core.model.Money
+import com.saeedkolivand.metastream.core.storage.Prefs
 import java.math.BigDecimal
 
 /**

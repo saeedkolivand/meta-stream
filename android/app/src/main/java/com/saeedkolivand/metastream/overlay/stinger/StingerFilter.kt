@@ -10,7 +10,7 @@ import android.opengl.GLUtils
 import android.opengl.Matrix
 import com.pedro.encoder.input.gl.render.filters.BaseFilterRender
 import com.pedro.encoder.utils.gl.GlUtil
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.ceil

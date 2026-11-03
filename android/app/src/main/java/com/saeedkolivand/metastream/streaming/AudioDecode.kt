@@ -3,7 +3,7 @@ package com.saeedkolivand.metastream.streaming
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
 import java.io.File
 import java.nio.ByteOrder
 

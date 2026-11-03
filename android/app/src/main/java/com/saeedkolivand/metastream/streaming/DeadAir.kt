@@ -1,6 +1,6 @@
 package com.saeedkolivand.metastream.streaming
 
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
 
 /** Seconds into a dead-air alert at which it's spoken again (iOS Speaker's startRepeating: 30 s, 60 s, 2 min). */
 private val REPEATS = longArrayOf(30, 60, 120)

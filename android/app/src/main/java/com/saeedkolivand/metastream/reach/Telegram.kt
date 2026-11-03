@@ -1,8 +1,8 @@
 package com.saeedkolivand.metastream.reach
 
-import com.saeedkolivand.metastream.core.Prefs
-import com.saeedkolivand.metastream.platforms.TokenStore
-import com.saeedkolivand.metastream.platforms.http
+import com.saeedkolivand.metastream.core.network.http
+import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.core.storage.TokenStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType

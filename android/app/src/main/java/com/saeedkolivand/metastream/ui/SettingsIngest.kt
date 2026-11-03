@@ -18,8 +18,8 @@ import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.core.AppSettings
 import com.saeedkolivand.metastream.core.KBPS_STEP
 import com.saeedkolivand.metastream.core.MIN_KBPS
-import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.snapKbps
+import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.streaming.BONDING_TRANSPORTS
 import com.saeedkolivand.metastream.streaming.Engine
 

@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.core
+package com.saeedkolivand.metastream.core.storage
 
 import android.content.Context
 import android.content.SharedPreferences

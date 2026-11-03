@@ -9,7 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.pedro.library.base.recording.RecordController
 import com.pedro.library.generic.GenericStream
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.speech.Speaker
 import java.io.File
 import java.text.SimpleDateFormat

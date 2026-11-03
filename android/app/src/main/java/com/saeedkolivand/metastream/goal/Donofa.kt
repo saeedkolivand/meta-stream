@@ -2,11 +2,11 @@ package com.saeedkolivand.metastream.goal
 
 import android.net.Uri
 import com.saeedkolivand.metastream.chat.ChatFeed
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
 import com.saeedkolivand.metastream.core.model.Money
-import com.saeedkolivand.metastream.platforms.http
+import com.saeedkolivand.metastream.core.network.http
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

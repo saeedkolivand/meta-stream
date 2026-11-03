@@ -1,7 +1,7 @@
 package com.saeedkolivand.metastream.overlay
 
 import com.saeedkolivand.metastream.chat.ChatFeed
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
 import kotlinx.coroutines.CoroutineScope

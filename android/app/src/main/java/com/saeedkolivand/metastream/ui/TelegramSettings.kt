@@ -8,8 +8,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.sp
-import com.saeedkolivand.metastream.core.Prefs
-import com.saeedkolivand.metastream.platforms.TokenStore
+import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.core.storage.TokenStore
 import com.saeedkolivand.metastream.reach.Telegram
 import kotlinx.coroutines.launch
 

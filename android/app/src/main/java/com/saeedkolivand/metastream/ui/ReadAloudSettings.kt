@@ -11,7 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.chat.ChatModerator
-import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.speech.BoolPref
 import com.saeedkolivand.metastream.speech.Speaker

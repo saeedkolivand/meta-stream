@@ -3,10 +3,10 @@ package com.saeedkolivand.metastream.goal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.saeedkolivand.metastream.core.Prefs
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.model.Money
-import com.saeedkolivand.metastream.platforms.http
+import com.saeedkolivand.metastream.core.network.http
+import com.saeedkolivand.metastream.core.storage.Prefs
 import java.math.BigDecimal
 import java.math.MathContext
 import kotlinx.coroutines.CoroutineScope

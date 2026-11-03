@@ -1,6 +1,6 @@
 package com.saeedkolivand.metastream.chat
 
-import com.saeedkolivand.metastream.platforms.objects
+import com.saeedkolivand.metastream.core.network.objects
 import org.json.JSONArray
 import org.json.JSONObject
 

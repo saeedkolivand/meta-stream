@@ -3,7 +3,7 @@ package com.saeedkolivand.metastream.speech
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.storage.Prefs
 
 /** A persisted on/off setting that Compose can observe. */
 class BoolPref(private val key: String, default: Boolean) {

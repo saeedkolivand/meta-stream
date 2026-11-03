@@ -1,6 +1,6 @@
 package com.saeedkolivand.metastream.overlay
 
-import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.storage.Prefs
 
 /** Named colour sets shared by the scene templates and the Instagram story card (iOS ColorTheme). One setting: colorTheme. */
 enum class ColorTheme(val title: String, val faName: String, private val palette: LongArray) {

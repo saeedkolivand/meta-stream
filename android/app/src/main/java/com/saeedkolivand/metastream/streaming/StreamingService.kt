@@ -13,9 +13,9 @@ import androidx.compose.runtime.snapshotFlow
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.bot.BotCommand
 import com.saeedkolivand.metastream.bot.send
-import com.saeedkolivand.metastream.core.Prefs
-import com.saeedkolivand.metastream.core.applog
 import com.saeedkolivand.metastream.core.ensureChannel
+import com.saeedkolivand.metastream.core.logging.applog
+import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope

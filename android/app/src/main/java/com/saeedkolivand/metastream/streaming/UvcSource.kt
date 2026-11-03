@@ -8,7 +8,7 @@ import com.herohan.uvcapp.ICameraHelper
 import com.pedro.encoder.input.sources.OrientationConfig
 import com.pedro.encoder.input.sources.OrientationForced
 import com.pedro.encoder.input.sources.video.VideoSource
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
 
 /**
  * USB (UVC) camera, e.g. a DJI Osmo Action in webcam mode. RootEncoder's CameraUvcSource ignores the requested size and

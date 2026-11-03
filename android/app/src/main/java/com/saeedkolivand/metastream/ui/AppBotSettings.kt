@@ -34,7 +34,7 @@ import com.saeedkolivand.metastream.bot.BotList
 import com.saeedkolivand.metastream.bot.BotRules
 import com.saeedkolivand.metastream.bot.BotTimer
 import com.saeedkolivand.metastream.bot.TwitchBot
-import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.platforms.Kick
 import com.saeedkolivand.metastream.platforms.KickWeb
 import com.saeedkolivand.metastream.platforms.Twitch

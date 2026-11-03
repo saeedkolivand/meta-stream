@@ -3,6 +3,8 @@ package com.saeedkolivand.metastream.platforms
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
+import com.saeedkolivand.metastream.core.network.PlatformException
+import com.saeedkolivand.metastream.core.network.objects
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import org.json.JSONObject

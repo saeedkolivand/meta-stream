@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.saeedkolivand.metastream.core.network.PlatformException
 import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.platforms.TwitchScopes
@@ -39,7 +40,7 @@ internal fun TwitchActions() {
         scope.launch {
             try {
                 block()
-            } catch (e: com.saeedkolivand.metastream.platforms.PlatformException) {
+            } catch (e: PlatformException) {
                 Accounts.say(e.message.orEmpty())
             }
         }

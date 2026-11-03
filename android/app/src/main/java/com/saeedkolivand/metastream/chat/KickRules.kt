@@ -1,14 +1,15 @@
 package com.saeedkolivand.metastream.chat
 
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
+import com.saeedkolivand.metastream.core.network.http
 import com.saeedkolivand.metastream.platforms.Accounts
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -40,16 +41,13 @@ private val KINDS = mapOf(
 private fun valid(raw: String): JSONObject? = runCatching { JSONObject(raw).takeIf { it.optInt("version") == 1 } }.getOrNull()
 
 /** Remote rules (cached on success), else the cached copy, else the built-in default. Never throws. */
+private val rulesHttp = http.newBuilder().callTimeout(10, TimeUnit.SECONDS).build() // shares the app pool
+
 internal suspend fun loadKickRules(): JSONObject = withContext(Dispatchers.IO) {
     val cache = File(Accounts.app.cacheDir, "kick-events.json")
     val remote = runCatching {
-        val c = URL(RULES_URL).openConnection() as HttpURLConnection
-        try {
-            c.connectTimeout = 5000
-            c.readTimeout = 5000
-            c.inputStream.bufferedReader().readText().takeIf { valid(it) != null }
-        } finally {
-            c.disconnect()
+        rulesHttp.newCall(Request.Builder().url(RULES_URL).build()).execute().use { r ->
+            r.body.string().takeIf { r.isSuccessful && valid(it) != null }
         }
     }.getOrNull()
     val (rules, source) = when {

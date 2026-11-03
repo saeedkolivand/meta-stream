@@ -1,7 +1,7 @@
 package com.saeedkolivand.metastream.overlay
 
 import android.graphics.Bitmap
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.platforms.NowPlayingTrack
 import com.saeedkolivand.metastream.platforms.Spotify
 import kotlinx.coroutines.CoroutineScope

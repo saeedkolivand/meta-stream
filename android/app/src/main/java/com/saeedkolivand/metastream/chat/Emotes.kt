@@ -3,10 +3,10 @@ package com.saeedkolivand.metastream.chat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.saeedkolivand.metastream.core.applog
-import com.saeedkolivand.metastream.platforms.Net
-import com.saeedkolivand.metastream.platforms.objects
-import com.saeedkolivand.metastream.platforms.parseJson
+import com.saeedkolivand.metastream.core.logging.applog
+import com.saeedkolivand.metastream.core.network.Net
+import com.saeedkolivand.metastream.core.network.objects
+import com.saeedkolivand.metastream.core.network.parseJson
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope

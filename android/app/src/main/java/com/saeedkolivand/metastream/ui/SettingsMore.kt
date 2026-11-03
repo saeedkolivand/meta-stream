@@ -23,8 +23,8 @@ import androidx.compose.ui.unit.sp
 import com.meta.wearable.dat.core.types.RegistrationState
 import com.saeedkolivand.metastream.chat.ChatFlood
 import com.saeedkolivand.metastream.core.AppSettings
-import com.saeedkolivand.metastream.core.LogBuffer
-import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.logging.LogBuffer
+import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 

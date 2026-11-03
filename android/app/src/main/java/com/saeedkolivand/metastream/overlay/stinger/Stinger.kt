@@ -1,6 +1,6 @@
 package com.saeedkolivand.metastream.overlay
 
-import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.storage.Prefs
 import kotlin.math.roundToInt
 import org.json.JSONObject
 

@@ -11,8 +11,8 @@ import com.pedro.encoder.input.sources.audio.AudioSource
 import com.pedro.encoder.input.sources.audio.MicrophoneSource
 import com.pedro.encoder.input.sources.audio.MixAudioSource
 import com.pedro.library.generic.GenericStream
-import com.saeedkolivand.metastream.core.Prefs
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
+import com.saeedkolivand.metastream.core.storage.Prefs
 
 /** Microphone choice, like iOS micUID: "" = the system default. Persisted by a type+name key, since AudioDeviceInfo ids change. */
 object Mics {

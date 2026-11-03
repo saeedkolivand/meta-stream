@@ -1,7 +1,7 @@
 package com.saeedkolivand.metastream.overlay
 
 import com.saeedkolivand.metastream.camera.Cam
-import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source
 import kotlinx.coroutines.CoroutineScope

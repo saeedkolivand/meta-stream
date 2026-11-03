@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.core
+package com.saeedkolivand.metastream.core.logging
 
 import android.content.Context
 import android.util.Log
@@ -88,7 +88,7 @@ object LogFile {
     }
 }
 
-internal fun scrub(message: String): String = synchronized(secrets) { secrets.fold(message) { m, s -> m.replace(s, "***") } }
+fun scrub(message: String): String = synchronized(secrets) { secrets.fold(message) { m, s -> m.replace(s, "***") } }
 
 /** Same idea as iOS applog: one tag, a category, and secrets never reach the log (nor the shareable Logs screen). */
 fun applog(category: String, message: String) {

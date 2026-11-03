@@ -1,6 +1,6 @@
 package com.saeedkolivand.metastream.camera
 
-import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.storage.Prefs
 import org.json.JSONObject
 
 /**

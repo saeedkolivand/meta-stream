@@ -1,8 +1,8 @@
 package com.saeedkolivand.metastream.streaming
 
 import com.pedro.encoder.input.audio.CustomAudioEffect
-import com.saeedkolivand.metastream.core.Prefs
-import com.saeedkolivand.metastream.core.applog
+import com.saeedkolivand.metastream.core.logging.applog
+import com.saeedkolivand.metastream.core.storage.Prefs
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference

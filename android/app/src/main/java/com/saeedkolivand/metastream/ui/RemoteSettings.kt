@@ -7,7 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.remote.ObsServer
 
 /** Settings › Remote control (iOS RemoteSettingsView): the obs-websocket server for Stream Deck, Touch Portal, Streamer.bot. */

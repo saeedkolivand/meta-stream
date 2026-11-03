@@ -1,10 +1,10 @@
 package com.saeedkolivand.metastream.reach
 
-import com.saeedkolivand.metastream.core.Prefs
 import com.saeedkolivand.metastream.core.model.Money
+import com.saeedkolivand.metastream.core.network.http
+import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.core.storage.TokenStore
 import com.saeedkolivand.metastream.goal.DonatePage
-import com.saeedkolivand.metastream.platforms.TokenStore
-import com.saeedkolivand.metastream.platforms.http
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.time.Instant

@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.saeedkolivand.metastream.core.storage.Prefs
 
 /** Persisted user settings as Compose snapshot state; writes go through the update functions. */
 object AppSettings {
