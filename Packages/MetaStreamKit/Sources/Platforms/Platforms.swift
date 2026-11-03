@@ -1,11 +1,11 @@
+import AuthenticationServices
 import CoreLogging
 import CoreStorage
-import Foundation
-import AuthenticationServices
-import Observation
 import CryptoKit
-import UIKit
+import Foundation
+import Observation
 import os
+import UIKit
 
 /// Kick, Twitch, Restream, YouTube accounts: login, channel info (title/category/viewers), chat send, stream key.
 /// Thin facade: all observed state lives here (the views' source of truth) and every behavior
