@@ -208,8 +208,9 @@ public final class TwitchEventSubProvider: ChatProvider {
     private var task: Task<Void, Never>?
     private var stopped = true
 
-    public init(platforms: Platforms, onEvent: @escaping @MainActor (ChatEvent) -> Void, onClear: @escaping @MainActor () -> Void = {},
-         onRemove: @escaping @MainActor (_ messageID: String?, _ userID: String?, _ login: String?) -> Void = { _, _, _ in }) {
+    public init(platforms: Platforms, onEvent: @escaping @MainActor (ChatEvent) -> Void,
+                onClear: @escaping @MainActor () -> Void = {},
+                onRemove: @escaping @MainActor (_ messageID: String?, _ userID: String?, _ login: String?) -> Void = { _, _, _ in }) {
         self.onClear = onClear
         self.onRemove = onRemove
         self.platforms = platforms

@@ -261,8 +261,8 @@ public struct SlashRunner {
         return note
     }
 
-    public init(p: Platforms, chat: ChatFeed, origin: String) {
-        self.p = p
+    public init(p platforms: Platforms, chat: ChatFeed, origin: String) {
+        self.p = platforms
         self.chat = chat
         self.origin = origin
     }
