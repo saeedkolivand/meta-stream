@@ -35,7 +35,7 @@ public struct SceneInspectorPanel: View {
     }
 
     public init(
-        layer: OverlayLayer,
+        layer: Binding<OverlayLayer>,
         canMoveForward: Bool,
         canMoveBack: Bool,
         commit: @escaping () -> Void,
@@ -43,7 +43,7 @@ public struct SceneInspectorPanel: View {
         delete: @escaping () -> Void,
         close: (() -> Void)? = nil
     ) {
-        self.layer = layer
+        self._layer = layer
         self.canMoveForward = canMoveForward
         self.canMoveBack = canMoveBack
         self.commit = commit
