@@ -58,7 +58,7 @@ let package = Package(
         // Donation goal: GoalStore, Money, exchange rates, donation-site sources, the donate page publisher.
         .target(name: "Goal", dependencies: ["CoreModel", "CoreLogging", "CoreStorage", "Chat"], swiftSettings: strict),
         // Read-aloud: Speaker's three TTS lanes (System, Alert, Chat).
-        .target(name: "Speech", dependencies: ["CoreModel", "CoreUI", "Goal"], swiftSettings: strict),
+        .target(name: "Speech", dependencies: ["CoreModel", "CoreUI", "Platforms", "Chat", "Goal"], swiftSettings: strict),
         // Privacy blur: a HaishinKit VideoEffect that pixellates faces, text and barcodes found by Vision.
         .target(name: "Privacy", dependencies: ["CoreLogging", .product(name: "HaishinKit", package: "HaishinKit.swift")],
                 swiftSettings: strict),
@@ -67,7 +67,7 @@ let package = Package(
         // The streaming engine: Streamer and its components (uplink, SRTLA bonding, bitrate, health, recording, PiP,
         // sound mix, looks, phone/glasses/screen sources). Scene direction stays in the app (SceneCompositor).
         .target(name: "Engine", dependencies: [
-            "CoreLogging", "Camera", "Privacy", "Speech", "ScreenIPC", "ActivityShared",
+            "CoreLogging", "CoreUI", "Camera", "Privacy", "Speech", "ScreenIPC", "ActivityShared",
             .product(name: "HaishinKit", package: "HaishinKit.swift"),
             .product(name: "RTMPHaishinKit", package: "HaishinKit.swift"),
             .product(name: "SRTHaishinKit", package: "HaishinKit.swift"),
