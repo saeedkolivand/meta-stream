@@ -2,6 +2,7 @@ package com.saeedkolivand.metastream.reach
 
 import com.saeedkolivand.metastream.platforms.KickWeb
 import com.saeedkolivand.metastream.platforms.Spotify
+import com.saeedkolivand.metastream.streaming.uplink.cleanSecondsBeforeUp
 import java.math.BigDecimal
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -114,8 +115,8 @@ class SpotifyParseTest {
 class BitrateRecoveryTest {
     @Test
     fun climbsFastWellBelowWhereItFailed() {
-        assertEquals(5, com.saeedkolivand.metastream.streaming.cleanSecondsBeforeUp(2000, 4000))
-        assertEquals(15, com.saeedkolivand.metastream.streaming.cleanSecondsBeforeUp(3500, 4000))
+        assertEquals(5, cleanSecondsBeforeUp(2000, 4000))
+        assertEquals(15, cleanSecondsBeforeUp(3500, 4000))
     }
 }
 

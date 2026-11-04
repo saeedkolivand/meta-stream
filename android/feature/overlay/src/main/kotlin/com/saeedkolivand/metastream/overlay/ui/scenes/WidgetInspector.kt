@@ -28,13 +28,14 @@ import com.saeedkolivand.metastream.overlay.ChatStyle
 import com.saeedkolivand.metastream.overlay.DonationKind
 import com.saeedkolivand.metastream.overlay.EventListStyle
 import com.saeedkolivand.metastream.overlay.GoalStyle
-import com.saeedkolivand.metastream.overlay.InlineIcons
 import com.saeedkolivand.metastream.overlay.Layer
 import com.saeedkolivand.metastream.overlay.LayerType
 import com.saeedkolivand.metastream.overlay.NowPlayingStyle
 import com.saeedkolivand.metastream.overlay.QrStyle
 import com.saeedkolivand.metastream.overlay.TextStyle as TextWidgetStyle
-import com.saeedkolivand.metastream.overlay.WidgetVariables
+import com.saeedkolivand.metastream.overlay.widgets.nowplaying.copy
+import com.saeedkolivand.metastream.overlay.widgets.text.InlineIcons
+import com.saeedkolivand.metastream.overlay.widgets.text.WidgetVariables
 
 private fun defaultsOf(type: LayerType): Map<String, String> = when (type) {
     LayerType.Chat -> ChatStyle().toData()

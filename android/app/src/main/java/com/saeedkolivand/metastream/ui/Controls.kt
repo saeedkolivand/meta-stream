@@ -51,13 +51,13 @@ import com.saeedkolivand.metastream.core.ui.rememberHaptic
 import com.saeedkolivand.metastream.overlay.SceneRoles
 import com.saeedkolivand.metastream.privacy.BlurState
 import com.saeedkolivand.metastream.privacy.Privacy
-import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
-import com.saeedkolivand.metastream.streaming.FaceCam
 import com.saeedkolivand.metastream.streaming.Recording
-import com.saeedkolivand.metastream.streaming.ScreenShare
-import com.saeedkolivand.metastream.streaming.Soundboard
 import com.saeedkolivand.metastream.streaming.Source
+import com.saeedkolivand.metastream.streaming.audio.AudioMix
+import com.saeedkolivand.metastream.streaming.audio.Soundboard
+import com.saeedkolivand.metastream.streaming.video.FaceCam
+import com.saeedkolivand.metastream.streaming.video.ScreenShare
 import kotlinx.coroutines.delay
 
 private fun sourceIcon(s: Source) = when (s) {

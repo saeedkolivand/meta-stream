@@ -49,6 +49,7 @@ import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.Scene
 import com.saeedkolivand.metastream.overlay.SceneTemplate
 import com.saeedkolivand.metastream.overlay.Scenes
+import com.saeedkolivand.metastream.overlay.widgets.nowplaying.copy
 import com.saeedkolivand.metastream.platforms.Kick
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Source

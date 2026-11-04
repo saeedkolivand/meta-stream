@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.saeedkolivand.metastream.overlay.widgets.nowplaying.copy
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

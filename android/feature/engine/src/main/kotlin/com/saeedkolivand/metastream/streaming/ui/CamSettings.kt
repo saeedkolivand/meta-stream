@@ -17,9 +17,9 @@ import com.saeedkolivand.metastream.core.ui.Segmented
 import com.saeedkolivand.metastream.core.ui.SliderRow
 import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.streaming.Engine
-import com.saeedkolivand.metastream.streaming.FaceCam
 import com.saeedkolivand.metastream.streaming.Source
-import com.saeedkolivand.metastream.streaming.level
+import com.saeedkolivand.metastream.streaming.uplink.level
+import com.saeedkolivand.metastream.streaming.video.FaceCam
 
 private fun edit(change: CameraSettings.() -> CameraSettings) = Cam.update { it.change() }
 

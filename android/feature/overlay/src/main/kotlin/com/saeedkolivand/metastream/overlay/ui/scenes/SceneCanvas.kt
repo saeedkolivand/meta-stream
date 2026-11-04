@@ -48,6 +48,8 @@ import com.saeedkolivand.metastream.overlay.place
 import com.saeedkolivand.metastream.overlay.previewBitmap
 import com.saeedkolivand.metastream.overlay.widgetBox
 import com.saeedkolivand.metastream.overlay.widgetLayoutFor
+import com.saeedkolivand.metastream.overlay.widgets.goal.moved
+import com.saeedkolivand.metastream.overlay.widgets.nowplaying.copy
 import kotlin.math.abs
 import kotlin.math.roundToInt
 

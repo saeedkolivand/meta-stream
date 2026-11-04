@@ -22,10 +22,10 @@ import com.saeedkolivand.metastream.core.ui.Green
 import com.saeedkolivand.metastream.core.ui.Hairline
 import com.saeedkolivand.metastream.core.ui.Orange
 import com.saeedkolivand.metastream.core.ui.Red
-import com.saeedkolivand.metastream.streaming.SAMPLE_WINDOW
-import com.saeedkolivand.metastream.streaming.Sample
-import com.saeedkolivand.metastream.streaming.chartMax
-import com.saeedkolivand.metastream.streaming.kbpsText
+import com.saeedkolivand.metastream.streaming.uplink.SAMPLE_WINDOW
+import com.saeedkolivand.metastream.streaming.uplink.Sample
+import com.saeedkolivand.metastream.streaming.uplink.chartMax
+import com.saeedkolivand.metastream.streaming.uplink.kbpsText
 
 /** Last two minutes: sent kbps line, dashed step line for the target, orange bands for congestion, red for down. */
 @Composable

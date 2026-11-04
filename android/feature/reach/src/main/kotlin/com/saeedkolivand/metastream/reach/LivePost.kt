@@ -19,7 +19,7 @@ import com.saeedkolivand.metastream.platforms.YouTube
 import com.saeedkolivand.metastream.privacy.Privacy
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Health
-import com.saeedkolivand.metastream.streaming.NetStats
+import com.saeedkolivand.metastream.streaming.uplink.NetStats
 import java.io.ByteArrayOutputStream
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CoroutineScope

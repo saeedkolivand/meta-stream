@@ -33,12 +33,12 @@ import com.saeedkolivand.metastream.reach.LivePost
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Health
-import com.saeedkolivand.metastream.streaming.Level
-import com.saeedkolivand.metastream.streaming.NetStats
 import com.saeedkolivand.metastream.streaming.Source
-import com.saeedkolivand.metastream.streaming.level
 import com.saeedkolivand.metastream.streaming.thermalLabel
 import com.saeedkolivand.metastream.streaming.ui.NetworkState
+import com.saeedkolivand.metastream.streaming.uplink.Level
+import com.saeedkolivand.metastream.streaming.uplink.NetStats
+import com.saeedkolivand.metastream.streaming.uplink.level
 import com.saeedkolivand.metastream.ui.ManagerState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

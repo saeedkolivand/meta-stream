@@ -53,10 +53,12 @@ import com.saeedkolivand.metastream.streaming.Source
 import com.saeedkolivand.metastream.streaming.StreamingService
 import com.saeedkolivand.metastream.streaming.ui.NetworkSheet
 import com.saeedkolivand.metastream.streaming.ui.NetworkState
-import com.saeedkolivand.metastream.ui.Detent
 import com.saeedkolivand.metastream.ui.ManagerState
-import com.saeedkolivand.metastream.ui.SheetArgs
 import com.saeedkolivand.metastream.ui.StreamManager
+import com.saeedkolivand.metastream.ui.chat.ChatPanel
+import com.saeedkolivand.metastream.ui.chat.Detent
+import com.saeedkolivand.metastream.ui.chat.SheetArgs
+import com.saeedkolivand.metastream.ui.settings.SettingsSheet
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest

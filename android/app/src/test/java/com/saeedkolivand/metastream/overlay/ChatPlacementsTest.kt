@@ -2,6 +2,7 @@ package com.saeedkolivand.metastream.overlay
 
 import com.saeedkolivand.metastream.core.model.ChatEvent
 import com.saeedkolivand.metastream.core.model.Kind
+import com.saeedkolivand.metastream.overlay.widgets.chat.chatPlacements
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

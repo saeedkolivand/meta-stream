@@ -16,9 +16,9 @@ import com.saeedkolivand.metastream.core.ui.Red
 import com.saeedkolivand.metastream.core.ui.Section
 import com.saeedkolivand.metastream.core.ui.SliderRow
 import com.saeedkolivand.metastream.streaming.Engine
-import com.saeedkolivand.metastream.streaming.Look
-import com.saeedkolivand.metastream.streaming.Looks
 import com.saeedkolivand.metastream.streaming.compositor
+import com.saeedkolivand.metastream.streaming.video.Look
+import com.saeedkolivand.metastream.streaming.video.Looks
 
 /** iOS CameraProControlsView+Look: the live source's grade, saved per source on every change, applied on the GPU. */
 @Composable

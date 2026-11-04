@@ -1,5 +1,7 @@
 package com.saeedkolivand.metastream.overlay
 
+import com.saeedkolivand.metastream.overlay.widgets.goal.GoalMotion
+import com.saeedkolivand.metastream.overlay.widgets.goal.goalPct
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

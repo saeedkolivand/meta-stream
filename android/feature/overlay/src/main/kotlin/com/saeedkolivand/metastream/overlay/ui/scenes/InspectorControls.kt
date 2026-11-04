@@ -33,6 +33,7 @@ import com.saeedkolivand.metastream.core.ui.SliderRow
 import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.overlay.Layer
 import com.saeedkolivand.metastream.overlay.WidgetFonts
+import com.saeedkolivand.metastream.overlay.widgets.nowplaying.copy
 import kotlinx.coroutines.delay
 
 private val Presets = listOf(

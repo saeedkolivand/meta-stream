@@ -33,6 +33,7 @@ import com.saeedkolivand.metastream.overlay.QrStyle
 import com.saeedkolivand.metastream.overlay.TextStyle as TextWidgetStyle
 import com.saeedkolivand.metastream.overlay.WidgetLayout
 import com.saeedkolivand.metastream.overlay.widgetLayer
+import com.saeedkolivand.metastream.overlay.widgets.nowplaying.copy
 
 /** What the "+" menu can add. Image and Web need input first (a picked file, a URL), so the editor builds those itself. */
 enum class NewWidget(val title: String) {

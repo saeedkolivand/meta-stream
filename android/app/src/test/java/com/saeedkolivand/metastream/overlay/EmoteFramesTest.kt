@@ -1,5 +1,6 @@
 package com.saeedkolivand.metastream.overlay
 
+import com.saeedkolivand.metastream.overlay.widgets.chat.frameIndex
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

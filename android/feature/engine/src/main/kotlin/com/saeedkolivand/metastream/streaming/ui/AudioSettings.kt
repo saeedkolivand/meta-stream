@@ -30,10 +30,10 @@ import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.core.ui.SystemBlue
 import com.saeedkolivand.metastream.core.ui.TextRow
 import com.saeedkolivand.metastream.core.ui.ValueRow
-import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
-import com.saeedkolivand.metastream.streaming.Mics
-import com.saeedkolivand.metastream.streaming.Soundboard
+import com.saeedkolivand.metastream.streaming.audio.AudioMix
+import com.saeedkolivand.metastream.streaming.audio.Mics
+import com.saeedkolivand.metastream.streaming.audio.Soundboard
 
 private val AUDIO_TYPES = arrayOf("audio/*")
 

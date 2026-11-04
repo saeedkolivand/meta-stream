@@ -12,6 +12,7 @@ import com.saeedkolivand.metastream.core.model.Money
 import com.saeedkolivand.metastream.goal.DonationPrices
 import com.saeedkolivand.metastream.goal.GoalStore
 import com.saeedkolivand.metastream.goal.Rates
+import com.saeedkolivand.metastream.overlay.widgets.alert.alertAmount
 import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode

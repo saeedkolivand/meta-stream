@@ -8,6 +8,7 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
+import com.saeedkolivand.metastream.overlay.widgets.goal.bar
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos

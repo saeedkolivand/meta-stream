@@ -1,5 +1,7 @@
 package com.saeedkolivand.metastream.streaming
 
+import com.saeedkolivand.metastream.streaming.uplink.Bonding
+import com.saeedkolivand.metastream.streaming.uplink.SrtlaWire
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

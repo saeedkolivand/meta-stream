@@ -76,7 +76,9 @@ import com.saeedkolivand.metastream.overlay.LayerType
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.Scenes
 import com.saeedkolivand.metastream.overlay.WidgetLocation
-import com.saeedkolivand.metastream.overlay.WidgetVariables
+import com.saeedkolivand.metastream.overlay.by
+import com.saeedkolivand.metastream.overlay.widgets.nowplaying.copy
+import com.saeedkolivand.metastream.overlay.widgets.text.WidgetVariables
 import kotlin.math.max
 import kotlin.math.min
 

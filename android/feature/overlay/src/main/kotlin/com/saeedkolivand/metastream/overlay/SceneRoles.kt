@@ -6,7 +6,7 @@ import androidx.compose.runtime.setValue
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.streaming.Engine
-import com.saeedkolivand.metastream.streaming.duration
+import com.saeedkolivand.metastream.streaming.uplink.duration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

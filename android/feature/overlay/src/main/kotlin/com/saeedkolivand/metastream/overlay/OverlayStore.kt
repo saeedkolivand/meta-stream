@@ -9,6 +9,10 @@ import androidx.compose.runtime.setValue
 import androidx.documentfile.provider.DocumentFile
 import com.saeedkolivand.metastream.core.logging.applog
 import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.overlay.widgets.goal.moved
+import com.saeedkolivand.metastream.overlay.widgets.nowplaying.copy
+import com.saeedkolivand.metastream.overlay.widgets.text.InlineIcons
+import com.saeedkolivand.metastream.overlay.widgets.text.inAppTextBitmap
 import java.io.File
 import java.util.UUID
 import org.json.JSONArray

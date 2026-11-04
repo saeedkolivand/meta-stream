@@ -16,6 +16,8 @@ import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.overlay.Scenes
 import com.saeedkolivand.metastream.overlay.StingerKind
 import com.saeedkolivand.metastream.overlay.StingerStyle
+import com.saeedkolivand.metastream.overlay.ink
+import com.saeedkolivand.metastream.overlay.widgets.nowplaying.copy
 
 /**
  * iOS StingerSettingsView, built-in stingers only. ponytail: no looping preview in Settings; "Play on preview" runs the real

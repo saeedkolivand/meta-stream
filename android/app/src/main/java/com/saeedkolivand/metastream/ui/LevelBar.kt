@@ -23,8 +23,8 @@ import androidx.compose.ui.unit.dp
 import com.saeedkolivand.metastream.core.ui.Green
 import com.saeedkolivand.metastream.core.ui.Orange
 import com.saeedkolivand.metastream.core.ui.Red
-import com.saeedkolivand.metastream.streaming.AudioMath
-import com.saeedkolivand.metastream.streaming.AudioMix
+import com.saeedkolivand.metastream.streaming.audio.AudioMath
+import com.saeedkolivand.metastream.streaming.audio.AudioMix
 import kotlinx.coroutines.delay
 
 private const val METER_MS = 125L

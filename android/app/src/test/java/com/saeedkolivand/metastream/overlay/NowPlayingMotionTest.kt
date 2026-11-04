@@ -1,5 +1,9 @@
 package com.saeedkolivand.metastream.overlay
 
+import com.saeedkolivand.metastream.overlay.widgets.nowplaying.Cubic
+import com.saeedkolivand.metastream.overlay.widgets.nowplaying.NowPlayingMotion
+import com.saeedkolivand.metastream.overlay.widgets.nowplaying.NpPose
+import com.saeedkolivand.metastream.overlay.widgets.nowplaying.copy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals

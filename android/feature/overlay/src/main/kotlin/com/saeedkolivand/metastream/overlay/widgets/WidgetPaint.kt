@@ -19,6 +19,8 @@ import androidx.core.graphics.ColorUtils
 import com.saeedkolivand.metastream.chat.Emotes
 import com.saeedkolivand.metastream.chat.Run
 import com.saeedkolivand.metastream.chat.tokenize
+import com.saeedkolivand.metastream.overlay.widgets.chat.Emote
+import com.saeedkolivand.metastream.overlay.widgets.chat.EmoteBitmaps
 import com.saeedkolivand.metastream.platforms.Accounts
 import kotlin.math.max
 import kotlin.math.min
