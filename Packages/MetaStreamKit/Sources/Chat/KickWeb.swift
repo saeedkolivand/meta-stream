@@ -246,7 +246,9 @@ public struct KickSessionSection: View {
             Button("Sign in to kick.com") { signingIn = true }
                 .sheet(isPresented: $signingIn, onDismiss: { Task { await kick.refresh() } }) {
                     NavigationStack {
-                        LoginWeb().ignoresSafeArea().navigationTitle("kick.com").navigationBarTitleDisplayMode(.inline)
+                        // SwiftUI WebView: the default data store, so the sign-in reaches the headless page.
+                        WebView(url: URL(string: "https://kick.com/login")).ignoresSafeArea()
+                            .navigationTitle("kick.com").navigationBarTitleDisplayMode(.inline)
                             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { signingIn = false } } }
                     }
                 }
@@ -257,12 +259,3 @@ public struct KickSessionSection: View {
     }
 }
 
-/// Visible kick.com login page; the user signs in themselves. Shares the default (persistent) data store.
-private struct LoginWeb: UIViewRepresentable {
-    func makeUIView(context: Context) -> WKWebView {
-        let w = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
-        w.load(URLRequest(url: URL(string: "https://kick.com/login")!))
-        return w
-    }
-    func updateUIView(_ w: WKWebView, context: Context) {}
-}
