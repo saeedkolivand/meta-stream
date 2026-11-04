@@ -81,9 +81,13 @@ let package = Package(
             .product(name: "HaishinKit", package: "HaishinKit.swift")
         ], swiftSettings: strict),
         // The streamer's own chat bot: saved commands, role messages, donation thanks.
-        .target(name: "Bot", dependencies: ["CoreModel", "CoreLogging", "CoreNetwork", "CoreStorage", "CoreUI", "Platforms", "Chat", "Goal", "Signals", "Engine", "Overlays"], swiftSettings: strict),
+        .target(name: "Bot", dependencies: [
+            "CoreModel", "CoreLogging", "CoreNetwork", "CoreStorage", "CoreUI", "Platforms", "Chat", "Goal", "Signals", "Engine", "Overlays"
+        ], swiftSettings: strict),
         // Beyond the stream: Telegram live post, session log, Wrapped, Instagram story, the Streams screens.
-        .target(name: "Reach", dependencies: ["CoreModel", "CoreLogging", "CoreStorage", "CoreUI", "Platforms", "Chat", "Goal", "Signals", "Engine", "Overlays", "Bot"], swiftSettings: strict),
+        .target(name: "Reach", dependencies: [
+            "CoreModel", "CoreLogging", "CoreStorage", "CoreUI", "Platforms", "Chat", "Goal", "Signals", "Engine", "Overlays", "Bot"
+        ], swiftSettings: strict),
         // OBS-websocket server: drive scenes and the stream from a desk.
         .target(name: "Remote", dependencies: ["CoreLogging", "Engine", "Overlays"], swiftSettings: strict)
     ]
