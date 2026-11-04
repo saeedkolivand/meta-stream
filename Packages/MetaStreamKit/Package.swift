@@ -25,7 +25,8 @@ let package = Package(
         .library(name: "Privacy", targets: ["Privacy"]),
         .library(name: "Signals", targets: ["Signals"]),
         .library(name: "Engine", targets: ["Engine"]),
-        .library(name: "Overlays", targets: ["Overlays"])
+        .library(name: "Overlays", targets: ["Overlays"]),
+        .library(name: "Bot", targets: ["Bot"])
     ],
     // Same URL and floor as project.yml, so Xcode resolves one copy for the app and the package.
     dependencies: [
@@ -76,6 +77,8 @@ let package = Package(
         .target(name: "Overlays", dependencies: [
             "CoreModel", "CoreLogging", "CoreUI", "Platforms", "Chat", "Goal", "Signals", "Engine",
             .product(name: "HaishinKit", package: "HaishinKit.swift")
-        ], swiftSettings: strict)
+        ], swiftSettings: strict),
+        // The streamer's own chat bot: saved commands, role messages, donation thanks.
+        .target(name: "Bot", dependencies: ["CoreModel", "CoreLogging", "CoreNetwork", "CoreStorage", "CoreUI", "Platforms", "Chat", "Goal", "Signals", "Engine", "Overlays"], swiftSettings: strict)
     ]
 )
