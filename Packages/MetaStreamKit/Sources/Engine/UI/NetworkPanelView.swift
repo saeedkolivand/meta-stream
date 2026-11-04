@@ -3,10 +3,12 @@ import SwiftUI
 
 /// In-app network panel (sheet from the HUD): bitrate, drops, downtime and what the connection is doing.
 /// Flat on purpose -- no material, no gradients; it is for the streamer's eyes, never on stream.
-struct NetworkPanelView: View {
+public struct NetworkPanelView: View {
     @EnvironmentObject var streamer: Streamer
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 statusLine
@@ -140,7 +142,7 @@ struct NetworkPanelView: View {
 
 extension Streamer {
     /// Downtime so far: cumulative total (including the outage in progress) and the current outage alone.
-    func downtimeNow(_ now: Date) -> (total: TimeInterval, current: TimeInterval) {
+    public func downtimeNow(_ now: Date) -> (total: TimeInterval, current: TimeInterval) {
         let current = downSince.map { now.timeIntervalSince($0) } ?? 0
         return (downtime + current, current)
     }

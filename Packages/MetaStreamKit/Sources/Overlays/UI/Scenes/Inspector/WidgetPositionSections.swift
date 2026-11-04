@@ -74,7 +74,7 @@ extension WidgetInspectorView {
         layer.layout = lay
     }
 
-    var sizeBinding: Binding<Double> {
+    public var sizeBinding: Binding<Double> {
         Binding {
             Double(layer.layout?.scale ?? layer.sx)
         } set: { value in

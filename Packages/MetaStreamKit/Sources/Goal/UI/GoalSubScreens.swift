@@ -3,7 +3,7 @@ import SwiftUI
 
 extension Rates {
     /// Toman per euro: the user's own rate if set, else Nobitex toman x ECB euro.
-    var tomanPerEuro: Decimal? {
+    public var tomanPerEuro: Decimal? {
         if manualTomanPerEUR > 0 { return manualTomanPerEUR }
         guard let toman = tomanRate(), let euro = usdPerEUR?.value else { return nil }
         return toman * euro
@@ -11,11 +11,11 @@ extension Rates {
 }
 
 /// Settings › Goal › Rates: the exchange rates behind the goal and what subs and Bits are worth in it.
-struct GoalRatesView: View {
+public struct GoalRatesView: View {
     private let rates = Rates.shared
     @AppStorage("goalManualTomanPerEUR") private var manualRate = ""
 
-    var body: some View {
+    public var body: some View {
         Form {
             Section {
                 LabeledContent("Toman rate", value: rates.tomanSource)
@@ -56,12 +56,12 @@ private struct PriceField: View {
 }
 
 /// Settings › Goal › Recent donations: the last 50, newest first; swipe to remove one from the total.
-struct GoalRecentView: View {
+public struct GoalRecentView: View {
     private let goal = GoalStore.shared
 
     private func money(_ amount: Decimal) -> String { Money(amount, goal.config.currency).display }
 
-    var body: some View {
+    public var body: some View {
         Form {
             Section {
                 if goal.entries.isEmpty { Text("None yet").foregroundStyle(.secondary) }

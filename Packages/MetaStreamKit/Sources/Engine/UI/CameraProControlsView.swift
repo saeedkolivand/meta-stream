@@ -4,8 +4,11 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// Settings › Camera › Pro controls: focus, exposure, white balance, image, look (LUT) and viewfinder overlays.
-struct CameraProControlsView: View {
-    let cap: CameraCapabilities?
+public struct CameraProControlsView: View {
+    public let cap: CameraCapabilities?
+
+    public init(cap: CameraCapabilities?) { self.cap = cap }
+
     @EnvironmentObject var streamer: Streamer
     @AppStorage("camFocusMode") var camFocusMode = "continuous"
     @AppStorage("camLensPosition") var camLensPosition = 0.5
@@ -32,7 +35,7 @@ struct CameraProControlsView: View {
     @State var importingLUT = false
     @State var lutError: String?
 
-    var body: some View {
+    public var body: some View {
         Form {
             if cap == nil {
                 Section {

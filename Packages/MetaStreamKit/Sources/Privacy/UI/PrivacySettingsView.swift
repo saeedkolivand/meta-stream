@@ -1,12 +1,14 @@
 import SwiftUI
 
-struct PrivacySettingsView: View {
+public struct PrivacySettingsView: View {
     @AppStorage("blurOn") var blurOn = false
     @AppStorage("blurFaces") var blurFaces = true
     @AppStorage("blurText") var blurText = true
     @AppStorage("blurBarcodes") var blurBarcodes = true
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Form {
             Section {
                 Toggle("Privacy blur", isOn: $blurOn)

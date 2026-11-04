@@ -1,12 +1,14 @@
 import SwiftUI
 
 /// Settings › Donate page: where the public donate page lives and the key the app uses to push the live goal to it.
-struct DonatePageSettingsView: View {
+public struct DonatePageSettingsView: View {
     private let page = DonatePagePublisher.shared
     @AppStorage("donatePageURL") private var pageURL = DonatePagePublisher.defaultURL
     @State private var pageKey = ""
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Form {
             Section {
                 TextField("Page URL", text: $pageURL).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()

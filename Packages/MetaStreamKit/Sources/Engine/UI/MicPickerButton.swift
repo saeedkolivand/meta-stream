@@ -5,10 +5,10 @@ import SwiftUI
 
 /// "Microphone and mic mode…" row: opens the system input picker (iOS 26), which also offers
 /// Voice Isolation / Wide Spectrum / Standard for the selected mic.
-struct MicPickerButton: UIViewRepresentable {
-    func makeCoordinator() -> Coordinator { Coordinator() }
+public struct MicPickerButton: UIViewRepresentable {
+    public func makeCoordinator() -> Coordinator { Coordinator() }
 
-    func makeUIView(context: Context) -> UIButton {
+    public func makeUIView(context: Context) -> UIButton {
         // The picker lists inputs only under a record category -- same options as Streamer.refreshMics.
         try? AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .default,
             options: [.defaultToSpeaker, .allowBluetoothHFP, .allowBluetoothA2DP, .mixWithOthers])
@@ -25,13 +25,13 @@ struct MicPickerButton: UIViewRepresentable {
         return button
     }
 
-    func updateUIView(_ uiView: UIButton, context: Context) {}
+    public func updateUIView(_ uiView: UIButton, context: Context) {}
 
-    final class Coordinator: NSObject, AVInputPickerInteraction.Delegate {
-        var picker: AVInputPickerInteraction?
+    public final class Coordinator: NSObject, AVInputPickerInteraction.Delegate {
+        public var picker: AVInputPickerInteraction?
 
         // iOS 26 can revert the choice; log what actually stuck.
-        func inputPickerInteractionDidEndDismissing(_ inputPickerInteraction: AVInputPickerInteraction) {
+        public func inputPickerInteractionDidEndDismissing(_ inputPickerInteraction: AVInputPickerInteraction) {
             let s = AVAudioSession.sharedInstance()
             applog("stream", "mic picker closed: input=\(s.preferredInput?.portName ?? "default") mode=\(AVCaptureDevice.preferredMicrophoneMode.rawValue)")
         }

@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 
 /// Everything about scenes that isn't one scene: the change transition, scene roles, auto-rotate, GPS share, OBS import.
 /// Reached from Settings (Transitions) and from the Scenes screen's options button.
-struct SceneOptionsView: View {
+public struct SceneOptionsView: View {
     @EnvironmentObject var streamer: Streamer
     @ObservedObject private var store = OverlayStore.shared
     @State private var pickJSON = false
@@ -14,7 +14,9 @@ struct SceneOptionsView: View {
     @AppStorage("startCountdown") private var startCountdown = 60
     @AppStorage("endingHold") private var endingHold = 10
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Form {
             transitionSection
             Section {

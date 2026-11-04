@@ -1,12 +1,14 @@
 import Engine
 import SwiftUI
 
-struct RemoteSettingsView: View {
+public struct RemoteSettingsView: View {
     @EnvironmentObject var streamer: Streamer
     @AppStorage("obsServerOn") var on = false
     @AppStorage("obsPassword") var password = ""
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Form {
             Section {
                 Toggle("obs-websocket server", isOn: $on)

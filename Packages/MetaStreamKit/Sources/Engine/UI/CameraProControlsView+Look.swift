@@ -2,7 +2,7 @@ import CoreUI
 import SwiftUI
 
 extension CameraProControlsView {
-    var lookSection: some View {
+    public var lookSection: some View {
         Section {
             labeledSlider("Brightness", valueText: String(format: "%+.2f", look.brightness), value: $look.brightness, range: -0.5...0.5)
             labeledSlider("Contrast", valueText: String(format: "%.2f", look.contrast), value: $look.contrast, range: 0.5...1.5)

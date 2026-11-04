@@ -2,14 +2,14 @@ import SwiftUI
 
 /// The scene's layers, top of the stack first: tap to select, eye to hide, swipe to delete, Edit to drag-reorder.
 /// Used in the iPhone Layers sheet and the iPad left pane.
-struct SceneLayerList: View {
+public struct SceneLayerList: View {
     @Binding var layers: [OverlayLayer]
     @Binding var selected: Int?
-    let delete: (Int) -> Void
-    let reorder: (IndexSet, Int) -> Void
+    public let delete: (Int) -> Void
+    public let reorder: (IndexSet, Int) -> Void
     @State private var editMode: EditMode = .inactive
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             HStack {
                 Text("Layers").font(.headline)

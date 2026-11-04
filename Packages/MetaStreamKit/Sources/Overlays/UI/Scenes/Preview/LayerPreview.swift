@@ -4,20 +4,20 @@ import SwiftUI
 
 /// One layer drawn in the editor canvas with the same SwiftUI views the stream renders from, laid out at natural size
 /// and scaled to the canvas rect, so what you arrange is what viewers get.
-struct LayerPreview: View {
-    let layer: OverlayLayer
-    let natural: CGSize
-    let size: CGSize
-    var emotes: Emotes
+public struct LayerPreview: View {
+    public let layer: OverlayLayer
+    public let natural: CGSize
+    public let size: CGSize
+    public var emotes: Emotes
     /// Live merged chat; empty falls back to the samples so a quiet chat still shows its look.
-    let chat: [ChatEvent]
+    public let chat: [ChatEvent]
 
     @State private var image: UIImage?
     private static let cache = NSCache<NSString, UIImage>()
 
     private var file: String? { layer.type == .slideshow ? layer.files.first : layer.data["file"] }
 
-    var body: some View {
+    public var body: some View {
         content
             .frame(width: natural.width, height: natural.height, alignment: .topLeading)
             .scaleEffect(size.width / max(natural.width, 1), anchor: .topLeading)

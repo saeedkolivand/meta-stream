@@ -3,7 +3,7 @@ import SwiftUI
 extension View {
     /// Adds an expand button to a preview; it opens `full` (a fresh copy of the same live preview) as large as the
     /// screen allows. The stream is 16:9, so it is letterboxed on black; rotating just makes it bigger.
-    func fullScreenPreview<Full: View>(@ViewBuilder _ full: @escaping () -> Full) -> some View {
+    public func fullScreenPreview<Full: View>(@ViewBuilder _ full: @escaping () -> Full) -> some View {
         modifier(FullScreenPreviewModifier(full: full))
     }
 }

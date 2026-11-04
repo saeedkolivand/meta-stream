@@ -3,8 +3,8 @@ import SwiftUI
 
 /// Loops the chosen donation design with the stream's own drawing code (like the stinger preview), over a stand-in scene.
 /// The Island design is the CPU banner (AlertBannerView) driven by AlertIsland.pose, as on stream without a GPU mixer.
-struct DonationAlertPreview: View {
-    let style: AlertWidgetStyle
+public struct DonationAlertPreview: View {
+    public let style: AlertWidgetStyle
     @State private var start = Date()
     @State private var holder = CanvasHolder()
     @Environment(\.displayScale) private var displayScale
@@ -38,7 +38,7 @@ struct DonationAlertPreview: View {
                                  rate: "₮59,000/€", toGoal: "€20.00", tier: 1, date: date, time: fmt.string(from: Date()), goal: goal)
     }()
 
-    var body: some View {
+    public var body: some View {
         TimelineView(.animation) { tl in
             let kind = style.donationKind
             let total = kind == .island ? AlertIsland.total(hold: style.holdSeconds) : kind.seconds / max(style.donationStyle.speed, 0.1)

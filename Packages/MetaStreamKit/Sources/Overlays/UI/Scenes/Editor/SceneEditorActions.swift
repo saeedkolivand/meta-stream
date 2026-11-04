@@ -3,14 +3,14 @@ import SwiftUI
 
 /// What the editor does to its working copy of the layers, and how that reaches the store.
 extension SceneEditorView {
-    func append(_ layer: OverlayLayer) {
+    public func append(_ layer: OverlayLayer) {
         layers.append(layer)
         selected = layers.count - 1
         hapticTap()
         saveNow()
     }
 
-    func remove(_ index: Int) {
+    public func remove(_ index: Int) {
         guard layers.indices.contains(index) else { return }
         layers.remove(at: index)
         selected = nil
@@ -19,7 +19,7 @@ extension SceneEditorView {
     }
 
     /// A copy a little down and right of the original, selected.
-    func duplicate(_ index: Int) {
+    public func duplicate(_ index: Int) {
         guard layers.indices.contains(index) else { return }
         var copy = layers[index]
         copy.name += " copy"
@@ -33,14 +33,14 @@ extension SceneEditorView {
         append(copy)
     }
 
-    func hide(_ index: Int) {
+    public func hide(_ index: Int) {
         guard layers.indices.contains(index) else { return }
         layers[index].visible = false
         saveNow()
     }
 
     /// Swaps with the neighbour: +1 brings forward, -1 sends back.
-    func move(_ index: Int, _ by: Int) {
+    public func move(_ index: Int, _ by: Int) {
         let target = index + by
         guard layers.indices.contains(index), layers.indices.contains(target) else { return }
         layers.swapAt(index, target)
@@ -49,7 +49,7 @@ extension SceneEditorView {
     }
 
     /// Drag-reorder in the layer list, which shows the top layer first: `from`/`to` index that reversed order.
-    func reorder(_ from: IndexSet, _ to: Int) {
+    public func reorder(_ from: IndexSet, _ to: Int) {
         var order = Array(layers.indices.reversed())
         let pick = selected
         order.move(fromOffsets: from, toOffset: to)
@@ -59,7 +59,7 @@ extension SceneEditorView {
         saveNow()
     }
 
-    func renameIfNeeded() {
+    public func renameIfNeeded() {
         let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed != name else { draftName = name; return }
         if store.renameScene(name, to: trimmed) { name = trimmed; draftName = trimmed } else { draftName = name }
@@ -67,7 +67,7 @@ extension SceneEditorView {
 
     /// Debounced: sliders, colour pickers and typing change the layers many times a second, and every save rebuilds
     /// the scene on stream.
-    func scheduleSave() {
+    public func scheduleSave() {
         saveTask?.cancel()
         saveTask = Task {
             try? await Task.sleep(for: .milliseconds(500))
@@ -76,12 +76,12 @@ extension SceneEditorView {
     }
 
     /// Autosave path: skipped while this scene is on stream (the draft waits for "Apply").
-    func saveNow() {
+    public func saveNow() {
         saveTask?.cancel()
         if !liveLocked { applyNow() }
     }
 
-    func applyNow() {
+    public func applyNow() {
         saveTask?.cancel()
         if layers != stored { store.setLayers(layers, in: name) }
     }

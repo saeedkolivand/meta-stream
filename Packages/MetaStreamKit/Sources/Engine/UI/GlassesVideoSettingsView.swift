@@ -1,13 +1,15 @@
 import SwiftUI
 
 /// Meta glasses on/off plus their video settings. Off (the default) hides every glasses control on the main screen.
-struct GlassesVideoSettingsView: View {
+public struct GlassesVideoSettingsView: View {
     @EnvironmentObject var streamer: Streamer
     @AppStorage("glassesEnabled") var glassesEnabled = false
     @AppStorage("resolution") var resolution = "high"
     @AppStorage("fps") var fps = 30
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Form {
             Section {
                 Toggle("Use Meta glasses", isOn: $glassesEnabled)

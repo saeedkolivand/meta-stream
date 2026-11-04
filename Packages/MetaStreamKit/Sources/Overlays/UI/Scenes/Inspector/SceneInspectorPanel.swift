@@ -2,17 +2,17 @@ import SwiftUI
 
 /// The inspector chrome: the layer's name, a Content | Style | Position switch, and that tab's form. The iPhone sheet
 /// passes `close`; the iPad pane doesn't need it.
-struct SceneInspectorPanel: View {
+public struct SceneInspectorPanel: View {
     @Binding var layer: OverlayLayer
-    let canMoveForward: Bool
-    let canMoveBack: Bool
-    let commit: () -> Void
-    let move: (Int) -> Void
-    let delete: () -> Void
-    var close: (() -> Void)?
+    public let canMoveForward: Bool
+    public let canMoveBack: Bool
+    public let commit: () -> Void
+    public let move: (Int) -> Void
+    public let delete: () -> Void
+    public var close: (() -> Void)?
     @State private var tab = InspectorTab.content
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             HStack {
                 Image(systemName: layer.type.icon).foregroundStyle(.tint)
@@ -33,18 +33,36 @@ struct SceneInspectorPanel: View {
             }
         }
     }
+
+    public init(
+        layer: OverlayLayer,
+        canMoveForward: Bool,
+        canMoveBack: Bool,
+        commit: @escaping () -> Void,
+        move: @escaping (Int) -> Void,
+        delete: @escaping () -> Void,
+        close: (() -> Void)? = nil
+    ) {
+        self.layer = layer
+        self.canMoveForward = canMoveForward
+        self.canMoveBack = canMoveBack
+        self.commit = commit
+        self.move = move
+        self.delete = delete
+        self.close = close
+    }
 }
 
 /// Floating toolbar over the selected widget: edit, duplicate, bring forward, hide, delete.
-struct SceneSelectionBar: View {
+public struct SceneSelectionBar: View {
     /// nil on iPad, where the inspector is always on screen.
-    let edit: (() -> Void)?
-    let duplicate: () -> Void
-    let forward: () -> Void
-    let hide: () -> Void
-    let delete: () -> Void
+    public let edit: (() -> Void)?
+    public let duplicate: () -> Void
+    public let forward: () -> Void
+    public let hide: () -> Void
+    public let delete: () -> Void
 
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 0) {
             if let edit { item("Edit widget", "slider.horizontal.3", edit) }
             item("Duplicate widget", "plus.square.on.square", duplicate)
@@ -62,5 +80,19 @@ struct SceneSelectionBar: View {
             Image(systemName: icon).foregroundStyle(tint).frame(width: 44, height: 44)
         }
         .accessibilityLabel(label)
+    }
+
+    public init(
+        edit: (() -> Void)? = nil,
+        duplicate: @escaping () -> Void,
+        forward: @escaping () -> Void,
+        hide: @escaping () -> Void,
+        delete: @escaping () -> Void
+    ) {
+        self.edit = edit
+        self.duplicate = duplicate
+        self.forward = forward
+        self.hide = hide
+        self.delete = delete
     }
 }

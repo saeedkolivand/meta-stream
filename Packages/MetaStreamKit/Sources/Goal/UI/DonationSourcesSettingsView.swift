@@ -1,10 +1,12 @@
 import SwiftUI
 
 /// Settings › Donation sources: one key per donation site (status, secure key, Save).
-struct DonationSourcesSettingsView: View {
+public struct DonationSourcesSettingsView: View {
     private let hub = DonationHub.shared
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Form {
             Section {
                 ForEach(DonationHub.Site.allCases, id: \.self) { site in

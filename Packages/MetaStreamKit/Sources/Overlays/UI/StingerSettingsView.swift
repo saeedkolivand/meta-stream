@@ -3,7 +3,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// Settings › Scenes & widgets › Stinger: a built-in stinger (drawn live, so it follows these settings) or your own clip.
-struct StingerSettingsView: View {
+public struct StingerSettingsView: View {
     @Environment(Platforms.self) var platforms
     @ObservedObject private var store = OverlayStore.shared
     @State private var style = StingerStyle.load()
@@ -11,7 +11,7 @@ struct StingerSettingsView: View {
 
     private var kind: StingerKind? { StingerKind(rawValue: store.stingerKind) }
 
-    var body: some View {
+    public var body: some View {
         Form {
             Section {
                 Picker("Stinger", selection: $store.stingerKind) {

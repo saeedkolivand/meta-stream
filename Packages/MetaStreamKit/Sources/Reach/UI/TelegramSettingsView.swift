@@ -2,7 +2,7 @@ import CoreStorage
 import SwiftUI
 
 /// Settings › Telegram: the bot and channel behind the Live post, and what the post may show.
-struct TelegramSettingsView: View {
+public struct TelegramSettingsView: View {
     @AppStorage("telegramOn") private var on = false
     @AppStorage("telegramChannel") private var channel = ""
     @AppStorage("telegramLang") private var lang = "fa"
@@ -17,7 +17,9 @@ struct TelegramSettingsView: View {
 
     private let keychain = KeychainTokenStore()
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Form {
             Section {
                 Toggle("Live post", isOn: $on)

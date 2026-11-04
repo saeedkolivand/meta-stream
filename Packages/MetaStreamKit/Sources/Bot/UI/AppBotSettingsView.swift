@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Settings › App bot: the app's own chat account (never the streamer) on Kick and Twitch.
-struct AppBotSettingsView: View {
+public struct AppBotSettingsView: View {
     @ObservedObject var bot = AppBot.shared
     @AppStorage("botKick") var kick = false
     @AppStorage("botTwitch") var twitch = false
@@ -12,7 +12,9 @@ struct AppBotSettingsView: View {
     @AppStorage("botTimersOn") var timersOn = false
     @AppStorage("botTimers") var rawTimers = "[]"
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Form {
             Section {
                 Toggle("App bot on Kick", isOn: $kick)

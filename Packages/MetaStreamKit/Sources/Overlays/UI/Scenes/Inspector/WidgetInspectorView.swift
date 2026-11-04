@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The inspector's three tabs: what the widget shows, how it looks, where it sits.
-enum InspectorTab: String, CaseIterable {
+public enum InspectorTab: String, CaseIterable {
     case content = "Content", style = "Style", position = "Position"
 }
 
@@ -11,14 +11,14 @@ enum InspectorTab: String, CaseIterable {
 /// (WidgetStyleSections.swift); Position the anchor grid, size, order and delete (WidgetPositionSections.swift).
 /// Styles are read and written by their string keys, not struct fields: the keys are the stored contract, so this
 /// stays correct whatever numeric type a style field uses. Missing keys read the style's defaults.
-struct WidgetInspectorView: View {
+public struct WidgetInspectorView: View {
     @Binding var layer: OverlayLayer
-    let tab: InspectorTab
-    let canMoveForward: Bool
-    let canMoveBack: Bool
-    let commit: () -> Void
-    let move: (Int) -> Void
-    let delete: () -> Void
+    public let tab: InspectorTab
+    public let canMoveForward: Bool
+    public let canMoveBack: Bool
+    public let commit: () -> Void
+    public let move: (Int) -> Void
+    public let delete: () -> Void
 
     private var defaults: [String: String] {
         switch layer.type {
@@ -33,7 +33,7 @@ struct WidgetInspectorView: View {
         }
     }
 
-    var body: some View {
+    public var body: some View {
         Group {
             switch tab {
             case .content: contentTab
@@ -59,7 +59,7 @@ struct WidgetInspectorView: View {
         }
     }
 
-    func noOptions(_ text: String) -> some View {
+    public func noOptions(_ text: String) -> some View {
         Section { Text(text).foregroundStyle(.secondary) }
     }
 
@@ -210,39 +210,39 @@ struct WidgetInspectorView: View {
 
     // MARK: shared controls and bindings (internal: the Style and Position tabs live in extensions in other files)
 
-    var fontPicker: some View {
+    public var fontPicker: some View {
         Picker("Font", selection: str("face")) {
             ForEach(Array(WidgetFonts.faces.enumerated()), id: \.offset) { Text($0.element.label).tag($0.element.id) }
         }
     }
 
-    func slider(_ title: String, _ value: Binding<Double>, _ range: ClosedRange<Double>, format: String) -> some View {
+    public func slider(_ title: String, _ value: Binding<Double>, _ range: ClosedRange<Double>, format: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack { Text(title); Spacer(); Text(String(format: format, value.wrappedValue)).monospacedDigit().foregroundStyle(.secondary) }
             Slider(value: value, in: range) { editing in if !editing { commit() } }
         }
     }
 
-    func raw(_ key: String) -> String? { layer.data[key] ?? defaults[key] }
+    public func raw(_ key: String) -> String? { layer.data[key] ?? defaults[key] }
 
-    func str(_ key: String) -> Binding<String> {
+    public func str(_ key: String) -> Binding<String> {
         Binding { raw(key) ?? "" } set: { layer.data[key] = $0 }
     }
 
-    func num(_ key: String) -> Binding<Double> {
+    public func num(_ key: String) -> Binding<Double> {
         Binding { Double(raw(key) ?? "") ?? 0 } set: { layer.data[key] = String(Int($0.rounded())) }
     }
 
-    func int(_ key: String) -> Binding<Int> {
+    public func int(_ key: String) -> Binding<Int> {
         Binding { Int(Double(raw(key) ?? "") ?? 0) } set: { layer.data[key] = String($0) }
     }
 
-    func flag(_ key: String) -> Binding<Bool> {
+    public func flag(_ key: String) -> Binding<Bool> {
         Binding { raw(key) == "true" } set: { layer.data[key] = $0 ? "true" : "false" }
     }
 
     /// ARGB UInt32 in the data, a SwiftUI Color in the picker.
-    func color(_ key: String) -> Binding<Color> {
+    public func color(_ key: String) -> Binding<Color> {
         Binding {
             Color(uiColor: OverlayRaster.color(argb: UInt32(raw(key) ?? "") ?? 0xFFFFFFFF))
         } set: { c in

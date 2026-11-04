@@ -7,7 +7,7 @@ import SwiftUI
 /// Build one scene: arrange widgets on a live canvas, pick the camera it switches to, put it on stream.
 /// iPhone: canvas on top, a bottom bar (layers, add, camera), the inspector in a sheet that leaves the canvas usable.
 /// iPad: layers | canvas | inspector side by side. State and actions are internal so SceneEditorActions.swift can extend it.
-struct SceneEditorView: View {
+public struct SceneEditorView: View {
     @EnvironmentObject var streamer: Streamer
     @ObservedObject var store = OverlayStore.shared
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -26,7 +26,7 @@ struct SceneEditorView: View {
     /// Canvas only: the bottom bar, layers and inspector step aside (the floating selection bar stays).
     @State private var fullScreen = false
 
-    init(name: String) {
+    public init(name: String) {
         _name = State(initialValue: name)
         _draftName = State(initialValue: name)
     }
@@ -40,14 +40,14 @@ struct SceneEditorView: View {
 
     private var portrait: Bool { portraitOverride ?? (streamer.blurCanvasSize.height > streamer.blurCanvasSize.width) }
     private var regular: Bool { sizeClass == .regular }
-    var stored: [OverlayLayer] { store.scenes.first { $0.name == name }?.layers ?? [] }
+    public var stored: [OverlayLayer] { store.scenes.first { $0.name == name }?.layers ?? [] }
     private var wantsLocation: Bool { layers.contains { $0.type == .text && WidgetVariables.needsLocation($0.data["text"] ?? "") } }
     private var camera: String { store.scenes.first { $0.name == name }?.camera ?? "" }
     private var role: String { store.scenes.first { $0.name == name }?.role ?? "" }
     /// On stream right now: edits wait as a draft until applied, so viewers never see a half-built scene.
-    var liveLocked: Bool { streamer.live && store.scene == name }
+    public var liveLocked: Bool { streamer.live && store.scene == name }
 
-    var body: some View {
+    public var body: some View {
         Group {
             if regular { padLayout } else { phoneLayout }
         }

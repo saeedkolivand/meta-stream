@@ -1,11 +1,11 @@
 import SwiftUI
 
 /// Settings › App bot › Messages: what the bot posts for scene changes, viewer donate questions and thank-yous.
-struct AppBotMessagesView: View {
+public struct AppBotMessagesView: View {
     @AppStorage("botNotices") var notices = true
     @AppStorage("botThanks") var thanks = true
 
-    var body: some View {
+    public var body: some View {
         Form {
             Section {
                 Toggle("Scene notices", isOn: $notices)
@@ -38,12 +38,12 @@ struct AppBotMessagesView: View {
 }
 
 /// Settings › App bot › Timers: repeating messages while live.
-struct AppBotTimersView: View {
+public struct AppBotTimersView: View {
     @AppStorage("botTimersOn") var timersOn = false
     @AppStorage("botTimers") var rawTimers = "[]"
     @State private var timers: [AppTimer] = []
 
-    var body: some View {
+    public var body: some View {
         Form {
             Section {
                 Toggle("Timers", isOn: $timersOn)
@@ -69,9 +69,9 @@ struct AppBotTimersView: View {
 }
 
 /// One editable message; shows the default until it is changed.
-struct TemplateField: View {
-    let title: String
+public struct TemplateField: View {
+    public let title: String
     @AppStorage private var text: String
-    init(title: String, key: String) { self.title = title; _text = AppStorage(wrappedValue: AppBot.defaults[key] ?? "", key) }
-    var body: some View { TextField(title, text: $text) }
+    public init(title: String, key: String) { self.title = title; _text = AppStorage(wrappedValue: AppBot.defaults[key] ?? "", key) }
+    public var body: some View { TextField(title, text: $text) }
 }

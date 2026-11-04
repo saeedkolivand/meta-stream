@@ -1,7 +1,14 @@
+import Bot
 import CoreModel
 import Engine
+import Goal
+import Overlays
 import Platforms
+import Privacy
 import Reach
+import Remote
+import Signals
+import Speech
 import SwiftUI
 
 /// The settings list's section headings, in display order.

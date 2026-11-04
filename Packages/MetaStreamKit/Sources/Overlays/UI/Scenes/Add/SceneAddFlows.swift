@@ -3,10 +3,10 @@ import SwiftUI
 
 /// The editor's add-widget flow: the gallery sheet, then whatever the pick needs (photo picker for an image, a link alert
 /// for a web widget). The flow starts once the gallery has dismissed, so two presentations never overlap.
-struct SceneAddFlows: ViewModifier {
+public struct SceneAddFlows: ViewModifier {
     @Binding var showGallery: Bool
     /// Receives the finished layer (the editor appends, selects and saves it).
-    let add: (OverlayLayer) -> Void
+    public let add: (OverlayLayer) -> Void
     @State private var pending: NewWidget?
     @State private var showPhotos = false
     @State private var photo: PhotosPickerItem?
@@ -14,7 +14,7 @@ struct SceneAddFlows: ViewModifier {
     @State private var webURL = ""
     @State private var webNote = ""
 
-    func body(content: Content) -> some View {
+    public func body(content: Content) -> some View {
         content
             .sheet(isPresented: $showGallery, onDismiss: startPending) {
                 AddWidgetGallery { pending = $0 }.presentationDetents([.medium, .large])

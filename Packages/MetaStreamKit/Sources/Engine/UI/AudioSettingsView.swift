@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct AudioSettingsView: View {
+public struct AudioSettingsView: View {
     @EnvironmentObject var streamer: Streamer
     @AppStorage("micUID") var micUID = ""
     @AppStorage("volMic") var volMic = 1.0
@@ -12,7 +12,9 @@ struct AudioSettingsView: View {
     @AppStorage("sounds") var soundsRaw = "[]"          // soundboard, JSON [Sound]
     @State private var importing = false
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Form {
             Section {
                 Picker("Microphone", selection: $micUID) {
@@ -71,12 +73,12 @@ struct AudioSettingsView: View {
 }
 
 /// Settings › Audio › Soundboard: short sounds played into the mix from the live controls.
-struct SoundboardView: View {
+public struct SoundboardView: View {
     @AppStorage("sounds") var soundsRaw = "[]"          // soundboard, JSON [Sound]
     @State private var sounds: [Sound] = []
     @State private var importing = false
 
-    var body: some View {
+    public var body: some View {
         Form {
             Section {
                 ForEach($sounds) { $s in TextField("Name", text: $s.name) }

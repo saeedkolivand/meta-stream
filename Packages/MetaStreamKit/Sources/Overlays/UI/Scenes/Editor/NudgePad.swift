@@ -3,11 +3,11 @@ import SwiftUI
 
 /// Four arrows that move the selected widget a hair at a time. Holding one repeats (after 0.4 s, then every 0.08 s).
 /// `step` gets the move in layout fractions of the canvas (WidgetLayout dx/dy); `commit` runs when the finger lifts.
-struct NudgePad: View {
-    let step: (CGSize) -> Void
-    let commit: () -> Void
+public struct NudgePad: View {
+    public let step: (CGSize) -> Void
+    public let commit: () -> Void
     /// 0.25% of the canvas per step.
-    static let amount: CGFloat = 0.0025
+    public static let amount: CGFloat = 0.0025
     private static let arrows: [(symbol: String, label: String, dir: CGSize)] = [
         ("arrow.up", "Nudge up", CGSize(width: 0, height: -1)), ("arrow.down", "Nudge down", CGSize(width: 0, height: 1)),
         ("arrow.left", "Nudge left", CGSize(width: -1, height: 0)), ("arrow.right", "Nudge right", CGSize(width: 1, height: 0))
@@ -17,7 +17,7 @@ struct NudgePad: View {
     /// Index of the arrow under the finger; a GestureState so it resets even when a scroll steals the touch.
     @GestureState private var pressed: Int?
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 8) {
             arrow(0)
             HStack(spacing: 8) {

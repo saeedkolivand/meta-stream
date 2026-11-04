@@ -4,7 +4,7 @@ import CoreUI
 import Platforms
 import SwiftUI
 
-struct ReadAloudSettingsView: View {
+public struct ReadAloudSettingsView: View {
     @Environment(Platforms.self) var platforms
     @AppStorage("chatOrigin") var chatOrigin = "kick"
     @AppStorage("chatChannel") var chatChannel = ""
@@ -22,7 +22,7 @@ struct ReadAloudSettingsView: View {
     @AppStorage("voiceTwitch") var voiceTwitch = true
     @AppStorage("voiceYouTube") var voiceYouTube = true
 
-    init() { ChatOriginKey.migrate() }
+    public init() { ChatOriginKey.migrate() }
 
     /// Every voice actually installed on THIS device/iOS version, grouped and sorted by language --
     /// AVSpeechSynthesisVoice.speechVoices() enumerates the real set rather than a hardcoded list, so a
@@ -53,7 +53,7 @@ struct ReadAloudSettingsView: View {
         return count == 0 ? "None" : "\(count)"
     }
 
-    var body: some View {
+    public var body: some View {
         Form {
             Section("Chat") {
                 Picker("Chat origin", selection: $chatOrigin) { Text("Kick").tag("kick"); Text("Twitch").tag("twitch") }
@@ -114,12 +114,12 @@ struct ReadAloudSettingsView: View {
 }
 
 /// Settings › Chat & read aloud › Don't read: names and words that are never read or shown, and AI moderation.
-struct ReadAloudBlockedView: View {
+public struct ReadAloudBlockedView: View {
     @AppStorage("ttsIgnore") var ttsIgnore = ""
     @AppStorage("ttsBlocked") var ttsBlocked = ""
     @AppStorage("aiModeration") var aiModeration = true
 
-    var body: some View {
+    public var body: some View {
         Form {
             Section {
                 TextField("Names, e.g. nightbot, spammer123", text: $ttsIgnore)

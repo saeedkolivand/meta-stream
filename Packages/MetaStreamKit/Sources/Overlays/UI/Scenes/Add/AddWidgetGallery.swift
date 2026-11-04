@@ -2,7 +2,7 @@ import SwiftUI
 
 extension NewWidget {
     /// Tile colour in the picker.
-    var tint: Color {
+    public var tint: Color {
         switch self {
         case .chat: .blue
         case .alerts: .pink
@@ -16,7 +16,7 @@ extension NewWidget {
     }
 
     /// The picker's sections, in order.
-    static let groups: [(title: String, kinds: [NewWidget])] = [
+    public static let groups: [(title: String, kinds: [NewWidget])] = [
         ("Chat & alerts", [.chat, .alerts, .events]),
         ("Live info", [.clock, .liveTime, .viewers, .drive, .socials, .text]),
         ("Music & money", [.nowPlaying, .goal, .qr]),
@@ -26,13 +26,13 @@ extension NewWidget {
 
 /// The "+" picker: widgets grouped by what they do, each a coloured tile. The editor runs the add flow after the sheet
 /// has gone (image needs the photo picker, web a URL alert), so `pick` only reports the choice.
-struct AddWidgetGallery: View {
-    let pick: (NewWidget) -> Void
+public struct AddWidgetGallery: View {
+    public let pick: (NewWidget) -> Void
     @Environment(\.dismiss) private var dismiss
 
     private let columns = [GridItem(.adaptive(minimum: 92), spacing: 12, alignment: .top)]
 
-    var body: some View {
+    public var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {

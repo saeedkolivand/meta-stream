@@ -2,12 +2,14 @@ import Chat
 import SwiftUI
 
 /// Settings › Chat commands: the saved !commands behind the chat chips, the ! menu and the Lock Screen buttons.
-struct CommandsSettingsView: View {
+public struct CommandsSettingsView: View {
     @AppStorage("botCommands") var raw = BotCommand.seed
     @AppStorage("lockScreenCommands") var lockScreen = false
     @State private var cmds: [BotCommand] = []
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Form {
             Section {
                 ForEach($cmds) { $c in
@@ -42,12 +44,14 @@ struct CommandsSettingsView: View {
 }
 
 /// Settings › Chat bots: who counts as a bot, and which bot messages are read aloud.
-struct BotsSettingsView: View {
+public struct BotsSettingsView: View {
     @AppStorage("botNames") var names = BotList.defaultNames
     @AppStorage("botReadMode") var mode = "triggers"
     @AppStorage("botTriggers") var triggers = BotList.defaultTriggers
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Form {
             Section {
                 TextField("Bot names", text: $names, axis: .vertical).autocorrectionDisabled().textInputAutocapitalization(.never)

@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Where a layer sits on a canvas of `canvas` output px, as the compositor places it (no {token} resolving, so a
 /// text widget uses its raw text size). Used by the scene cards; the editor canvas has its own copy that resolves tokens.
-@MainActor func sceneLayerRect(_ layer: OverlayLayer, canvas: CGSize) -> CGRect {
+@MainActor public func sceneLayerRect(_ layer: OverlayLayer, canvas: CGSize) -> CGRect {
     let store = OverlayStore.shared
     let natural = store.naturalSize(layer) ?? CGSize(width: 400, height: 200)
     if let layout = layer.layout { return widgetRect(layout, natural: natural, canvas: canvas) }
@@ -13,7 +13,7 @@ import SwiftUI
 
 extension OverlayLayerType {
     /// Colour that tells widget kinds apart in the scene card thumbnails.
-    var tint: Color {
+    public var tint: Color {
         switch self {
         case .chat: .blue
         case .alerts: .pink
@@ -29,7 +29,7 @@ extension OverlayLayerType {
 }
 
 /// Plain-words name of a scene's camera, for subtitles.
-func sceneCameraTitle(_ camera: String?) -> String? {
+public func sceneCameraTitle(_ camera: String?) -> String? {
     switch camera {
     case "back": "Back camera"
     case "front": "Front camera"
@@ -40,7 +40,7 @@ func sceneCameraTitle(_ camera: String?) -> String? {
     }
 }
 
-func sceneRoleTitle(_ role: String?) -> String? {
+public func sceneRoleTitle(_ role: String?) -> String? {
     switch role {
     case "starting": "Starting"
     case "brb": "BRB"
@@ -49,7 +49,7 @@ func sceneRoleTitle(_ role: String?) -> String? {
     }
 }
 
-func sceneCameraIcon(_ camera: String?) -> String {
+public func sceneCameraIcon(_ camera: String?) -> String {
     switch camera {
     case "front": "person.crop.circle"
     case "external": "video.fill"

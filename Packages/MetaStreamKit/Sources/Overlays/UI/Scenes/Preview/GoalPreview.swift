@@ -2,10 +2,10 @@ import SwiftUI
 
 /// The goal widget's look over a dark stand-in for the stream, at the stream's 16:9, drawn by the same views the
 /// stream uses (GoalView for the bar, GoalDesignView for the rest) with sample numbers.
-struct GoalPreview: View {
-    let style: GoalWidgetStyle
+public struct GoalPreview: View {
+    public let style: GoalWidgetStyle
 
-    var body: some View {
+    public var body: some View {
         GeometryReader { geo in
             let natural = style.natural
             // The widget at its real size on a 1920x1080 stream, so the preview shows how big it will look.

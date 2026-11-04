@@ -6,13 +6,13 @@ import SwiftUI
 /// The scene editor's canvas: the output frame at its real aspect, every visible layer drawn where the compositor will
 /// put it, direct manipulation with snapping. Gestures only touch local state; the store is written once, when the
 /// finger lifts (a store write rebuilds the on-stream scene, so never per frame).
-struct SceneCanvasView: View {
-    let layers: [OverlayLayer]
-    let canvas: CGSize
+public struct SceneCanvasView: View {
+    public let layers: [OverlayLayer]
+    public let canvas: CGSize
     @Binding var selected: Int?
-    var emotes: Emotes
+    public var emotes: Emotes
     /// Called once per finished gesture with the layer's new value.
-    let commit: (Int, OverlayLayer) -> Void
+    public let commit: (Int, OverlayLayer) -> Void
 
     @ObservedObject private var store = OverlayStore.shared
     @EnvironmentObject private var streamer: Streamer
@@ -29,10 +29,10 @@ struct SceneCanvasView: View {
     private let snapDistance: CGFloat = 12
     /// Floating toolbar over the selected widget (set with `selectionBar`); its size is fixed so it can be placed.
     private var bar: (() -> AnyView)?
-    static let barSize = CGSize(width: 236, height: 48)
+    public static let barSize = CGSize(width: 236, height: 48)
 
     /// Adds a toolbar that floats above the selected widget (below it when there is no room above).
-    func selectionBar<Bar: View>(@ViewBuilder _ make: @escaping () -> Bar) -> SceneCanvasView {
+    public func selectionBar<Bar: View>(@ViewBuilder _ make: @escaping () -> Bar) -> SceneCanvasView {
         var copy = self
         copy.bar = { AnyView(make()) }
         return copy
@@ -45,7 +45,7 @@ struct SceneCanvasView: View {
         return CGSize(width: min(max(rect.midX - width / 2, 0), max(size.width - width, 0)), height: max(top, 0))
     }
 
-    init(layers: [OverlayLayer], canvas: CGSize, selected: Binding<Int?>, emotes: Emotes, commit: @escaping (Int, OverlayLayer) -> Void) {
+    public init(layers: [OverlayLayer], canvas: CGSize, selected: Binding<Int?>, emotes: Emotes, commit: @escaping (Int, OverlayLayer) -> Void) {
         self.layers = layers
         self.canvas = canvas
         self._selected = selected
@@ -53,7 +53,7 @@ struct SceneCanvasView: View {
         self.commit = commit
     }
 
-    var body: some View {
+    public var body: some View {
         GeometryReader { geo in
             let ratio = geo.size.width / max(canvas.width, 1)
             ZStack(alignment: .topLeading) {

@@ -1,10 +1,10 @@
 import SwiftUI
 
 /// What the "+" menu can add. Each kind has one place that knows its defaults, so a new widget looks right immediately.
-enum NewWidget: CaseIterable {
+public enum NewWidget: CaseIterable {
     case chat, alerts, events, goal, nowPlaying, text, clock, liveTime, viewers, drive, socials, image, qr, web
 
-    var title: String {
+    public var title: String {
         switch self {
         case .chat: "Chat"
         case .alerts: "Alerts"
@@ -23,7 +23,7 @@ enum NewWidget: CaseIterable {
         }
     }
 
-    var icon: String {
+    public var icon: String {
         switch self {
         case .chat: OverlayLayerType.chat.icon
         case .alerts: OverlayLayerType.alerts.icon
@@ -43,7 +43,7 @@ enum NewWidget: CaseIterable {
     }
 
     /// Image and web need input first (a picked file, a URL), so the editor builds those itself with the helpers below.
-    func make() -> OverlayLayer? {
+    public func make() -> OverlayLayer? {
         switch self {
         case .chat: OverlayLayer.widget(.chat, name: "Chat", layout: .inset(6), data: ChatWidgetStyle().data)
         case .alerts: OverlayLayer.widget(.alerts, name: "Alerts", layout: .inset(1), data: AlertWidgetStyle().data)
@@ -90,7 +90,7 @@ enum NewWidget: CaseIterable {
 }
 
 extension OverlayLayerType {
-    var icon: String {
+    public var icon: String {
         switch self {
         case .chat: "bubble.left.and.bubble.right.fill"
         case .alerts: "bell.badge.fill"
@@ -110,7 +110,7 @@ extension OverlayLayerType {
 
 extension OverlayLayer {
     /// Centred image, sized so it spans at most 35% of the short side (a 4000 px photo must not cover the frame).
-    @MainActor static func pickedImage(file: String) -> OverlayLayer {
+    @MainActor public static func pickedImage(file: String) -> OverlayLayer {
         var l = OverlayLayer.widget(.image, name: "Image", layout: .inset(4), data: ["file": file])
         if let n = OverlayStore.shared.naturalSize(l), n.width > 0 {
             l.layout?.scale = min(4, max(0.05, 0.35 * 1080 / n.width))
@@ -118,7 +118,7 @@ extension OverlayLayer {
         return l
     }
 
-    static func web(url: String) -> OverlayLayer {
+    public static func web(url: String) -> OverlayLayer {
         .widget(.browser, name: URL(string: url)?.host ?? "Web widget", layout: .inset(4), data: ["url": url, "width": "800", "height": "600"])
     }
 }

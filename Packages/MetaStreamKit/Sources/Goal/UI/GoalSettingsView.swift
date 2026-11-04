@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Settings › Goal: the donation goal, manual and test donations; rates and the donation list are one level down.
 /// The donation-site keys and the donate page have their own screens. Money is Decimal throughout (parsed from text, never Double).
-struct GoalSettingsView: View {
+public struct GoalSettingsView: View {
     @Environment(ChatFeed.self) var chat
     private let goal = GoalStore.shared
     private let rates = Rates.shared
@@ -29,7 +29,9 @@ struct GoalSettingsView: View {
 
     private func money(_ d: Decimal) -> String { Money(d, goal.config.currency).display }
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Form {
             goalSection
             statusSection

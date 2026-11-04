@@ -1,9 +1,9 @@
 import SwiftUI
 
 /// One scene in the Scenes grid: a 16:9 thumbnail of where its widgets sit, the name, role and a one-line summary.
-struct SceneCard: View {
-    let scene: OverlayScene
-    let onStream: Bool
+public struct SceneCard: View {
+    public let scene: OverlayScene
+    public let onStream: Bool
 
     private var subtitle: String {
         let count = scene.layers.count
@@ -12,7 +12,7 @@ struct SceneCard: View {
         return "\(widgets) · \(cam)"
     }
 
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             SceneThumbnail(layers: scene.layers)
                 .overlay(alignment: .topLeading) {
@@ -41,11 +41,11 @@ struct SceneCard: View {
 
 /// ponytail: boxes at each visible layer's real position and size (tinted by kind, with the kind's icon), not the live
 /// widget views: a grid of ten scenes would otherwise run ten chat/QR/goal renderers. Ceiling: no real widget look here.
-struct SceneThumbnail: View {
-    let layers: [OverlayLayer]
+public struct SceneThumbnail: View {
+    public let layers: [OverlayLayer]
     private static let canvas = CGSize(width: 1920, height: 1080)
 
-    var body: some View {
+    public var body: some View {
         GeometryReader { geo in
             let scale = geo.size.width / Self.canvas.width
             ZStack(alignment: .topLeading) {

@@ -1,10 +1,12 @@
 import SwiftUI
 
 /// Settings › Spotify: the account the Now playing widget and the {song} / {artist} tokens read from.
-struct SpotifySettingsView: View {
+public struct SpotifySettingsView: View {
     private let spotify = SpotifyNowPlaying.shared
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         Form {
             Section {
                 if spotify.connected {
