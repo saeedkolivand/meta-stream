@@ -6,32 +6,32 @@ import Goal
 /// The body of the monthly Wrapped page (CONTEXT.md "Wrapped"): exactly the keys the donate page accepts. Never a date
 /// or a place, only city names. `km`, `donations` and `bestMoment` encode as JSON null when absent (the server rejects
 /// a missing key, and JSONEncoder omits nil optionals), hence the hand-written `encode(to:)`.
-struct WrappedDraft: Encodable {
-    struct Chatter: Encodable { var name: String; var messages: Int }
-    struct Donor: Encodable { var name: String; var amount: String }
-    struct Donations: Encodable { var count: Int; var total: String }
-    struct BestMoment: Encodable { var kind: String; var label: String }
+public struct WrappedDraft: Encodable {
+    public struct Chatter: Encodable { var name: String; var messages: Int }
+    public struct Donor: Encodable { var name: String; var amount: String }
+    public struct Donations: Encodable { var count: Int; var total: String }
+    public struct BestMoment: Encodable { var kind: String; var label: String }
 
-    var month: String
-    var streams: Int
-    var hours: Double
-    var km: Double?
-    var cities: [String]
-    var peakViewers: Int
-    var avgViewers: Int
-    var newChatters: Int
-    var topChatters: [Chatter]
-    var topDonors: [Donor]
-    var donations: Donations?
-    var bestMoment: BestMoment?
-    var publishedAt: String
+    public var month: String
+    public var streams: Int
+    public var hours: Double
+    public var km: Double?
+    public var cities: [String]
+    public var peakViewers: Int
+    public var avgViewers: Int
+    public var newChatters: Int
+    public var topChatters: [Chatter]
+    public var topDonors: [Donor]
+    public var donations: Donations?
+    public var bestMoment: BestMoment?
+    public var publishedAt: String
 
-    enum CodingKeys: String, CodingKey {
+    public enum CodingKeys: String, CodingKey {
         case month, streams, hours, km, cities, peakViewers, avgViewers, newChatters, topChatters, topDonors
         case donations, bestMoment, publishedAt
     }
 
-    func encode(to encoder: any Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var box = encoder.container(keyedBy: CodingKeys.self)
         try box.encode(month, forKey: .month)
         try box.encode(streams, forKey: .streams)
@@ -50,15 +50,15 @@ struct WrappedDraft: Encodable {
 }
 
 /// Sums a month of session records into a draft. Pure, so `demo()` can check it.
-enum WrappedBuilder {
-    static func monthKey(_ date: Date, _ calendar: Calendar = .current) -> String {
+public enum WrappedBuilder {
+    public static func monthKey(_ date: Date, _ calendar: Calendar = .current) -> String {
         let parts = calendar.dateComponents([.year, .month], from: date)
         return String(format: "%04d-%02d", parts.year ?? 0, parts.month ?? 0)
     }
 
     private static func cut(_ text: String, _ limit: Int) -> String { String(text.prefix(limit)) }
 
-    static func build(month: String, records: [SessionRecord], lang: String, showTotal: Bool,
+    public static func build(month: String, records: [SessionRecord], lang: String, showTotal: Bool,
                       calendar: Calendar = .current) -> WrappedDraft? {
         let sessions = records.filter { monthKey($0.start, calendar) == month }.sorted { $0.start < $1.start }
         guard !sessions.isEmpty else { return nil }
@@ -122,27 +122,27 @@ enum WrappedBuilder {
 }
 
 /// Which months were published or turned down, and which one is waiting for review.
-enum WrappedStore {
-    static let published = "wrappedPublished"
-    static let dismissed = "wrappedDismissed"
+public enum WrappedStore {
+    public static let published = "wrappedPublished"
+    public static let dismissed = "wrappedDismissed"
 
-    static var lang: String { UserDefaults.standard.string(forKey: "telegramLang") == "en" ? "en" : "fa" }
+    public static var lang: String { UserDefaults.standard.string(forKey: "telegramLang") == "en" ? "en" : "fa" }
 
-    static func months(_ key: String) -> Set<String> { Set(UserDefaults.standard.stringArray(forKey: key) ?? []) }
+    public static func months(_ key: String) -> Set<String> { Set(UserDefaults.standard.stringArray(forKey: key) ?? []) }
 
-    static func add(_ month: String, to key: String) { UserDefaults.standard.set(Array(months(key).union([month])), forKey: key) }
+    public static func add(_ month: String, to key: String) { UserDefaults.standard.set(Array(months(key).union([month])), forKey: key) }
 
-    static func remove(_ month: String, from key: String) {
+    public static func remove(_ month: String, from key: String) {
         UserDefaults.standard.set(Array(months(key).subtracting([month])), forKey: key)
     }
 
     /// Every month with at least one session, newest first.
-    static func allMonths(_ records: [SessionRecord]) -> [String] {
+    public static func allMonths(_ records: [SessionRecord]) -> [String] {
         Set(records.map { WrappedBuilder.monthKey($0.start) }).sorted(by: >)
     }
 
     /// The previous calendar month, when it has a session and was neither published nor dismissed.
-    static func pendingMonth(records: [SessionRecord], now: Date = Date()) -> String? {
+    public static func pendingMonth(records: [SessionRecord], now: Date = Date()) -> String? {
         guard let before = Calendar.current.date(byAdding: .month, value: -1, to: now) else { return nil }
         let month = WrappedBuilder.monthKey(before)
         let seen = months(published).union(months(dismissed))
@@ -150,7 +150,7 @@ enum WrappedStore {
     }
 
     /// "October 2026" in the app's language setting, Latin digits not guaranteed for Persian.
-    static func monthName(_ month: String, lang: String? = nil) -> String {
+    public static func monthName(_ month: String, lang: String? = nil) -> String {
         let parts = month.split(separator: "-").compactMap { Int($0) }
         guard parts.count == 2, let date = Calendar.current.date(from: DateComponents(year: parts[0], month: parts[1], day: 1))
         else { return month }
@@ -164,20 +164,20 @@ enum WrappedStore {
 
 /// Sends the draft to the donate page with the same key and the same guard as `DonatePagePublisher.send()`.
 @MainActor
-enum WrappedPublisher {
+public enum WrappedPublisher {
     /// nil on success, else a short error text. Never logs the key.
-    static func publish(_ draft: WrappedDraft) async -> String? {
+    public static func publish(_ draft: WrappedDraft) async -> String? {
         guard let data = try? JSONEncoder().encode(draft) else { return "Can't encode" }
         guard data.count <= 8192 else { return "Too big" }
         return await send(method: "POST", query: "", body: data)
     }
 
-    static func withdraw(month: String) async -> String? {
+    public static func withdraw(month: String) async -> String? {
         await send(method: "DELETE", query: "?month=" + month, body: nil)
     }
 
     /// "https://donate.iamsaeed.dev/wrapped/2026-09", or ".../fa/wrapped/..." in Persian.
-    static func pageLink(month: String) -> String {
+    public static func pageLink(month: String) -> String {
         DonatePagePublisher.shared.chatURL + (WrappedStore.lang == "fa" ? "/fa/wrapped/" : "/wrapped/") + month
     }
 
@@ -210,7 +210,7 @@ enum WrappedPublisher {
 
 #if DEBUG
 extension WrappedBuilder {
-    static func demo() {
+    public static func demo() {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "UTC") ?? .current
         let base = Date(timeIntervalSince1970: 1_704_067_200)   // 2024-01-01 00:00 UTC

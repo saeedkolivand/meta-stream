@@ -89,6 +89,8 @@ targets:
         product: Bot
       - package: MetaStreamKit
         product: Reach
+      - package: MetaStreamKit
+        product: Remote
       - package: MetaWearablesDAT
         product: MWDATCore
       - package: MetaWearablesDAT
@@ -142,4 +144,6 @@ targets:
         product: Bot
       - package: MetaStreamKit
         product: Reach
+      - package: MetaStreamKit
+        product: Remote
 

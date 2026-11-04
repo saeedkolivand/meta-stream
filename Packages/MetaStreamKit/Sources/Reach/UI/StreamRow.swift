@@ -3,8 +3,8 @@ import CoreModel
 import SwiftUI
 
 /// One session in the Streams list: title, "Tue 21 Oct · 1 h 42 m · €45", viewers sparkline, peak.
-struct StreamRow: View {
-    let record: SessionRecord
+public struct StreamRow: View {
+    public let record: SessionRecord
 
     private var meta: String {
         var parts = [ReportInsights.day(record.start), ReportInsights.span(record.duration)]
@@ -12,7 +12,7 @@ struct StreamRow: View {
         return parts.joined(separator: " · ")
     }
 
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(record.title.isEmpty ? "Untitled stream" : record.title).font(.headline).lineLimit(1)

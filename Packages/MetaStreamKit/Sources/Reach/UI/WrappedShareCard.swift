@@ -2,10 +2,10 @@ import SwiftUI
 
 /// The shareable Wrapped image, designed at 360x640 points (9:16) and rendered at scale 3 (1080x1920). Flat and
 /// minimal: black, big numbers, no blur. Persian text is RTL by script but the layout stays LTR.
-struct WrappedShareCard: View {
-    let draft: WrappedDraft
-    let lang: String
-    let host: String
+public struct WrappedShareCard: View {
+    public let draft: WrappedDraft
+    public let lang: String
+    public let host: String
 
     private struct Stat: Identifiable {
         let label: String
@@ -23,7 +23,7 @@ struct WrappedShareCard: View {
         return out
     }
 
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Wrapped").font(.system(size: 34, weight: .bold))

@@ -4,22 +4,22 @@ import Foundation
 /// The words of the Live post, as pure functions of plain values (so `demo()` can check them). Labels are the only
 /// thing that follows the language setting; titles, goal titles and names stay as typed. Latin digits throughout.
 /// ponytail: Persian digits and RTL marks if the mixed lines ever look wrong in Telegram.
-enum LivePostText {
-    struct GoalLine { var pct: Int; var target: String; var title: String }
+public enum LivePostText {
+    public struct GoalLine { var pct: Int; var target: String; var title: String }
 
     /// What the live (and Starting) post shows. `countdown` is set while the Starting scene's countdown runs.
-    struct Live {
-        var title = "", slug = "", countdown: String?
-        var viewers = 0, elapsed: TimeInterval = 0, reconnecting = false
-        var goal: GoalLine?, last: String?, city: String?
-        var updated = Date()
+    public struct Live {
+        public var title = "", slug = "", countdown: String?
+        public var viewers = 0, elapsed: TimeInterval = 0, reconnecting = false
+        public var goal: GoalLine?, last: String?, city: String?
+        public var updated = Date()
     }
 
-    struct Recap {
-        var title = "", slug = ""
-        var duration: TimeInterval = 0, peak = 0, avg = 0
-        var donationCount = 0, total = "", showTotal = true, topName: String?, topAmount: String?
-        var goal: GoalLine?, moments: [Moment] = [], chatters = 0, trackingStarted = false
+    public struct Recap {
+        public var title = "", slug = ""
+        public var duration: TimeInterval = 0, peak = 0, avg = 0
+        public var donationCount = 0, total = "", showTotal = true, topName: String?, topAmount: String?
+        public var goal: GoalLine?, moments: [Moment] = [], chatters = 0, trackingStarted = false
     }
 
     private static let fa = [
@@ -45,20 +45,20 @@ enum LivePostText {
         "wrappedKm": "km", "wrappedPeak": "peak viewers", "wrappedTop": "top chatters", "wrappedBest": "best moment"
     ]
 
-    static func tr(_ key: String, _ lang: String) -> String { (lang == "en" ? en : fa)[key] ?? key }
+    public static func tr(_ key: String, _ lang: String) -> String { (lang == "en" ? en : fa)[key] ?? key }
 
     // MARK: posts
 
-    static func announce(title: String, slug: String, lang: String) -> String {
+    public static func announce(title: String, slug: String, lang: String) -> String {
         join(["📣 " + head(tr("soon", lang), title), link(slug)])
     }
 
-    static func cancelled(lang: String) -> String { "❌ " + tr("cancelled", lang) }
+    public static func cancelled(lang: String) -> String { "❌ " + tr("cancelled", lang) }
 
     /// A stream that ended without a record (the app was killed): no stats to show.
-    static func endedBare(lang: String) -> String { "⚪️ " + tr("ended", lang) }
+    public static func endedBare(lang: String) -> String { "⚪️ " + tr("ended", lang) }
 
-    static func live(_ post: Live, lang: String) -> String {
+    public static func live(_ post: Live, lang: String) -> String {
         let up: String? = "\(tr("updated", lang)) \(hhmm(post.updated))"
         if let countdown = post.countdown {
             let top: String? = "🟡 " + head("\(tr("starting", lang)) \(countdown)", post.title)
@@ -72,7 +72,7 @@ enum LivePostText {
         return join([top, watching, goalLine(post.goal, lang), last, city, link(post.slug), up])
     }
 
-    static func recap(_ rec: Recap, lang: String) -> String {
+    public static func recap(_ rec: Recap, lang: String) -> String {
         let top: String? = "✅ " + head(tr("ended", lang), rec.title)
         let stats: String? = "⏱ \(duration(rec.duration)) · 👁 \(tr("peak", lang)) \(rec.peak) · \(tr("avg", lang)) \(rec.avg)"
         return join([top, stats, donationLine(rec, lang), goalLine(rec.goal, lang), momentsLine(rec.moments, lang),
@@ -80,7 +80,7 @@ enum LivePostText {
     }
 
     /// A Moment ping: one short line about the moment, then the stream link (omitted without a slug).
-    static func ping(_ moment: Moment, slug: String, lang: String) -> String {
+    public static func ping(_ moment: Moment, slug: String, lang: String) -> String {
         let line: String
         switch moment.kind {
         case .chatSpike: line = "🔥 " + tr("pingWild", lang)
@@ -92,7 +92,7 @@ enum LivePostText {
     }
 
     /// Telegram limits: 1024 characters for a caption, 4096 for a text message.
-    static func fit(_ text: String, photo: Bool) -> String { String(text.prefix(photo ? 1024 : 4096)) }
+    public static func fit(_ text: String, photo: Bool) -> String { String(text.prefix(photo ? 1024 : 4096)) }
 
     // MARK: parts
 
@@ -137,13 +137,13 @@ enum LivePostText {
     }
 
     /// "2h 14m", or "14m" under an hour.
-    static func duration(_ span: TimeInterval) -> String {
+    public static func duration(_ span: TimeInterval) -> String {
         let minutes = max(0, Int(span)) / 60
         return minutes >= 60 ? "\(minutes / 60)h \(minutes % 60)m" : "\(minutes)m"
     }
 
     /// Local time, 24 h.
-    static func hhmm(_ date: Date) -> String {
+    public static func hhmm(_ date: Date) -> String {
         let format = DateFormatter()
         format.locale = Locale(identifier: "en_US_POSIX")
         format.dateFormat = "HH:mm"
@@ -151,7 +151,7 @@ enum LivePostText {
     }
 
     #if DEBUG
-    static func demo() {
+    public static func demo() {
         var post = Live(title: "IRL Köln", slug: "saeed", viewers: 42, elapsed: 8040)
         assert(live(post, lang: "en").contains("42 watching") && live(post, lang: "en").contains("2h 14m"))
         assert(live(post, lang: "fa").contains("بیننده") && live(post, lang: "fa").contains("kick.com/saeed"))

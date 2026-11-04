@@ -2,8 +2,8 @@ import Charts
 import SwiftUI
 
 /// Connection health: a verdict, the numbers, and per-minute bitrate and audio sync charts behind a disclosure.
-struct ReportConnectionCard: View {
-    let insights: ReportInsights
+public struct ReportConnectionCard: View {
+    public let insights: ReportInsights
     @State private var showCharts = false
 
     private var rows: [(key: String, value: String)] {
@@ -13,7 +13,7 @@ struct ReportConnectionCard: View {
         return out
     }
 
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             ReportLabel("Connection")
             VStack(spacing: 0) {

@@ -2,16 +2,16 @@ import CoreUI
 import SwiftUI
 
 /// The four story layouts (Settings > Theme & story). One setting (`igStoryTemplate`).
-enum StoryTemplate: String, CaseIterable, Identifiable {
+public enum StoryTemplate: String, CaseIterable, Identifiable {
     case minimal, fullBleed, poster, bilingual
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
-    static var current: StoryTemplate {
+    public static var current: StoryTemplate {
         UserDefaults.standard.string(forKey: "igStoryTemplate").flatMap(StoryTemplate.init(rawValue:)) ?? .minimal
     }
 
-    var name: String {
+    public var name: String {
         switch self {
         case .minimal: "Minimal"
         case .fullBleed: "Full bleed"
@@ -23,15 +23,15 @@ enum StoryTemplate: String, CaseIterable, Identifiable {
 
 /// The story card, designed at 360x640 points (9:16), rendered at scale 3. All colours come from the theme; the lower
 /// area stays empty for the Link sticker (nothing is drawn there, not even a placeholder).
-struct StoryCard: View {
-    let frame: UIImage?
-    let title: String
-    let link: String
-    let template: StoryTemplate
-    let theme: ColorTheme
-    var soon = false   // shared before GO LIVE: "live soon" wording, no stream frame
+public struct StoryCard: View {
+    public let frame: UIImage?
+    public let title: String
+    public let link: String
+    public let template: StoryTemplate
+    public let theme: ColorTheme
+    public var soon = false   // shared before GO LIVE: "live soon" wording, no stream frame
 
-    var body: some View {
+    public var body: some View {
         Group {
             switch template {
             case .minimal: minimal
@@ -46,7 +46,7 @@ struct StoryCard: View {
     }
 
     /// The colour at the card's outer edge, for Instagram's background layer around it.
-    var edge: UInt32 { template == .poster ? theme.accent : theme.bg }
+    public var edge: UInt32 { template == .poster ? theme.accent : theme.bg }
 
     private var text: Color { theme.color(theme.text) }
     private var muted: Color { theme.color(theme.muted) }
@@ -145,5 +145,13 @@ struct StoryCard: View {
         .padding(.top, 84).padding(.horizontal, 24)
         .frame(width: 360, height: 640, alignment: .topLeading)
         .background(theme.color(theme.bg))
+    }
+
+    public init(frame: UIImage? = nil, title: String, link: String, template: StoryTemplate, theme: ColorTheme) {
+        self.frame = frame
+        self.title = title
+        self.link = link
+        self.template = template
+        self.theme = theme
     }
 }

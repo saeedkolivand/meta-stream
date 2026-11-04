@@ -4,10 +4,10 @@ import Foundation
 /// Minimal Telegram Bot API client for the Live post. Plain text only (no parse_mode, so nothing needs escaping).
 /// The token lives in the Keychain ("telegramToken"), the channel in UserDefaults ("telegramChannel"). Errors never
 /// carry the request URL, so the token cannot reach the log.
-enum Telegram {
-    struct Failure: LocalizedError, Sendable {
-        let text: String
-        var errorDescription: String? { text }
+public enum Telegram {
+    public struct Failure: LocalizedError, Sendable {
+        public let text: String
+        public var errorDescription: String? { text }
     }
 
     private static var token: String { KeychainTokenStore().string(forKey: "telegramToken") ?? "" }
@@ -18,7 +18,7 @@ enum Telegram {
     // MARK: messages
 
     /// Posts `text` to the channel and returns its message id.
-    static func sendMessage(text: String, replyTo: Int? = nil) async throws -> Int {
+    public static func sendMessage(text: String, replyTo: Int? = nil) async throws -> Int {
         var params: [String: any Sendable] = ["chat_id": channel, "text": String(text.prefix(4096))]
         if let replyTo {
             params["reply_parameters"] = ["message_id": replyTo, "allow_sending_without_reply": true] as [String: any Sendable]
@@ -26,25 +26,25 @@ enum Telegram {
         return try messageId(await call("sendMessage", params))
     }
 
-    static func editText(_ id: Int, text: String) async throws {
+    public static func editText(_ id: Int, text: String) async throws {
         _ = try await call("editMessageText", ["chat_id": channel, "message_id": id, "text": String(text.prefix(4096))])
     }
 
-    static func editCaption(_ id: Int, caption: String) async throws {
+    public static func editCaption(_ id: Int, caption: String) async throws {
         _ = try await call("editMessageCaption", ["chat_id": channel, "message_id": id, "caption": String(caption.prefix(1024))])
     }
 
-    static func deleteMessage(_ id: Int) async throws {
+    public static func deleteMessage(_ id: Int) async throws {
         _ = try await call("deleteMessage", ["chat_id": channel, "message_id": id])
     }
 
-    static func sendPhoto(jpeg: Data, caption: String) async throws -> Int {
+    public static func sendPhoto(jpeg: Data, caption: String) async throws -> Int {
         let (body, type) = multipart(["chat_id": channel, "caption": String(caption.prefix(1024))], file: jpeg, field: "photo")
         return try messageId(await send("sendPhoto", body: body, type: type))
     }
 
     /// Replaces the photo (or turns a text message into a photo) and sets its caption.
-    static func editPhoto(_ id: Int, jpeg: Data, caption: String) async throws {
+    public static func editPhoto(_ id: Int, jpeg: Data, caption: String) async throws {
         let media = ["type": "photo", "media": "attach://frame", "caption": String(caption.prefix(1024))]
         let json = try String(data: JSONSerialization.data(withJSONObject: media), encoding: .utf8) ?? "{}"
         let (body, type) = multipart(["chat_id": channel, "message_id": "\(id)", "media": json], file: jpeg, field: "frame")
@@ -52,7 +52,7 @@ enum Telegram {
     }
 
     /// The post was deleted by hand (or never existed): nothing left to edit or delete.
-    static func isGone(_ error: Error) -> Bool {
+    public static func isGone(_ error: Error) -> Bool {
         guard let text = (error as? Failure)?.text.lowercased() else { return false }
         return ["message to edit not found", "message to delete not found", "message_id_invalid"].contains { text.contains($0) }
     }
@@ -60,7 +60,7 @@ enum Telegram {
     // MARK: check
 
     /// What the bot can do in the channel, in words. Posts nothing.
-    static func check() async -> String {
+    public static func check() async -> String {
         guard !token.isEmpty else { return "No bot token saved" }
         guard !channel.isEmpty else { return "No channel set" }
         do {

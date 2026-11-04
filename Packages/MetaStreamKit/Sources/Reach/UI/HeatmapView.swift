@@ -4,13 +4,13 @@ import SwiftUI
 
 /// The best-time heatmap (Settings > Streams): weekday x hour of day over every recorded sample, in the current time zone.
 /// Needs 10 streams; a slot seen in fewer than 2 distinct streams is drawn gray because one stream proves nothing.
-struct HeatmapView: View {
-    enum Metric: String, CaseIterable, Identifiable {
+public struct HeatmapView: View {
+    public enum Metric: String, CaseIterable, Identifiable {
         case viewers = "Avg viewers", donations = "Donations / h", chatters = "New chatters / h"
-        var id: String { rawValue }
+        public var id: String { rawValue }
 
         /// One sample's value for this metric; nil when it doesn't count (older files, or nobody watching).
-        func value(of sample: SessionSample) -> Double? {
+        public func value(of sample: SessionSample) -> Double? {
             switch self {
             case .viewers: return sample.viewers > 0 ? Double(sample.viewers) : nil
             case .donations: return sample.donations
@@ -19,13 +19,13 @@ struct HeatmapView: View {
         }
     }
 
-    struct Cell: Identifiable {
-        let weekday: Int   // 0 = Monday
-        let hour: Int
-        let value: Double
-        let sessions: Int
-        var id: Int { weekday * 24 + hour }
-        var enough: Bool { sessions >= 2 }
+    public struct Cell: Identifiable {
+        public let weekday: Int   // 0 = Monday
+        public let hour: Int
+        public let value: Double
+        public let sessions: Int
+        public var id: Int { weekday * 24 + hour }
+        public var enough: Bool { sessions >= 2 }
     }
 
     private struct Bucket {
@@ -34,11 +34,11 @@ struct HeatmapView: View {
         var sessions: Set<Date> = []
     }
 
-    static let minStreams = 10
-    let records: [SessionRecord]
+    public static let minStreams = 10
+    public let records: [SessionRecord]
     @State private var metric = Metric.viewers
 
-    var body: some View {
+    public var body: some View {
         if records.count < Self.minStreams {
             Text("The best-time heatmap appears after 10 streams (\(records.count) so far)")
                 .font(.footnote).foregroundStyle(.secondary)
@@ -85,7 +85,7 @@ struct HeatmapView: View {
     }
 
     /// Localized short weekday names, Monday first.
-    static var dayNames: [String] {
+    public static var dayNames: [String] {
         let symbols = Calendar.current.shortWeekdaySymbols
         return Array(symbols.dropFirst()) + symbols.prefix(1)
     }
@@ -94,7 +94,7 @@ struct HeatmapView: View {
 
     /// Every sample belongs to the (weekday, hour) of `start + (minute - 1) minutes`. Viewers: mean over samples with
     /// viewers; donations and new chatters: the sum scaled to one hour of samples.
-    static func cells(_ records: [SessionRecord], _ metric: Metric, calendar: Calendar = .current) -> [Cell] {
+    public static func cells(_ records: [SessionRecord], _ metric: Metric, calendar: Calendar = .current) -> [Cell] {
         var buckets: [Int: Bucket] = [:]
         for record in records {
             for sample in record.samples {
@@ -115,7 +115,7 @@ struct HeatmapView: View {
     }
 
     #if DEBUG
-    static func demo() {
+    public static func demo() {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "UTC") ?? .current
         let monday = Date(timeIntervalSince1970: 1_704_067_200 + 10 * 3600)   // Monday 2024-01-01 10:00 UTC

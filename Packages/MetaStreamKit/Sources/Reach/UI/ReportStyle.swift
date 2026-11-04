@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Shared look of the Session report and the Streams list: flat dark cards, small gray section labels.
 extension View {
-    func reportCard(_ fill: Color = Color(.secondarySystemGroupedBackground)) -> some View {
+    public func reportCard(_ fill: Color = Color(.secondarySystemGroupedBackground)) -> some View {
         padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(fill, in: RoundedRectangle(cornerRadius: 14))
@@ -10,12 +10,12 @@ extension View {
 }
 
 /// "MOMENTS" style label above a card.
-struct ReportLabel: View {
-    let text: String
+public struct ReportLabel: View {
+    public let text: String
 
-    init(_ text: String) { self.text = text }
+    public init(_ text: String) { self.text = text }
 
-    var body: some View {
+    public var body: some View {
         Text(text.uppercased())
             .font(.footnote.weight(.medium)).foregroundStyle(.secondary)
             .padding(.leading, 16).padding(.top, 10)
@@ -25,7 +25,7 @@ struct ReportLabel: View {
 
 extension Moment.Kind {
     /// Chat spike blue, donation green, raid orange: the dot in the list and the marker on the chart.
-    var tint: Color {
+    public var tint: Color {
         switch self {
         case .chatSpike: return .blue
         case .donation: return .green
@@ -36,7 +36,7 @@ extension Moment.Kind {
 
 extension Moment {
     /// Today's wording for a moment.
-    var label: String {
+    public var label: String {
         switch kind {
         case .chatSpike: return "Chat spike (\(detail))"
         case .donation: return "\(detail) from \(user)"
@@ -46,10 +46,10 @@ extension Moment {
 }
 
 /// Moments list: coloured dot, text, clock time.
-struct ReportMomentsCard: View {
-    let moments: [Moment]
+public struct ReportMomentsCard: View {
+    public let moments: [Moment]
 
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             ReportLabel("Moments")
             VStack(spacing: 0) {

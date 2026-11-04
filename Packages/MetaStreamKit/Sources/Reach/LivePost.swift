@@ -12,22 +12,30 @@ import Signals
 /// stream (optional), adopted when the session starts, refreshed while it runs, turned into the recap when it ends.
 /// Network work runs one job at a time on `chain`; the 1 s ticks skip while a job is still pending.
 @MainActor
-final class LivePost: ObservableObject {
-    static let shared = LivePost()
+public final class LivePost: ObservableObject {
+    public static let shared = LivePost()
 
-    enum Phase: String, Codable { case announced, live }
+    public enum Phase: String, Codable { case announced, live }
 
-    struct State: Codable {
-        var messageId: Int
-        var phase: Phase
-        var announcedAt: Date?
-        var hasPhoto: Bool
+    public struct State: Codable {
+        public var messageId: Int
+        public var phase: Phase
+        public var announcedAt: Date?
+        public var hasPhoto: Bool
         /// Message ids of the Moment pings, kept so a killed app can still delete them. Optional: older saves lack it.
-        var pings: [Int]?
+        public var pings: [Int]?
+
+        public init(messageId: Int, phase: Phase, announcedAt: Date? = nil, hasPhoto: Bool, pings: [Int]? = nil) {
+            self.messageId = messageId
+            self.phase = phase
+            self.announcedAt = announcedAt
+            self.hasPhoto = hasPhoto
+            self.pings = pings
+        }
     }
 
-    @Published private(set) var phase: Phase?
-    weak var platforms: Platforms?
+    @Published public private(set) var phase: Phase?
+    public weak var platforms: Platforms?
 
     private var state: State? {
         didSet {
@@ -58,14 +66,14 @@ final class LivePost: ObservableObject {
     private var lang: String { defaults.string(forKey: "telegramLang") == "en" ? "en" : "fa" }
     private func flag(_ key: String, _ fallback: Bool) -> Bool { defaults.object(forKey: key) as? Bool ?? fallback }
 
-    var enabled: Bool {
+    public var enabled: Bool {
         let channel = defaults.string(forKey: "telegramChannel") ?? ""
         return flag("telegramOn", false) && !channel.isEmpty && KeychainTokenStore().string(forKey: "telegramToken") != nil
     }
 
-    var title: String { platforms?.kickTitle ?? "" }
+    public var title: String { platforms?.kickTitle ?? "" }
 
-    var slug: String {
+    public var slug: String {
         let chosen = (defaults.string(forKey: "chatChannel") ?? "").trimmingCharacters(in: .whitespaces)
         return chosen.isEmpty ? (platforms?.kickUser ?? "").lowercased() : chosen
     }
@@ -74,7 +82,7 @@ final class LivePost: ObservableObject {
 
     // MARK: before the stream
 
-    func announce() {
+    public func announce() {
         guard enabled, state == nil, queued == 0 else { return }
         let text = LivePostText.announce(title: title, slug: slug, lang: lang)
         enqueue { [self] in
@@ -83,7 +91,7 @@ final class LivePost: ObservableObject {
         }
     }
 
-    func cancelAnnouncement() {
+    public func cancelAnnouncement() {
         guard let st = state, st.phase == .announced else { return }
         state = nil
         let text = LivePostText.cancelled(lang: lang)
@@ -99,7 +107,7 @@ final class LivePost: ObservableObject {
 
     // MARK: during the stream
 
-    func sessionStarted(_ stream: Streamer) {
+    public func sessionStarted(_ stream: Streamer) {
         guard enabled else { return }
         closing = false
         handledMoments = 0
@@ -121,7 +129,7 @@ final class LivePost: ObservableObject {
     }
 
     /// The Streamer's 1 s tick: feeds the session log and the post while live, expires a stale announcement otherwise.
-    func second(_ stream: Streamer) {
+    public func second(_ stream: Streamer) {
         guard stream.live else { expireIfStale(); return }
         SessionLog.shared.tick(stream, viewers: viewers)
         pingNewMoments()
@@ -171,7 +179,7 @@ final class LivePost: ObservableObject {
     /// The session is over: the post becomes the recap and keeps the last photo taken while live. No new frame: by the
     /// time this job runs stopLive() has torn the session down (blur may be off), so a fresh grab could publish a
     /// picture viewers never saw, unblurred.
-    func sessionEnded(_ record: SessionRecord?) {
+    public func sessionEnded(_ record: SessionRecord?) {
         guard state != nil else { return }
         closing = true
         let text = record.map { LivePostText.recap(recapInput($0), lang: lang) } ?? LivePostText.endedBare(lang: lang)
@@ -190,7 +198,7 @@ final class LivePost: ObservableObject {
     }
 
     /// Once at launch: an old announcement is withdrawn; a post still saying live belongs to a session that died with the app.
-    func resume() {
+    public func resume() {
         guard let st = state else { return }
         if st.phase == .announced { expireIfStale(); return }
         state = nil
@@ -273,7 +281,7 @@ final class LivePost: ObservableObject {
     }
 
     #if DEBUG
-    static func demo() {
+    public static func demo() {
         let encoded = try? JSONEncoder().encode(State(messageId: 7, phase: .live, announcedAt: nil, hasPhoto: true))
         let back = encoded.flatMap { try? JSONDecoder().decode(State.self, from: $0) }
         assert(back?.messageId == 7 && back?.phase == .live && back?.hasPhoto == true && back?.pings == nil)

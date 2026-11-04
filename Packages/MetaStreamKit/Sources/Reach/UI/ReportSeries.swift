@@ -2,28 +2,28 @@ import Foundation
 
 /// Chart data, takeaways and the connection facts of a Session report.
 extension ReportInsights {
-    enum Tab: String, CaseIterable, Identifiable {
+    public enum Tab: String, CaseIterable, Identifiable {
         case viewers = "Viewers", chat = "Chat", bitrate = "Bitrate"
-        var id: String { rawValue }
+        public var id: String { rawValue }
     }
 
-    struct Point: Identifiable {
-        let date: Date
-        let value: Double
-        var id: Date { date }
+    public struct Point: Identifiable {
+        public let date: Date
+        public let value: Double
+        public var id: Date { date }
     }
 
-    struct Chatter: Identifiable {
-        let id: String
-        let name: String
-        let count: Int
+    public struct Chatter: Identifiable {
+        public let id: String
+        public let name: String
+        public let count: Int
     }
 
     /// A sample's minute counts from 1, as the heatmap reads it.
-    func date(_ sample: SessionSample) -> Date { record.start.addingTimeInterval(Double(sample.minute - 1) * 60) }
-    func clock(_ sample: SessionSample) -> String { LivePostText.hhmm(date(sample)) }
+    public func date(_ sample: SessionSample) -> Date { record.start.addingTimeInterval(Double(sample.minute - 1) * 60) }
+    public func clock(_ sample: SessionSample) -> String { LivePostText.hhmm(date(sample)) }
 
-    func series(_ tab: Tab) -> [Point] {
+    public func series(_ tab: Tab) -> [Point] {
         record.samples.map { sample in
             switch tab {
             case .viewers: return Point(date: date(sample), value: Double(sample.viewers))
@@ -34,7 +34,7 @@ extension ReportInsights {
     }
 
     /// Start, middle and end of the stream for the x axis.
-    var axisDates: [Date] {
+    public var axisDates: [Date] {
         let last = record.samples.last.map(date) ?? record.start
         let stop = max(last, record.start.addingTimeInterval(60))
         return [record.start, record.start.addingTimeInterval(stop.timeIntervalSince(record.start) / 2), stop]
@@ -42,9 +42,9 @@ extension ReportInsights {
 
     // MARK: takeaways
 
-    var peakSample: SessionSample? { record.samples.max { $0.viewers < $1.viewers } }
+    public var peakSample: SessionSample? { record.samples.max { $0.viewers < $1.viewers } }
 
-    func takeaway(_ tab: Tab) -> String {
+    public func takeaway(_ tab: Tab) -> String {
         switch tab {
         case .viewers: return viewersTakeaway
         case .chat: return chatTakeaway
@@ -62,7 +62,7 @@ extension ReportInsights {
         return "Busiest minute \(clock(busiest)) · \(busiest.chat) messages"
     }
 
-    var avgMbps: Double? {
+    public var avgMbps: Double? {
         let live = record.samples.map(\.kbps).filter { $0 > 0 }
         return live.isEmpty ? nil : Double(live.reduce(0, +)) / Double(live.count) / 1000
     }
@@ -76,19 +76,19 @@ extension ReportInsights {
 
     // MARK: audience and connection
 
-    var topChatters: [Chatter] {
+    public var topChatters: [Chatter] {
         let sorted = record.chatterCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
         return sorted.prefix(3).map { Chatter(id: $0.key, name: record.chatterNames[$0.key] ?? $0.key, count: $0.value) }
     }
 
-    var drops: Int { record.samples.last?.drops ?? 0 }
-    var downSeconds: Int { record.samples.last?.downSeconds ?? 0 }
-    var downText: String { downSeconds >= 60 ? "\(downSeconds / 60) m \(downSeconds % 60) s" : "\(downSeconds) s" }
-    var solid: Bool { drops == 0 && downSeconds == 0 }
-    var connectionVerdict: String { solid ? "Solid the whole way" : "\(drops) drops · \(downSeconds) s down" }
+    public var drops: Int { record.samples.last?.drops ?? 0 }
+    public var downSeconds: Int { record.samples.last?.downSeconds ?? 0 }
+    public var downText: String { downSeconds >= 60 ? "\(downSeconds / 60) m \(downSeconds % 60) s" : "\(downSeconds) s" }
+    public var solid: Bool { drops == 0 && downSeconds == 0 }
+    public var connectionVerdict: String { solid ? "Solid the whole way" : "\(drops) drops · \(downSeconds) s down" }
 
     /// Audio sync range; "In sync" when every minute stayed within 60 ms.
-    var audioSync: String? {
+    public var audioSync: String? {
         let skews = record.samples.compactMap(\.skewMs)
         guard let low = skews.min(), let high = skews.max() else { return nil }
         let range = "\(low) to \(high) ms"

@@ -3,8 +3,8 @@ import SwiftUI
 
 /// Review a month's Wrapped before it goes public: toggles and per-row exclusions edit what is sent, nothing is
 /// published until Publish. Flat, plain system rows like the Session report.
-struct WrappedReviewView: View {
-    let month: String
+public struct WrappedReviewView: View {
+    public let month: String
     private let base: WrappedDraft?
     private let lang = WrappedStore.lang
     @Environment(\.dismiss) private var dismiss
@@ -18,7 +18,7 @@ struct WrappedReviewView: View {
     @State private var error: String?
     @State private var image: UIImage?
 
-    init(month: String, records: [SessionRecord]) {
+    public init(month: String, records: [SessionRecord]) {
         self.month = month
         base = WrappedBuilder.build(month: month, records: records, lang: WrappedStore.lang, showTotal: true)
         _includeTotal = State(initialValue: UserDefaults.standard.object(forKey: "telegramShowTotal") as? Bool ?? true)
@@ -39,7 +39,7 @@ struct WrappedReviewView: View {
         return out
     }
 
-    var body: some View {
+    public var body: some View {
         List {
             if let draft {
                 Section("Include") {

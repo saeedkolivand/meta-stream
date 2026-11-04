@@ -1,10 +1,10 @@
 import SwiftUI
 
 /// "How it went": the verdict against the month, then three numbers with their change against the last streams.
-struct ReportOverviewCard: View {
-    let insights: ReportInsights
+public struct ReportOverviewCard: View {
+    public let insights: ReportInsights
 
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("How it went").font(.footnote.weight(.semibold)).textCase(.uppercase).foregroundStyle(.green)
             Text(insights.verdict).font(.title3.bold())
@@ -41,8 +41,8 @@ struct ReportOverviewCard: View {
 }
 
 /// The 2x2 grid of big numbers.
-struct ReportTiles: View {
-    let insights: ReportInsights
+public struct ReportTiles: View {
+    public let insights: ReportInsights
 
     private struct Tile: Identifiable {
         let label: String
@@ -62,7 +62,7 @@ struct ReportTiles: View {
                 Tile(label: "Chatters", value: "\(record.chatterCounts.count)", note: chatters)]
     }
 
-    var body: some View {
+    public var body: some View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible())], spacing: 10) {
             ForEach(tiles) { tile in
                 VStack(alignment: .leading, spacing: 2) {

@@ -2,13 +2,13 @@ import SwiftUI
 
 /// The Session report (CONTEXT.md "Session report"): the streamer's private account of one stream, never posted anywhere.
 /// Flat dark cards; the pieces live in the Report*.swift files next to this one.
-struct SessionReportView: View {
-    let record: SessionRecord
+public struct SessionReportView: View {
+    public let record: SessionRecord
     @State private var history: [SessionRecord] = []
     @State private var confirmDelete = false
     @Environment(\.dismiss) private var dismiss
 
-    var body: some View {
+    public var body: some View {
         let insights = ReportInsights(record: record, history: history)
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
@@ -66,5 +66,9 @@ struct SessionReportView: View {
             place += (place.isEmpty ? "" : " · ") + String(format: "%.1f km", meters / 1000)
         }
         return [record.platform ?? "", place, record.camera ?? ""].filter { !$0.isEmpty }
+    }
+
+    public init(record: SessionRecord) {
+        self.record = record
     }
 }

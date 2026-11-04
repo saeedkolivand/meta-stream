@@ -9,17 +9,17 @@ import Signals
 /// Records the running stream session (CONTEXT.md "Reach"): a per-minute timeline, Moments, donation totals and
 /// Chatters. Saved as JSON when the session ends. Chat text is never stored, only counts per Chatter key.
 @MainActor
-final class SessionLog: ObservableObject {
-    static let shared = SessionLog()
+public final class SessionLog: ObservableObject {
+    public static let shared = SessionLog()
 
     /// A Chatter the app has seen before, kept across sessions.
-    struct Known: Codable { var name: String; var firstSeen: Date; var lastSeen: Date }
+    public struct Known: Codable { var name: String; var firstSeen: Date; var lastSeen: Date }
 
-    private(set) var current: SessionRecord?
+    public private(set) var current: SessionRecord?
     /// The session that just ended, for the Session report sheet. Only this publishes: `current` changes every minute.
-    @Published var justEnded: SessionRecord?
+    @Published public var justEnded: SessionRecord?
     /// The latest donation this session, for the Live post's "Last:" line.
-    private(set) var lastDonation: (user: String, display: String)?
+    public private(set) var lastDonation: (user: String, display: String)?
     private var registry: [String: Known] = [:]
     private var minuteChat = 0
     private var minuteDonations = 0.0
@@ -35,7 +35,7 @@ final class SessionLog: ObservableObject {
     // MARK: pure decisions
 
     /// The camera going out at the first sample: the UVC camera's own name, else which phone camera, glasses or screen.
-    static func cameraName(_ streamer: Streamer) -> String? {
+    public static func cameraName(_ streamer: Streamer) -> String? {
         switch streamer.source {
         case "screen": return "Screen share"
         case "glasses": return "Glasses"
@@ -49,7 +49,7 @@ final class SessionLog: ObservableObject {
     }
 
     /// A chat spike: at least 20 messages this minute and 3x the mean of up to the previous 10 minutes (needs 3 of them).
-    static func isSpike(_ count: Int, previous: [Int]) -> Bool {
+    public static func isSpike(_ count: Int, previous: [Int]) -> Bool {
         let prev = Array(previous.suffix(10))
         guard prev.count >= 3 else { return false }
         let mean = Double(prev.reduce(0, +)) / Double(prev.count)
@@ -59,16 +59,16 @@ final class SessionLog: ObservableObject {
     /// Donation sites and platforms use these placeholders for a donor who gave no name; they never become top donor.
     /// The name the Live post may publish: the same gate that keeps slurs off TTS and the stream widgets
     /// (`ChatEvent.offensive`). The post stays in the channel, so a blocked name or text becomes "Someone".
-    static func publicName(_ e: ChatEvent) -> String { e.offensive ? "Someone" : e.user }
+    public static func publicName(_ e: ChatEvent) -> String { e.offensive ? "Someone" : e.user }
 
-    static func isAnonymous(_ name: String) -> Bool {
+    public static func isAnonymous(_ name: String) -> Bool {
         let trimmed = name.trimmingCharacters(in: .whitespaces).lowercased()
         return trimmed.isEmpty || anonymous.contains(trimmed)
     }
 
     // MARK: lifecycle
 
-    func begin(title: String) {
+    public func begin(title: String) {
         registry = Self.load([String: Known].self, from: Self.chattersFile) ?? [:]
         current = SessionRecord(start: Date(), title: title, currency: GoalStore.shared.config.currency, trackingStarted: registry.isEmpty)
         current?.platform = PlatformAdapter.all[UserDefaults.standard.string(forKey: "platform") ?? "kick"]?.name
@@ -83,7 +83,7 @@ final class SessionLog: ObservableObject {
     }
 
     /// Called every second while live; appends a sample on each minute boundary, then looks for a chat spike.
-    func tick(_ streamer: Streamer, viewers: Int) {
+    public func tick(_ streamer: Streamer, viewers: Int) {
         guard var rec = current else { return }
         let now = Date()
         guard Int(now.timeIntervalSince(rec.start)) / 60 > rec.samples.count else { return }
@@ -107,7 +107,7 @@ final class SessionLog: ObservableObject {
         if rec.samples.count % 5 == 0 { Self.save(rec, to: Self.file(rec)) }
     }
 
-    func record(_ e: ChatEvent) {
+    public func record(_ e: ChatEvent) {
         guard current != nil else { return }
         switch e.kind {
         case .message: message(e)
@@ -119,7 +119,7 @@ final class SessionLog: ObservableObject {
     }
 
     /// Finishes and saves the session and the Chatter registry.
-    func end() -> SessionRecord? {
+    public func end() -> SessionRecord? {
         guard var rec = current else { return nil }
         rec.end = Date()
         current = nil
@@ -195,12 +195,12 @@ final class SessionLog: ObservableObject {
     }
 
     /// Every saved session, newest first; files that no longer decode are skipped.
-    static func all() -> [SessionRecord] {
+    public static func all() -> [SessionRecord] {
         let urls = (try? FileManager.default.contentsOfDirectory(at: sessionsDir, includingPropertiesForKeys: nil)) ?? []
         return urls.filter { $0.pathExtension == "json" }.compactMap { load(SessionRecord.self, from: $0) }.sorted { $0.start > $1.start }
     }
 
-    static func delete(_ rec: SessionRecord) { _ = try? FileManager.default.removeItem(at: file(rec)) }
+    public static func delete(_ rec: SessionRecord) { _ = try? FileManager.default.removeItem(at: file(rec)) }
 
     private static func load<T: Decodable>(_ type: T.Type, from url: URL) -> T? {
         (try? Data(contentsOf: url)).flatMap { try? JSONDecoder().decode(type, from: $0) }
@@ -216,7 +216,7 @@ final class SessionLog: ObservableObject {
     }
 
     #if DEBUG
-    static func demo() {
+    public static func demo() {
         assert(!isSpike(40, previous: [5, 5]))                      // too little history
         assert(!isSpike(19, previous: [1, 1, 1]) && isSpike(20, previous: [1, 1, 1]))
         assert(!isSpike(29, previous: [10, 10, 10]) && isSpike(30, previous: [10, 10, 10]))

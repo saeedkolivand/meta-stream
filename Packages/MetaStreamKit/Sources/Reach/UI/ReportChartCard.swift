@@ -2,8 +2,8 @@ import Charts
 import SwiftUI
 
 /// One chart for the stream: Viewers | Chat | Bitrate, the Moments marked, with a one-line takeaway under it.
-struct ReportChartCard: View {
-    let insights: ReportInsights
+public struct ReportChartCard: View {
+    public let insights: ReportInsights
     @State private var tab = ReportInsights.Tab.viewers
 
     private var tint: Color {
@@ -14,7 +14,7 @@ struct ReportChartCard: View {
         }
     }
 
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Picker("Chart", selection: $tab) {
                 ForEach(ReportInsights.Tab.allCases) { Text($0.rawValue).tag($0) }

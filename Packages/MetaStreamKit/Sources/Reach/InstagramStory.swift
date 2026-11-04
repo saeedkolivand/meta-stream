@@ -7,12 +7,12 @@ import SwiftUI
 /// to Instagram's story editor through the pasteboard, per Meta's Sharing to Stories (iOS). The tappable link can't be
 /// pre-placed by an app, so the card shows the Kick URL and leaves the lower third empty for the Link sticker.
 @MainActor
-enum InstagramStory {
+public enum InstagramStory {
     /// The Facebook App ID Instagram requires (developers.facebook.com, no review needed for sharing). Public, not a secret.
     /// ponytail: the Meta Wearables app's ID, on trial as Instagram's source app (Meta's developer SMS never arrived): the
     /// same META_APP_ID secret CI bakes into Info.plist's MWDAT dict. If Instagram says the app doesn't support sharing
     /// to Stories, a dedicated Facebook app's ID is needed instead.
-    static let facebookAppID: String = {
+    public static let facebookAppID: String = {
         let mwdat = Bundle.main.object(forInfoDictionaryKey: "MWDAT") as? [String: Any]
         return mwdat?["MetaAppID"] as? String ?? ""
     }()
@@ -20,14 +20,14 @@ enum InstagramStory {
     private static var scheme: URL? { URL(string: "instagram-stories://share?source_application=" + facebookAppID) }
 
     /// Configured and Instagram installed (needs `instagram-stories` in LSApplicationQueriesSchemes).
-    static var available: Bool {
+    public static var available: Bool {
         guard !facebookAppID.isEmpty, let scheme else { return false }
         return UIApplication.shared.canOpenURL(scheme)
     }
 
     /// Grabs the outgoing frame (only while live and blur isn't stalled, like the Live post), renders the card and opens
     /// Instagram. Without a frame (glasses passthrough) the card is text on black. Before GO LIVE it says "live soon".
-    static func share(_ streamer: Streamer) async {
+    public static func share(_ streamer: Streamer) async {
         guard streamer.live else { await handOver(frame: nil, soon: true); return }
         var frame: UIImage?
         if let jpeg = await FrameGrab.shared.next(), streamer.live, streamer.privacy?.stalled != true {
@@ -37,7 +37,7 @@ enum InstagramStory {
     }
 
     /// Settings' test button: the same hand-over without a stream frame, to check it without going live.
-    static func shareTest() async { await handOver(frame: nil) }
+    public static func shareTest() async { await handOver(frame: nil) }
 
     private static func handOver(frame: UIImage?, soon: Bool = false) async {
         guard available, let scheme else { return }

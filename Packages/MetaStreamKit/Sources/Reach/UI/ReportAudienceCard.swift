@@ -1,12 +1,12 @@
 import SwiftUI
 
 /// Who showed up: chatters split new / returning, the three most active, the top donor.
-struct ReportAudienceCard: View {
-    let insights: ReportInsights
+public struct ReportAudienceCard: View {
+    public let insights: ReportInsights
 
     private var record: SessionRecord { insights.record }
 
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             ReportLabel("Audience")
             VStack(alignment: .leading, spacing: 8) {

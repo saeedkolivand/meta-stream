@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Settings > Streams: every recorded stream session, newest first and grouped by month, each opening its Session report.
-struct StreamsView: View {
+public struct StreamsView: View {
     @State private var records: [SessionRecord] = []
     @State private var bestSlot: String?
     @State private var reviewMonth: String?
@@ -20,7 +20,7 @@ struct StreamsView: View {
         return out
     }
 
-    var body: some View {
+    public var body: some View {
         List {
             if let month = WrappedStore.pendingMonth(records: records) { wrappedCard(month) }
             if !records.isEmpty { heatmapCard }
