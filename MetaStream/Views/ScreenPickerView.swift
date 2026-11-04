@@ -28,7 +28,7 @@ struct ScreenPickerView: UIViewRepresentable {
 /// Round button next to the source menu while Screen is the video source, styled like its neighbours:
 /// white = start the broadcast, green = broadcasting (tap to stop).
 struct ScreenButton: View {
-    @ObservedObject var screen: ScreenSource
+    let screen: ScreenSource   // @Observable: a plain reference still tracks screenLive
     var size: CGFloat
     @State private var holder = BroadcastPickerHolder()
 
