@@ -125,7 +125,7 @@ public final class ObsServer {
         let o = OverlayStore.shared
         watches = [
             watch({ s.live }) { self.event("StreamStateChanged", 64, Self.out($0)) },
-            watch({ s.recordingSince != nil }) { self.event("RecordStateChanged", 64, Self.out($0).merging(["outputPath": ""]) { a, _ in a }) },
+            watch({ s.recording.since != nil }) { self.event("RecordStateChanged", 64, Self.out($0).merging(["outputPath": ""]) { a, _ in a }) },
             watch({ s.muted }) { self.event("InputMuteStateChanged", 8, ["inputName": "Mic", "inputUuid": "Mic", "inputMuted": $0]) }
         ]
         o.$scene.dropFirst().removeDuplicates()
@@ -285,9 +285,9 @@ public final class ObsServer {
             s.requestStop(); return ok()
         }
         func record(_ on: Bool) async -> Res {
-            if on == (s.recordingSince != nil) { return (on ? 500 : 501, on ? "Record is already running" : "Record is not running", [:]) }
-            if on { await s.startRecording() } else { await s.stopRecording() }
-            if on && s.recordingSince == nil { return (702, "Recording could not start", [:]) }
+            if on == (s.recording.since != nil) { return (on ? 500 : 501, on ? "Record is already running" : "Record is not running", [:]) }
+            if on { await s.recording.start() } else { await s.recording.stop() }
+            if on && s.recording.since == nil { return (702, "Recording could not start", [:]) }
             return ok(on ? [:] : ["outputPath": ""])   // ponytail: the file goes to Photos, so there is no path to give
         }
         func mic(_ set: (Bool) -> Bool) -> Res {
@@ -323,12 +323,12 @@ public final class ObsServer {
             let r = was ? stopStream() : startStream()
             return r.code == 100 ? ok(["outputActive": !was]) : r
         case "GetRecordStatus":
-            let t = ms(s.recordingSince)
-            return ok(["outputActive": s.recordingSince != nil, "outputPaused": false, "outputTimecode": tc(t), "outputDuration": t, "outputBytes": 0])
+            let t = ms(s.recording.since)
+            return ok(["outputActive": s.recording.since != nil, "outputPaused": false, "outputTimecode": tc(t), "outputDuration": t, "outputBytes": 0])
         case "StartRecord": return await record(true)
         case "StopRecord": return await record(false)
         case "ToggleRecord":
-            let was = s.recordingSince != nil
+            let was = s.recording.since != nil
             let r = await record(!was)
             return r.code == 100 ? ok(["outputActive": !was]) : r
         case "GetInputList":

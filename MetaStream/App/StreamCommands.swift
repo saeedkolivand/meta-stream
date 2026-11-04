@@ -22,7 +22,7 @@ struct StreamCommands: Commands {
             Divider()
             Button(streamer.muted ? "Unmute microphone" : "Mute microphone") { streamer.setMuted(!streamer.muted) }
                 .keyboardShortcut("m", modifiers: .command)
-            Button(streamer.recordingSince != nil ? "Stop recording" : "Start recording") { streamer.toggleRecording() }
+            Button(streamer.recording.since != nil ? "Stop recording" : "Start recording") { streamer.recording.toggle() }
                 .keyboardShortcut("r", modifiers: .command)
             Button(speaker.muted ? "Unmute read-aloud" : "Mute read-aloud") { speaker.muted.toggle() }
                 .keyboardShortcut("t", modifiers: .command)

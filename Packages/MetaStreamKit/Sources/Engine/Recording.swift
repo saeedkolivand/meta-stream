@@ -3,28 +3,39 @@
 //  MetaStream
 //
 //  Local recording, independent of Go Live: HaishinKit's StreamRecorder is a permanent mixer output, so it
-//  gets exactly what goes out (composited picture + final mix). Saved to Photos on stop.
+//  gets exactly what goes out (composited picture + final mix). Saved to Photos on stop. A Streamer component
+//  (Android: streaming.Recording).
 //
 
 import AVFoundation
 import CoreLogging
 import HaishinKit
+import Observation
 import Photos
 
-extension Streamer {
+@MainActor @Observable
+public final class Recording {
     private static let folder = URL.documentsDirectory.appending(path: "Recordings")
 
-    public func toggleRecording() {
-        Task { recordingSince == nil ? await startRecording() : await stopRecording() }
+    /// Permanent mixer output; appends are ignored while not recording.
+    @ObservationIgnored public let recorder = StreamRecorder()
+    /// When the current recording started; nil = not recording.
+    public private(set) var since: Date?
+    @ObservationIgnored private weak var streamer: Streamer?
+
+    init(streamer: Streamer) { self.streamer = streamer }
+
+    public func toggle() {
+        Task { since == nil ? await start() : await stop() }
     }
 
-    public func startRecording() async {
-        guard recordingSince == nil else { return }
+    public func start() async {
+        guard since == nil else { return }
         // ponytail: glasses HEVC passthrough bypasses the mixer, so a recording would be audio-only; refuse it.
         // Upgrade path: tee the encoded HEVC from Hot.swift's passthrough append into a passthrough AVAssetWriterInput.
-        guard phoneEncodes else {
+        guard streamer?.phoneEncodes == true else {
             applog("stream", "recording refused: glasses passthrough has no mixer video")
-            speaker?.speakSystem("Recording needs the phone camera or H.264")
+            streamer?.speaker?.speakSystem("Recording needs the phone camera or H.264")
             return
         }
         do {
@@ -36,12 +47,12 @@ extension Streamer {
             settings[.video] = [AVVideoCodecKey: AVVideoCodecType.hevc, AVVideoHeightKey: 0, AVVideoWidthKey: 0,
                                 AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 10_000_000]]
             try await recorder.startRecording(url, settings: settings)
-            recordingSince = .now
+            since = .now
             applog("stream", "recording started \(url.lastPathComponent)")
             Task { [weak self, recorder] in
                 for await e in await recorder.error {
                     applog("stream", "recording error: \(e)")
-                    await self?.stopRecording()
+                    await self?.stop()
                 }
             }
         } catch {
@@ -49,9 +60,9 @@ extension Streamer {
         }
     }
 
-    public func stopRecording() async {
-        guard recordingSince != nil else { return }
-        recordingSince = nil
+    public func stop() async {
+        guard since != nil else { return }
+        since = nil
         do {
             let url = try await recorder.stopRecording()
             applog("stream", "recording stopped \(url.lastPathComponent)")
@@ -61,16 +72,16 @@ extension Streamer {
             }
             try await PHPhotoLibrary.shared().performChanges { PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url) }
             try? FileManager.default.removeItem(at: url)
-            speaker?.speakSystem("Recording saved to Photos")
+            streamer?.speaker?.speakSystem("Recording saved to Photos")
         } catch {
             applog("stream", "recording save failed, file kept in Documents/Recordings: \(error)")
         }
     }
 
     /// Called from the 1 s tick: switching to glasses passthrough mid-recording would leave the file without video.
-    public func checkRecordingSource() {
-        guard recordingSince != nil, !phoneEncodes else { return }
-        speaker?.speakSystem("Recording stopped: glasses passthrough can't be recorded")
-        Task { await stopRecording() }
+    public func checkSource() {
+        guard since != nil, streamer?.phoneEncodes == false else { return }
+        streamer?.speaker?.speakSystem("Recording stopped: glasses passthrough can't be recorded")
+        Task { await stop() }
     }
 }

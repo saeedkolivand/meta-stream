@@ -144,12 +144,12 @@ struct QuickControls: View {
                 .accessibilityLabel("Soundboard")
             }
             // Independent of Go Live: a recording starts and stops on its own, live or not.
-            StripStyles.roundButton("record.circle", filled: false, tint: streamer.recordingSince != nil ? .red : nil, size: size) {
+            StripStyles.roundButton("record.circle", filled: false, tint: streamer.recording.since != nil ? .red : nil, size: size) {
                 hapticTap(strong: true)
-                streamer.toggleRecording()
+                streamer.recording.toggle()
             }
-            .disabled(!streamer.phoneEncodes && streamer.recordingSince == nil)
-            .accessibilityLabel(streamer.recordingSince != nil ? "Stop recording" : "Record")
+            .disabled(!streamer.phoneEncodes && streamer.recording.since == nil)
+            .accessibilityLabel(streamer.recording.since != nil ? "Stop recording" : "Record")
             button(streamer.muted ? "mic.slash.fill" : "mic.fill",
                    streamer.muted ? "Muted" : "Mic",
                    style: streamer.muted ? .stopped : .live) {

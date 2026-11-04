@@ -172,8 +172,7 @@ public final class Streamer {
 
     public let audioLevel = AudioLevel()   // HUD meter + dead-air state, see AudioLevel.swift
 
-    public let recorder = StreamRecorder()               // permanent mixer output; appends are ignored while not recording (Recording.swift)
-    public var recordingSince: Date?          // nil = not recording
+    @ObservationIgnored public lazy var recording = Recording(streamer: self)   // local recording, see Recording.swift
 
     @ObservationIgnored public lazy var levelTap = LevelOutput { [weak self] db in Task { @MainActor in self?.audioLevel.set(db) } }
 
@@ -350,7 +349,7 @@ public final class Streamer {
                 self.checkDeadAir()
                 self.compositor?.checkBRB()
                 self.onSecond(self)
-                self.checkRecordingSource()
+                self.recording.checkSource()
                 self.liveActivity.sync(self)
                 if self.live, tick % 5 == 0 {
                     let mode = self.hot.transcoder == nil ? "hevc-passthrough" : "h264-transcode"

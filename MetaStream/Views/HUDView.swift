@@ -60,7 +60,7 @@ struct HUDView: View {
                     }, action: { showStatus = true })
                 }
 
-                if let since = streamer.recordingSince {
+                if let since = streamer.recording.since {
                     TimelineView(.periodic(from: .now, by: 1)) { ctx in
                         let s = Int(ctx.date.timeIntervalSince(since))
                         StripStyles.pill("circle.fill", String(format: "REC %02d:%02d", s / 60, s % 60), .red)

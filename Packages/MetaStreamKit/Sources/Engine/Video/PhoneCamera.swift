@@ -468,7 +468,7 @@ extension Streamer {
     public func rebuildMixerIfNeeded() async -> Bool {
         let multi = dualWanted && AVCaptureMultiCamSession.isMultiCamSupported
         guard multi != mixerIsMulti else { return false }
-        if recordingSince != nil { applog("stream", "recording stopped: mixer rebuilt"); await stopRecording() }
+        if recording.since != nil { applog("stream", "recording stopped: mixer rebuilt"); await recording.stop() }
         await setOffscreenMode(false)   // stop the old render loop + unregister blur before abandoning it
         let old = mixer
         try? await old.attachVideo(nil, track: 0)
@@ -476,7 +476,7 @@ extension Streamer {
         try? await old.attachAudio(nil)
         await old.removeOutput(sink)
         await old.removeOutput(levelTap)
-        await old.removeOutput(recorder)
+        await old.removeOutput(recording.recorder)
         if let o = wiredUplinkOutput { await old.removeOutput(o) }
         await old.stopRunning()
         mixer = MediaMixer(captureSessionMode: multi ? .multi : .single, multiTrackAudioMixingEnabled: true)
