@@ -119,7 +119,7 @@ Same features, settings pages and names on both ([`adr/0002`](../adr/0002-androi
 
 | | iOS / iPadOS | Android |
 |---|---|---|
-| Requires | iOS 26.0+, paid Apple Developer team | Android 17 (API 37)+, no account |
+| Requires | iOS 26.0+, paid Apple Developer team | Android 16 (API 36)+, no account |
 | Lock Screen | Live Activity, Dynamic Island, three bot-command buttons | Ongoing notification with one command button |
 | Screen share | Broadcast extension, up to 1080p, no sound | MediaProjection, with app audio |
 | External display | Clean feed on a USB-C monitor | Not yet |

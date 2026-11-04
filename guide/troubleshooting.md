@@ -14,6 +14,6 @@ Rows marked iOS or Android apply to that app only; the rest apply to both.
 | Your own relay or OBS shows nothing | Check the stream key is not empty, and that the server decodes HEVC. FFmpeg 6.1 and newer does. |
 | iOS: the stream freezes when you leave the app | Only transcoded streams do this. Keep the Picture in Picture window open, or send HEVC to YouTube or your own relay. |
 | Kick login opens the Kick app instead of the login page | A universal-link quirk. Long-press the link and open it in the browser, or try again. |
-| Android: `adb install` fails with `INSTALL_FAILED_OLDER_SDK` | The phone runs an Android older than 17 (API 37), the minimum. |
+| Android: `adb install` fails with `INSTALL_FAILED_OLDER_SDK` | The phone runs an Android older than 16 (API 36), the minimum. |
 | Android: `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | The installed copy was signed with another debug key (a different runner or PC). `adb uninstall` it first; this clears its settings. |
 | Android: `adb devices` lists nothing or *unauthorized* | Turn on USB debugging, accept the prompt on the phone, and use a data cable. |
