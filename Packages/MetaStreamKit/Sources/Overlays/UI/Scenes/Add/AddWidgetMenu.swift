@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// What the "+" menu can add. Each kind has one place that knows its defaults, so a new widget looks right immediately.
-public enum NewWidget: CaseIterable {
+public enum NewWidget: CaseIterable, Sendable {
     case chat, alerts, events, goal, nowPlaying, text, clock, liveTime, viewers, drive, socials, image, qr, web
 
     public var title: String {
