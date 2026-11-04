@@ -11,9 +11,9 @@ public func watch<T: Equatable & Sendable>(_ value: @escaping @MainActor @Sendab
         var last: T?
         // A literal, not `Observations(value)`: handing the stored @MainActor closure to the @isolated(any) parameter
         // crashed at launch (swift_unknownObjectRetain on its isolation, iOS 26, 2026-11-04).
-        for await v in Observations({ value() }) {
-            if let last, last != v { changed(v) }
-            last = v
+        for await next in Observations({ value() }) {
+            if let last, last != next { changed(next) }
+            last = next
         }
     }
 }
