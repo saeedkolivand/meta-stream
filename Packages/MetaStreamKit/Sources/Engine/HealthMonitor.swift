@@ -11,7 +11,7 @@ extension Streamer {
 
     // MARK: dual camera
 
-    func logFaceCamHealth() {
+    public func logFaceCamHealth() {
         let before = faceCamFrames.count
         Task {
             try? await Task.sleep(for: .seconds(2))
@@ -22,7 +22,7 @@ extension Streamer {
     }
 
     /// The capture session's connections as "source->output enabled/active", for the face-cam health log.
-    static func sessionTopology(_ mixer: MediaMixer) async -> String {
+    public static func sessionTopology(_ mixer: MediaMixer) async -> String {
         let box = Box("")
         await mixer.configuration { (session: AVCaptureSession) in
             box.value = session.connections.map { c in
@@ -36,7 +36,7 @@ extension Streamer {
     /// AVCaptureMultiCamSession.hardwareCost of the mixer's current session (> 1.0 = the configuration
     /// can't run); 0 for a non-multicam session. MediaMixer.configuration hands the raw AVCaptureSession to
     /// a closure on the mixer's own actor, so the value comes back through a box.
-    static func multiCamCost(_ mixer: MediaMixer) async -> Float {
+    public static func multiCamCost(_ mixer: MediaMixer) async -> Float {
         let box = Box(Float(0))
         await mixer.configuration { (session: AVCaptureSession) in
             box.value = (session as? AVCaptureMultiCamSession)?.hardwareCost ?? 0
@@ -46,7 +46,7 @@ extension Streamer {
 
     /// First sign a LIVE connection is down: starts the downtime clock, counts the drop, speaks + buzzes once.
     /// No-op if already marked — a failed reconnect attempt re-enters this after the poll loop already did.
-    func markDropped() {
+    public func markDropped() {
         guard downSince == nil else { return }
         downSince = Date()
         drops += 1
@@ -59,7 +59,7 @@ extension Streamer {
 
     /// Called from the 1 s tick: speaks "no audio" (repeating, like a drop) once the mix has been under -50 dBFS for 20 s.
     /// The tick drives it, not the level reports, so a mic that delivers no buffers at all still counts as silence.
-    func checkDeadAir() {
+    public func checkDeadAir() {
         let m = audioLevel
         let level = Date().timeIntervalSince(m.at) > 2 ? -120 : m.db
         let r = AudioMath.deadAir(quietSince: m.quietSince, level: level, now: Date(), live: live, muted: muted)
@@ -72,7 +72,7 @@ extension Streamer {
     }
 
     /// Clears the dead-air alert; `recovered` also announces that audio is back (not on stop live or mute).
-    func stopDeadAir(recovered: Bool) {
+    public func stopDeadAir(recovered: Bool) {
         guard audioLevel.alerting else { return }
         audioLevel.alerting = false
         applog("stream", "dead air cleared")
@@ -81,7 +81,7 @@ extension Streamer {
 
     /// Beyond Speaker's own 30s/60s/2min repeat cycle: one more nudge at 2 min down, another at 5 — so silence
     /// never stretches on forever. Covers a drop AND a stream that never connected in the first place.
-    func checkEscalation() {
+    public func checkEscalation() {
         guard let since = downSince else { return }
         let elapsed = Date().timeIntervalSince(since)
         if elapsed >= 300, !escalated5m {
@@ -94,7 +94,7 @@ extension Streamer {
     }
 
     /// Backgrounded (screen off, glasses-only) haptics are a no-op anyway; skip the allocation.
-    func haptic(_ type: UINotificationFeedbackGenerator.FeedbackType) {
+    public func haptic(_ type: UINotificationFeedbackGenerator.FeedbackType) {
         guard UIApplication.shared.applicationState == .active else { return }
         UINotificationFeedbackGenerator().notificationOccurred(type)
     }
@@ -104,7 +104,7 @@ extension Streamer {
     /// Phone battery + thermal only matter while actually streaming (a 30-45 min walk is exactly when
     /// the phone throttles or the battery runs down), so they're only observed live → stopLive() rather
     /// than leaving isBatteryMonitoringEnabled and two NotificationCenter observers on for the app's life.
-    func startHealthMonitoring() {
+    public func startHealthMonitoring() {
         UIDevice.current.isBatteryMonitoringEnabled = true
         updatePhoneBattery()
         thermal = ProcessInfo.processInfo.thermalState
@@ -127,7 +127,7 @@ extension Streamer {
         }
     }
 
-    func stopHealthMonitoring() {
+    public func stopHealthMonitoring() {
         if let o = batteryObserver { NotificationCenter.default.removeObserver(o) }
         if let o = thermalObserver { NotificationCenter.default.removeObserver(o) }
         batteryObserver = nil; thermalObserver = nil
@@ -137,18 +137,18 @@ extension Streamer {
         glassesThermal = nil
     }
 
-    func updatePhoneBattery() {
+    public func updatePhoneBattery() {
         let level = UIDevice.current.batteryLevel   // -1 while unknown/monitoring just turned on
         phoneBattery = level < 0 ? nil : Int(level * 100)
     }
 
-    func checkPhoneBattery() {
+    public func checkPhoneBattery() {
         guard let b = phoneBattery, b < 15, !warnedPhoneBattery else { return }
         warnedPhoneBattery = true
         speaker?.speakSystem("phone battery fifteen percent")
     }
 
-    func checkThermal() {
+    public func checkThermal() {
         // ThermalState isn't Comparable; rawValue order is nominal < fair < serious < critical.
         let serious = thermal.rawValue >= ProcessInfo.ThermalState.serious.rawValue
         // Heat and congestion both want less bitrate, and encoding is the expensive part — cap the ceiling
@@ -171,7 +171,7 @@ extension Streamer {
 
     /// ThermalLevel is Equatable, not Comparable/rawValue-ordered — switch on the cases the 0.9 docs list
     /// (unknown, none, light, moderate, severe, critical, emergency, shutdown) instead of guessing an order.
-    func checkGlassesThermal() {
+    public func checkGlassesThermal() {
         guard let t = glassesThermal, !warnedGlassesThermal else { return }
         switch t {
         case .severe, .critical, .emergency, .shutdown:
@@ -183,7 +183,7 @@ extension Streamer {
 
     // MARK: devices status line
 
-    func watchDevices(_ ids: [DeviceIdentifier]) {
+    public func watchDevices(_ ids: [DeviceIdentifier]) {
         let list = ids.compactMap { Wearables.shared.deviceForIdentifier($0) }
         deviceTokens = list.flatMap { d in
             [d.addLinkStateListener { [weak self] _ in Task { @MainActor in self?.describeDevices() } },
@@ -192,14 +192,14 @@ extension Streamer {
         describeDevices()
     }
 
-    func describeDevices() {
+    public func describeDevices() {
         let list = Wearables.shared.devices.compactMap { Wearables.shared.deviceForIdentifier($0) }
             .map { "\($0.nameOrId()) \($0.linkState) \($0.compatibility())" }
         devices = list.isEmpty ? "none" : list.joined(separator: ", ")
     }
 
     /// Diagnostic: current network path + TCP reachability of the ingest host over the default route and over cellular only.
-    static func netProbe(_ urlString: String) async {
+    public static func netProbe(_ urlString: String) async {
         guard let u = URL(string: urlString), let host = u.host else { return }
         let port = UInt16(u.port ?? (u.scheme == "rtmps" ? 443 : 1935))
         let path = await withCheckedContinuation { (c: CheckedContinuation<NWPath, Never>) in

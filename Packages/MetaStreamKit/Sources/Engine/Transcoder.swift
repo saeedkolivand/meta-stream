@@ -5,7 +5,7 @@ import VideoToolbox
 /// Decodes the glasses' compressed HEVC frames into pixel buffers so HaishinKit can re-encode them as H.264.
 /// Needed for Kick (rejects H.265) and Twitch without Affiliate. Runs on the SDK's frame thread, decodes synchronously
 /// to keep frame order. ponytail: hardware decode may be refused while backgrounded; then frames simply stop.
-final class Transcoder: @unchecked Sendable {
+public final class Transcoder: @unchecked Sendable {
     private var session: VTDecompressionSession?
     private var format: CMFormatDescription?
     private let sink: @Sendable (CMSampleBuffer) -> Void
@@ -14,16 +14,16 @@ final class Transcoder: @unchecked Sendable {
     private let transform: (@Sendable (CVPixelBuffer) -> CVPixelBuffer?)?
     private var failures = 0
     private var callbackFailures = 0
-    private(set) var decoded = 0
+    public private(set) var decoded = 0
     private var synced = false        // HEVC decoding can only begin on a keyframe
     private var skipped = 0
 
-    init(transform: (@Sendable (CVPixelBuffer) -> CVPixelBuffer?)? = nil, sink: @escaping @Sendable (CMSampleBuffer) -> Void) {
+    public init(transform: (@Sendable (CVPixelBuffer) -> CVPixelBuffer?)? = nil, sink: @escaping @Sendable (CMSampleBuffer) -> Void) {
         self.transform = transform
         self.sink = sink
     }
 
-    func decode(_ sb: CMSampleBuffer) {
+    public func decode(_ sb: CMSampleBuffer) {
         guard let fd = sb.formatDescription else { return }
         // Frames arrive mid-GOP, so feeding the decoder before a keyframe returns -17694 on every one.
         if !synced {
@@ -89,7 +89,7 @@ final class Transcoder: @unchecked Sendable {
         }
     }
 
-    func invalidate() {
+    public func invalidate() {
         if let s = session { VTDecompressionSessionInvalidate(s) }
         session = nil
         format = nil

@@ -3,7 +3,7 @@
 import Foundation
 
 @MainActor
-protocol SceneCompositor: AnyObject {
+public protocol SceneCompositor: AnyObject {
     /// A scene is picked and the current source can show it: keeps the mixer in offscreen mode (see syncBlurEffect).
     var wanted: Bool { get }
     /// A scene is picked, whatever the source (going live decides the mixer path before the source settles).
@@ -24,14 +24,14 @@ extension Streamer {
     /// Overlays are drawn by the mixer's Screen, which only sees the phone camera, camera-off black frames and the
     /// H.264 transcode of the glasses. Glasses HEVC passthrough never reaches the mixer, so it can't be drawn on
     /// (the HUD pill says so).
-    var overlaysUsable: Bool { source == "phone" || source == "screen" || cameraOff || hot.transcoder != nil }
+    public var overlaysUsable: Bool { source == "phone" || source == "screen" || cameraOff || hot.transcoder != nil }
 
-    var overlaysWanted: Bool { compositor?.wanted ?? false }
+    public var overlaysWanted: Bool { compositor?.wanted ?? false }
 
-    func syncOverlays() async { await compositor?.sync() }
+    public func syncOverlays() async { await compositor?.sync() }
 
     /// The Stop button (Go Live, OBS remote): the scene layer may hold an Ending scene first.
-    func requestStop() {
+    public func requestStop() {
         if let compositor { compositor.requestStop() } else { stopLive() }
     }
 }

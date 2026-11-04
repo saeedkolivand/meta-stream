@@ -8,8 +8,8 @@ import UIKit
 /// Hands out ONE JPEG of the final composited outgoing frame (after privacy blur and overlays) on request, for the
 /// Live post's photo. Taps the mixer's final output like LayerSink (videoTrackId UInt8.max, see Hot.swift). Glasses
 /// HEVC passthrough never reaches the mixer, so `next` then times out with nil. Idle cost is one lock check per frame.
-final class FrameGrab: MediaMixerOutput, @unchecked Sendable {
-    static let shared = FrameGrab()
+public final class FrameGrab: MediaMixerOutput, @unchecked Sendable {
+    public static let shared = FrameGrab()
 
     private struct Pending { var id: Int; var cont: CheckedContinuation<Data?, Never> }
     private struct State { var pending: Pending?; var nextId = 0 }
@@ -17,12 +17,12 @@ final class FrameGrab: MediaMixerOutput, @unchecked Sendable {
     private let state = OSAllocatedUnfairLock(initialState: State())
     private let context = CIContext()
 
-    var videoTrackId: UInt8? { UInt8.max }
-    var audioTrackId: UInt8? { nil }
+    public var videoTrackId: UInt8? { UInt8.max }
+    public var audioTrackId: UInt8? { nil }
 
     /// The next outgoing frame as a JPEG (long side at most 1280 px), or nil after `timeout`. One caller at a time:
     /// a second call while one waits gets nil at once.
-    func next(timeout: Duration = .seconds(2)) async -> Data? {
+    public func next(timeout: Duration = .seconds(2)) async -> Data? {
         await withCheckedContinuation { (cont: CheckedContinuation<Data?, Never>) in
             let id: Int? = state.withLock { st in
                 guard st.pending == nil else { return nil }
@@ -47,13 +47,13 @@ final class FrameGrab: MediaMixerOutput, @unchecked Sendable {
         }
     }
 
-    func mixer(_ mixer: MediaMixer, didOutput sampleBuffer: CMSampleBuffer) {
+    public func mixer(_ mixer: MediaMixer, didOutput sampleBuffer: CMSampleBuffer) {
         guard state.withLock({ $0.pending != nil }), let cont = take() else { return }
         cont.resume(returning: jpeg(sampleBuffer))
     }
 
-    func mixer(_ mixer: MediaMixer, didOutput buffer: AVAudioPCMBuffer, when: AVAudioTime) {}
-    func selectTrack(_ id: UInt8?, mediaType: CMFormatDescription.MediaType) async {}
+    public func mixer(_ mixer: MediaMixer, didOutput buffer: AVAudioPCMBuffer, when: AVAudioTime) {}
+    public func selectTrack(_ id: UInt8?, mediaType: CMFormatDescription.MediaType) async {}
 
     private func jpeg(_ sampleBuffer: CMSampleBuffer) -> Data? {
         guard let pixels = CMSampleBufferGetImageBuffer(sampleBuffer) else { return nil }

@@ -1,6 +1,7 @@
 import Camera
 import CoreLogging
 import CoreUI
+import Engine
 import SwiftUI
 
 /// Live camera control strip: "set before you walk" controls live in SettingsView's Camera screen

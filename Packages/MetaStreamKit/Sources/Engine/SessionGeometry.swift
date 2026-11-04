@@ -13,35 +13,35 @@ extension Streamer {
     /// What the phone camera captures and the encoder targets. Only applies while the phone is the video
     /// source: the glasses hand over 720x1280 at up to 30 fps and Meta's SDK offers third-party apps
     /// nothing higher, so these settings cannot raise that — they exist so the app is useful without glasses.
-    struct PhoneQuality: Sendable {
+    public struct PhoneQuality: Sendable {
         /// 720, 1080 or 2160 -- whichever CameraFormatCapabilities.probe() found this lens/position
         /// actually has a format for (SettingsView.CameraSettingsView drives the picker off that; this
         /// struct just carries whatever height goLive() was last called with, same as before 4K support).
-        var height = 720
-        var landscape = false
-        var fps = 30                      // whatever CameraFormatCapabilities said this resolution supports
+        public var height = 720
+        public var landscape = false
+        public var fps = 30                      // whatever CameraFormatCapabilities said this resolution supports
         /// "off" | "standard" | "cinematic" | "action". Phone camera only — the glasses stabilise in
         /// hardware and hand over already-encoded video the app never touches uncompressed.
-        var stabilization = "off"
+        public var stabilization = "off"
 
         /// Encoder frame size. Portrait is the glasses-native orientation; landscape is 16:9 for everything
         /// else. long is derived (height * 16/9), not a 720/1080-only lookup, so 4K (2160 -> 3840) falls
         /// out of the same formula rather than needing its own case.
         /// The same @AppStorage keys ContentView passes to goLive(), for attaching the camera while idle.
-        static func fromDefaults() -> PhoneQuality {
+        public static func fromDefaults() -> PhoneQuality {
             let d = UserDefaults.standard
             return PhoneQuality(height: d.object(forKey: "phoneHeight") as? Int ?? 720, landscape: d.bool(forKey: "phoneLandscape"),
                                 fps: d.object(forKey: "phoneFps") as? Int ?? 30, stabilization: d.string(forKey: "phoneStabilization") ?? "off")
         }
 
-        var size: CGSize {
+        public var size: CGSize {
             let short = CGFloat(height), long = short * 16 / 9
             return landscape ? CGSize(width: long, height: short) : CGSize(width: short, height: long)
         }
         /// AVCaptureSession.Preset has no way to derive its name from a number -- this mapping is just
         /// that plumbing, not a capability assumption; CameraFormatCapabilities.probe (device-side) is
         /// what actually decides which of these three a given lens/position offers in Settings.
-        var sessionPreset: AVCaptureSession.Preset {
+        public var sessionPreset: AVCaptureSession.Preset {
             switch height {
             case 2160: return .hd4K3840x2160
             case 1080: return .hd1920x1080
@@ -51,45 +51,45 @@ extension Streamer {
     }
 
     /// The glasses' fixed output. Not configurable — see PhoneQuality.
-    static let glassesSize = CGSize(width: 720, height: 1280)
+    public static let glassesSize = CGSize(width: 720, height: 1280)
 
     /// Whether this build can talk to glasses at all. The Meta app ID is baked in at build time from the
     /// META_APP_ID setting and is empty in a fork built without one -- someone streaming from the phone
     /// camera should not be nagged to register hardware they do not have and could never register.
-    static let glassesConfigured: Bool = {
+    public static let glassesConfigured: Bool = {
         let mwdat = Bundle.main.object(forInfoDictionaryKey: "MWDAT") as? [String: Any]
         return !((mwdat?["MetaAppID"] as? String ?? "").isEmpty)
     }()
 
     /// The build can talk to glasses AND the user switched them on (Settings > Glasses). Views read the same key via
     /// @AppStorage("glassesEnabled") so they update the moment it flips.
-    static var glassesEnabled: Bool { glassesConfigured && UserDefaults.standard.bool(forKey: "glassesEnabled") }
+    public static var glassesEnabled: Bool { glassesConfigured && UserDefaults.standard.bool(forKey: "glassesEnabled") }
 
-    var dualWanted: Bool { dualLocked ?? UserDefaults.standard.bool(forKey: "dualCam") }
+    public var dualWanted: Bool { dualLocked ?? UserDefaults.standard.bool(forKey: "dualCam") }
 
     /// Screen is the chosen video source and this build carries the broadcast extension.
-    var screenWanted: Bool { manualSource == "screen" && ScreenSource.available }
+    public var screenWanted: Bool { manualSource == "screen" && ScreenSource.available }
 
     /// Dual camera is wanted AND this phone can run two cameras at once.
-    nonisolated static var wantsMultiCam: Bool {
+    public nonisolated static var wantsMultiCam: Bool {
         UserDefaults.standard.bool(forKey: "dualCam") && AVCaptureMultiCamSession.isMultiCamSupported
     }
 
-    func setDualCamHidden(_ hidden: Bool) {
+    public func setDualCamHidden(_ hidden: Bool) {
         dualCamHidden = hidden
         applyDualCamLayout()
     }
 
     /// Re-applies corner/size/shape/track/visibility to the overlay window. Called from Settings' pickers and
     /// internally. Doesn't touch Screen.size, so it's safe with the render loop running.
-    func applyDualCamLayout() {
+    public func applyDualCamLayout() {
         Task { await pushOverlayLayout() }
     }
 
     /// Overlay window rect in canvas pixels, top-left origin. short = the canvas's short side; the window is
     /// a fraction of it (S .22 / M .30 / L .40) with a 4% margin. Rounded keeps the canvas's own orientation
     /// at 16:9; circle is a square. Pure -- exercised by StreamerTests.
-    nonisolated static func pipRect(canvas: CGSize, corner: String, size: String, shape: String) -> CGRect {
+    public nonisolated static func pipRect(canvas: CGSize, corner: String, size: String, shape: String) -> CGRect {
         let short = min(canvas.width, canvas.height)
         let f: CGFloat = size == "s" ? 0.22 : size == "l" ? 0.40 : 0.30
         let m = short * 0.04
@@ -102,13 +102,13 @@ extension Streamer {
         return CGRect(x: x, y: y, width: w, height: h)
     }
 
-    nonisolated static func pipCornerRadius(_ r: CGRect, shape: String) -> CGFloat {
+    public nonisolated static func pipCornerRadius(_ r: CGRect, shape: String) -> CGFloat {
         shape == "circle" ? r.width / 2 : min(r.width, r.height) * 0.12
     }
 
     /// Preview tap -> canvas pixel. The preview layer is .resizeAspect (PreviewView), so the canvas is
     /// centred and scaled to fit; a tap in the letterbox bars maps to nil. Pure -- exercised by StreamerTests.
-    nonisolated static func canvasPoint(forViewPoint p: CGPoint, viewSize: CGSize, canvas: CGSize) -> CGPoint? {
+    public nonisolated static func canvasPoint(forViewPoint p: CGPoint, viewSize: CGSize, canvas: CGSize) -> CGPoint? {
         guard viewSize.width > 0, viewSize.height > 0, canvas.width > 0, canvas.height > 0 else { return nil }
         let scale = min(viewSize.width / canvas.width, viewSize.height / canvas.height)
         let ox = (viewSize.width - canvas.width * scale) / 2, oy = (viewSize.height - canvas.height * scale) / 2
@@ -125,7 +125,7 @@ extension Streamer {
     /// reads as immediate (this is the Camera app's own feel -- the picture changes under your finger while
     /// dragging, not on release), and a timer-based coalesce on top would only be felt as lag. `log: false`
     /// is the one concession -- see CameraSettings.apply's doc -- and costs nothing in device writes.
-    func applyCameraSettings() {
+    public func applyCameraSettings() {
         guard let device = cameraDevice else { return }
         CameraSettings.apply(CameraSettings.loadFromDefaults(), to: device, log: false)
     }
@@ -146,7 +146,7 @@ extension Streamer {
     /// so this reattaches through switchTo(glasses:) instead. The framing jump this causes is expected
     /// anyway -- each stabilisation mode crops differently -- so the extra reattach glitch costs little
     /// more.
-    func setStabilization(_ mode: String) {
+    public func setStabilization(_ mode: String) {
         guard source == "phone" else { return }
         UserDefaults.standard.set(mode, forKey: "phoneStabilization")
         phoneQuality.stabilization = mode
@@ -157,7 +157,7 @@ extension Streamer {
     /// lives on VideoDeviceUnit, set once in switchTo's attachVideo configuration closure. camMirrored is
     /// already read fresh every attach via CameraSettings.loadFromDefaults(), so writing the key and
     /// reattaching is the whole implementation.
-    func setMirrored(_ mirrored: Bool) {
+    public func setMirrored(_ mirrored: Bool) {
         guard source == "phone" else { return }
         UserDefaults.standard.set(mirrored, forKey: "camMirrored")
         Task { await switchTo(glasses: false) }
@@ -171,7 +171,7 @@ extension Streamer {
     /// resets focus/exposure back to CameraSettings' own modes without telling this lock go stale --
     /// ContentView clears its badge on a source change but not on an in-place reattach; add a
     /// Streamer-side published lock flag if that combination turns out to matter in practice.
-    func setAEAFLocked(_ locked: Bool) {
+    public func setAEAFLocked(_ locked: Bool) {
         guard let device = cameraDevice else { return }
         do { try device.lockForConfiguration() } catch {
             applog("stream", "AE/AF lock: lockForConfiguration failed: \(error.localizedDescription)", error: true)
@@ -199,7 +199,7 @@ extension Streamer {
     /// recomputes gains FROM those written values, which round-trips to (imperceptibly) the same lock
     /// rather than the exact gains sampled here; that's the trade for reusing one apply path instead of a
     /// bespoke lockForConfiguration call here too.
-    func setWhiteBalanceLocked(_ locked: Bool) {
+    public func setWhiteBalanceLocked(_ locked: Bool) {
         let d = UserDefaults.standard
         if locked, let device = cameraDevice, device.isWhiteBalanceModeSupported(.locked) {
             let tt = device.temperatureAndTintValues(for: device.deviceWhiteBalanceGains)
@@ -221,7 +221,7 @@ extension Streamer {
     /// off) turns out to matter in practice.
     /// `point` must already be in AVCaptureDevice's point-of-interest space -- see
     /// CameraSettings.devicePoint(forViewPoint:orientation:mirrored:), the pure conversion from a preview tap.
-    func tapToFocus(at point: CGPoint) {
+    public func tapToFocus(at point: CGPoint) {
         guard let device = cameraDevice else { return }
         do { try device.lockForConfiguration() } catch {
             applog("stream", "tap focus: lockForConfiguration failed: \(error.localizedDescription)", error: true)
@@ -243,7 +243,7 @@ extension Streamer {
 
     /// Lists inputs for the Settings picker. Called on demand (Settings opens, Go Live), never from route-change
     /// notifications: switching category fires those and looped forever.
-    func refreshMics() {
+    public func refreshMics() {
         let s = AVAudioSession.sharedInstance()
         let wasPlayback = s.category == .playback
         // allowBluetoothHFP is what makes the glasses show up as an input; inputs are only listed under a record category.
@@ -257,7 +257,7 @@ extension Streamer {
 
     /// Camera off = detach any phone camera, stop forwarding glasses frames, and push black frames at 15 fps
     /// so the platform keeps a live video track instead of freezing on the last picture.
-    func setCameraOff(_ off: Bool) {
+    public func setCameraOff(_ off: Bool) {
         cameraOff = off
         applog("stream", "cameraOff=\(off)")
         blackTask?.cancel(); blackTask = nil
@@ -318,7 +318,7 @@ extension Streamer {
     /// nonisolated: called synchronously from Transcoder's @Sendable sink closure (VTDecompressionSession's
     /// callback thread, not the main actor) -- a plain (implicitly MainActor) static func here would not
     /// compile without an await it cannot afford on that thread.
-    nonisolated static func retimestamped(_ sb: CMSampleBuffer) -> CMSampleBuffer? {
+    public nonisolated static func retimestamped(_ sb: CMSampleBuffer) -> CMSampleBuffer? {
         guard let imageBuffer = sb.imageBuffer, let fd = sb.formatDescription else { return nil }
         var timing = CMSampleTimingInfo(duration: sb.duration,
                                         presentationTimeStamp: CMClockGetTime(CMClockGetHostTimeClock()),
@@ -328,7 +328,7 @@ extension Streamer {
         return out
     }
 
-    static func blackPixelBuffer() -> CVPixelBuffer? {
+    public static func blackPixelBuffer() -> CVPixelBuffer? {
         var pb: CVPixelBuffer?
         CVPixelBufferCreate(nil, 720, 1280, kCVPixelFormatType_32BGRA,
                             [kCVPixelBufferIOSurfacePropertiesKey: [:]] as CFDictionary, &pb)
@@ -339,7 +339,7 @@ extension Streamer {
         return pb
     }
 
-    func setMuted(_ on: Bool) {
+    public func setMuted(_ on: Bool) {
         muted = on
         applog("stream", "muted=\(on)")
         // Mute zeroes the whole mix (sounds too) but keeps the mic attached. FOUND BUG: mute used to detach the mic,
@@ -370,12 +370,12 @@ extension Streamer {
     /// What the offscreen canvas should be right now: the session's fixed geometry while live, otherwise
     /// whatever the phone camera is configured to produce, since that is the only thing the mixer renders
     /// before GO LIVE.
-    var blurCanvasSize: CGSize { sessionGeometryFixed ? sessionVideoSize : phoneQuality.size }
+    public var blurCanvasSize: CGSize { sessionGeometryFixed ? sessionVideoSize : phoneQuality.size }
 
     /// Dual camera caps at 1080p and multiFpsCap (60 on iPad, 30 on iPhone): two captures + a composite + an encode.
     /// UVC webcams can't rotate the connection (portrait would squash/letterbox them) and get the same fps cap;
     /// resolution follows the setting, since e.g. the Osmo Action 6 offers 4K as a webcam.
-    func capped(_ q: PhoneQuality) -> PhoneQuality {
+    public func capped(_ q: PhoneQuality) -> PhoneQuality {
         var q = q
         if dualWanted { q.height = min(q.height, 1080) }
         if dualWanted || manualSource == "external" { q.fps = min(q.fps, Self.multiFpsCap) }
@@ -397,7 +397,7 @@ extension Streamer {
     /// stop on this actor ahead of the resize enqueued right after, so by the time this runs the loop has
     /// already exited -- the same ordering assumption HaishinKit's own syncBlurEffect-adjacent calls already
     /// relied on before this fix, just never stated. Not verified on-device (no build/run available here).
-    @ScreenActor static func setScreenSize(_ mixer: MediaMixer, to size: CGSize) {
+    @ScreenActor public static func setScreenSize(_ mixer: MediaMixer, to size: CGSize) {
         guard mixer.screen.size != size else { return }   // an equal-size write would still reallocate the pool
         mixer.screen.size = size
     }
@@ -409,7 +409,7 @@ extension Streamer {
     /// still running -- see setScreenSize's doc). Offscreen is wanted by blur OR the dual-camera overlay.
     /// Turning it off also drops the blur effect first (as before). Idempotent on offscreenOn, so a
     /// redundant call (stopLive() forcing `false` when it was never on, say) costs nothing.
-    func setOffscreenMode(_ on: Bool) async {
+    public func setOffscreenMode(_ on: Bool) async {
         if !on { await setBlurEffect(false); await setLookEffect(false) }
         guard offscreenOn != on else { return }
         offscreenOn = on
@@ -422,7 +422,7 @@ extension Streamer {
 
     /// Registers/unregisters the privacy blur on the full-frame object only; the face-cam window is hidden
     /// instead while blur is on (see blurWanted). Independent of the mode flip above; idempotent on blurEffectActive.
-    func setBlurEffect(_ on: Bool) async {
+    public func setBlurEffect(_ on: Bool) async {
         guard let privacy, blurEffectActive != on else { return }
         blurEffectActive = on
         await Self.setPrivacyEffect(mixer, privacy: privacy, on: on)
@@ -433,7 +433,7 @@ extension Streamer {
     /// Brings the offscreen canvas, face-cam window, blur effect and render mode in line with what's wanted
     /// right now (blur enabled and/or an overlay camera attached). Polled from the 1 s tick; also called at
     /// the moments that change the answer.
-    func syncBlurEffect() async {
+    public func syncBlurEffect() async {
         // Read once: `enabled` is a plain nonisolated(unsafe) var ContentView can flip mid-await.
         let blur = privacy?.enabled == true
         let look = lookWanted
@@ -464,7 +464,7 @@ extension Streamer {
     /// we hide the picture rather than publish frames we could not obscure, and say so out loud — silence
     /// would leave someone walking down a street believing faces were still being covered. Reuses the
     /// existing black-frame path, so the HUD honestly reads "cam off" for as long as it holds.
-    func checkBlurStall() {
+    public func checkBlurStall() {
         guard let privacy, privacy.enabled, live else { return }
         if privacy.stalled, !cameraOff {
             blurHidCamera = true
@@ -481,7 +481,7 @@ extension Streamer {
 
     // Session-fixed encoder geometry, extracted from goLive(): the phone camera uses the configured
     // quality, glasses sessions stay 720x1280. Fixes the size for the session; players break otherwise.
-    func resolveSessionGeometry() -> (size: CGSize, rate: Int, onPhone: Bool) {
+    public func resolveSessionGeometry() -> (size: CGSize, rate: Int, onPhone: Bool) {
         let onPhone = source == "phone" || screenWanted || manualSource == "back" || manualSource == "front" || manualSource == "external"
             || (manualSource == "auto" && !glassesStreaming)
         let size = onPhone ? phoneQuality.size : Self.glassesSize

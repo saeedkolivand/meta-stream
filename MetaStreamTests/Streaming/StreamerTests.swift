@@ -1,3 +1,4 @@
+import Engine
 import XCTest
 import CoreGraphics
 @testable import MetaStream

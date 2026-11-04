@@ -3,6 +3,7 @@
 // transcode path. Glasses HEVC passthrough never reaches the mixer, so it can't be drawn on.
 import AVFoundation
 import CoreLogging
+import Engine
 import HaishinKit
 import UIKit
 

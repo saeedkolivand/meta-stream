@@ -6,24 +6,26 @@ import Foundation
 import Network
 
 // ponytail: all state is confined to `queue` (every entry point hops onto it), so no locks.
-final class Srtla: @unchecked Sendable {
+public final class Srtla: @unchecked Sendable {
     // common.h
-    static let ngp: UInt16 = 0x9211, reg1: UInt16 = 0x9200, reg2: UInt16 = 0x9201, reg3: UInt16 = 0x9202
-    static let keepalive: UInt16 = 0x9000, ack: UInt16 = 0x9100, regErr: UInt16 = 0x9210, regNak: UInt16 = 0x9212
-    static let srtAck: UInt16 = 0x8002, srtNak: UInt16 = 0x8003
-    static let idLen = 256                                   // SRTLA_ID_LEN
+    public static let ngp: UInt16 = 0x9211, reg1: UInt16 = 0x9200, reg2: UInt16 = 0x9201, reg3: UInt16 = 0x9202
+    public static let keepalive: UInt16 = 0x9000, ack: UInt16 = 0x9100, regErr: UInt16 = 0x9210, regNak: UInt16 = 0x9212
+    public static let srtAck: UInt16 = 0x8002, srtNak: UInt16 = 0x8003
+    public static let idLen = 256                                   // SRTLA_ID_LEN
     // srtla_send.c
-    static let logSize = 256, connTimeout = 4, regTimeout = 4, idleTime = 1   // PKT_LOG_SZ, CONN_TIMEOUT, REG2/3_TIMEOUT, IDLE_TIME
-    static let winMin = 1000, winDef = 20_000, winMax = 60_000, winDecr = 100, winIncr = 30   // WINDOW_* x WINDOW_MULT(1000)
+    public static let logSize = 256, connTimeout = 4, regTimeout = 4, idleTime = 1   // PKT_LOG_SZ, CONN_TIMEOUT, REG2/3_TIMEOUT, IDLE_TIME
+    public static let winMin = 1000, winDef = 20_000, winMax = 60_000, winDecr = 100, winIncr = 30   // WINDOW_* x WINDOW_MULT(1000)
 
-    struct Stat: Identifiable, Sendable { let id: String; let label: String; let backup: Bool; let up: Bool; let share: Int }
+    public struct Stat: Identifiable, Sendable {
+        public let id: String, label: String, backup: Bool, up: Bool, share: Int
+    }
 
-    final class Link: @unchecked Sendable {   // conn_t
-        let name: String, label: String, backup: Bool, conn: NWConnection
-        var lastRcvd = 0, lastSent = 0, window = Srtla.winDef, inFlight = 0, idx = 0, sent = 0, share = 0
-        var log = [Int32](repeating: -1, count: Srtla.logSize)
-        init(name: String, label: String, backup: Bool, conn: NWConnection) { self.name = name; self.label = label; self.backup = backup; self.conn = conn }
-        func up(_ now: Int) -> Bool { lastRcvd + Srtla.connTimeout >= now }   // !conn_timed_out
+    public final class Link: @unchecked Sendable {   // conn_t
+        public let name: String, label: String, backup: Bool, conn: NWConnection
+        public var lastRcvd = 0, lastSent = 0, window = Srtla.winDef, inFlight = 0, idx = 0, sent = 0, share = 0
+        public var log = [Int32](repeating: -1, count: Srtla.logSize)
+        public init(name: String, label: String, backup: Bool, conn: NWConnection) { self.name = name; self.label = label; self.backup = backup; self.conn = conn }
+        public func up(_ now: Int) -> Bool { lastRcvd + Srtla.connTimeout >= now }   // !conn_timed_out
     }
 
     private let queue = DispatchQueue(label: "srtla")
@@ -36,14 +38,14 @@ final class Srtla: @unchecked Sendable {
     private var pending: Link?, pendingUntil = 0, active = 0     // pending_reg2_conn, pending_reg_timeout, active_connections
     private var cut = false, ticks = 0
 
-    init?(url: String, onStats: @escaping @Sendable ([Stat]) -> Void) {
+    public init?(url: String, onStats: @escaping @Sendable ([Stat]) -> Void) {
         guard let c = URLComponents(string: url), let h = c.host, let p = UInt16(exactly: c.port ?? 5000).flatMap(NWEndpoint.Port.init(rawValue:)) else { return nil }   // ponytail: 5000 = srtla_rec's usual port
         host = NWEndpoint.Host(h); port = p; self.onStats = onStats
         for i in 0..<id.count { id[i] = UInt8.random(in: 0...255) }
     }
 
     /// Starts the loopback listener and the interface watcher; returns the local port libsrt should connect to.
-    func start() async throws -> UInt16 {
+    public func start() async throws -> UInt16 {
         try await withCheckedThrowingContinuation { (k: CheckedContinuation<UInt16, Error>) in
             queue.async { [self] in
                 do {
@@ -77,7 +79,7 @@ final class Srtla: @unchecked Sendable {
         }
     }
 
-    func stop() {
+    public func stop() {
         queue.async { [self] in
             timer?.cancel(); monitor?.cancel(); listener?.cancel(); local?.cancel()
             links.forEach { $0.conn.cancel() }; links = []; timer = nil; monitor = nil; listener = nil; local = nil
@@ -85,19 +87,19 @@ final class Srtla: @unchecked Sendable {
     }
 
     /// Bitrate controller has cut below 70% of target: backup links may carry data too.
-    func setCut(_ v: Bool) { queue.async { [self] in cut = v } }
+    public func setCut(_ v: Bool) { queue.async { [self] in cut = v } }
 
     // MARK: pure parts -- see demo()
 
-    static func kind(_ d: [UInt8]) -> UInt16 { d.count < 2 ? 0 : UInt16(d[0]) << 8 | UInt16(d[1]) }   // get_srt_type
-    static func be32(_ d: [UInt8], _ at: Int) -> UInt32 { (0..<4).reduce(0) { $0 << 8 | UInt32(d[at + $1]) } }
+    public static func kind(_ d: [UInt8]) -> UInt16 { d.count < 2 ? 0 : UInt16(d[0]) << 8 | UInt16(d[1]) }   // get_srt_type
+    public static func be32(_ d: [UInt8], _ at: Int) -> UInt32 { (0..<4).reduce(0) { $0 << 8 | UInt32(d[at + $1]) } }
     /// 31-bit sequence number of an SRT data packet (first bit 0), nil for control packets -- get_srt_sn
-    static func seq(_ d: [UInt8]) -> Int32? { d.count < 4 || d[0] & 0x80 != 0 ? nil : Int32(be32(d, 0)) }
+    public static func seq(_ d: [UInt8]) -> Int32? { d.count < 4 || d[0] & 0x80 != 0 ? nil : Int32(be32(d, 0)) }
 
-    struct Cand { var up: Bool, window: Int, inFlight: Int, backup: Bool }
+    public struct Cand { var up: Bool, window: Int, inFlight: Int, backup: Bool }
     /// select_conn(): best window / (in_flight + 1). Main links first; backups only when no main link is up, every
     /// main window is full, or the bitrate has been cut.
-    static func pick(_ c: [Cand], cut: Bool) -> Int? {
+    public static func pick(_ c: [Cand], cut: Bool) -> Int? {
         let mains = c.indices.filter { c[$0].up && !c[$0].backup }
         let room = mains.contains { c[$0].inFlight * 1000 < c[$0].window }
         let pool = room && !cut ? mains : c.indices.filter { c[$0].up }
@@ -277,7 +279,7 @@ final class Srtla: @unchecked Sendable {
     }
 
     #if DEBUG
-    static func demo() {
+    public static func demo() {
         assert(kind([0x92, 0x01]) == reg2 && kind([0x90]) == 0)
         assert(seq([0x00, 0x00, 0x01, 0x02, 0, 0]) == 258 && seq([0x80, 0x02, 0, 0]) == nil && seq([0]) == nil)
         assert(be32([0, 0, 0, 0, 0, 0, 1, 0], 4) == 256)

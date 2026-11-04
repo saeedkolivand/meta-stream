@@ -1,5 +1,6 @@
 import CoreModel
 import CoreUI
+import Engine
 import Foundation
 import Goal
 import Platforms

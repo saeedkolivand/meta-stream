@@ -14,11 +14,11 @@ extension Streamer {
     // ponytail: an enum beats a protocol here. RTMPStream and SRTStream already share
     // StreamConvertible for append/settings/bitrate and diverge only on connect/publish/close/
     // connected, so four switches cost less than an abstraction over two actor types.
-    enum Uplink: Sendable {
+    public enum Uplink: Sendable {
         case rtmp(RTMPConnection, RTMPStream)
         case srt(SRTConnection, SRTStream)
 
-        static func make(for url: String) -> Uplink {
+        public static func make(for url: String) -> Uplink {
             if url.lowercased().hasPrefix("srt") {   // srt:// and srtla:// (bonded, see Srtla.swift)
                 let c = SRTConnection()
                 return .srt(c, SRTStream(connection: c))
@@ -27,9 +27,9 @@ extension Streamer {
             return .rtmp(c, RTMPStream(connection: c))
         }
 
-        var isSRT: Bool { if case .srt = self { return true }; return false }
+        public var isSRT: Bool { if case .srt = self { return true }; return false }
 
-        func connect(_ url: String) async throws {
+        public func connect(_ url: String) async throws {
             switch self {
             case .rtmp(let c, _): _ = try await c.connect(url)
             case .srt(let c, _): try await c.connect(URL(string: url))   // SRT takes a URL, not a String
@@ -37,14 +37,14 @@ extension Streamer {
         }
 
         /// SRT has no publish name — the stream key rides in the URL's `streamid` query item.
-        func publish(_ key: String) async throws {
+        public func publish(_ key: String) async throws {
             switch self {
             case .rtmp(_, let st): _ = try await st.publish(key)
             case .srt(_, let st): await st.publish()
             }
         }
 
-        var connected: Bool {
+        public var connected: Bool {
             get async {
                 switch self {
                 case .rtmp(let c, _): return await c.connected
@@ -53,14 +53,14 @@ extension Streamer {
             }
         }
 
-        func close() async {
+        public func close() async {
             switch self {
             case .rtmp(let c, _): try? await c.close()
             case .srt(let c, _): await c.close()                         // SRT's close doesn't throw
             }
         }
 
-        func append(_ sb: CMSampleBuffer) async {
+        public func append(_ sb: CMSampleBuffer) async {
             switch self {
             case .rtmp(_, let st): await st.append(sb)
             case .srt(_, let st): await st.append(sb)
@@ -74,21 +74,21 @@ extension Streamer {
         /// from a plain array and every dispatch site loops `for output in outputs where videoTrackId == ...`,
         /// so registering this next to LayerSink is not a collision). Used by wireMixer() below to swap which
         /// stream is registered when goLive() rebuilds `uplink` for a new session.
-        var output: any MediaMixerOutput {
+        public var output: any MediaMixerOutput {
             switch self {
             case .rtmp(_, let st): return st
             case .srt(_, let st): return st
             }
         }
 
-        func setBitRateStrategy(_ s: some StreamBitRateStrategy) async {
+        public func setBitRateStrategy(_ s: some StreamBitRateStrategy) async {
             switch self {
             case .rtmp(_, let st): await st.setBitRateStrategy(s)
             case .srt(_, let st): await st.setBitRateStrategy(s)
             }
         }
 
-        var videoSettings: VideoCodecSettings {
+        public var videoSettings: VideoCodecSettings {
             get async {
                 switch self {
                 case .rtmp(_, let st): return await st.videoSettings
@@ -97,7 +97,7 @@ extension Streamer {
             }
         }
 
-        func setAudioSettings(_ a: AudioCodecSettings) async {
+        public func setAudioSettings(_ a: AudioCodecSettings) async {
             switch self {
             case .rtmp(_, let st): try? await st.setAudioSettings(a)
             case .srt(_, let st): try? await st.setAudioSettings(a)
@@ -106,12 +106,12 @@ extension Streamer {
 
         /// RTMP-only diagnostic: every NetConnection.*/NetStream.* status the server sends.
         /// SRT has no equivalent, so this simply returns for an SRT uplink.
-        func logStatus() async {
+        public func logStatus() async {
             guard case .rtmp(let c, _) = self else { return }
             for await st in await c.status { applog("stream", "rtmp status: \(st.code) \(st.description)") }
         }
 
-        func setVideoSettings(_ v: VideoCodecSettings) async {
+        public func setVideoSettings(_ v: VideoCodecSettings) async {
             switch self {
             case .rtmp(_, let st): try? await st.setVideoSettings(v)
             case .srt(_, let st): try? await st.setVideoSettings(v)
@@ -121,7 +121,7 @@ extension Streamer {
 
     /// libsrt defaults latency to ~120 ms, tuned for clean links; a phone walking through a city needs
     /// far more buffer. Applied only if the user hasn't set it themselves in the URL.
-    static func withSRTLatency(_ url: String, ms: Int) -> String {
+    public static func withSRTLatency(_ url: String, ms: Int) -> String {
         guard url.lowercased().hasPrefix("srt"), !url.lowercased().contains("latency=") else { return url }
         return url + (url.contains("?") ? "&" : "?") + "latency=\(ms)"
     }
@@ -129,7 +129,7 @@ extension Streamer {
     /// Phone-camera frames flow mixer → encoder → RTMP stream (and → preview view). sink/startRunning() are
     /// wired once, on first need (HaishinKit's own startRunning() no-ops on a repeat call regardless -- checked
     /// both tags); the uplink's own stream is re-registered every call whenever `uplink` itself has changed.
-    func wireMixer() async {
+    public func wireMixer() async {
         SoundMix.shared.mixer = mixer
         await applyAudioMix()
         if wiredUplinkOutput !== uplink.output {
@@ -156,7 +156,7 @@ extension Streamer {
     /// bitrateKbps applies to what HaishinKit encodes (phone camera, black frames); the glasses set their own HEVC bitrate.
     /// codec: "hevc" passes the glasses' stream through untouched (YouTube, Restream, own relay);
     /// "h264" decodes and re-encodes on the phone (Kick, Twitch without Affiliate). Phone-camera video follows the same choice.
-    func goLive(url: String, key: String, micUID: String, fallbackPosition: AVCaptureDevice.Position, bitrateKbps: Int = 4000, codec: String = "hevc", srtLatencyMs: Int = 2000, quality: PhoneQuality = .init()) {
+    public func goLive(url: String, key: String, micUID: String, fallbackPosition: AVCaptureDevice.Position, bitrateKbps: Int = 4000, codec: String = "hevc", srtLatencyMs: Int = 2000, quality: PhoneQuality = .init()) {
         // Arm PiP background auto-start for this session only (see PiPController); stopLive() disarms it.
         // This is what lets the stream survive the phone going into a pocket -- and nothing else does.
         pip?.setArmed(true)
@@ -317,7 +317,7 @@ extension Streamer {
         }
     }
 
-    func startBonding(_ url: String) async throws -> String {
+    public func startBonding(_ url: String) async throws -> String {
         srtla?.stop()
         guard let s = Srtla(url: url, onStats: { [weak self] st in Task { @MainActor in self?.srtlaLinks = st } }) else {
             throw NSError(domain: "MetaStream", code: 2, userInfo: [NSLocalizedDescriptionKey: "Bad srtla:// URL"])
@@ -334,7 +334,7 @@ extension Streamer {
     /// Connects + publishes, retrying with exponential backoff (1, 2, 4, 8 s, capped at 15 s) on any failure.
     /// Covers the FIRST connect too — nothing here gives up, so a bad initial connect retries here instead of
     /// dying in goLive's catch. Runs until stopLive() cancels reconnectTask.
-    func superviseConnection(url: String, key: String) async {
+    public func superviseConnection(url: String, key: String) async {
         while !Task.isCancelled {
             do {
                 try await connectWithTimeout(url)
@@ -387,7 +387,7 @@ extension Streamer {
     }
 
     /// HaishinKit's own timeout doesn't always fire on a black-holed port; race the connect against a clock.
-    func connectWithTimeout(_ url: String) async throws {
+    public func connectWithTimeout(_ url: String) async throws {
         let up = uplink
         try await withThrowingTaskGroup(of: Void.self) { g in
             g.addTask { try await up.connect(url) }
@@ -398,7 +398,7 @@ extension Streamer {
     }
 
     // SRT carries the stream key in the URL's streamid query item: never log it raw.
-    nonisolated static func redactedURL(_ url: String) -> String {
+    public nonisolated static func redactedURL(_ url: String) -> String {
         let masked = url.replacingOccurrences(of: "(streamid=)[^&\\s]*", with: "$1***", options: [.regularExpression, .caseInsensitive])
         return redact(masked)
     }

@@ -14,11 +14,11 @@ import Photos
 extension Streamer {
     private static let folder = URL.documentsDirectory.appending(path: "Recordings")
 
-    func toggleRecording() {
+    public func toggleRecording() {
         Task { recordingSince == nil ? await startRecording() : await stopRecording() }
     }
 
-    func startRecording() async {
+    public func startRecording() async {
         guard recordingSince == nil else { return }
         // ponytail: glasses HEVC passthrough bypasses the mixer, so a recording would be audio-only; refuse it.
         // Upgrade path: tee the encoded HEVC from Hot.swift's passthrough append into a passthrough AVAssetWriterInput.
@@ -49,7 +49,7 @@ extension Streamer {
         }
     }
 
-    func stopRecording() async {
+    public func stopRecording() async {
         guard recordingSince != nil else { return }
         recordingSince = nil
         do {
@@ -68,7 +68,7 @@ extension Streamer {
     }
 
     /// Called from the 1 s tick: switching to glasses passthrough mid-recording would leave the file without video.
-    func checkRecordingSource() {
+    public func checkRecordingSource() {
         guard recordingSince != nil, !phoneEncodes else { return }
         speaker?.speakSystem("Recording stopped: glasses passthrough can't be recorded")
         Task { await stopRecording() }

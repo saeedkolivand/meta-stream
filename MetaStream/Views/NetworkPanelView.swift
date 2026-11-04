@@ -1,4 +1,5 @@
 import Charts
+import Engine
 import SwiftUI
 
 /// In-app network panel (sheet from the HUD): bitrate, drops, downtime and what the connection is doing.

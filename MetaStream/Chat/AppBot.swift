@@ -3,6 +3,7 @@ import CoreModel
 import CoreNetwork
 import CoreStorage
 import CoreUI
+import Engine
 import Foundation
 import Goal
 import Platforms

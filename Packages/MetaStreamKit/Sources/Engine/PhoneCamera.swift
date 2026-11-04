@@ -19,7 +19,7 @@ extension Streamer {
     // MARK: fallback camera (StreamHand-style: glasses drop → phone camera, glasses back → glasses)
 
     /// "auto" = glasses with automatic phone fallback; "glasses" = force glasses; "back"/"front" = force a phone camera.
-    func setSource(_ s: String) {
+    public func setSource(_ s: String) {
         let wasExternal = manualSource == "external"
         manualSource = s
         if s == "back" || s == "front" { fallbackPosition = s == "front" ? .front : .back }
@@ -31,13 +31,13 @@ extension Streamer {
 
     /// First UVC camera AVFoundation exposes (iPadOS 17+ over USB-C), or nil. A fresh discovery each call so
     /// callers always get a live handle rather than one already handed to the mixer.
-    nonisolated static func externalCamera() -> AVCaptureDevice? {   // nonisolated: a main-actor result can't be sent to the mixer actor (Swift 6 region isolation)
+    public nonisolated static func externalCamera() -> AVCaptureDevice? {   // nonisolated: a main-actor result can't be sent to the mixer actor (Swift 6 region isolation)
         AVCaptureDevice.DiscoverySession(deviceTypes: [.external], mediaType: .video, position: .unspecified).devices.first
     }
 
     /// Updates externalCameraName from the current device list. If the camera was unplugged while it was the
     /// chosen source, falls back to auto (glasses / phone camera) instead of leaving a dead feed -- never ends a live stream.
-    func refreshExternalCamera() {
+    public func refreshExternalCamera() {
         let name = Self.externalCamera()?.localizedName
         if name != externalCameraName { applog("stream", "external camera now: \(name ?? "none")") }
         externalCameraName = name
@@ -47,7 +47,7 @@ extension Streamer {
         setSource("auto")
     }
 
-    func evaluateSource() {
+    public func evaluateSource() {
         fallbackTask?.cancel()
         switch manualSource {
         case "back", "front", "external":
@@ -73,12 +73,12 @@ extension Streamer {
     }
 
     /// "Share GPS with iPad" on an iPhone that isn't live: the app shows GPSOnlyView instead of the camera screen.
-    static func gpsOnlyWanted(live: Bool) -> Bool {
+    public static func gpsOnlyWanted(live: Bool) -> Bool {
         UIDevice.current.userInterfaceIdiom == .phone && UserDefaults.standard.bool(forKey: "gpsShare") && !live
     }
 
     /// GPS-only: camera, face cam and the offscreen render loop off until the camera screen is back.
-    func setGPSOnly(_ on: Bool) {
+    public func setGPSOnly(_ on: Bool) {
         guard on != gpsOnly else { return }
         gpsOnly = on
         applog("location", "GPS-only screen \(on ? "on" : "off")")
@@ -94,7 +94,7 @@ extension Streamer {
         source = "glasses"   // evaluateSource's "nothing attached" state, so turning GPS-only off re-attaches
     }
 
-    func switchTo(glasses: Bool) async {
+    public func switchTo(glasses: Bool) async {
         guard !gpsOnly else { return }
         do {
             // A swap is only meaningful against the camera pair it was made on; every re-attach starts unswapped
@@ -261,7 +261,7 @@ extension Streamer {
     /// re-attaches the camera; the UI rotates with it (Info.plist). Live, the geometry is fixed for the session,
     /// so only a landscape flip to the other side is followed (same size, just which way up). Face up/down and
     /// upside down keep the current pick.
-    func deviceRotated() {
+    public func deviceRotated() {
         let o = UIDevice.current.orientation
         guard o.isLandscape || o == .portrait else { return }
         if o.isLandscape { landscapeOrientation = o == .landscapeLeft ? .landscapeRight : .landscapeLeft }   // device and video landscape are named opposite
@@ -282,7 +282,7 @@ extension Streamer {
     /// supporting `fps`, preferring binned formats (cheaper for the session's hardwareCost), then the tallest.
     /// Leaves the device on its current format if nothing qualifies. nonisolated: runs inside the
     /// attachVideo configuration closure on the mixer's actor.
-    nonisolated static func applyFormat(_ device: AVCaptureDevice, maxHeight: Int, fps: Int) {
+    public nonisolated static func applyFormat(_ device: AVCaptureDevice, maxHeight: Int, fps: Int) {
         let want = Double(fps)
         func supports(_ f: AVCaptureDevice.Format) -> Bool {
             f.videoSupportedFrameRateRanges.contains { $0.minFrameRate <= want && want <= $0.maxFrameRate }
@@ -312,10 +312,10 @@ extension Streamer {
 
     /// Dual camera and UVC webcams: 60 fps on iPad (M-series headroom), 30 on iPhone, where two captures + a composite +
     /// an encode is what the phone sustains.
-    static var multiFpsCap: Int { UIDevice.current.userInterfaceIdiom == .pad ? 60 : 30 }
+    public static var multiFpsCap: Int { UIDevice.current.userInterfaceIdiom == .pad ? 60 : 30 }
 
     /// `want` if the webcam's current format can run at it, else 30 (what UVC webcams always offered so far).
-    static func externalFps(want: Int) -> Int {
+    public static func externalFps(want: Int) -> Int {
         let w = Double(want)
         let ok = externalCamera()?.activeFormat.videoSupportedFrameRateRanges.contains { $0.minFrameRate <= w && w <= $0.maxFrameRate }
         return ok == true ? want : min(want, 30)
@@ -324,7 +324,7 @@ extension Streamer {
     /// Keeps the camera running when MetaStream shares the iPad screen (Split View, Slide Over, Stage Manager), e.g. next
     /// to a navigation app. Since iPadOS 16 no entitlement is needed; HaishinKit then also stops pausing video on background.
     /// Per attach, not per mixer: rebuildMixerIfNeeded swaps the MediaMixer (and its session) for .single/.multi.
-    func enableSplitViewCamera() async {
+    public func enableSplitViewCamera() async {
         await mixer.configuration { (session: AVCaptureSession) in
             guard session.isMultitaskingCameraAccessSupported, !session.isMultitaskingCameraAccessEnabled else { return }
             session.isMultitaskingCameraAccessEnabled = true
@@ -332,12 +332,12 @@ extension Streamer {
         }
     }
 
-    nonisolated static var centerStageWanted: Bool { UserDefaults.standard.object(forKey: "centerStage") as? Bool ?? true }
+    public nonisolated static var centerStageWanted: Bool { UserDefaults.standard.object(forKey: "centerStage") as? Bool ?? true }
 
     /// Center Stage is a request: .cooperative also lets the user flip it in Control Center. The switch is global
     /// (class property) and only takes effect while the front camera's activeFormat supports it, so call this after
     /// the front camera is (re)attached and when the setting changes. Never throws; unsupported just logs.
-    func applyCenterStage() {
+    public func applyCenterStage() {
         guard let front = CameraSettings.device(lens: "wide", position: .front) else { return }
         let supported = front.activeFormat.isCenterStageSupported
         AVCaptureDevice.centerStageControlMode = .cooperative
@@ -348,7 +348,7 @@ extension Streamer {
     /// Attaches `position`'s camera on track 1 as the face-cam overlay. Never throws -- a failed overlay must
     /// not take the main camera down with it. Mirrored when it's the front camera (selfie convention),
     /// stabilisation off (it only costs latency on a thumbnail). Returns whether it attached.
-    func attachOverlayCamera(position: AVCaptureDevice.Position) async -> Bool {
+    public func attachOverlayCamera(position: AVCaptureDevice.Position) async -> Bool {
         guard let cam = CameraSettings.device(lens: "wide", position: position) else {   // plain wide -- see switchTo's wideMain
             applog("stream", "dual camera: no camera at that position", error: true)
             return false
@@ -375,7 +375,7 @@ extension Streamer {
 
     /// Drops the overlay camera and hides its window. Also undoes a swap -- with the overlay gone, mainTrack
     /// must point back at track 0 or the stream would go black.
-    func detachOverlay() async {
+    public func detachOverlay() async {
         try? await mixer.attachVideo(nil, track: 1)
         dualCamActive = false
         if dualCamSwapped { dualCamSwapped = false; await applyMainTrack() }
@@ -383,7 +383,7 @@ extension Streamer {
     }
 
     /// Tap on the small window (phone mode): the two cameras trade places.
-    func swapDualCam() {
+    public func swapDualCam() {
         guard source == "phone", dualCamActive else { return }
         dualCamSwapped.toggle()
         Task { await applyMainTrack() }
@@ -391,21 +391,21 @@ extension Streamer {
 
     /// mainTrack also drives the screen's built-in full-frame object (setVideoMixerSettings sets its track),
     /// so a swap is: full-frame -> track 1, overlay window -> track 0 (and back).
-    func applyMainTrack() async {
+    public func applyMainTrack() async {
         var vm = await mixer.videoMixerSettings
         vm.mainTrack = dualCamSwapped ? 1 : 0
         await mixer.setVideoMixerSettings(vm)
         await pushOverlayLayout()
     }
 
-    func pushOverlayLayout() async {
+    public func pushOverlayLayout() async {
         guard let o = overlayObject, dualCamCanvas.width > 0 else { return }
         let s = Self.pipSettings()
         await Self.layoutOverlay(o, canvas: dualCamCanvas, pip: s,
                                  track: dualCamSwapped ? 0 : 1, visible: dualCamActive && !dualCamHidden && !blurWanted)
     }
 
-    static func pipSettings() -> (corner: String, size: String, shape: String) {
+    public static func pipSettings() -> (corner: String, size: String, shape: String) {
         let d = UserDefaults.standard
         return (d.string(forKey: "dualCamCorner") ?? "topRight", d.string(forKey: "dualCamSize") ?? "m", d.string(forKey: "dualCamShape") ?? "rounded")
     }
@@ -414,9 +414,9 @@ extension Streamer {
     /// last detected boxes): registered on both the full frame and the window it would detect on one image and
     /// pixellate the other's coordinates, leaving faces uncovered in both -- fail-open. Blurring your own face
     /// cam would also defeat its point. Either flag counts, so the window hides the moment the toggle flips.
-    var blurWanted: Bool { privacy?.enabled == true || blurEffectActive }
+    public var blurWanted: Bool { privacy?.enabled == true || blurEffectActive }
 
-    @ScreenActor static func makeOverlay(_ mixer: MediaMixer) -> VideoScreenObject {
+    @ScreenActor public static func makeOverlay(_ mixer: MediaMixer) -> VideoScreenObject {
         let overlay = VideoScreenObject()
         overlay.isVisible = false
         overlay.videoGravity = .resizeAspectFill   // fill the rect (needed for the circle) instead of letterboxing inside it
@@ -426,7 +426,7 @@ extension Streamer {
 
     /// pipRect -> ScreenObject geometry: size + corner alignment + a margin inset (ScreenObject lays itself
     /// out against its parent, top-left origin, so this reproduces pipRect's rect exactly).
-    @ScreenActor static func layoutOverlay(_ overlay: VideoScreenObject, canvas: CGSize, pip: (corner: String, size: String, shape: String),
+    @ScreenActor public static func layoutOverlay(_ overlay: VideoScreenObject, canvas: CGSize, pip: (corner: String, size: String, shape: String),
                                            track: UInt8, visible: Bool) {
         let rect = pipRect(canvas: canvas, corner: pip.corner, size: pip.size, shape: pip.shape)
         let m = min(canvas.width, canvas.height) * 0.04
@@ -440,7 +440,7 @@ extension Streamer {
         overlay.invalidateLayout()
     }
 
-    @ScreenActor static func setPrivacyEffect(_ mixer: MediaMixer, privacy: Privacy, on: Bool) {
+    @ScreenActor public static func setPrivacyEffect(_ mixer: MediaMixer, privacy: Privacy, on: Bool) {
         if on {
             _ = mixer.screen.registerVideoEffect(privacy)
         } else {
@@ -451,7 +451,7 @@ extension Streamer {
     /// Settings toggle. The capture-session mode (.single vs .multi) is fixed per MediaMixer instance, so
     /// turning it on/off while idle may rebuild the mixer and re-attach the current source; while a session
     /// is running the change waits for stopLive().
-    func setDualCam(_ on: Bool) {
+    public func setDualCam(_ on: Bool) {
         guard dualLocked == nil else { return }
         Task {
             _ = await rebuildMixerIfNeeded()
@@ -465,7 +465,7 @@ extension Streamer {
     /// one. Everything tied to the old instance (wiring, effect registration, overlay object, offscreen
     /// state) is reset so the next sync re-creates it on the new Screen. Only called while idle -- goLive()
     /// captures `mixer` for its Transcoder closure, which is only safe because this never runs mid-session.
-    func rebuildMixerIfNeeded() async -> Bool {
+    public func rebuildMixerIfNeeded() async -> Bool {
         let multi = dualWanted && AVCaptureMultiCamSession.isMultiCamSupported
         guard multi != mixerIsMulti else { return false }
         if recordingSince != nil { applog("stream", "recording stopped: mixer rebuilt"); await stopRecording() }

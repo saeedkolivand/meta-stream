@@ -8,24 +8,24 @@ import AudioToolbox
 import HaishinKit
 
 /// A soundboard entry: a file copied into Documents/sounds. The list lives in AppStorage("sounds") as JSON.
-struct Sound: Codable, Identifiable, Hashable {
-    var id = UUID()
-    var name: String
-    var file: String
-    static let maxCount = 8
+public struct Sound: Codable, Identifiable, Hashable {
+    public var id = UUID()
+    public var name: String
+    public var file: String
+    public static let maxCount = 8
 
-    static func decode(_ raw: String) -> [Sound] { (try? JSONDecoder().decode([Sound].self, from: Data(raw.utf8))) ?? [] }
-    static func encode(_ s: [Sound]) -> String { (try? JSONEncoder().encode(s)).flatMap { String(data: $0, encoding: .utf8) } ?? "[]" }
+    public static func decode(_ raw: String) -> [Sound] { (try? JSONDecoder().decode([Sound].self, from: Data(raw.utf8))) ?? [] }
+    public static func encode(_ s: [Sound]) -> String { (try? JSONEncoder().encode(s)).flatMap { String(data: $0, encoding: .utf8) } ?? "[]" }
 
-    static var folder: URL {
+    public static var folder: URL {
         let d = URL.documentsDirectory.appending(path: "sounds")
         try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
         return d
     }
-    static func url(_ file: String) -> URL { folder.appending(path: file) }
+    public static func url(_ file: String) -> URL { folder.appending(path: file) }
 
     /// Copies a picked file in under a unique name; nil if the copy failed.
-    static func importFile(_ src: URL) -> String? {
+    public static func importFile(_ src: URL) -> String? {
         let scoped = src.startAccessingSecurityScopedResource()
         defer { if scoped { src.stopAccessingSecurityScopedResource() } }
         let name = "\(UUID().uuidString.prefix(8))-\(src.lastPathComponent)"
@@ -34,21 +34,26 @@ struct Sound: Codable, Identifiable, Hashable {
             return nil
         }
     }
+
+    public init(name: String, file: String) {
+        self.name = name
+        self.file = file
+    }
 }
 
 /// A tap buffer on its way to the mixer. Copied out of the engine's reused buffer first.
 private struct Tapped: @unchecked Sendable { let buffer: AVAudioPCMBuffer; let when: AVAudioTime }
 
 @MainActor
-final class SoundMix {
-    static let shared = SoundMix()
+public final class SoundMix {
+    public static let shared = SoundMix()
 
     /// The streamer's current mixer (it is rebuilt when dual camera flips); set in wireMixer().
-    var mixer: MediaMixer?
+    public var mixer: MediaMixer?
 
     /// live && !muted. Sounds only exist on stream, so nothing plays (or runs) otherwise.
     /// ponytail: mute zeroes the whole mix (AudioMixerSettings.isMuted), sounds included, so there's nothing to play them into.
-    var enabled = false {
+    public var enabled = false {
         didSet {
             guard oldValue != enabled else { return }
             if enabled { startClip() } else { stopAll() }
@@ -87,26 +92,26 @@ final class SoundMix {
 
     // MARK: play
 
-    func playAlert() {
+    public func playAlert() {
         let file = UserDefaults.standard.string(forKey: "alertSound") ?? ""
         guard !file.isEmpty else { play(chime, on: alerts); return }
         playFile(Sound.url(file), seconds: 10, on: alerts)
     }
 
-    func playStinger(_ url: URL) { playFile(url, seconds: 15, on: alerts) }
+    public func playStinger(_ url: URL) { playFile(url, seconds: 15, on: alerts) }
 
-    func playSound(_ s: Sound) { playFile(Sound.url(s.file), seconds: 20, on: board) }
+    public func playSound(_ s: Sound) { playFile(Sound.url(s.file), seconds: 20, on: board) }
 
     /// Starts a media layer's audio; a later clip replaces the earlier one (one clip audio at a time).
     /// ponytail: loose sync. It starts when the layer is built and loops by itself, while the video loop restarts on
     /// a 1 s poll, so they drift by up to a second per loop. Clips are decoded whole and capped at 60 s.
-    func playClip(_ url: URL, loop: Bool) {
+    public func playClip(_ url: URL, loop: Bool) {
         clip = (url, loop)
         clips.stop()
         startClip()
     }
 
-    func stopClips() { clip = nil; clips.stop() }
+    public func stopClips() { clip = nil; clips.stop() }
 
     private func startClip() {
         guard enabled, let c = clip else { return }
@@ -136,7 +141,7 @@ final class SoundMix {
     }
 
     /// Alert / clip / sound volumes from Settings (0...1 each). The mic's volume is a mixer track setting, see applyAudioMix().
-    func applyVolumes() {
+    public func applyVolumes() {
         func v(_ key: String) -> Float { AudioMath.gain(UserDefaults.standard.object(forKey: key) as? Double ?? 1) }
         alerts.volume = v("volAlert"); clips.volume = v("volClip"); board.volume = v("volSound")
     }
@@ -228,7 +233,7 @@ extension Streamer {
     /// volumes are applied inside it), plus mute. Everything is rebuilt from current state after the read, so a mute
     /// tapped while another write is in flight can't be overwritten by a stale copy (mic live while the app says muted).
     /// Muted also zeroes the mic track as a backstop to isMuted.
-    func applyAudioMix() async {
+    public func applyAudioMix() async {
         var s = await mixer.audioMixerSettings
         s.isMuted = muted
         s.tracks[0] = AudioMixerTrackSettings(volume: muted ? 0 : AudioMath.gain(UserDefaults.standard.object(forKey: "volMic") as? Double ?? 1))

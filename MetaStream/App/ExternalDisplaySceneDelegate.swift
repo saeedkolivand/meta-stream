@@ -1,5 +1,6 @@
 // Stays in the app target: Info.plist names it as $(PRODUCT_MODULE_NAME).ExternalDisplaySceneDelegate.
 import CoreLogging
+import Engine
 import UIKit
 
 /// Wired up in Info.plist (UIWindowSceneSessionRoleExternalDisplayNonInteractive). Black window, aspect-fit preview.

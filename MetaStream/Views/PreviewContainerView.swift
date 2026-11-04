@@ -2,6 +2,7 @@ import AVFoundation
 import Camera
 import CoreMotion
 import CoreUI
+import Engine
 import SwiftUI
 
 struct PreviewView: UIViewRepresentable {

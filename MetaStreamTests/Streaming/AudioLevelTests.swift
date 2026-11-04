@@ -1,3 +1,4 @@
+import Engine
 import XCTest
 import AVFoundation
 @testable import MetaStream

@@ -1,5 +1,6 @@
 import Chat
 import CoreUI
+import Engine
 import Platforms
 import Privacy
 import Speech

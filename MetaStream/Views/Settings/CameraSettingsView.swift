@@ -1,6 +1,7 @@
 import AVFoundation
 import Camera
 import CoreUI
+import Engine
 import SwiftUI
 
 struct CameraSettingsView: View {

@@ -1,5 +1,6 @@
 import Chat
 import CoreUI
+import Engine
 import MWDATCore
 import Platforms
 import Privacy

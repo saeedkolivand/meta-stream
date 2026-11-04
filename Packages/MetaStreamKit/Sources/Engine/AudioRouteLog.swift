@@ -3,10 +3,10 @@
 import AVFoundation
 import CoreLogging
 
-enum AudioRouteLog {
+public enum AudioRouteLog {
     @MainActor private static var observer: NSObjectProtocol?
 
-    @MainActor static func start() {
+    @MainActor public static func start() {
         guard observer == nil else { return }
         observer = NotificationCenter.default.addObserver(forName: AVAudioSession.routeChangeNotification, object: nil, queue: .main) { n in
             let raw = (n.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt) ?? 0
@@ -16,7 +16,7 @@ enum AudioRouteLog {
     }
 
     /// "mic go live: DJI Mic 3 [USBAudio], 48000 Hz, 2 ch, buffer 23 ms"
-    static func log(_ why: String) {
+    public static func log(_ why: String) {
         let s = AVAudioSession.sharedInstance()
         let inputs = s.currentRoute.inputs.map { "\($0.portName) [\($0.portType.rawValue)]" }.joined(separator: ", ")
         applog("audio", "mic \(why): \(inputs.isEmpty ? "none" : inputs), \(Int(s.sampleRate)) Hz, \(s.inputNumberOfChannels) ch, buffer \(Int((s.ioBufferDuration * 1000).rounded())) ms")

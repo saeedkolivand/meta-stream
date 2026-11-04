@@ -1,3 +1,4 @@
+import Engine
 import XCTest
 @testable import MetaStream
 

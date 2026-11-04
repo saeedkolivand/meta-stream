@@ -5,6 +5,7 @@
 // clearRole). The engine only sees the SceneCompositor protocol; App.swift wires streamer.compositor to this.
 import AVFoundation
 import CoreLogging
+import Engine
 import Foundation
 
 @MainActor

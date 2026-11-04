@@ -7,11 +7,11 @@ import CoreLogging
 import Foundation
 
 /// Pure push decision, split out so the throttle is unit-testable.
-enum LiveActivityPolicy {
-    static let kbpsInterval: TimeInterval = 15
+public enum LiveActivityPolicy {
+    public static let kbpsInterval: TimeInterval = 15
 
     /// Phase, source, drops and mute changes go out immediately; a bare kbps change at most every 15 s.
-    static func shouldPush(old: StreamActivityAttributes.ContentState?, new: StreamActivityAttributes.ContentState,
+    public static func shouldPush(old: StreamActivityAttributes.ContentState?, new: StreamActivityAttributes.ContentState,
                            lastPushAt: Date?, now: Date) -> Bool {
         guard let old else { return true }
         var sameKbps = old
@@ -24,7 +24,7 @@ enum LiveActivityPolicy {
 }
 
 @MainActor
-final class LiveActivityController {
+public final class LiveActivityController {
     // The id, not the Activity: Activity isn't Sendable, so awaiting update/end on a stored (main-actor) one is a
     // Swift 6 "sending risks data races" error. A value freshly read from .activities is free to send (as in attach).
     private var activityID: String?
@@ -34,7 +34,7 @@ final class LiveActivityController {
 
     /// Clears activities left by a previous process (a crash or kill leaves the card on the Lock Screen with a dead
     /// timer). The buttons' actions are registered in App.swift (StreamActivityActions is app-target code).
-    func attach(_ streamer: Streamer) {
+    public func attach(_ streamer: Streamer) {
         Task {
             for stale in Activity<StreamActivityAttributes>.activities { await stale.end(nil, dismissalPolicy: .immediate) }
         }
@@ -50,13 +50,13 @@ final class LiveActivityController {
     }
 
     /// The bot commands offered as Lock Screen buttons; App.swift sets it (the engine doesn't know the bot).
-    var commands: () -> [LockCommand] = { [] }
+    public var commands: () -> [LockCommand] = { [] }
 
     private func lockCommands() -> [LockCommand] {
         UserDefaults.standard.bool(forKey: "lockScreenCommands") ? commands() : []
     }
 
-    func sync(_ streamer: Streamer) {
+    public func sync(_ streamer: Streamer) {
         guard !gaveUp, let new = state(of: streamer) else { return }
         let now = Date()
         guard LiveActivityPolicy.shouldPush(old: last, new: new, lastPushAt: lastPushAt, now: now) else { return }
@@ -79,7 +79,7 @@ final class LiveActivityController {
         }
     }
 
-    func end() {
+    public func end() {
         if let id = activityID, var final = last {
             final.phase = "ended"
             final.endedAt = Date()

@@ -18,118 +18,118 @@ import HaishinKit
 import RTMPHaishinKit
 import SRTHaishinKit
 
-struct Mic: Identifiable, Hashable { let id: String; let name: String }   // id = AVAudioSessionPortDescription.uid
+public struct Mic: Identifiable, Hashable { let id: String; let name: String }   // id = AVAudioSessionPortDescription.uid
 
 @MainActor
-final class Streamer: ObservableObject {
-    @Published var registration = "unknown"
+public final class Streamer: ObservableObject {
+    @Published public var registration = "unknown"
 
-    @Published var glassesState = "idle" { didSet { applog("glasses", "\(glassesState)") } }
+    @Published public var glassesState = "idle" { didSet { applog("glasses", "\(glassesState)") } }
 
-    @Published var glassesOn = false
+    @Published public var glassesOn = false
 
-    @Published var rtmpState = "idle" { didSet { applog("stream", "rtmp: \(rtmpState)") } }
+    @Published public var rtmpState = "idle" { didSet { applog("stream", "rtmp: \(rtmpState)") } }
 
-    @Published var frames = 0
+    @Published public var frames = 0
 
-    @Published var fps = 0
+    @Published public var fps = 0
 
-    @Published var kbps = 0
+    @Published public var kbps = 0
 
-    @Published var teamID = "unknown (not sideloaded yet)"
+    @Published public var teamID = "unknown (not sideloaded yet)"
 
-    @Published var live = false { didSet { hot.live = live; SoundMix.shared.enabled = live && !muted } }
+    @Published public var live = false { didSet { hot.live = live; SoundMix.shared.enabled = live && !muted } }
 
-    @Published var liveSince: Date?
+    @Published public var liveSince: Date?
 
-    @Published var connectedSince: Date?        // when the CURRENT connection went up; nil while down
+    @Published public var connectedSince: Date?        // when the CURRENT connection went up; nil while down
 
-    @Published var downtime: TimeInterval = 0   // cumulative seconds this session spent not publishing
+    @Published public var downtime: TimeInterval = 0   // cumulative seconds this session spent not publishing
 
-    @Published var drops = 0                    // times the connection dropped this session
+    @Published public var drops = 0                    // times the connection dropped this session
 
-    @Published var sessionSummary: String?      // set by stopLive(), e.g. "session 42:10, 1:48 down across 3 drops"
+    @Published public var sessionSummary: String?      // set by stopLive(), e.g. "session 42:10, 1:48 down across 3 drops"
 
-    @Published var net = NetworkStats()         // NETWORK panel data, see NetworkStats.swift
+    @Published public var net = NetworkStats()         // NETWORK panel data, see NetworkStats.swift
 
-    @Published var netPath = NetPathInfo()
+    @Published public var netPath = NetPathInfo()
 
-    var pathMonitor: NWPathMonitor?
+    public var pathMonitor: NWPathMonitor?
 
-    @Published var devices = "none seen yet"
+    @Published public var devices = "none seen yet"
 
-    @Published var source = "phone" { didSet { syncHot(); applog("stream", "source=\(source) manual=\(manualSource)") } }   // what is going out right now
+    @Published public var source = "phone" { didSet { syncHot(); applog("stream", "source=\(source) manual=\(manualSource)") } }   // what is going out right now
 
-    @Published var manualSource = "back"       // phone camera by default; "auto" | "glasses" | "back" | "front" | "external" | "screen" (user's choice)
+    @Published public var manualSource = "back"       // phone camera by default; "auto" | "glasses" | "back" | "front" | "external" | "screen" (user's choice)
 
     /// localizedName of the connected UVC camera (iPad USB-C; iPhones never expose one), nil when none. Drives
     /// whether the source picker offers "External camera"; kept fresh by the connect/disconnect observers in init.
-    @Published var externalCameraName: String?
+    @Published public var externalCameraName: String?
 
-    @Published var mics: [Mic] = []
+    @Published public var mics: [Mic] = []
 
-    @Published var muted = false { didSet { SoundMix.shared.enabled = live && !muted } }
+    @Published public var muted = false { didSet { SoundMix.shared.enabled = live && !muted } }
 
-    @Published var cameraOff = false { didSet { syncHot() } }   // black frames go out instead
+    @Published public var cameraOff = false { didSet { syncHot() } }   // black frames go out instead
 
     // MARK: dual camera ("face cam" picture-in-picture)
     /// True while a second camera is attached on mixer track 1 and being composited as the overlay.
-    @Published var dualCamActive = false { didSet { syncHot() } }
+    @Published public var dualCamActive = false { didSet { syncHot() } }
 
     /// Overlay hidden by the user (eye button) -- the camera keeps running, only the overlay object is hidden.
-    @Published var dualCamHidden = false
+    @Published public var dualCamHidden = false
 
     /// Phone mode only: the overlay camera is the big picture and the main camera is the small window.
-    @Published var dualCamSwapped = false
+    @Published public var dualCamSwapped = false
 
     /// Screen.size the offscreen canvas was last sized to; ContentView hit-tests the overlay tap against it.
-    var dualCamCanvas = CGSize.zero
+    public var dualCamCanvas = CGSize.zero
 
-    @Published var lastPhotoAt: Date?
+    @Published public var lastPhotoAt: Date?
 
-    var blackTask: Task<Void, Never>?
+    public var blackTask: Task<Void, Never>?
 
     // MARK: health
     // ponytail: no glasses battery — MWDATCore 0.9.0 has no battery API anywhere on Device/DeviceState
     // (checked the full 0.9 type index, not just one page). Thermal is the one piece of glasses health
     // the SDK actually exposes, via DeviceState.thermalLevel — see glassesThermal below.
-    @Published var glassesThermal: ThermalLevel? { didSet { checkGlassesThermal() } }   // nil when unknown/disconnected
+    @Published public var glassesThermal: ThermalLevel? { didSet { checkGlassesThermal() } }   // nil when unknown/disconnected
 
-    @Published var phoneBattery: Int? { didSet { checkPhoneBattery() } }      // nil when unknown; unmonitored outside a live session
+    @Published public var phoneBattery: Int? { didSet { checkPhoneBattery() } }      // nil when unknown; unmonitored outside a live session
 
-    @Published var thermal: ProcessInfo.ThermalState = .nominal { didSet { checkThermal() } }
+    @Published public var thermal: ProcessInfo.ThermalState = .nominal { didSet { checkThermal() } }
 
     // MARK: adaptive bitrate (active whenever phoneEncodes is true — see below)
     /// True when HaishinKit decodes+re-encodes this session. Blur can only apply to a frame we decode,
     /// so a passthrough session cannot start blurring mid-stream — the quick control says so rather than
     /// pretending the toggle worked.
-    @Published var transcoding = false
+    @Published public var transcoding = false
 
-    @Published var currentBitrateKbps = 0     // live value for the HUD; == configured target while phoneEncodes is false
+    @Published public var currentBitrateKbps = 0     // live value for the HUD; == configured target while phoneEncodes is false
 
-    var bitrateCeilingKbps = 0        // user's configured bitrateKbps; up-steps never exceed this
+    public var bitrateCeilingKbps = 0        // user's configured bitrateKbps; up-steps never exceed this
 
-    var thermalCeilingKbps: Int?      // set while thermal >= .serious; caps the ceiling until it clears
+    public var thermalCeilingKbps: Int?      // set while thermal >= .serious; caps the ceiling until it clears
 
-    var cleanTicks = 0                // consecutive good 1s ticks; 15 (5 well below failedAtKbps) trigger an up-step
+    public var cleanTicks = 0                // consecutive good 1s ticks; 15 (5 well below failedAtKbps) trigger an up-step
 
-    var failedAtKbps = 0              // bitrate the latest run of down-steps started from
+    public var failedAtKbps = 0              // bitrate the latest run of down-steps started from
 
-    var falling = false               // true from a down-step until the next up-step
+    public var falling = false               // true from a down-step until the next up-step
 
-    var lastBitrateAdjustAt: Date?    // rate limit: one adjustment per bitrateAdjustCooldown
+    public var lastBitrateAdjustAt: Date?    // rate limit: one adjustment per bitrateAdjustCooldown
 
-    let bitrateAdjustCooldown: TimeInterval = 3
+    public let bitrateAdjustCooldown: TimeInterval = 3
 
-    let bitrateFloorKbps = 500
+    public let bitrateFloorKbps = 500
 
     /// True whenever HaishinKit's own encoder is doing the work: h264 transcode (any source), or hevc with
     /// the phone driving video — phone-camera fallback (source == "phone") or black frames (cameraOff).
     /// False only for hevc glasses passthrough, the one case with no bitrate knob (see goLive's gate comment).
-    var phoneEncodes: Bool { hot.transcoder != nil || source == "phone" || source == "screen" || cameraOff }
+    public var phoneEncodes: Bool { hot.transcoder != nil || source == "phone" || source == "screen" || cameraOff }
 
     /// Short glasses state for the HUD: "streaming" | "connecting" | "off".
-    var glassesShort: String {
+    public var glassesShort: String {
         let s = glassesState.lowercased()
         if s.contains("streaming") { return "streaming" }
         if ["starting", "looking", "waiting", "connecting", "session started"].contains(where: { s.contains($0) }) { return "connecting" }
@@ -143,132 +143,132 @@ final class Streamer: ObservableObject {
     /// stopLive). Live sliders patch THIS device in place via applyCameraSettings() below instead of
     /// re-attaching -- re-attaching per slider tick would visibly glitch the preview, and live, the outgoing
     /// stream, many times a second.
-    var cameraDevice: AVCaptureDevice?
+    public var cameraDevice: AVCaptureDevice?
 
     /// What the live control strip can offer for the currently attached device -- the same struct/probe
     /// SettingsView's Camera screen uses (CameraCapabilities.probe), refreshed on every attach so a
     /// front/back switch shows up immediately instead of stale-showing whatever the last camera supported.
-    @Published var cameraCapabilities: CameraCapabilities?
+    @Published public var cameraCapabilities: CameraCapabilities?
 
     /// Mirrors fallbackPosition (private, below) for the live strip's lens filter -- setSource("front"/"back")
     /// can change the real attached position without touching @AppStorage("fallbackCamera") at all (that key
     /// is only Settings' fallback *preference*, read at evaluateSource() time), so the strip needs this
     /// rather than reading that AppStorage key directly and risking a stale/wrong lens list.
-    @Published var cameraPosition: AVCaptureDevice.Position = .back
+    @Published public var cameraPosition: AVCaptureDevice.Position = .back
 
-    let hot = Hot()
+    public let hot = Hot()
 
     /// Screen share (adr/0003): decodes the broadcast extension's frames; its `sink` is the mixer while Screen is the video source.
-    let screenSource = ScreenSource()
+    public let screenSource = ScreenSource()
 
-    lazy var sink = LayerSink(hot: hot)
+    public lazy var sink = LayerSink(hot: hot)
 
-    let faceCamFrames = TrackCounter()
+    public let faceCamFrames = TrackCounter()
 
-    let audioLevel = AudioLevel()   // HUD meter + dead-air state, see AudioLevel.swift
+    public let audioLevel = AudioLevel()   // HUD meter + dead-air state, see AudioLevel.swift
 
-    let recorder = StreamRecorder()               // permanent mixer output; appends are ignored while not recording (Recording.swift)
-    @Published var recordingSince: Date?          // nil = not recording
+    public let recorder = StreamRecorder()               // permanent mixer output; appends are ignored while not recording (Recording.swift)
+    @Published public var recordingSince: Date?          // nil = not recording
 
-    lazy var levelTap = LevelOutput { [weak self] db in Task { @MainActor in self?.audioLevel.set(db) } }
+    public lazy var levelTap = LevelOutput { [weak self] db in Task { @MainActor in self?.audioLevel.set(db) } }
 
     /// Which way up a landscape capture goes, from the phone's physical orientation -- see deviceRotated().
-    var landscapeOrientation: CaptureOrientation = .landscapeRight
+    public var landscapeOrientation: CaptureOrientation = .landscapeRight
 
-    var pip: PiPController?                        // owned here so it outlives SwiftUI view rebuilds
+    public var pip: PiPController?                        // owned here so it outlives SwiftUI view rebuilds
 
     // ponytail: plain optional, not weak — Speaker never references Streamer, so no retain cycle. App.swift sets it once.
-    var speaker: Speaker?
+    public var speaker: Speaker?
 
-    var privacy: Privacy?
+    public var privacy: Privacy?
 
-    var blurHidCamera = false
+    public var blurHidCamera = false
 
-    var blurEffectActive = false   // mirrors privacy.enabled -- tracks whether the effect is registered on mixer.screen
+    public var blurEffectActive = false   // mirrors privacy.enabled -- tracks whether the effect is registered on mixer.screen
 
-    let lookEffect = LookEffect()
-    var lookEffectActive = false   // whether lookEffect is registered on mixer.screen, see Look.swift
+    public let lookEffect = LookEffect()
+    public var lookEffectActive = false   // whether lookEffect is registered on mixer.screen, see Look.swift
 
-    var lastFrames = 0
+    public var lastFrames = 0
 
-    var lastBytes = 0
+    public var lastBytes = 0
 
-    var session: DeviceSession?
+    public var session: DeviceSession?
 
-    var camera: Camera?
+    public var camera: Camera?
 
-    var tokens: [any AnyListenerToken] = []        // SDK listeners die when their token is released
+    public var tokens: [any AnyListenerToken] = []        // SDK listeners die when their token is released
 
-    var deviceTokens: [any AnyListenerToken] = []  // per-device link/compat listeners
+    public var deviceTokens: [any AnyListenerToken] = []  // per-device link/compat listeners
 
-    var glassesStreaming = false
+    public var glassesStreaming = false
 
-    var fallbackTask: Task<Void, Never>?
-    var gpsOnly = false                      // iPhone only sharing GPS with the iPad: no camera or mixer, see setGPSOnly
+    public var fallbackTask: Task<Void, Never>?
+    public var gpsOnly = false                      // iPhone only sharing GPS with the iPad: no camera or mixer, see setGPSOnly
 
-    var fallbackPosition: AVCaptureDevice.Position = .back
+    public var fallbackPosition: AVCaptureDevice.Position = .back
 
-    var reconnectTask: Task<Void, Never>?   // covers first connect + every drop; cancelled by stopLive()
+    public var reconnectTask: Task<Void, Never>?   // covers first connect + every drop; cancelled by stopLive()
 
-    var downSince: Date?                    // set while not connected — before the first connect too
+    public var downSince: Date?                    // set while not connected — before the first connect too
 
-    var escalated2m = false
+    public var escalated2m = false
 
-    var escalated5m = false
+    public var escalated5m = false
 
-    var backoff: TimeInterval = 1
+    public var backoff: TimeInterval = 1
 
-    var warnedPhoneBattery = false     // < 15%, once per session — reset in goLive()
+    public var warnedPhoneBattery = false     // < 15%, once per session — reset in goLive()
 
-    var warnedThermal = false          // >= .serious, once per session — reset in goLive()
+    public var warnedThermal = false          // >= .serious, once per session — reset in goLive()
 
-    var warnedGlassesThermal = false   // >= .severe, once per session — reset in goLive()
+    public var warnedGlassesThermal = false   // >= .severe, once per session — reset in goLive()
 
-    var batteryObserver: NSObjectProtocol?
+    public var batteryObserver: NSObjectProtocol?
 
-    var thermalObserver: NSObjectProtocol?
+    public var thermalObserver: NSObjectProtocol?
 
-    var glassesThermalTask: Task<Void, Never>?
+    public var glassesThermalTask: Task<Void, Never>?
 
-    var phoneQuality = PhoneQuality()
+    public var phoneQuality = PhoneQuality()
 
     /// Geometry the current session fixed at goLive, reused as the offscreen blur canvas.
-    var sessionVideoSize = Streamer.glassesSize
+    public var sessionVideoSize = Streamer.glassesSize
 
     /// True from the moment goLive() fixes the geometry until stopLive(). `live` is no good here: it
     /// only flips once the first publish succeeds, long after the blur canvas needs sizing.
-    var sessionGeometryFixed = false
+    public var sessionGeometryFixed = false
 
     /// Rebuilt per goLive() from the ingest URL's scheme.
-    var uplink = Uplink.make(for: "rtmp://")
-    var srtla: Srtla?                                  // bonding proxy, only for srtla:// ingests
-    @Published var srtlaLinks: [Srtla.Stat] = []       // per-link state and 10 s share for the network panel
+    public var uplink = Uplink.make(for: "rtmp://")
+    public var srtla: Srtla?                                  // bonding proxy, only for srtla:// ingests
+    @Published public var srtlaLinks: [Srtla.Stat] = []       // per-link state and 10 s share for the network panel
 
     /// A var because MediaMixer.captureSessionMode is a `let`: two cameras at once need an
     /// AVCaptureMultiCamSession (.multi), the only way to change mode is a fresh instance -- see
     /// rebuildMixerIfNeeded(). Rebuilt only while idle, so nothing live ever holds a stale instance.
-    var mixer = MediaMixer(captureSessionMode: Streamer.wantsMultiCam ? .multi : .single, multiTrackAudioMixingEnabled: true)
+    public var mixer = MediaMixer(captureSessionMode: Streamer.wantsMultiCam ? .multi : .single, multiTrackAudioMixingEnabled: true)
 
-    var mixerIsMulti = Streamer.wantsMultiCam
+    public var mixerIsMulti = Streamer.wantsMultiCam
 
-    var mixerWired = false
+    public var mixerWired = false
 
     /// Dual camera as of GO LIVE (nil while idle): the session's capture mode is fixed at GO LIVE, so a
     /// Settings flip mid-stream must not change what this session does. stopLive() clears it and applies
     /// the pending change. Idle, dualWanted reads the live Settings value.
-    var dualLocked: Bool?
+    public var dualLocked: Bool?
 
-    var offscreenOn = false                  // mirrors videoMixerSettings.mode == .offscreen
+    public var offscreenOn = false                  // mirrors videoMixerSettings.mode == .offscreen
 
-    var overlayObject: VideoScreenObject?   // the face-cam window; created once per mixer
+    public var overlayObject: VideoScreenObject?   // the face-cam window; created once per mixer
 
     /// The scene layer (Overlays' SceneDirector, set in App.swift): scenes, stingers, Starting/BRB/Ending roles.
-    var compositor: SceneCompositor?
-    @Published var endingIn: Int?                // seconds left of the Ending hold, for the Go Live button
+    public var compositor: SceneCompositor?
+    @Published public var endingIn: Int?                // seconds left of the Ending hold, for the Go Live button
 
-    var makingOverlay = false                // guards the await in syncBlurEffect against the 1 s tick re-entering
+    public var makingOverlay = false                // guards the await in syncBlurEffect against the 1 s tick re-entering
 
-    var warnedNoMultiCam = false
+    public var warnedNoMultiCam = false
 
     /// Whichever uplink's stream is currently registered as a mixer output, so a later goLive() can swap it
     /// out. FOUND BUG: `mixer.addOutput(uplink.output)` used to run only on the very first wireMixer() call
@@ -282,9 +282,9 @@ final class Streamer: ObservableObject {
     /// shared UInt8.max videoTrackId with LayerSink (checked directly above) was considered and ruled out --
     /// HaishinKit's own dispatch is a plain array loop with no exclusivity, and its own preview views use the
     /// identical pattern deliberately.
-    var wiredUplinkOutput: (any MediaMixerOutput)?
+    public var wiredUplinkOutput: (any MediaMixerOutput)?
 
-    init() {
+    public init() {
         teamID = Self.readTeamID()
         applog("ui", "launch team=\(teamID)")
         liveActivity.attach(self)
@@ -355,15 +355,15 @@ final class Streamer: ObservableObject {
         }
     }
 
-    var rotateTask: Task<Void, Never>?
-    let liveActivity = LiveActivityController()   // Lock Screen / Dynamic Island card, see LiveActivity.swift
+    public var rotateTask: Task<Void, Never>?
+    public let liveActivity = LiveActivityController()   // Lock Screen / Dynamic Island card, see LiveActivity.swift
     /// Session events for the features the engine doesn't know (app bot, Telegram live post, session log); App.swift
     /// sets them (Android: Session.live). onSecond runs on the stats tick, live or not.
-    var onSessionStarted: (Streamer) -> Void = { _ in }
-    var onSecond: (Streamer) -> Void = { _ in }
-    var onSessionEnded: () -> Void = {}
+    public var onSessionStarted: (Streamer) -> Void = { _ in }
+    public var onSecond: (Streamer) -> Void = { _ in }
+    public var onSessionEnded: () -> Void = {}
 
-    func stopLive() {
+    public func stopLive() {
         if live { onSessionEnded() }
         reconnectTask?.cancel()
         reconnectTask = nil
@@ -416,13 +416,13 @@ final class Streamer: ObservableObject {
     }
 
     /// "m:ss" for the session summary, e.g. 1:48. Minutes aren't padded/capped — a long stream just reads "72:03".
-    static func fmtClock(_ seconds: TimeInterval) -> String {
+    public static func fmtClock(_ seconds: TimeInterval) -> String {
         let s = Int(seconds)
         return String(format: "%d:%02d", s / 60, s % 60)
     }
 
     // Free Apple IDs get a "personal team"; its ID is only visible inside the signed app's provisioning profile.
-    static func readTeamID() -> String {
+    public static func readTeamID() -> String {
         let fallback = "unknown (not sideloaded yet)"
         guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
               let data = try? Data(contentsOf: url),

@@ -1,6 +1,7 @@
 import CoreLogging
 import CoreModel
 import CoreStorage
+import Engine
 import Foundation
 import Goal
 import Platforms

@@ -11,23 +11,23 @@ import MWDATCamera
 /// State the SDK's frame thread reads 30×/s without hopping to the main actor. Publishing per frame made
 /// SwiftUI re-render the whole screen at 30 fps (54% CPU, iOS cpu_resource report); now stats publish once a second.
 // ponytail: plain vars behind @unchecked Sendable; counters can race by a frame, which the HUD can't show anyway.
-final class Hot: @unchecked Sendable {
-    var live = false
-    var forward = false                // source == "glasses" && !cameraOff (phone is the default source)
-    var screen = false                 // source == "screen" && !cameraOff: decoded screen frames go to the mixer
-    var frames = 0
-    var bytes = 0
-    var transcoder: Transcoder?         // non-nil = decode HEVC → H.264 encoder instead of passthrough
-    var warm = false                    // decoder warming up before the RTMP connect
-    var sent = 0                        // glasses frames handed to the RTMP path
-    var appended = 0                    // decoded frames handed to the mixer (IN)
-    var mixerOut = 0                    // composited frames the mixer actually emitted (OUT) -- see LayerSink below.
+public final class Hot: @unchecked Sendable {
+    public var live = false
+    public var forward = false                // source == "glasses" && !cameraOff (phone is the default source)
+    public var screen = false                 // source == "screen" && !cameraOff: decoded screen frames go to the mixer
+    public var frames = 0
+    public var bytes = 0
+    public var transcoder: Transcoder?         // non-nil = decode HEVC → H.264 encoder instead of passthrough
+    public var warm = false                    // decoder warming up before the RTMP connect
+    public var sent = 0                        // glasses frames handed to the RTMP path
+    public var appended = 0                    // decoded frames handed to the mixer (IN)
+    public var mixerOut = 0                    // composited frames the mixer actually emitted (OUT) -- see LayerSink below.
                                          // appended climbing while this stalls is output starvation, not input starvation
                                          // (this is the diagnostic that would have caught the offscreen-mode freeze without a device).
-    var showMixerVideo = true           // preview shows mixer output (phone camera / black) instead of glasses frames
-    weak var preview: AVSampleBufferDisplayLayer?
+    public var showMixerVideo = true           // preview shows mixer output (phone camera / black) instead of glasses frames
+    public weak var preview: AVSampleBufferDisplayLayer?
     /// Feeds the on-device preview and, when plugged in, the external display's layer (ExternalDisplay.swift).
-    func enqueue(_ sb: CMSampleBuffer) {
+    public func enqueue(_ sb: CMSampleBuffer) {
         for case let p? in [preview, ExternalDisplay.layer] {       // AVSampleBufferDisplayLayer is thread-safe
             if p.sampleBufferRenderer.status == .failed { p.sampleBufferRenderer.flush() }
             p.sampleBufferRenderer.enqueue(sb)
@@ -36,9 +36,9 @@ final class Hot: @unchecked Sendable {
     // Outbound-pressure telemetry for the bitrate controller (acted on only while Streamer.phoneEncodes is
     // true). Written by QueueWatcher below (HaishinKit's own NetworkMonitor callback), read once a second by
     // Streamer's existing stats loop. Same race tolerance as frames/bytes above: worst case a stale tick.
-    var queueBytesOut = 0
-    var bytesOutPerSecond = 0
-    var congested = false               // latched by QueueWatcher on .publishInsufficientBWOccured; edge-consumed
+    public var queueBytesOut = 0
+    public var bytesOutPerSecond = 0
+    public var congested = false               // latched by QueueWatcher on .publishInsufficientBWOccured; edge-consumed
 }
 
 /// Captures HaishinKit's NetworkMonitor reports into `hot`; does no bitrate math itself. The actual AIMD
@@ -47,12 +47,12 @@ final class Hot: @unchecked Sendable {
 /// door onto outbound queue/throughput. mamimumVideo/AudioBitRate are unused (we don't let this type touch
 /// bitrate) but are `let`s so they're readable off-actor without await, same trick HaishinKit's own
 /// StreamVideoAdaptiveBitRateStrategy uses.
-actor QueueWatcher: StreamBitRateStrategy {
-    let mamimumVideoBitRate = 0
-    let mamimumAudioBitRate = 0
+public actor QueueWatcher: StreamBitRateStrategy {
+    public let mamimumVideoBitRate = 0
+    public let mamimumAudioBitRate = 0
     private let hot: Hot
-    init(hot: Hot) { self.hot = hot }
-    func adjustBitrate(_ event: NetworkMonitorEvent, stream: some StreamConvertible) async {
+    public init(hot: Hot) { self.hot = hot }
+    public func adjustBitrate(_ event: NetworkMonitorEvent, stream: some StreamConvertible) async {
         switch event {
         case .status(let report):
             hot.queueBytesOut = report.currentQueueBytesOut
@@ -75,49 +75,49 @@ actor QueueWatcher: StreamBitRateStrategy {
 /// actually goes out, effects included. A specific track number instead (e.g. 0) taps the RAW per-track
 /// input before Screen/effects ever see it, in every mixer mode; that was the bug that kept the local
 /// preview looking clean while blur silently did nothing to it.
-final class LayerSink: MediaMixerOutput, @unchecked Sendable {
+public final class LayerSink: MediaMixerOutput, @unchecked Sendable {
     private let hot: Hot
-    init(hot: Hot) { self.hot = hot }
-    var videoTrackId: UInt8? { UInt8.max }
-    var audioTrackId: UInt8? { nil }
-    func mixer(_ mixer: MediaMixer, didOutput sampleBuffer: CMSampleBuffer) {
+    public init(hot: Hot) { self.hot = hot }
+    public var videoTrackId: UInt8? { UInt8.max }
+    public var audioTrackId: UInt8? { nil }
+    public func mixer(_ mixer: MediaMixer, didOutput sampleBuffer: CMSampleBuffer) {
         hot.mixerOut += 1   // counted regardless of preview state -- this is the mixer's composited-output tap firing, full stop
         guard hot.showMixerVideo else { return }
         hot.enqueue(sampleBuffer)
     }
-    func mixer(_ mixer: MediaMixer, didOutput buffer: AVAudioPCMBuffer, when: AVAudioTime) {}
-    func selectTrack(_ id: UInt8?, mediaType: CMFormatDescription.MediaType) async {}
+    public func mixer(_ mixer: MediaMixer, didOutput buffer: AVAudioPCMBuffer, when: AVAudioTime) {}
+    public func selectTrack(_ id: UInt8?, mediaType: CMFormatDescription.MediaType) async {}
 }
 
 /// Counts raw track-1 (face cam) frames: tells "the overlay camera delivers nothing" apart from "it delivers
 /// but the composite never shows it" in the log.
-final class TrackCounter: MediaMixerOutput, @unchecked Sendable {
-    var count = 0
-    var videoTrackId: UInt8? { 1 }
-    var audioTrackId: UInt8? { nil }
-    func mixer(_ mixer: MediaMixer, didOutput sampleBuffer: CMSampleBuffer) { count += 1 }
-    func mixer(_ mixer: MediaMixer, didOutput buffer: AVAudioPCMBuffer, when: AVAudioTime) {}
-    func selectTrack(_ id: UInt8?, mediaType: CMFormatDescription.MediaType) async {}
+public final class TrackCounter: MediaMixerOutput, @unchecked Sendable {
+    public var count = 0
+    public var videoTrackId: UInt8? { 1 }
+    public var audioTrackId: UInt8? { nil }
+    public func mixer(_ mixer: MediaMixer, didOutput sampleBuffer: CMSampleBuffer) { count += 1 }
+    public func mixer(_ mixer: MediaMixer, didOutput buffer: AVAudioPCMBuffer, when: AVAudioTime) {}
+    public func selectTrack(_ id: UInt8?, mediaType: CMFormatDescription.MediaType) async {}
 }
 
 // One capture box replacing the one-use FloatBox/StringBox/Once trio: value passing plus the
 // single-fire gate netProbe's competing connect/timeout callbacks need.
-final class Box<T>: @unchecked Sendable {
+public final class Box<T>: @unchecked Sendable {
     private let lock = NSLock()
     private var storage: T
-    var value: T {
+    public var value: T {
         get { lock.lock(); defer { lock.unlock() }; return storage }
         set { lock.lock(); defer { lock.unlock() }; storage = newValue }
     }
-    init(_ value: T) { storage = value }
+    public init(_ value: T) { storage = value }
 }
 extension Box where T == Bool {
-    func fire() -> Bool { lock.lock(); defer { lock.unlock() }; if storage { return false }; storage = true; return true }
+    public func fire() -> Bool { lock.lock(); defer { lock.unlock() }; if storage { return false }; storage = true; return true }
 }
 
 extension Streamer {
 
-    func syncHot() {
+    public func syncHot() {
         hot.forward = source == "glasses" && !cameraOff
         hot.screen = source == "screen" && !cameraOff
         ScreenPump.shared.active.value = hot.screen
@@ -135,21 +135,21 @@ extension Streamer {
     }
 
     // ponytail: ContentView sets this directly instead of a delegate protocol.
-    var preview: AVSampleBufferDisplayLayer? {
+    public var preview: AVSampleBufferDisplayLayer? {
         get { hot.preview }
         set { hot.preview = newValue }
     }
 
     // MARK: glasses
 
-    func register() {
+    public func register() {
         Task {
             do { try await Wearables.shared.startRegistration() } catch { registration = error.localizedDescription }
         }
     }
 
     // Same order as Meta's CameraAccess sample: session.start() → wait for .started → addCamera → stream.start().
-    func startGlasses(resolution: String = "high", fps: UInt = 30, attempt: Int = 1) {
+    public func startGlasses(resolution: String = "high", fps: UInt = 30, attempt: Int = 1) {
         glassesOn = true
         Task {
             do {
@@ -290,7 +290,7 @@ extension Streamer {
         }
     }
 
-    func stopGlasses() {
+    public func stopGlasses() {
         camera?.stream.stop()
         camera?.stop()
         session?.stop()
@@ -303,7 +303,7 @@ extension Streamer {
         evaluateSource()
     }
 
-    func capturePhoto() {
+    public func capturePhoto() {
         _ = camera?.stream.capturePhoto(format: .jpeg)
     }
 }

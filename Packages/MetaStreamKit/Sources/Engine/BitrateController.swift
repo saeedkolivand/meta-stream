@@ -11,7 +11,7 @@ extension Streamer {
     /// knob (see goLive's gate comment). Reads QueueWatcher's telemetry off `hot`, decides, and applies; the
     /// network signal is real (HaishinKit's own NetworkMonitor via StreamBitRateStrategy), the decision loop
     /// is ours, so it stays in lockstep with the existing 1s tick instead of a second timer.
-    func adaptBitrate() async {
+    public func adaptBitrate() async {
         guard phoneEncodes, live else { return }
         if hot.congested {
             hot.congested = false
@@ -43,13 +43,13 @@ extension Streamer {
 
     /// Climbs back fast (5 s steps) while well below where the link last failed: a stall that collapses the
     /// bitrate otherwise takes minutes of 15 s steps to undo. Near or above that level, probe slowly again.
-    static func cleanSecondsBeforeUp(current: Int, failedAt: Int) -> Int {
+    public static func cleanSecondsBeforeUp(current: Int, failedAt: Int) -> Int {
         current < failedAt * 4 / 5 ? 5 : 15
     }
 
     /// Applies one AIMD step and logs the ladder (Settings → Logs shows it after a walk). Rate-limited so
     /// congestion + thermal firing together still yields at most one change per bitrateAdjustCooldown.
-    func stepBitrate(up: Bool, reason: String) async {
+    public func stepBitrate(up: Bool, reason: String) async {
         if let last = lastBitrateAdjustAt, Date().timeIntervalSince(last) < bitrateAdjustCooldown { return }
         let ceiling = min(thermalCeilingKbps ?? bitrateCeilingKbps, bitrateCeilingKbps)
         let next = Self.steppedBitrate(current: currentBitrateKbps, up: up, ceilingKbps: max(ceiling, bitrateFloorKbps), floorKbps: bitrateFloorKbps)
@@ -65,7 +65,7 @@ extension Streamer {
 
     /// Pure step: 20% down (floors at floorKbps), 10% up (ceilings at ceilingKbps). No I/O, no HaishinKit —
     /// the part worth unit-testing, exercised by StreamerTests.
-    static func steppedBitrate(current: Int, up: Bool, ceilingKbps: Int, floorKbps: Int) -> Int {
+    public static func steppedBitrate(current: Int, up: Bool, ceilingKbps: Int, floorKbps: Int) -> Int {
         let next = up ? current + current / 10 : current - current / 5
         return min(max(next, floorKbps), ceilingKbps)
     }

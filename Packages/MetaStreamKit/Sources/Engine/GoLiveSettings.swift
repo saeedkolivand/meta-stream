@@ -4,7 +4,7 @@ import Foundation
 extension Streamer {
     /// Go Live with the saved settings: the Go Live button and the remote's StartStream both land here.
     /// Keys and defaults mirror the old @AppStorage declarations in GoLiveControlsView.
-    func goLiveFromSettings() {
+    public func goLiveFromSettings() {
         let d = UserDefaults.standard
         func int(_ k: String, _ def: Int) -> Int { d.object(forKey: k) as? Int ?? def }
         goLive(url: d.string(forKey: "rtmpURL") ?? "rtmps://fa723fc1b171.global-contribute.live-video.net:443/app/",
@@ -17,7 +17,7 @@ extension Streamer {
 
     /// auto: only YouTube (enhanced RTMP) and custom servers take the glasses' HEVC untouched. Kick, Restream,
     /// Instagram and TikTok are H.264-only ingests, and Twitch gates HEVC behind Affiliate, so they get a transcode.
-    static var codecFromSettings: String {
+    public static var codecFromSettings: String {
         let settings = UserDefaults.standard
         let codecPref = settings.string(forKey: "codec") ?? "auto", platformPref = settings.string(forKey: "platform") ?? "kick"
         let ingestURL = settings.string(forKey: "rtmpURL") ?? ""

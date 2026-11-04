@@ -9,20 +9,20 @@ import ImageIO
 import ScreenIPC
 
 @MainActor
-final class ScreenSource: ObservableObject {
+public final class ScreenSource: ObservableObject {
     /// A broadcast is running (the extension said so, or its frames are arriving).
-    @Published private(set) var screenLive = false
+    @Published public private(set) var screenLive = false
 
     /// The extension is embedded in this build; without its profile the Screen video source is hidden everywhere.
-    nonisolated static let available: Bool = {
+    public nonisolated static let available: Bool = {
         let plugins = Bundle.main.builtInPlugInsURL.flatMap { try? FileManager.default.contentsOfDirectory(atPath: $0.path) }
         return plugins?.contains("MetaStreamScreen.appex") ?? false
     }()
 
     /// Where decoded frames go (Streamer points it at the current mixer while Screen is the video source).
-    var sink: (@Sendable (CMSampleBuffer) -> Void)? { didSet { ScreenPump.shared.sink.value = sink } }
+    public var sink: (@Sendable (CMSampleBuffer) -> Void)? { didSet { ScreenPump.shared.sink.value = sink } }
 
-    init() {
+    public init() {
         guard Self.available else { return }
         ScreenPump.shared.onLive = { [weak self] live in
             Task { @MainActor in
@@ -36,12 +36,12 @@ final class ScreenSource: ObservableObject {
 }
 
 /// Everything off the main thread: Darwin callbacks only enqueue; reading and decoding run on one serial queue.
-final class ScreenPump: @unchecked Sendable {
-    static let shared = ScreenPump()
-    let sink = Box<(@Sendable (CMSampleBuffer) -> Void)?>(nil)
+public final class ScreenPump: @unchecked Sendable {
+    public static let shared = ScreenPump()
+    public let sink = Box<(@Sendable (CMSampleBuffer) -> Void)?>(nil)
     /// Decode only while Screen is the video source (Streamer.syncHot); otherwise frames are ignored.
-    let active = Box(false)
-    var onLive: (@Sendable (Bool) -> Void)?
+    public let active = Box(false)
+    public var onLive: (@Sendable (Bool) -> Void)?
 
     private let queue = DispatchQueue(label: "metastream.screen")
     private let orientation = Box<UInt32>(1)   // of the frame being decoded; rotate() reads it
@@ -52,7 +52,7 @@ final class ScreenPump: @unchecked Sendable {
     private lazy var transcoder: Transcoder = Transcoder(transform: { [weak self] pb in self?.rotate(pb) },   // weak: a late frame after deinit is dropped, not a crash
                                                          sink: { [weak self] sb in self?.sink.value?(sb) })
 
-    func observe() {
+    public func observe() {
         let center = CFNotificationCenterGetDarwinNotifyCenter()
         for name in [ScreenIPC.frameNote, ScreenIPC.startedNote, ScreenIPC.stoppedNote] {
             // C function pointer: no captures, it reaches the shared instance.
