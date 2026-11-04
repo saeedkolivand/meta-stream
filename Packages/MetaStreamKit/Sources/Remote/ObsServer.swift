@@ -125,7 +125,7 @@ public final class ObsServer {
         let o = OverlayStore.shared
         watches = [
             watch({ s.live }) { self.event("StreamStateChanged", 64, Self.out($0)) },
-            watch({ s.recording.since != nil }) { self.event("RecordStateChanged", 64, Self.out($0).merging(["outputPath": ""]) { a, _ in a }) },
+            watch({ s.recording.since != nil }) { self.event("RecordStateChanged", 64, Self.out($0).merging(["outputPath": ""]) { $1 }) },
             watch({ s.muted }) { self.event("InputMuteStateChanged", 8, ["inputName": "Mic", "inputUuid": "Mic", "inputMuted": $0]) }
         ]
         o.$scene.dropFirst().removeDuplicates()
@@ -323,8 +323,9 @@ public final class ObsServer {
             let r = was ? stopStream() : startStream()
             return r.code == 100 ? ok(["outputActive": !was]) : r
         case "GetRecordStatus":
-            let t = ms(s.recording.since)
-            return ok(["outputActive": s.recording.since != nil, "outputPaused": false, "outputTimecode": tc(t), "outputDuration": t, "outputBytes": 0])
+            let dt = ms(s.recording.since)
+            return ok(["outputActive": s.recording.since != nil, "outputPaused": false, "outputTimecode": tc(dt),
+                       "outputDuration": dt, "outputBytes": 0])
         case "StartRecord": return await record(true)
         case "StopRecord": return await record(false)
         case "ToggleRecord":
