@@ -83,6 +83,8 @@ targets:
         product: Signals
       - package: MetaStreamKit
         product: Engine
+      - package: MetaStreamKit
+        product: Overlays
       - package: MetaWearablesDAT
         product: MWDATCore
       - package: MetaWearablesDAT
@@ -130,4 +132,6 @@ targets:
         product: Signals
       - package: MetaStreamKit
         product: Engine
+      - package: MetaStreamKit
+        product: Overlays
 

@@ -24,7 +24,8 @@ let package = Package(
         .library(name: "Speech", targets: ["Speech"]),
         .library(name: "Privacy", targets: ["Privacy"]),
         .library(name: "Signals", targets: ["Signals"]),
-        .library(name: "Engine", targets: ["Engine"])
+        .library(name: "Engine", targets: ["Engine"]),
+        .library(name: "Overlays", targets: ["Overlays"])
     ],
     // Same URL and floor as project.yml, so Xcode resolves one copy for the app and the package.
     dependencies: [
@@ -69,6 +70,12 @@ let package = Package(
             .product(name: "SRTHaishinKit", package: "HaishinKit.swift"),
             .product(name: "MWDATCore", package: "meta-wearables-dat-ios"),
             .product(name: "MWDATCamera", package: "meta-wearables-dat-ios")
+        ], swiftSettings: strict),
+        // Scenes on the stream: store, compositor, widgets, stingers, donation alerts, and the SceneDirector the engine
+        // calls through SceneCompositor.
+        .target(name: "Overlays", dependencies: [
+            "CoreModel", "CoreLogging", "CoreUI", "Platforms", "Chat", "Goal", "Signals", "Engine",
+            .product(name: "HaishinKit", package: "HaishinKit.swift")
         ], swiftSettings: strict)
     ]
 )
