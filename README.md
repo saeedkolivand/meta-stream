@@ -43,6 +43,14 @@ device you are already holding. It started as the missing app for Ray-Ban Meta g
 - **Stream Deck control** over the obs-websocket protocol
 - **Cameras**: phone, USB-C, dual camera, Looks and LUTs, and optional Meta glasses
 
+## Architecture
+
+Both apps are native (Swift on iOS, Kotlin on Android) and split into the same feature modules: core (model, logging,
+storage, network, UI), then Camera, Platforms, Chat, Goal, Speech, Privacy, Engine, Overlays, Bot, Reach and Remote,
+with a thin app on top that holds the main screen, the settings catalog and the wiring. iOS keeps them as targets of
+one local Swift package (`Packages/MetaStreamKit`), Android as Gradle modules (`android/core/*`, `android/feature/*`).
+[ADR 0007](adr/0007-feature-modules-mirrored-across-platforms.md) has the rules.
+
 ## Docs
 
 | | |
