@@ -87,6 +87,8 @@ targets:
         product: Overlays
       - package: MetaStreamKit
         product: Bot
+      - package: MetaStreamKit
+        product: Reach
       - package: MetaWearablesDAT
         product: MWDATCore
       - package: MetaWearablesDAT
@@ -138,4 +140,6 @@ targets:
         product: Overlays
       - package: MetaStreamKit
         product: Bot
+      - package: MetaStreamKit
+        product: Reach
 

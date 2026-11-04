@@ -13,29 +13,33 @@ import Signals
 import UIKit
 
 /// A message the app bot repeats on a schedule while live (Settings › App bot). The list lives in AppStorage("botTimers") as JSON.
-struct AppTimer: Codable, Identifiable, Hashable {
-    var id = UUID()
-    var text: String
-    var minutes = 15   // at least 5, see AppBot.timerDue
+public struct AppTimer: Codable, Identifiable, Hashable {
+    public var id = UUID()
+    public var text: String
+    public var minutes = 15   // at least 5, see AppBot.timerDue
 
-    static func decode(_ raw: String) -> [AppTimer] { (try? JSONDecoder().decode([AppTimer].self, from: Data(raw.utf8))) ?? [] }
-    static func encode(_ t: [AppTimer]) -> String { (try? JSONEncoder().encode(t)).flatMap { String(data: $0, encoding: .utf8) } ?? "[]" }
+    public static func decode(_ raw: String) -> [AppTimer] { (try? JSONDecoder().decode([AppTimer].self, from: Data(raw.utf8))) ?? [] }
+    public static func encode(_ t: [AppTimer]) -> String { (try? JSONEncoder().encode(t)).flatMap { String(data: $0, encoding: .utf8) } ?? "[]" }
+
+    public init(text: String) {
+        self.text = text
+    }
 }
 
 /// The app's own chat account on Kick and Twitch (see CONTEXT.md): scene notices, viewer commands, timers and thank-yous.
 /// Never posts as the streamer. One paced queue per platform, and everything only while live.
 /// ponytail: settings are plain UserDefaults keys (bool switches default on, templates fall back to `defaults`).
 @MainActor
-final class AppBot: ObservableObject {
-    static let shared = AppBot()
+public final class AppBot: ObservableObject {
+    public static let shared = AppBot()
 
     /// Set once from the App; nothing runs before that.
-    var streamer: Streamer?
-    var platforms: Platforms?
+    public var streamer: Streamer?
+    public var platforms: Platforms?
 
     /// Last connect / send problem, shown in Settings › App bot.
-    @Published var status = ""
-    @Published var twitchBotName = UserDefaults.standard.string(forKey: "botTwitchName") ?? ""
+    @Published public var status = ""
+    @Published public var twitchBotName = UserDefaults.standard.string(forKey: "botTwitchName") ?? ""
 
     private let store: TokenStore = UserDefaults.standard
     private var queue: [String: [(text: String, replyTo: String)]] = [:]   // origin -> messages waiting for their turn
@@ -52,7 +56,7 @@ final class AppBot: ObservableObject {
     private var brbAt: Date?                          // last weak-link notice
     private var brbOpen = false                       // that notice still waits for its "back" line
 
-    static let defaults = [
+    public static let defaults = [
         "botTplBrbOn": "Connection's weak, back in a moment", "botTplBrbOff": "We're back!",
         "botTplStartingOn": "Starting soon!", "botTplStartingOff": "We're live, welcome in!", "botTplEndingOn": "Thanks for watching!",
         "botTplFollow": "{user}, thanks for the follow!", "botTplSub": "{user}, thanks for subscribing!",
@@ -73,23 +77,23 @@ final class AppBot: ObservableObject {
     // MARK: pure decisions -- see demo()
 
     /// Same command on the same platform: once per 30 s, unless a mod or the broadcaster typed it.
-    static func cooldownOK(last: Date?, now: Date, privileged: Bool) -> Bool {
+    public static func cooldownOK(last: Date?, now: Date, privileged: Bool) -> Bool {
         privileged || last.map { now.timeIntervalSince($0) >= 30 } ?? true
     }
 
     /// Interval passed (never under 5 min), 5 viewer messages since its last post, and 5 min since any timer posted there.
-    static func timerDue(since: Date, minutes: Int, msgs: Int, lastAny: Date?, now: Date) -> Bool {
+    public static func timerDue(since: Date, minutes: Int, msgs: Int, lastAny: Date?, now: Date) -> Bool {
         now.timeIntervalSince(since) >= Double(max(minutes, 5) * 60) && msgs >= 5
             && lastAny.map { now.timeIntervalSince($0) >= 300 } ?? true
     }
 
     /// A flapping link (BRB on/off every 20-40 s on cellular) posts its weak notice at most once per 2 min; the "back"
     /// line only follows a notice that went out.
-    static func brbNoticeDue(last: Date?, now: Date) -> Bool { last.map { now.timeIntervalSince($0) >= 120 } ?? true }
+    public static func brbNoticeDue(last: Date?, now: Date) -> Bool { last.map { now.timeIntervalSince($0) >= 120 } ?? true }
 
-    static func switchKey(_ cmd: String) -> String { "botCmd" + (donateAliases.contains(cmd) ? "Donate" : cmd.dropFirst().capitalized) }
+    public static func switchKey(_ cmd: String) -> String { "botCmd" + (donateAliases.contains(cmd) ? "Donate" : cmd.dropFirst().capitalized) }
 
-    static func fill(_ template: String, user: String, count: Int) -> String {
+    public static func fill(_ template: String, user: String, count: Int) -> String {
         template.replacingOccurrences(of: "{user}", with: user).replacingOccurrences(of: "{count}", with: String(count))
     }
 
@@ -154,7 +158,7 @@ final class AppBot: ObservableObject {
 
     /// Device-code login like TwitchService.connect. The device flow has no account picker, so the account is whichever
     /// one is signed in on the activate page (use a private tab or log out first).
-    func connectTwitch() {
+    public func connectTwitch() {
         // A second tap restarts the login instead of running two: the older poll could otherwise still finish and
         // overwrite the bot's tokens with whatever account was signed in on its activate page.
         twitchLogin?.cancel()
@@ -196,7 +200,7 @@ final class AppBot: ObservableObject {
         }
     }
 
-    func disconnectTwitch() {
+    public func disconnectTwitch() {
         store.forget("twitchBot")
         ["botTwitchID", "botTwitchName"].forEach { UserDefaults.standard.removeObject(forKey: $0) }
         twitchBotName = ""
@@ -205,7 +209,7 @@ final class AppBot: ObservableObject {
     // MARK: hooks
 
     /// From Streamer.sceneRole: BRB on/off, Starting on/off, Ending. An empty template posts nothing.
-    func role(_ role: String, on: Bool) {
+    public func role(_ role: String, on: Bool) {
         guard flag("botNotices") else { return }
         if role == "brb" {
             let now = Date()
@@ -222,7 +226,7 @@ final class AppBot: ObservableObject {
     }
 
     /// From the chat.events loop: viewer commands, the timers' message count and thank-yous.
-    func handle(_ e: ChatEvent) {
+    public func handle(_ e: ChatEvent) {
         guard !e.flagged, active else {
             if e.kind == .message, e.text.hasPrefix("!") {
                 applog("bot", "\(e.origin) command ignored: not live (Test mode answers offline)")
@@ -248,14 +252,14 @@ final class AppBot: ObservableObject {
     }
 
     /// From GoalStore.onReached.
-    func goalReached(_ title: String) {
+    public func goalReached(_ title: String) {
         guard flag("botNotices") else { return }
         ["kick", "twitch"].forEach { say($0, "Goal reached: \(title)!") }
     }
 
     /// One of the app bot's own lines (read aloud and the counters skip them). Kick doesn't say what the bot account is
     /// called, so its name is learned from the first echo of something the app posted; the streamer's own name never is.
-    func isOwn(_ e: ChatEvent) -> Bool {
+    public func isOwn(_ e: ChatEvent) -> Bool {
         let key = e.origin + "|" + e.user.lowercased()
         if ownNames.contains(key) { return true }
         if e.origin == "twitch", !twitchBotName.isEmpty, e.user.caseInsensitiveCompare(twitchBotName) == .orderedSame { return true }
@@ -333,7 +337,7 @@ final class AppBot: ObservableObject {
     }
 
     /// From Streamer's 1 s tick: keeps the GPS on while location commands are possible, runs the timers.
-    func tick() {
+    public func tick() {
         let live = streamer?.live == true
         let wantGPS = active && (platformOn("kick") || platformOn("twitch"))
             && ["botCmdLocation", "botCmdSpeed", "botCmdDistance", "botCmdWeather"].contains { flag($0) }
@@ -359,7 +363,7 @@ final class AppBot: ObservableObject {
     }
 
     #if DEBUG
-    static func demo() {
+    public static func demo() {
         let t = Date(timeIntervalSince1970: 1_000_000)
         assert(cooldownOK(last: nil, now: t, privileged: false))
         assert(!cooldownOK(last: t, now: t.addingTimeInterval(29), privileged: false))
