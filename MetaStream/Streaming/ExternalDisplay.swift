@@ -35,3 +35,10 @@ final class ExternalDisplaySceneDelegate: UIResponder, UIWindowSceneDelegate {
         applog("ui", "external display disconnected")
     }
 }
+
+/// A view whose layer is the display layer the engine enqueues preview frames into (the in-app preview and the
+/// external display both use it).
+final class PreviewUIView: UIView {
+    override class var layerClass: AnyClass { AVSampleBufferDisplayLayer.self }
+    var displayLayer: AVSampleBufferDisplayLayer { layer as! AVSampleBufferDisplayLayer }
+}

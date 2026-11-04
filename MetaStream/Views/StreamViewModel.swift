@@ -30,22 +30,9 @@ final class StreamViewModel: ObservableObject {
 
     init() { ChatOriginKey.migrate() }
 
-    /// auto: only YouTube (enhanced RTMP) and custom servers take the glasses' HEVC untouched. Kick, Restream,
-    /// Instagram and TikTok are H.264-only ingests, and Twitch gates HEVC behind Affiliate, so they get a transcode.
-    var codec: String {
-        // adr/0001: blur has to decode every frame to obscure it, so it forces a transcode and
-        // outranks even an explicit HEVC choice — you cannot blur a frame you never decode.
-        // Dual camera is the same story: the face-cam overlay (and glasses video, which only reaches the mixer
-        // as decoded frames) is composited on the phone, so it re-encodes whatever codec was picked.
-        // Precedence: blur / dual camera > explicit codec > protocol capability > destination table.
-        // A non-neutral glasses Look is the same story: passthrough can't be graded (adr/0001).
-        if blurOn || dualCamOn || !Look.load("glasses").isNeutral { return "h264" }
-        guard codecPref == "auto" else { return codecPref }
-        // SRT carries whatever the server decodes, and passthrough is the entire reason to use it:
-        // no transcode means no PiP window needed to keep streaming in the background.
-        if ingestURL.lowercased().hasPrefix("srt") { return "hevc" }
-        return ["youtube", "custom"].contains(platformPref) ? "hevc" : "h264"
-    }
+    /// The engine's codec rule over these same settings (Streamer.codecFromSettings); here so the views re-read it when
+    /// any of them changes.
+    var codec: String { Streamer.codecFromSettings }
 
     /// Platforms an outgoing message can actually go to right now - the segmented picker in the compose
     /// bar only ever shows these, and `sendChat()` falls back to the first one if `chatOrigin` points at a

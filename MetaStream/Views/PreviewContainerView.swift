@@ -4,11 +4,6 @@ import CoreMotion
 import CoreUI
 import SwiftUI
 
-final class PreviewUIView: UIView {
-    override class var layerClass: AnyClass { AVSampleBufferDisplayLayer.self }
-    var displayLayer: AVSampleBufferDisplayLayer { layer as! AVSampleBufferDisplayLayer }
-}
-
 struct PreviewView: UIViewRepresentable {
     @EnvironmentObject var streamer: Streamer
     func makeUIView(context: Context) -> PreviewUIView {

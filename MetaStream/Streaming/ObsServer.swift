@@ -350,18 +350,3 @@ final class ObsServer {
         }
     }
 }
-
-extension Streamer {
-    /// Go Live with the saved settings: the Go Live button and the remote's StartStream both land here.
-    /// Keys and defaults mirror the old @AppStorage declarations in GoLiveControlsView.
-    func goLiveFromSettings() {
-        let d = UserDefaults.standard
-        func int(_ k: String, _ def: Int) -> Int { d.object(forKey: k) as? Int ?? def }
-        goLive(url: d.string(forKey: "rtmpURL") ?? "rtmps://fa723fc1b171.global-contribute.live-video.net:443/app/",
-               key: d.string(forKey: "streamKey") ?? "", micUID: d.string(forKey: "micUID") ?? "",
-               fallbackPosition: d.string(forKey: "fallbackCamera") == "front" ? .front : .back,
-               bitrateKbps: int("bitrateKbps", 4000), codec: StreamViewModel().codec, srtLatencyMs: int("srtLatencyMs", 2000),
-               quality: .init(height: int("phoneHeight", 720), landscape: d.bool(forKey: "phoneLandscape"), fps: int("phoneFps", 30),
-                              stabilization: d.string(forKey: "phoneStabilization") ?? "off"))
-    }
-}
