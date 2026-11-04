@@ -31,7 +31,7 @@ struct CameraControlStripView: View {
         }
         .padding(12)
         .frame(width: 156)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18))
     }
 
     private var controlRows: some View {

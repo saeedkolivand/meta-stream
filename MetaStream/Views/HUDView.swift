@@ -203,7 +203,7 @@ struct LevelBar: View {
         Capsule().fill(.white.opacity(0.2)).frame(width: 40, height: 4)
             .overlay(alignment: .leading) { Capsule().fill(color).frame(width: 40 * fill, height: 4) }
             .padding(.horizontal, 12).padding(.vertical, 14)
-            .background(.ultraThinMaterial, in: Capsule())
+            .glassEffect(.regular, in: Capsule())
             .accessibilityLabel("Audio level")
     }
 }

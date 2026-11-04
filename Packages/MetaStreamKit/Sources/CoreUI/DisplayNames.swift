@@ -110,7 +110,7 @@ public struct StripStyles {
         }
         .font(.caption.weight(.semibold).monospacedDigit())
         .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(.ultraThinMaterial, in: Capsule())
+        .glassEffect(.regular, in: Capsule())   // app chrome only; on-stream widgets stay flat
     }
 
     public static func stripButton<Label: View>(@ViewBuilder label: () -> Label, action: @escaping () -> Void) -> some View {
@@ -120,7 +120,7 @@ public struct StripStyles {
         .buttonStyle(.plain)
     }
 
-    /// `tint` fills the circle with a colour (white glyph) and wins over `filled`; nil keeps the white/material look.
+    /// `tint` fills the circle with a colour (white glyph) and wins over `filled`; nil keeps the white/glass look.
     public static func roundButton(_ icon: String, filled: Bool, tint: Color? = nil, size: CGFloat = 52,
                             action: @escaping () -> Void) -> some View {
         stripButton(label: {
@@ -128,8 +128,8 @@ public struct StripStyles {
                 .font(.system(size: size * 0.38, weight: .semibold))
                 .foregroundStyle(filled && tint == nil ? .black : .white)
                 .frame(width: size, height: size)
-                .background(tint.map { AnyShapeStyle($0) } ?? (filled ? AnyShapeStyle(.white) : AnyShapeStyle(.ultraThinMaterial)),
-                            in: Circle())
+                .background(tint ?? (filled ? .white : .clear), in: Circle())
+                .glassEffect(tint == nil && !filled ? .regular.interactive() : .identity, in: Circle())
         }, action: action)
     }
 }

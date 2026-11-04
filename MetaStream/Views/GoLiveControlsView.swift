@@ -64,7 +64,8 @@ struct GoLiveControlsView: View {
                     .font(.system(size: smallSize * 0.38, weight: .semibold))
                     .foregroundStyle(streamer.manualSource == "auto" ? .white : .black)
                     .frame(width: smallSize, height: smallSize)
-                    .background(streamer.manualSource == "auto" ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.white), in: Circle())
+                    .background(streamer.manualSource == "auto" ? Color.clear : Color.white, in: Circle())
+                    .glassEffect(streamer.manualSource == "auto" ? .regular.interactive() : .identity, in: Circle())
             }
             .buttonStyle(.plain)
             if streamer.manualSource == "screen", ScreenSource.available { ScreenButton(screen: streamer.screenSource, size: smallSize) }
@@ -138,7 +139,7 @@ struct QuickControls: View {
                         .font(.system(size: size * 0.38, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: size, height: size)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .glassEffect(.regular, in: Circle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Soundboard")
