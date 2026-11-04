@@ -2,7 +2,7 @@ import Engine
 import SwiftUI
 
 public struct RemoteSettingsView: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @AppStorage("obsServerOn") var on = false
     @AppStorage("obsPassword") var password = ""
 

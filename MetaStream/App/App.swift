@@ -17,7 +17,7 @@ import MWDATCore
 
 @main
 struct MetaStreamApp: App {
-    @StateObject private var streamer = Streamer()
+    @State private var streamer = Streamer()
     @State private var platforms = Platforms()
     @StateObject private var speaker = Speaker()
     // @State, not @StateObject: the App must not re-evaluate per chat message. Views that show chat read it from the environment.
@@ -42,7 +42,7 @@ struct MetaStreamApp: App {
                     GPSOnlyView()
                 } else {
                     ContentView(chat: chat)
-                        .environmentObject(streamer)
+                        .environment(streamer)
                         .environment(platforms)
                         .environmentObject(speaker)
                         .environment(chat)
@@ -70,7 +70,7 @@ struct MetaStreamApp: App {
                 Rates.shared.start()
                 AudioRouteLog.start()
                 DonationHub.shared.start(chat: chat)
-                DonatePagePublisher.shared.start(live: streamer.$live)
+                DonatePagePublisher.shared.start { streamer.live }
                 GoalStore.shared.onReached = { speaker.speakSystem("Goal reached"); AppBot.shared.goalReached(GoalStore.shared.config.title) }
                 StreamActivityActions.stop = { streamer.stopLive() }   // the App and its Streamer live as long as the process
                 StreamActivityActions.toggleMute = { streamer.setMuted(!streamer.muted) }

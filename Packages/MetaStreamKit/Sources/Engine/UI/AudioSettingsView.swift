@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 public struct AudioSettingsView: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @AppStorage("micUID") var micUID = ""
     @AppStorage("volMic") var volMic = 1.0
     @AppStorage("volAlert") var volAlert = 1.0

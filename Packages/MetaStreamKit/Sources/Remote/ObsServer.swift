@@ -5,6 +5,7 @@
 import AVFoundation
 import Combine
 import CoreLogging
+import CoreModel
 import CryptoKit
 import Engine
 import Foundation
@@ -36,6 +37,7 @@ public final class ObsServer {
     private var clients: [Client] = []
     private var lastFail = Date.distantPast   // one failed login locks new connections out for 2 s (no fast guessing)
     private var bag = Set<AnyCancellable>()
+    private var watches: [Task<Void, Never>] = []
     private var streamer: Streamer?
     private var password: String { UserDefaults.standard.string(forKey: "obsPassword") ?? "" }
 
@@ -114,18 +116,18 @@ public final class ObsServer {
     private func stop() {
         listener?.cancel(); listener = nil
         clients.forEach { $0.conn.cancel() }; clients = []
-        bag.removeAll(); streamer = nil
+        bag.removeAll(); watches.forEach { $0.cancel() }; watches = []; streamer = nil
         applog("remote", "obs-websocket stopped")
     }
 
     /// Events come from the published values, so every path that changes them (app UI, remote, rotation) is covered.
     private func observe(_ s: Streamer) {
         let o = OverlayStore.shared
-        s.$live.dropFirst().removeDuplicates().sink { self.event("StreamStateChanged", 64, Self.out($0)) }.store(in: &bag)
-        s.$recordingSince.map { $0 != nil }.dropFirst().removeDuplicates()
-            .sink { self.event("RecordStateChanged", 64, Self.out($0).merging(["outputPath": ""]) { a, _ in a }) }.store(in: &bag)
-        s.$muted.dropFirst().removeDuplicates()
-            .sink { self.event("InputMuteStateChanged", 8, ["inputName": "Mic", "inputUuid": "Mic", "inputMuted": $0]) }.store(in: &bag)
+        watches = [
+            watch({ s.live }) { self.event("StreamStateChanged", 64, Self.out($0)) },
+            watch({ s.recordingSince != nil }) { self.event("RecordStateChanged", 64, Self.out($0).merging(["outputPath": ""]) { a, _ in a }) },
+            watch({ s.muted }) { self.event("InputMuteStateChanged", 8, ["inputName": "Mic", "inputUuid": "Mic", "inputMuted": $0]) }
+        ]
         o.$scene.dropFirst().removeDuplicates()
             .sink { self.event("CurrentProgramSceneChanged", 4, ["sceneName": $0, "sceneUuid": $0]) }.store(in: &bag)
         o.$pack.map { $0?.scenes.map(\.name) ?? [] }.dropFirst().removeDuplicates()

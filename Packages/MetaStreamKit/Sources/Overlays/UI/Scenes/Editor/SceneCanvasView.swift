@@ -15,7 +15,7 @@ public struct SceneCanvasView: View {
     public let commit: (Int, OverlayLayer) -> Void
 
     @ObservedObject private var store = OverlayStore.shared
-    @EnvironmentObject private var streamer: Streamer
+    @Environment(Streamer.self) private var streamer
     @Environment(ChatFeed.self) private var chat
     @State private var active: Int?
     @State private var drag: CGSize = .zero

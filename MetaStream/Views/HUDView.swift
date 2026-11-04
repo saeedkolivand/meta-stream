@@ -11,7 +11,7 @@ import SwiftUI
 /// Top status strip: connection, bitrate, battery, heat, source, mute, photo, manage, camera buttons.
 /// Fixed pills never scroll the quick controls off screen -- see GoLiveControlsView's doc.
 struct HUDView: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @EnvironmentObject var speaker: Speaker
     @EnvironmentObject var privacy: Privacy
     @Environment(Platforms.self) var platforms
@@ -138,7 +138,7 @@ struct HUDView: View {
             }
         }
         .padding(.top, 4)
-        .sheet(isPresented: $showNetwork) { NetworkPanelView().environmentObject(streamer) }
+        .sheet(isPresented: $showNetwork) { NetworkPanelView().environment(streamer) }
     }
 
     /// Posts the Live post's announcement; while one is up, withdraws it.
@@ -195,7 +195,7 @@ struct HUDView: View {
 
 /// Thin flat level bar for the mix (-60...0 dBFS); orange when near silent, red near clipping. Own view so the 8 Hz updates stay local.
 struct LevelBar: View {
-    @ObservedObject var meter: AudioLevel
+    let meter: AudioLevel
 
     var body: some View {
         let fill = CGFloat(min(1, max(0, (meter.db + 60) / 60)))

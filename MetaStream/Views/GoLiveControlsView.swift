@@ -7,7 +7,7 @@ import SwiftUI
 /// mic/camera/blur buttons. These are the controls you need in the second something goes wrong, so they
 /// must never live in the scrolling status strip where a long run of pills can push them off the edge.
 struct GoLiveControlsView: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @Environment(Platforms.self) var platforms
     @AppStorage("askStreamInfo") private var askStreamInfo = true
     @State private var showInfo = false
@@ -121,7 +121,7 @@ struct GoLiveControlsView: View {
 
 /// Mic / camera / blur round buttons; flattens into whichever stack hosts it (bottom row or left rail).
 struct QuickControls: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @AppStorage("blurOn") var blurOn = false
     @AppStorage("sounds") var soundsRaw = "[]"
     var size: CGFloat

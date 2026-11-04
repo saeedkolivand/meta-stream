@@ -16,7 +16,7 @@ struct CameraSettingsView: View {
     @AppStorage("camExposureManual") var camExposureManual = false
     @AppStorage("camMirrored") var camMirrored = false
 
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @AppStorage("dualCam") var dualCam = false
     @AppStorage("dualCamCorner") var dualCamCorner = "topRight"
     @AppStorage("dualCamSize") var dualCamSize = "m"

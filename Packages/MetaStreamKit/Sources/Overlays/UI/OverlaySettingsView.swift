@@ -6,7 +6,7 @@ import SwiftUI
 /// The Scenes screen: a grid of scene cards (thumbnail, role, on-stream badge). Tap one to arrange its widgets, hold for
 /// show / duplicate / rename / delete. Transitions, roles, rotation and OBS import live behind the options button.
 public struct OverlaySettingsView: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @Environment(Platforms.self) var platforms
     @Environment(\.horizontalSizeClass) private var sizeClass
     @ObservedObject private var store = OverlayStore.shared

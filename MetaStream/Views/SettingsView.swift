@@ -11,7 +11,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var hSize
     @Environment(Platforms.self) private var platforms
-    @EnvironmentObject private var streamer: Streamer
+    @Environment(Streamer.self) private var streamer
     @State private var query = ""
     @State private var wrappedPending = false
     @State private var path: [String] = []           // iPhone: the pushed page ids

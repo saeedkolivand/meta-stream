@@ -1,6 +1,7 @@
 // The mix's loudness: pure math (tested), the mixer output that measures it, and the HUD meter's state.
 import CoreLogging
 import Foundation
+import Observation
 import AVFoundation
 import CoreMedia
 import HaishinKit
@@ -38,8 +39,9 @@ public enum AudioMath {
 
 /// What the HUD meter shows, plus the dead-air bookkeeping. Its own object so the ~8 Hz updates re-render only the meter, not every view watching Streamer.
 @MainActor
-public final class AudioLevel: ObservableObject {
-    @Published public var db: Float = -120
+@Observable
+public final class AudioLevel {
+    public var db: Float = -120
     public var at = Date.distantPast       // last time the mixer reported; no reports at all counts as silence
     public var quietSince: Date?
     public var alerting = false

@@ -4,7 +4,7 @@ import SwiftUI
 /// In-app network panel (sheet from the HUD): bitrate, drops, downtime and what the connection is doing.
 /// Flat on purpose -- no material, no gradients; it is for the streamer's eyes, never on stream.
 public struct NetworkPanelView: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
 
     public init() {}
 

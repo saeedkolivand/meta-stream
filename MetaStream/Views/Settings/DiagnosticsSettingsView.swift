@@ -2,7 +2,7 @@ import Engine
 import SwiftUI
 
 struct DiagnosticsSettingsView: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @AppStorage("keepAwake") var keepAwake = true
 
     var body: some View {

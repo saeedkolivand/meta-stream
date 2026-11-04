@@ -8,7 +8,7 @@ import SwiftUI
 /// iPhone: canvas on top, a bottom bar (layers, add, camera), the inspector in a sheet that leaves the canvas usable.
 /// iPad: layers | canvas | inspector side by side. State and actions are internal so SceneEditorActions.swift can extend it.
 public struct SceneEditorView: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @ObservedObject var store = OverlayStore.shared
     @Environment(\.horizontalSizeClass) private var sizeClass
     // Emotes is owned by ContentView and isn't an environment object; samples render fine without emote images.

@@ -89,6 +89,6 @@ let package = Package(
             "CoreModel", "CoreLogging", "CoreStorage", "CoreUI", "Platforms", "Chat", "Goal", "Signals", "Engine", "Overlays", "Bot"
         ], swiftSettings: strict),
         // OBS-websocket server: drive scenes and the stream from a desk.
-        .target(name: "Remote", dependencies: ["CoreLogging", "Engine", "Overlays"], swiftSettings: strict)
+        .target(name: "Remote", dependencies: ["CoreModel", "CoreLogging", "Engine", "Overlays"], swiftSettings: strict)
     ]
 )

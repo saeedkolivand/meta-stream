@@ -5,13 +5,15 @@ import CoreImage
 import CoreLogging
 import CoreMedia
 import Foundation
+import Observation
 import ImageIO
 import ScreenIPC
 
 @MainActor
-public final class ScreenSource: ObservableObject {
+@Observable
+public final class ScreenSource {
     /// A broadcast is running (the extension said so, or its frames are arriving).
-    @Published public private(set) var screenLive = false
+    public private(set) var screenLive = false
 
     /// The extension is embedded in this build; without its profile the Screen video source is hidden everywhere.
     public nonisolated static let available: Bool = {
@@ -49,6 +51,7 @@ public final class ScreenPump: @unchecked Sendable {
     private var lastSeq: UInt32 = 0            // queue-confined from here down
     private var announced = false
     private var format: CMVideoFormatDescription?
+    @ObservationIgnored
     private lazy var transcoder: Transcoder = Transcoder(transform: { [weak self] pb in self?.rotate(pb) },   // weak: a late frame after deinit is dropped, not a crash
                                                          sink: { [weak self] sb in self?.sink.value?(sb) })
 

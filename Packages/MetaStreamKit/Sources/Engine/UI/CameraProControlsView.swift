@@ -9,7 +9,7 @@ public struct CameraProControlsView: View {
 
     public init(cap: CameraCapabilities?) { self.cap = cap }
 
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @AppStorage("camFocusMode") var camFocusMode = "continuous"
     @AppStorage("camLensPosition") var camLensPosition = 0.5
     @AppStorage("camSmoothAutoFocus") var camSmoothAutoFocus = true

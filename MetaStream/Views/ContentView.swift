@@ -12,7 +12,7 @@ import SwiftUI
 // MARK: - Live screen
 
 struct ContentView: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @EnvironmentObject var speaker: Speaker
     /// Plain reference, not observed: a chat message must not rebuild this screen. Child views that show chat observe
     /// it through the environment.

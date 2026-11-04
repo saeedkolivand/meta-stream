@@ -5,7 +5,7 @@ import SwiftUI
 
 /// Magic Keyboard shortcuts (shown when holding ⌘). No go-live/stop shortcut on purpose: too easy to hit by accident.
 struct StreamCommands: Commands {
-    @ObservedObject var streamer: Streamer
+    var streamer: Streamer
     @ObservedObject var speaker: Speaker
     @ObservedObject private var store = OverlayStore.shared
 

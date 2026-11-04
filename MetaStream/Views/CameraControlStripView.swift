@@ -8,7 +8,7 @@ import SwiftUI
 /// (ISO, shutter, HDR, distortion correction: deliberate, set-once). These are the ones worth changing
 /// mid-stream, applied straight to the live device -- see Streamer.applyCameraSettings.
 struct CameraControlStripView: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @AppStorage("camLens") var camLens = "wide"
     @AppStorage("camZoom") var camZoom = 1.0
     @AppStorage("camExposureManual") var camExposureManual = false
