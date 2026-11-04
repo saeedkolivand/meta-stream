@@ -1,3 +1,4 @@
+import Bot
 import Chat
 import CoreModel
 import CoreUI

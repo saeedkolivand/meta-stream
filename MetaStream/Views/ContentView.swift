@@ -5,6 +5,7 @@ import MWDATCore
 import Overlays
 import Platforms
 import Privacy
+import Reach
 import Speech
 import SwiftUI
 

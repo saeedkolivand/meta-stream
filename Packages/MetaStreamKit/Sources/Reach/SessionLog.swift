@@ -1,3 +1,4 @@
+import Bot
 import CoreLogging
 import CoreModel
 import Engine

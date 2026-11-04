@@ -147,7 +147,8 @@ public struct StoryCard: View {
         .background(theme.color(theme.bg))
     }
 
-    public init(frame: UIImage? = nil, title: String, link: String, template: StoryTemplate, theme: ColorTheme) {
+    public init(frame: UIImage? = nil, title: String, link: String, template: StoryTemplate, theme: ColorTheme, soon: Bool = false) {
+        self.soon = soon
         self.frame = frame
         self.title = title
         self.link = link

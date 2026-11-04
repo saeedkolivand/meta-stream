@@ -1,4 +1,5 @@
 import ActivityShared
+import Bot
 import Chat
 import CoreLogging
 import CoreUI
@@ -7,6 +8,8 @@ import Goal
 import Overlays
 import Platforms
 import Privacy
+import Reach
+import Remote
 import Signals
 import Speech
 import SwiftUI

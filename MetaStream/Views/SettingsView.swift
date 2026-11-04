@@ -1,6 +1,7 @@
 import Combine
 import Engine
 import Platforms
+import Reach
 import SwiftUI
 
 /// Top-level settings. iPhone: a searchable list pushing one screen at a time; iPad: a sidebar and the selected screen

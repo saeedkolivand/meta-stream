@@ -1,3 +1,4 @@
+import Bot
 import Goal
 import Platforms
 import Signals

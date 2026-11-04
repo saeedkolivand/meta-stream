@@ -1,3 +1,4 @@
+import Bot
 import SwiftUI
 
 /// Settings › App bot › Messages: what the bot posts for scene changes, viewer donate questions and thank-yous.

@@ -12,9 +12,9 @@ import Network
 import Overlays
 
 @MainActor
-final class ObsServer {
-    static let shared = ObsServer()
-    static let port: UInt16 = 4455
+public final class ObsServer {
+    public static let shared = ObsServer()
+    public static let port: UInt16 = 4455
     nonisolated private static let chars = Array("abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789")
     private static let supported = ["GetVersion", "GetSceneList", "GetCurrentProgramScene", "SetCurrentProgramScene",
         "GetStudioModeEnabled", "GetStreamStatus", "StartStream", "StopStream", "ToggleStream", "GetRecordStatus",
@@ -39,18 +39,18 @@ final class ObsServer {
     private var streamer: Streamer?
     private var password: String { UserDefaults.standard.string(forKey: "obsPassword") ?? "" }
 
-    nonisolated static func random() -> String { Data((0..<32).map { _ in UInt8.random(in: 0...255) }).base64EncodedString() }
-    nonisolated static func randomPassword() -> String { String((0..<12).map { _ in chars.randomElement()! }) }
+    public nonisolated static func random() -> String { Data((0..<32).map { _ in UInt8.random(in: 0...255) }).base64EncodedString() }
+    public nonisolated static func randomPassword() -> String { String((0..<12).map { _ in chars.randomElement()! }) }
 
     /// base64(sha256(base64(sha256(password + salt)) + challenge)), per the obs-websocket spec.
-    nonisolated static func auth(_ pw: String, salt: String, challenge: String) -> String {
+    public nonisolated static func auth(_ pw: String, salt: String, challenge: String) -> String {
         func h(_ s: String) -> String { Data(SHA256.hash(data: Data(s.utf8))).base64EncodedString() }
         return h(h(pw + salt) + challenge)
     }
 
     #if DEBUG
     /// Self-check: the worked example from the obs-websocket protocol document.
-    nonisolated static func demo() {
+    public nonisolated static func demo() {
         let a = auth("supersecretpassword", salt: "lM1GncleQOaCu9lT1yeUZhFYnqhsLLP1G5lAGo3ixaI=",
                      challenge: "+IxH4CnCiqpX1rM9scsNynZzbOe4KhDeYcTNS3PDaeY=")
         assert(a == "1Ct943GAT+6YQUUX47Ia/ncufilbe6+oD6lY+5kaCu4=", "obs-websocket auth mismatch: \(a)")
@@ -59,7 +59,7 @@ final class ObsServer {
     #endif
 
     /// (label, ip) for every IPv4 address a controller could reach: en* = Wi-Fi, bridge* = this device's hotspot.
-    nonisolated static func addresses() -> [(String, String)] {
+    public nonisolated static func addresses() -> [(String, String)] {
         var head: UnsafeMutablePointer<ifaddrs>?
         guard getifaddrs(&head) == 0 else { return [] }
         defer { freeifaddrs(head) }
@@ -80,7 +80,7 @@ final class ObsServer {
     // MARK: lifecycle
 
     /// Idempotent: makes the listener match the "obsServerOn" default. Call at launch and when the toggle changes.
-    func sync(_ s: Streamer) {
+    public func sync(_ s: Streamer) {
         let d = UserDefaults.standard
         if d.bool(forKey: "obsServerOn") {
             if password.isEmpty { d.set(Self.randomPassword(), forKey: "obsPassword") }
@@ -135,7 +135,7 @@ final class ObsServer {
     // MARK: transport
 
     /// Private IPv4 ranges, link-local and unique-local IPv6, loopback: the hotspot and home Wi-Fi, never the internet.
-    nonisolated static func isLocal(_ e: NWEndpoint) -> Bool {
+    public nonisolated static func isLocal(_ e: NWEndpoint) -> Bool {
         guard case .hostPort(let host, _) = e else { return false }
         switch host {
         case .ipv4(let a):

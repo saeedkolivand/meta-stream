@@ -1,3 +1,4 @@
+import Bot
 import SwiftUI
 
 /// Settings › App bot: the app's own chat account (never the streamer) on Kick and Twitch.

@@ -1,3 +1,4 @@
+import Bot
 import CoreModel
 import CoreUI
 import Engine

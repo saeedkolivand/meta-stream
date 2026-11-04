@@ -20,6 +20,8 @@ public struct StreamsView: View {
         return out
     }
 
+    public init() {}
+
     public var body: some View {
         List {
             if let month = WrappedStore.pendingMonth(records: records) { wrappedCard(month) }
