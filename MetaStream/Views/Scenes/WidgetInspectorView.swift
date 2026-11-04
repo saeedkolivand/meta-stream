@@ -1,3 +1,4 @@
+import Overlays
 import SwiftUI
 
 /// The inspector's three tabs: what the widget shows, how it looks, where it sits.

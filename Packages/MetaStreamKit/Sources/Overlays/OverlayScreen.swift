@@ -8,7 +8,7 @@ import CoreModel
 import HaishinKit
 import UIKit
 
-enum OverlayScreen {
+public enum OverlayScreen {
     /// ScreenObject lays itself out against its parent (the Screen root, origin top-left): size + top-left alignment
     /// + a margin inset reproduces `rect` exactly. Same recipe as Streamer.layoutOverlay.
     @ScreenActor private static func layout(_ o: ScreenObject, _ rect: CGRect) {
@@ -20,7 +20,7 @@ enum OverlayScreen {
     }
 
     /// A still (image, text, color, browser snapshot). `bitmap` may be nil for a browser whose first snapshot isn't in yet.
-    @ScreenActor static func makeImage(_ rect: CGRect, _ bitmap: OverlayBitmap?) -> ImageScreenObject {
+    @ScreenActor public static func makeImage(_ rect: CGRect, _ bitmap: OverlayBitmap?) -> ImageScreenObject {
         let o = ImageScreenObject()
         layout(o, rect)
         o.ciImage = bitmap.map { CIImage(cgImage: $0.image) }
@@ -28,17 +28,17 @@ enum OverlayScreen {
     }
 
     /// nil blanks the object (an alert between alerts, a faded-out still).
-    @ScreenActor static func setImage(_ o: ImageScreenObject, _ bitmap: OverlayBitmap?) {
+    @ScreenActor public static func setImage(_ o: ImageScreenObject, _ bitmap: OverlayBitmap?) {
         o.ciImage = bitmap.map { CIImage(cgImage: $0.image) }
     }
 
     /// Re-lays an object out at a new rect (live text whose width follows its content).
-    @ScreenActor static func move(_ o: ImageScreenObject, to rect: CGRect) {
+    @ScreenActor public static func move(_ o: ImageScreenObject, to rect: CGRect) {
         layout(o, rect)
     }
 
     /// Plays a local clip (muted: AssetScreenObject reads video only). Reads from the start; see `restart` for looping.
-    @ScreenActor static func makeMedia(_ rect: CGRect, _ url: URL) -> AssetScreenObject {
+    @ScreenActor public static func makeMedia(_ rect: CGRect, _ url: URL) -> AssetScreenObject {
         let o = AssetScreenObject()
         layout(o, rect)
         o.videoGravity = .resizeAspectFill   // the rect already has the clip's aspect; keeps the bounds exactly as laid out
@@ -47,19 +47,19 @@ enum OverlayScreen {
     }
 
     /// AssetScreenObject stops at the end of the clip; reading again from the start is how a loop is made.
-    @ScreenActor static func restart(_ o: AssetScreenObject, _ url: URL) {
+    @ScreenActor public static func restart(_ o: AssetScreenObject, _ url: URL) {
         if !o.isReading { try? o.startReading(AVURLAsset(url: url)) }
     }
 
     /// A built-in stinger over `rect` (the whole canvas).
-    @ScreenActor static func makeStinger(_ rect: CGRect, _ kind: StingerKind, _ style: StingerStyle) -> StingerScreenObject {
+    @ScreenActor public static func makeStinger(_ rect: CGRect, _ kind: StingerKind, _ style: StingerStyle) -> StingerScreenObject {
         let o = StingerScreenObject(kind: kind, style: style)
         layout(o, rect)
         return o
     }
 
     /// A donation alert over `rect` (the whole canvas).
-    @ScreenActor static func makeDonation(_ rect: CGRect, _ kind: DonationAlertKind, _ info: DonationAlertInfo,
+    @ScreenActor public static func makeDonation(_ rect: CGRect, _ kind: DonationAlertKind, _ info: DonationAlertInfo,
                                           _ style: DonationAlertStyle, box: CGRect?) -> DonationAlertScreenObject {
         let o = DonationAlertScreenObject(kind: kind, info: info, style: style, box: box)
         layout(o, rect)
@@ -67,7 +67,7 @@ enum OverlayScreen {
     }
 
     /// An Island alert over `rect` (the whole canvas); it draws inside the Alerts widget's `box`.
-    @ScreenActor static func makeIsland(_ rect: CGRect, _ e: ChatEvent, _ style: AlertWidgetStyle, hold: Int, big: Bool,
+    @ScreenActor public static func makeIsland(_ rect: CGRect, _ e: ChatEvent, _ style: AlertWidgetStyle, hold: Int, big: Bool,
                                         box: CGRect) -> AlertIslandScreenObject {
         let o = AlertIslandScreenObject(event: e, style: style, hold: hold, big: big, box: box)
         layout(o, rect)
@@ -77,19 +77,19 @@ enum OverlayScreen {
     /// Z-order is add order: later layers draw on top (the camera frame is the Screen's own first child).
     /// Overlays composite on the GPU (Core Image on Metal; HaishinKit 2.3 has no CPU renderer any more). HaishinKit's camera
     /// object re-lays out every frame.
-    @ScreenActor static func add(_ objects: [ScreenObject], to mixer: MediaMixer) {
+    @ScreenActor public static func add(_ objects: [ScreenObject], to mixer: MediaMixer) {
         for o in objects { try? mixer.screen.addChild(o) }
     }
 
     /// Moves an object to the top of the z-order again (a rebuilt scene is added after the stinger and would cover it).
-    @ScreenActor static func raise(_ o: ScreenObject, on mixer: MediaMixer) {
+    @ScreenActor public static func raise(_ o: ScreenObject, on mixer: MediaMixer) {
         mixer.screen.removeChild(o)
         try? mixer.screen.addChild(o)
     }
 
     /// Old scene off, new scene on, stinger back on top, in one actor hop: each add/remove makes the Screen re-lay out
     /// every child, so doing it all at once costs one re-layout frame.
-    @ScreenActor static func swap(remove old: [ScreenObject], from oldMixer: MediaMixer?, add new: [ScreenObject],
+    @ScreenActor public static func swap(remove old: [ScreenObject], from oldMixer: MediaMixer?, add new: [ScreenObject],
                                   to mixer: MediaMixer, top: ScreenObject?) {
         if let oldMixer { remove(old, from: oldMixer) }
         add(new, to: mixer)
@@ -97,11 +97,11 @@ enum OverlayScreen {
     }
 
     /// Plays a clip from the start again (a prebuilt clip began reading when it was built, not when it went up).
-    @ScreenActor static func rewind(_ o: AssetScreenObject, _ url: URL) {
+    @ScreenActor public static func rewind(_ o: AssetScreenObject, _ url: URL) {
         try? o.startReading(AVURLAsset(url: url))
     }
 
-    @ScreenActor static func remove(_ objects: [ScreenObject], from mixer: MediaMixer) {
+    @ScreenActor public static func remove(_ objects: [ScreenObject], from mixer: MediaMixer) {
         for o in objects {
             if let m = o as? AssetScreenObject { m.cancelReading() }
             mixer.screen.removeChild(o)
@@ -111,7 +111,7 @@ enum OverlayScreen {
 
 /// A built-in stinger as a screen object. It draws the frame for each video frame's own timestamp, so it moves in step
 /// with the video instead of racing it.
-final class StingerScreenObject: ScreenObject {
+public final class StingerScreenObject: ScreenObject {
     private let kind: StingerKind
     private let style: StingerStyle
     private var start: CMTime?
@@ -122,13 +122,13 @@ final class StingerScreenObject: ScreenObject {
     private var last = 0.0
     private var logged = false
 
-    init(kind: StingerKind, style: StingerStyle) {
+    public init(kind: StingerKind, style: StingerStyle) {
         self.kind = kind
         self.style = style
         super.init()
     }
 
-    override func makeImage(_ renderer: some ScreenRenderer) -> CIImage? {
+    public override func makeImage(_ renderer: some ScreenRenderer) -> CIImage? {
         let now = renderer.presentationTimeStamp
         let first = start ?? now
         start = first
@@ -159,7 +159,7 @@ final class StingerScreenObject: ScreenObject {
 }
 
 /// A donation alert as a screen object: same structure as StingerScreenObject, with progress p = t / duration.
-final class DonationAlertScreenObject: ScreenObject {
+public final class DonationAlertScreenObject: ScreenObject {
     private let kind: DonationAlertKind
     private let info: DonationAlertInfo
     private let style: DonationAlertStyle
@@ -172,7 +172,7 @@ final class DonationAlertScreenObject: ScreenObject {
     private var last = 0.0
     private var logged = false
 
-    init(kind: DonationAlertKind, info: DonationAlertInfo, style: DonationAlertStyle, box: CGRect?) {
+    public init(kind: DonationAlertKind, info: DonationAlertInfo, style: DonationAlertStyle, box: CGRect?) {
         self.kind = kind
         self.info = info
         self.style = style
@@ -180,7 +180,7 @@ final class DonationAlertScreenObject: ScreenObject {
         super.init()
     }
 
-    override func makeImage(_ renderer: some ScreenRenderer) -> CIImage? {
+    public override func makeImage(_ renderer: some ScreenRenderer) -> CIImage? {
         let now = renderer.presentationTimeStamp
         let first = start ?? now
         start = first

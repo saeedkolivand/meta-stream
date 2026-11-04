@@ -7,6 +7,7 @@ import CoreUI
 import Engine
 import Foundation
 import Goal
+import Overlays
 import Platforms
 import Signals
 import UIKit

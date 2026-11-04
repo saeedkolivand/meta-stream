@@ -7,7 +7,7 @@ import SwiftUI
 import UIKit
 
 extension OverlayCompositor {
-    func alertWidget(_ l: OverlayLayer, box: CGRect, canvas: CGSize, goalBox: CGRect?) async -> WidgetBuild? {
+    public func alertWidget(_ l: OverlayLayer, box: CGRect, canvas: CGSize, goalBox: CGRect?) async -> WidgetBuild? {
         guard let rect = OverlayRaster.visible(box, in: canvas) else { return nil }
         let style = AlertWidgetStyle(l.data)
         let natural = CGSize(width: 900, height: 240)

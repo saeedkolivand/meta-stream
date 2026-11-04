@@ -3,7 +3,7 @@ import HaishinKit
 import UIKit
 
 extension OverlayCompositor {
-    func qrWidget(_ l: OverlayLayer, box: CGRect, canvas: CGSize) async -> WidgetBuild? {
+    public func qrWidget(_ l: OverlayLayer, box: CGRect, canvas: CGSize) async -> WidgetBuild? {
         let style = QRWidgetStyle(l.data)
         guard let rect = OverlayRaster.visible(box, in: canvas) else { return nil }
         // The box inside the widget's (visible) rect, in the rect's top-left coordinates.

@@ -4,8 +4,8 @@ import CoreText
 import SwiftUI
 import UIKit
 
-enum WidgetFonts {
-    static let faces: [(id: String, label: String)] = [
+public enum WidgetFonts {
+    public static let faces: [(id: String, label: String)] = [
         ("", "System"), ("Vazirmatn", "Vazirmatn"), ("Unbounded", "Unbounded"), ("TiltNeon", "Tilt Neon"),
         ("JetBrainsMono", "JetBrains Mono"), ("Manrope", "Manrope"),
     ]
@@ -36,7 +36,7 @@ enum WidgetFonts {
 
     /// face "" = system; "Vazirmatn" = Vazirmatn for every script; any other = that UIFont name/family, else system.
     /// weight .bold/.semibold/.regular maps to the matching Vazirmatn file. Always has a Vazirmatn cascade list.
-    static func uiFont(face: String, size: CGFloat, weight: UIFont.Weight) -> UIFont {
+    public static func uiFont(face: String, size: CGFloat, weight: UIFont.Weight) -> UIFont {
         let vazir = UIFont(name: vazirName(weight), size: size)
         if face == "Vazirmatn", let vazir { return vazir }
         var base = UIFont.systemFont(ofSize: size, weight: weight)
@@ -57,12 +57,12 @@ enum WidgetFonts {
         return UIFont(descriptor: base.fontDescriptor.addingAttributes([.cascadeList: [cascade]]), size: size)
     }
 
-    static func font(face: String, size: CGFloat, weight: UIFont.Weight) -> Font {
+    public static func font(face: String, size: CGFloat, weight: UIFont.Weight) -> Font {
         Font(uiFont(face: face, size: size, weight: weight) as CTFont)
     }
 
     /// True when the first strong-direction character is Hebrew/Arabic-script (U+0590...U+08FF, U+FB1D...U+FEFC).
-    static func isRTL(_ text: String) -> Bool {
+    public static func isRTL(_ text: String) -> Bool {
         for u in text.unicodeScalars {
             let v = u.value
             if (0x0590...0x08FF).contains(v) || (0xFB1D...0xFEFC).contains(v) { return true }

@@ -4,17 +4,17 @@
 // ponytail: no idle animation, everything moves with t only; t == 1 is the settled frame.
 import SwiftUI
 
-func goalPct(_ v: Double) -> String { "\(Int((min(1, max(0, v)) * 100).rounded()))%" }
+public func goalPct(_ v: Double) -> String { "\(Int((min(1, max(0, v)) * 100).rounded()))%" }
 
 /// Old text sliding up and out while the new one rolls in from below (clipped to `h`).
-struct GoalRoll: View {
-    let before: String
-    let after: String
-    let s: Double
-    let h: CGFloat
-    var alignment: Alignment = .leading
+public struct GoalRoll: View {
+    public let before: String
+    public let after: String
+    public let s: Double
+    public let h: CGFloat
+    public var alignment: Alignment = .leading
 
-    var body: some View {
+    public var body: some View {
         let k = CGFloat(s)
         ZStack(alignment: alignment) {
             Text(before).lineLimit(1).fixedSize().opacity(1 - s).offset(y: -h * k)
@@ -26,18 +26,18 @@ struct GoalRoll: View {
 
 // MARK: Hairline
 
-struct GoalHairlineView: View {
-    let style: GoalWidgetStyle
-    let title: String
-    let beforeText: String
-    let afterText: String
-    let targetText: String
-    let from: Double
-    let to: Double
-    let deltaText: String
-    let t: Double
+public struct GoalHairlineView: View {
+    public let style: GoalWidgetStyle
+    public let title: String
+    public let beforeText: String
+    public let afterText: String
+    public let targetText: String
+    public let from: Double
+    public let to: Double
+    public let deltaText: String
+    public let t: Double
 
-    var body: some View {
+    public var body: some View {
         let f: Double = min(1, max(0, from + (to - from) * GoalMotion.lp(t, 40, 56)))
         let roll: Double = GoalMotion.lp(t, 44, 52)
         let text = goalColor(style.textColor)
@@ -102,22 +102,22 @@ struct GoalHairlineView: View {
 
 // MARK: Spark
 
-struct GoalSparkView: View {
-    let style: GoalWidgetStyle
-    let title: String
-    let beforeText: String
-    let afterText: String
-    let targetText: String
-    let from: Double
-    let to: Double
-    let deltaText: String
-    let t: Double
+public struct GoalSparkView: View {
+    public let style: GoalWidgetStyle
+    public let title: String
+    public let beforeText: String
+    public let afterText: String
+    public let targetText: String
+    public let from: Double
+    public let to: Double
+    public let deltaText: String
+    public let t: Double
 
     /// The board's 9 particle targets (x, y), up and back from the tip.
     private static let bits: [(CGFloat, CGFloat)] = [(-26, -22), (-40, -8), (-18, -34), (-48, -26), (-10, -18),
                                                      (-34, 6), (-22, 12), (-56, -4), (-6, -40)]
 
-    var body: some View {
+    public var body: some View {
         let f: Double = min(1, max(0, from + (to - from) * GoalMotion.lp(t, 40, 52)))
         let text = goalColor(style.textColor)
         VStack(alignment: .leading, spacing: 10) {

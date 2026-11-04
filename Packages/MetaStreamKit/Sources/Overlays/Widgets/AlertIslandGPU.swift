@@ -10,7 +10,7 @@ import HaishinKit
 import SwiftUI
 import UIKit
 
-enum IslandArt {
+public enum IslandArt {
     private static let steps = 24.0   // the count-up changes the text this often, so the text cache isn't thrashed
 
     private static func metrics(_ s: String, _ size: CGFloat, _ weight: UIFont.Weight, _ tracking: CGFloat, _ face: String)
@@ -28,7 +28,7 @@ enum IslandArt {
                       color: color, alpha: alpha, tracking: tracking, face: face)
     }
 
-    static func frame(event e: ChatEvent, style: AlertWidgetStyle, t: Double, hold: Int, big: Bool, c: StingerCanvas, box: CGRect) -> CIImage {
+    public static func frame(event e: ChatEvent, style: AlertWidgetStyle, t: Double, hold: Int, big: Bool, c: StingerCanvas, box: CGRect) -> CIImage {
         let pose = AlertIsland.pose(at: t, hold: hold, big: big)
         let u = box.width / 900, vis = box.intersection(c.bounds)
         guard u > 0, pose.alpha > 0.001, !vis.isNull, vis.width > 0, vis.height > 0 else { return .empty() }
@@ -110,7 +110,7 @@ enum IslandArt {
 
 extension StingerCanvas {
     /// An SF Symbol (bold) in `argb`, centred on `p`; rendered once per name/size/colour and cached on the canvas.
-    func symbol(_ name: String, pointSize: CGFloat, color argb: UInt32, at p: CGPoint) -> CIImage {
+    public func symbol(_ name: String, pointSize: CGFloat, color argb: UInt32, at p: CGPoint) -> CIImage {
         let key = "\(name)|\(Int(pointSize.rounded()))|\(argb)"
         let image: CGImage
         if let hit = symbols[key] {
@@ -137,7 +137,7 @@ extension StingerCanvas {
 }
 
 /// An Island alert as a screen object: same structure as DonationAlertScreenObject, with t in seconds since it started.
-final class AlertIslandScreenObject: ScreenObject {
+public final class AlertIslandScreenObject: ScreenObject {
     private let event: ChatEvent
     private let style: AlertWidgetStyle
     private let hold: Int
@@ -151,7 +151,7 @@ final class AlertIslandScreenObject: ScreenObject {
     private var last = 0.0
     private var logged = false
 
-    init(event: ChatEvent, style: AlertWidgetStyle, hold: Int, big: Bool, box: CGRect) {
+    public init(event: ChatEvent, style: AlertWidgetStyle, hold: Int, big: Bool, box: CGRect) {
         self.event = event
         self.style = style
         self.hold = hold
@@ -160,7 +160,7 @@ final class AlertIslandScreenObject: ScreenObject {
         super.init()
     }
 
-    override func makeImage(_ renderer: some ScreenRenderer) -> CIImage? {
+    public override func makeImage(_ renderer: some ScreenRenderer) -> CIImage? {
         let now = renderer.presentationTimeStamp
         let first = start ?? now
         start = first

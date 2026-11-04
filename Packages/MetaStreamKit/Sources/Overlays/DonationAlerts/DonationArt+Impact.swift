@@ -60,7 +60,7 @@ extension DonationArt {
             .translatedBy(x: shift, y: -32))
     }
 
-    static func holo(p: Double, info: DonationAlertInfo, style: DonationAlertStyle, c: StingerCanvas, b: DonationBoard) -> CIImage {
+    public static func holo(p: Double, info: DonationAlertInfo, style: DonationAlertStyle, c: StingerCanvas, b: DonationBoard) -> CIImage {
         let k = c
         let tiers: [UInt32] = [0xFF6B_9BFF, 0xFFC4_6BFF, 0xFFF5_C542]
         let tier = min(2, max(0, info.tier))
@@ -182,7 +182,7 @@ extension DonationArt {
         return img
     }
 
-    static func shockwave(p: Double, info: DonationAlertInfo, style: DonationAlertStyle, c: StingerCanvas, b: DonationBoard) -> CIImage {
+    public static func shockwave(p: Double, info: DonationAlertInfo, style: DonationAlertStyle, c: StingerCanvas, b: DonationBoard) -> CIImage {
         let k = c
         let acc = impAccent(style, 0xFFFF_5A36)
         let lin = Curve.linear
@@ -324,7 +324,7 @@ extension DonationArt {
         return k.transform(k.stack(layers), about: P(360, 60), scale: 1 + 0.03 * CGFloat(glow))
     }
 
-    static func goalSurge(p: Double, info: DonationAlertInfo, style: DonationAlertStyle, c: StingerCanvas, b: DonationBoard) -> CIImage {
+    public static func goalSurge(p: Double, info: DonationAlertInfo, style: DonationAlertStyle, c: StingerCanvas, b: DonationBoard) -> CIImage {
         let k = c
         let acc = impAccent(style, 0xFF53_FC18)
         let out = Curve(0, 0, 0.58, 1)

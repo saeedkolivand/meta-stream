@@ -6,28 +6,28 @@ import CoreLogging
 import Foundation
 
 @MainActor
-final class OverlayStore: ObservableObject {
-    static let shared = OverlayStore()
+public final class OverlayStore: ObservableObject {
+    public static let shared = OverlayStore()
 
-    @Published private(set) var pack: OverlayPack?
+    @Published public private(set) var pack: OverlayPack?
     /// Active scene name; empty means none.
-    @Published private(set) var scene = ""
+    @Published public private(set) var scene = ""
     /// Import/locate result for the settings screen.
-    @Published private(set) var message = ""
-    @Published private(set) var busy = false
+    @Published public private(set) var message = ""
+    @Published public private(set) var busy = false
     /// Bumped whenever the pack or the files behind it change, so the compositor rebuilds.
-    @Published private(set) var revision = 0
+    @Published public private(set) var revision = 0
 
     /// "fade" | "cut" | "stinger": how overlays change when the scene does. Defaults-backed, not part of pack.json.
-    @Published var transition: String { didSet { UserDefaults.standard.set(transition, forKey: "sceneTransition") } }
+    @Published public var transition: String { didSet { UserDefaults.standard.set(transition, forKey: "sceneTransition") } }
     /// The stinger clip (a name under files/, "" = none) and where in it the scene changes, 0.1...0.9 of its length.
-    @Published var stingerFile: String { didSet { UserDefaults.standard.set(stingerFile, forKey: "stingerFile") } }
-    @Published var stingerCut: Double { didSet { UserDefaults.standard.set(stingerCut, forKey: "stingerCut") } }
+    @Published public var stingerFile: String { didSet { UserDefaults.standard.set(stingerFile, forKey: "stingerFile") } }
+    @Published public var stingerCut: Double { didSet { UserDefaults.standard.set(stingerCut, forKey: "stingerCut") } }
     /// A built-in StingerKind raw value, or "" to play `stingerFile` instead.
-    @Published var stingerKind: String { didSet { UserDefaults.standard.set(stingerKind, forKey: "stingerKind") } }
-    @Published var rotateOn: Bool { didSet { UserDefaults.standard.set(rotateOn, forKey: "sceneRotateOn") } }
-    @Published var rotateScenes: [String] { didSet { UserDefaults.standard.set(rotateScenes, forKey: "sceneRotateScenes") } }
-    @Published var rotateSeconds: Int { didSet { UserDefaults.standard.set(rotateSeconds, forKey: "sceneRotateSeconds") } }
+    @Published public var stingerKind: String { didSet { UserDefaults.standard.set(stingerKind, forKey: "stingerKind") } }
+    @Published public var rotateOn: Bool { didSet { UserDefaults.standard.set(rotateOn, forKey: "sceneRotateOn") } }
+    @Published public var rotateScenes: [String] { didSet { UserDefaults.standard.set(rotateScenes, forKey: "sceneRotateScenes") } }
+    @Published public var rotateSeconds: Int { didSet { UserDefaults.standard.set(rotateSeconds, forKey: "sceneRotateSeconds") } }
 
     private let dir = URL.applicationSupportDirectory.appending(path: "overlays")
     private var filesDir: URL { dir.appending(path: "files") }
@@ -54,25 +54,25 @@ final class OverlayStore: ObservableObject {
         }
     }
 
-    var activeScene: OverlayScene? { pack?.scenes.first { $0.name == scene } }
-    var scenes: [OverlayScene] { pack?.scenes ?? [] }
+    public var activeScene: OverlayScene? { pack?.scenes.first { $0.name == scene } }
+    public var scenes: [OverlayScene] { pack?.scenes ?? [] }
 
-    func select(_ name: String) {
+    public func select(_ name: String) {
         scene = name
         UserDefaults.standard.set(name, forKey: "overlayScene")
     }
 
     /// Local copy of a file a scene names by its PC path, or nil while it hasn't been located.
-    func local(_ path: String) -> URL? {
+    public func local(_ path: String) -> URL? {
         let u = filesDir.appending(path: overlayBaseName(path))
         return FileManager.default.fileExists(atPath: u.path) ? u : nil
     }
 
-    var missing: [String] { (pack?.files ?? []).filter { local($0) == nil }.sorted() }
+    public var missing: [String] { (pack?.files ?? []).filter { local($0) == nil }.sorted() }
 
     // MARK: import
 
-    func importPack(from url: URL) async {
+    public func importPack(from url: URL) async {
         busy = true
         defer { busy = false }
         let access = url.startAccessingSecurityScopedResource()
@@ -134,7 +134,7 @@ final class OverlayStore: ObservableObject {
         return "\(base) \(n)"
     }
 
-    func addScene() -> String {
+    public func addScene() -> String {
         if pack == nil { pack = OverlayPack(canvasW: 1920, canvasH: 1080, scenes: [], skipped: [:]) }
         let name = freeName("Scene", numbered: true)
         pack?.scenes.append(OverlayScene(name: name, layers: []))
@@ -143,7 +143,7 @@ final class OverlayStore: ObservableObject {
     }
 
     /// Adds the template's Starting / BRB / Ending scenes; each takes its role off whichever scene had it.
-    func addTemplate(_ t: SceneTemplate, channel: String) {
+    public func addTemplate(_ t: SceneTemplate, channel: String) {
         if pack == nil { pack = OverlayPack(canvasW: 1920, canvasH: 1080, scenes: [], skipped: [:]) }
         for var s in t.scenes(channel: channel) {
             s.name = freeName("\(t.rawValue) · \(s.name)", numbered: false)
@@ -153,7 +153,7 @@ final class OverlayStore: ObservableObject {
         _ = persist()
     }
 
-    func duplicateScene(_ name: String) -> String? {
+    public func duplicateScene(_ name: String) -> String? {
         guard var copy = scenes.first(where: { $0.name == name }) else { return nil }
         copy.name = freeName("\(name) copy", numbered: false)
         pack?.scenes.append(copy)
@@ -161,7 +161,7 @@ final class OverlayStore: ObservableObject {
         return copy.name
     }
 
-    func renameScene(_ old: String, to new: String) -> Bool {
+    public func renameScene(_ old: String, to new: String) -> Bool {
         let n = new.trimmingCharacters(in: .whitespaces)
         guard !n.isEmpty, let i = scenes.firstIndex(where: { $0.name == old }) else { return false }
         if n == old { return true }
@@ -173,7 +173,7 @@ final class OverlayStore: ObservableObject {
         return true
     }
 
-    func deleteScene(_ name: String) {
+    public func deleteScene(_ name: String) {
         pack?.scenes.removeAll { $0.name == name }
         if scene == name { select("") }
         rotateScenes.removeAll { $0 == name }
@@ -181,21 +181,21 @@ final class OverlayStore: ObservableObject {
         revision += 1
     }
 
-    func setLayers(_ layers: [OverlayLayer], in scene: String) {
+    public func setLayers(_ layers: [OverlayLayer], in scene: String) {
         guard let i = scenes.firstIndex(where: { $0.name == scene }) else { return }
         pack?.scenes[i].layers = layers
         _ = persist()
         revision += 1
     }
 
-    func setCamera(_ camera: String?, in scene: String) {
+    public func setCamera(_ camera: String?, in scene: String) {
         guard let i = scenes.firstIndex(where: { $0.name == scene }) else { return }
         pack?.scenes[i].camera = camera
         _ = persist()
     }
 
     /// Giving a scene a role takes it off whichever scene had it (one scene per role); nil clears it.
-    func setRole(_ role: String?, in scene: String) {
+    public func setRole(_ role: String?, in scene: String) {
         guard scenes.contains(where: { $0.name == scene }) else { return }
         for i in scenes.indices {
             if pack?.scenes[i].name == scene { pack?.scenes[i].role = role }
@@ -204,10 +204,10 @@ final class OverlayStore: ObservableObject {
         _ = persist()
     }
 
-    var stingerURL: URL? { stingerFile.isEmpty ? nil : local(stingerFile) }
+    public var stingerURL: URL? { stingerFile.isEmpty ? nil : local(stingerFile) }
 
     /// Copies a picked clip next to the imported media under a fresh name and makes it the stinger.
-    func setStinger(from src: URL) {
+    public func setStinger(from src: URL) {
         let scoped = src.startAccessingSecurityScopedResource()
         defer { if scoped { src.stopAccessingSecurityScopedResource() } }
         let name = "stinger-\(UUID().uuidString.prefix(8)).\(src.pathExtension)"
@@ -222,7 +222,7 @@ final class OverlayStore: ObservableObject {
     }
 
     /// Stores picked image bytes untouched (a GIF must stay animated) and returns the name for `data["file"]`.
-    func saveImage(_ data: Data) -> String? {
+    public func saveImage(_ data: Data) -> String? {
         let b = [UInt8](data.prefix(12))
         let ext: String
         if b.starts(with: [0x89, 0x50, 0x4E, 0x47]) { ext = "png" }
@@ -254,7 +254,7 @@ final class OverlayStore: ObservableObject {
     }
 
     /// The layer's own size before its transform/layout: what `widgetRect` scales. nil when its file isn't there yet.
-    func naturalSize(_ l: OverlayLayer) -> CGSize? {
+    public func naturalSize(_ l: OverlayLayer) -> CGSize? {
         func dim(_ k: String, _ d: Double) -> CGFloat { CGFloat(Double(l.data[k] ?? "") ?? d) }
         switch l.type {
         case .image:
@@ -292,7 +292,7 @@ final class OverlayStore: ObservableObject {
 
     /// Copies every missing file whose name appears anywhere under `folder` into app storage. The folder may live in
     /// iCloud Drive: the picked URL is security-scoped, and a coordinated read downloads a file that isn't local yet.
-    func locate(in folder: URL) async {
+    public func locate(in folder: URL) async {
         let wanted = Dictionary(missing.map { (overlayBaseName($0).lowercased(), overlayBaseName($0)) }, uniquingKeysWith: { a, _ in a })
         guard !wanted.isEmpty else { return }
         busy = true

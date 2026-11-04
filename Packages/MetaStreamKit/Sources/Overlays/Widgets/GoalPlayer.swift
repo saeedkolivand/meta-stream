@@ -6,7 +6,7 @@ import Foundation
 import Goal
 
 @MainActor
-enum GoalPlayer {
+public enum GoalPlayer {
     private struct Context {
         let style: GoalWidgetStyle
         let screen: GPUWidgetScreenObject
@@ -28,7 +28,7 @@ enum GoalPlayer {
         var toP: Double
     }
 
-    static func run(_ style: GoalWidgetStyle, on screen: GPUWidgetScreenObject, local: CGRect) async {
+    public static func run(_ style: GoalWidgetStyle, on screen: GPUWidgetScreenObject, local: CGRect) async {
         let context = Context(style: style, screen: screen, local: local, seconds: GoalDesignView.reactionSeconds(style.design))
         let store = GoalStore.shared
         var last = ""

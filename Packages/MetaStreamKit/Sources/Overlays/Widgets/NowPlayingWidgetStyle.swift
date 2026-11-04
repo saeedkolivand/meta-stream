@@ -3,10 +3,10 @@
 import CoreGraphics
 import Foundation
 
-enum NowPlayingDesign: String, CaseIterable, Sendable {
+public enum NowPlayingDesign: String, CaseIterable, Sendable {
     case slab, island, disc, ticker, text, twoLine, cover, popup
 
-    var title: String {
+    public var title: String {
         switch self {
         case .slab: "Slab"
         case .island: "Island"
@@ -20,10 +20,10 @@ enum NowPlayingDesign: String, CaseIterable, Sendable {
     }
 
     /// Island, Disc and Ticker animate all the time (equaliser bars, spinning cover): they redraw on a steady tick.
-    var isContinuous: Bool { self == .island || self == .disc || self == .ticker }
+    public var isContinuous: Bool { self == .island || self == .disc || self == .ticker }
 
     /// Share of the widget width the progress bar spans, so the loop redraws only when its pixel width changes. 0 = no bar.
-    var barShare: CGFloat {
+    public var barShare: CGFloat {
         switch self {
         case .slab: 0.7
         case .twoLine: 1
@@ -32,17 +32,17 @@ enum NowPlayingDesign: String, CaseIterable, Sendable {
     }
 
     /// Slab shows "1:02 / 3:20" text, the one thing besides the bar that changes while a song plays.
-    var showsTime: Bool { self == .slab }
+    public var showsTime: Bool { self == .slab }
 }
 
-struct NowPlayingWidgetStyle: Equatable, Sendable {
-    var design: NowPlayingDesign = .slab
-    var accentColor: UInt32 = 0xFF1D_B954   // Spotify green
-    var face = ""
-    var popupSeconds = 6   // Pop-up only: how long it stays after each song change
+public struct NowPlayingWidgetStyle: Equatable, Sendable {
+    public var design: NowPlayingDesign = .slab
+    public var accentColor: UInt32 = 0xFF1D_B954   // Spotify green
+    public var face = ""
+    public var popupSeconds = 6   // Pop-up only: how long it stays after each song change
 
-    init() {}
-    init(_ data: [String: String]) {
+    public init() {}
+    public init(_ data: [String: String]) {
         let defaults = NowPlayingWidgetStyle()
         design = data["design"].flatMap(NowPlayingDesign.init(rawValue:)) ?? defaults.design
         accentColor = data["accentColor"].flatMap { UInt32($0) } ?? defaults.accentColor
@@ -52,7 +52,7 @@ struct NowPlayingWidgetStyle: Equatable, Sendable {
     }
 
     /// Artboard size x 2 (the mockups are half of a 1920x1080 canvas). Text-box designs hug their text inside this area.
-    var natural: CGSize {
+    public var natural: CGSize {
         switch design {
         case .slab: CGSize(width: 840, height: 256)
         case .island: CGSize(width: 880, height: 152)   // 840 open + room for the spring's overshoot
@@ -65,7 +65,7 @@ struct NowPlayingWidgetStyle: Equatable, Sendable {
         }
     }
 
-    var data: [String: String] {
+    public var data: [String: String] {
         ["design": design.rawValue, "accentColor": "\(accentColor)", "face": face, "popupSeconds": "\(popupSeconds)"]
     }
 }

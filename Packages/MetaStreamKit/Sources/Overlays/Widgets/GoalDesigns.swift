@@ -4,24 +4,24 @@
 // nothing happens; the wave phase and bubbles only move with t.
 import SwiftUI
 
-func goalColor(_ argb: UInt32) -> Color { Color(uiColor: OverlayRaster.color(argb: argb)) }
+public func goalColor(_ argb: UInt32) -> Color { Color(uiColor: OverlayRaster.color(argb: argb)) }
 
 extension Color {
-    static let goalInk = Color(red: 18 / 255, green: 19 / 255, blue: 24 / 255)   // the boards' #121318
-    static let goalSteel = Color(red: 0xD7 / 255, green: 0xD8 / 255, blue: 0xDE / 255)
-    static let goalDim = Color(red: 0xA9 / 255, green: 0xAB / 255, blue: 0xB5 / 255)
+    public static let goalInk = Color(red: 18 / 255, green: 19 / 255, blue: 24 / 255)   // the boards' #121318
+    public static let goalSteel = Color(red: 0xD7 / 255, green: 0xD8 / 255, blue: 0xDE / 255)
+    public static let goalDim = Color(red: 0xA9 / 255, green: 0xAB / 255, blue: 0xB5 / 255)
 }
 
-enum GoalMotion {
+public enum GoalMotion {
     /// 0...1 progress of t inside the window a...b.
-    static func seg(_ t: Double, _ a: Double, _ b: Double) -> Double { min(1, max(0, (t - a) / (b - a))) }
+    public static func seg(_ t: Double, _ a: Double, _ b: Double) -> Double { min(1, max(0, (t - a) / (b - a))) }
     /// The move itself (fill, car) takes the first 75% of the reaction, eased.
-    static func move(_ t: Double) -> Double { let s = seg(t, 0, 0.75); return s * s * (3 - 2 * s) }
-    static func smooth(_ s: Double) -> Double { s * s * (3 - 2 * s) }
+    public static func move(_ t: Double) -> Double { let s = seg(t, 0, 0.75); return s * s * (3 - 2 * s) }
+    public static func smooth(_ s: Double) -> Double { s * s * (3 - 2 * s) }
     /// The boards' 6 s loops put the donation at 40...75 % of the loop; `lp` is the eased progress of t inside loop-% window a...b.
-    static func lp(_ t: Double, _ a: Double, _ b: Double) -> Double { smooth(seg(40 + 35 * t, a, b)) }
+    public static func lp(_ t: Double, _ a: Double, _ b: Double) -> Double { smooth(seg(40 + 35 * t, a, b)) }
     /// Piecewise-linear board keyframes (loop %, value) sampled at t; `delay` shifts them later (loop %).
-    static func kf(_ t: Double, _ pts: [(Double, Double)], delay: Double = 0) -> Double {
+    public static func kf(_ t: Double, _ pts: [(Double, Double)], delay: Double = 0) -> Double {
         let l = 40 + 35 * t - delay
         guard var prev = pts.first else { return 0 }
         if l <= prev.0 { return prev.1 }
@@ -34,13 +34,13 @@ enum GoalMotion {
 }
 
 /// Old text fading out, new text rising in.
-struct GoalSwap: View {
-    let before: String
-    let after: String
-    let s: Double
-    var alignment: Alignment = .trailing
+public struct GoalSwap: View {
+    public let before: String
+    public let after: String
+    public let s: Double
+    public var alignment: Alignment = .trailing
 
-    var body: some View {
+    public var body: some View {
         ZStack(alignment: alignment) {
             Text(before).opacity(1 - s)
             Text(after).opacity(s).offset(y: 8 * (1 - s))
@@ -48,22 +48,22 @@ struct GoalSwap: View {
     }
 }
 
-func goalDir(_ text: String) -> LayoutDirection { WidgetFonts.isRTL(text) ? .rightToLeft : .leftToRight }
+public func goalDir(_ text: String) -> LayoutDirection { WidgetFonts.isRTL(text) ? .rightToLeft : .leftToRight }
 
 // MARK: Liquid
 
-struct GoalLiquidView: View {
-    let style: GoalWidgetStyle
-    let title: String
-    let beforeText: String
-    let afterText: String
-    let targetText: String
-    let from: Double
-    let to: Double
-    let deltaText: String
-    let t: Double
+public struct GoalLiquidView: View {
+    public let style: GoalWidgetStyle
+    public let title: String
+    public let beforeText: String
+    public let afterText: String
+    public let targetText: String
+    public let from: Double
+    public let to: Double
+    public let deltaText: String
+    public let t: Double
 
-    var body: some View {
+    public var body: some View {
         let f = min(1, max(0, from + (to - from) * GoalMotion.move(t)))
         let swap = GoalMotion.seg(t, 0.2, 0.5)
         let text = goalColor(style.textColor)
@@ -151,20 +151,20 @@ struct GoalLiquidView: View {
 
 // MARK: Road trip
 
-struct GoalRoadView: View {
-    let style: GoalWidgetStyle
-    let title: String
-    let beforeText: String
-    let afterText: String
-    let targetText: String
-    let from: Double
-    let to: Double
-    let deltaText: String
-    let t: Double
-    var pins: [String] = []          // amounts at 25 / 50 / 75 %
-    var celebrating = false          // the title then is the celebration text, no "Road to:" prefix
+public struct GoalRoadView: View {
+    public let style: GoalWidgetStyle
+    public let title: String
+    public let beforeText: String
+    public let afterText: String
+    public let targetText: String
+    public let from: Double
+    public let to: Double
+    public let deltaText: String
+    public let t: Double
+    public var pins: [String] = []          // amounts at 25 / 50 / 75 %
+    public var celebrating = false          // the title then is the celebration text, no "Road to:" prefix
 
-    var body: some View {
+    public var body: some View {
         let f = min(1, max(0, from + (to - from) * GoalMotion.move(t)))
         let swap = GoalMotion.seg(t, 0.5, 0.8)
         let text = goalColor(style.textColor)
@@ -288,18 +288,18 @@ struct GoalRoadView: View {
 
 // MARK: Segments
 
-struct GoalSegmentsView: View {
-    let style: GoalWidgetStyle
-    let title: String
-    let beforeText: String
-    let afterText: String
-    let targetText: String
-    let from: Double
-    let to: Double
-    let deltaText: String
-    let t: Double
+public struct GoalSegmentsView: View {
+    public let style: GoalWidgetStyle
+    public let title: String
+    public let beforeText: String
+    public let afterText: String
+    public let targetText: String
+    public let from: Double
+    public let to: Double
+    public let deltaText: String
+    public let t: Double
 
-    var body: some View {
+    public var body: some View {
         let nb = min(20, max(0, Int((from * 20).rounded())))
         let na = min(20, max(nb, Int((to * 20).rounded())))
         let accent = goalColor(style.barColor)
@@ -347,23 +347,23 @@ struct GoalSegmentsView: View {
 // MARK: dispatch
 
 /// The chosen non-bar design (`style.design`: "liquid", "road", "segments", "hairline", "island", "miniring", "dots", "spark").
-struct GoalDesignView: View {
-    let style: GoalWidgetStyle
-    let title: String
-    let beforeText: String
-    let afterText: String
-    let targetText: String
-    let from: Double
-    let to: Double
-    let deltaText: String
-    let t: Double
-    var pins: [String] = []
-    var celebrating = false
+public struct GoalDesignView: View {
+    public let style: GoalWidgetStyle
+    public let title: String
+    public let beforeText: String
+    public let afterText: String
+    public let targetText: String
+    public let from: Double
+    public let to: Double
+    public let deltaText: String
+    public let t: Double
+    public var pins: [String] = []
+    public var celebrating = false
 
     /// The designs are laid out in 1280-wide board units (the previews); a stream canvas is 1920 wide, so draw 1.5x.
-    nonisolated static let scale: CGFloat = 1.5   // read by the GPU goal art off the main actor
+    public nonisolated static let scale: CGFloat = 1.5   // read by the GPU goal art off the main actor
 
-    var body: some View {
+    public var body: some View {
         // The box is fixed; variable-width designs hug one side of it (laid out in board units, then scaled).
         let box = style.natural
         design.frame(width: box.width / Self.scale, height: box.height / Self.scale, alignment: Self.side(style.design))
@@ -371,9 +371,9 @@ struct GoalDesignView: View {
             .frame(width: box.width, height: box.height, alignment: .topLeading)
     }
 
-    static func side(_ design: String) -> Alignment { design == "spark" ? .trailing : design == "island" ? .center : .leading }
+    public static func side(_ design: String) -> Alignment { design == "spark" ? .trailing : design == "island" ? .center : .leading }
     /// How long the donation reaction plays (the island pill expands, holds and contracts).
-    static func reactionSeconds(_ design: String) -> Double { design == "island" ? 2.4 : 1.6 }
+    public static func reactionSeconds(_ design: String) -> Double { design == "island" ? 2.4 : 1.6 }
 
     @ViewBuilder private var design: some View {
         switch style.design {
@@ -405,7 +405,7 @@ struct GoalDesignView: View {
     }
 
     /// Settled sample for the layer preview.
-    static func sample(_ style: GoalWidgetStyle) -> GoalDesignView {
+    public static func sample(_ style: GoalWidgetStyle) -> GoalDesignView {
         GoalDesignView(style: style, title: "New camera", beforeText: "€312", afterText: "€312", targetText: "€800",
                        from: 0.39, to: 0.39, deltaText: "", t: 1, pins: ["€200", "€400", "€600"])
     }

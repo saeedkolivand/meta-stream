@@ -1,6 +1,7 @@
 import CoreUI
 import Engine
 import MWDATCore
+import Overlays
 import Platforms
 import Privacy
 import Speech

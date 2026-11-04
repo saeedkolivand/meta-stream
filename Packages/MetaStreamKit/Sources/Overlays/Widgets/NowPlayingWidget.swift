@@ -10,7 +10,7 @@ import Signals
 import UIKit
 
 extension OverlayCompositor {
-    func nowPlayingWidget(_ layer: OverlayLayer, box: CGRect, canvas: CGSize) async -> WidgetBuild? {
+    public func nowPlayingWidget(_ layer: OverlayLayer, box: CGRect, canvas: CGSize) async -> WidgetBuild? {
         guard let rect = OverlayRaster.visible(box, in: canvas) else { return nil }
         let style = NowPlayingWidgetStyle(layer.data)
         let screen = await OverlayScreen.makeGPU(rect)
@@ -23,7 +23,7 @@ extension OverlayCompositor {
 }
 
 @MainActor
-enum NowPlayingPlayer {
+public enum NowPlayingPlayer {
     private struct Snap {
         var track: NowPlayingTrack
         var art: UIImage?
@@ -45,7 +45,7 @@ enum NowPlayingPlayer {
     /// Longest a new song is held back waiting for its cover, so the transition lands with the picture in place.
     private static let artWait = 1.2
 
-    static func run(_ style: NowPlayingWidgetStyle, on screen: GPUWidgetScreenObject, box: CGRect, local: CGRect) async {
+    public static func run(_ style: NowPlayingWidgetStyle, on screen: GPUWidgetScreenObject, box: CGRect, local: CGRect) async {
         let spotify = SpotifyNowPlaying.shared
         spotify.retain()
         defer { spotify.release() }

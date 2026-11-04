@@ -9,7 +9,7 @@ import UIKit
 
 extension OverlayCompositor {
     /// A text layer with an in-app layout (OBS imports keep the bitmap path in LiveTextWidget.swift). nil when blank.
-    func gpuTextWidget(_ layer: OverlayLayer, layout: WidgetLayout, canvas: CGSize) async -> WidgetBuild? {
+    public func gpuTextWidget(_ layer: OverlayLayer, layout: WidgetLayout, canvas: CGSize) async -> WidgetBuild? {
         let template = layer.data["text"] ?? ""
         guard !template.allSatisfy(\.isWhitespace) else { return nil }
         let ctx = context
@@ -64,7 +64,7 @@ extension OverlayCompositor {
     }
 
     /// `still` fading in from nothing over 0.18 s, then held.
-    nonisolated static func fadingIn(_ still: GPUScene) -> GPUScene {
+    public nonisolated static func fadingIn(_ still: GPUScene) -> GPUScene {
         GPUScene(draw: { paper, time in
             let image = still.draw(paper, time)
             return time >= 0.18 ? image : paper.opacity(image, max(0, time / 0.18))
@@ -72,7 +72,7 @@ extension OverlayCompositor {
     }
 
     /// The still scene for `plan`. The shadow is today's (offset 0,2 / blur 4 / black 80%, at 1080 scale) as a GPU recipe.
-    nonisolated static func textScene(_ plan: TextPlan, _ style: TextWidgetStyle, shadowScale unit: CGFloat) -> GPUScene {
+    public nonisolated static func textScene(_ plan: TextPlan, _ style: TextWidgetStyle, shadowScale unit: CGFloat) -> GPUScene {
         GPUScene(draw: { paper, _ in
             var layers: [CIImage] = []
             if style.background {   // ponytail: square corners, as the bitmap path drew them
@@ -91,7 +91,7 @@ extension OverlayCompositor {
 
 extension StingerCanvas {
     /// Each run of `plan` as an image in `argb`, left to right.
-    func txtRuns(_ plan: TextPlan, _ style: TextWidgetStyle, color argb: UInt32) -> [CIImage] {
+    public func txtRuns(_ plan: TextPlan, _ style: TextWidgetStyle, color argb: UInt32) -> [CIImage] {
         plan.items.map { item -> CIImage in
             let mid = CGPoint(x: item.x + item.width / 2, y: item.midY)
             switch item.run {

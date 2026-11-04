@@ -1,3 +1,4 @@
+import Overlays
 import SwiftUI
 
 /// The goal widget's look over a dark stand-in for the stream, at the stream's 16:9, drawn by the same views the

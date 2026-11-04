@@ -1,5 +1,6 @@
 import CoreUI
 import Engine
+import Overlays
 import Platforms
 import SwiftUI
 

@@ -9,9 +9,9 @@ import UIKit
 
 /// Shared by the widget builders: SwiftUI view -> output-px bitmap, and the thermal-aware tick length.
 @MainActor
-enum WidgetRaster {
+public enum WidgetRaster {
     /// ImageRenderer scale = output px per view point, so the bitmap lands at box size with no resampling.
-    static func piece<V: View>(_ view: V, natural: CGSize, box: CGRect, canvas: CGSize) -> OverlayPiece? {
+    public static func piece<V: View>(_ view: V, natural: CGSize, box: CGRect, canvas: CGSize) -> OverlayPiece? {
         guard natural.width > 0 else { return nil }
         let r = ImageRenderer(content: view)
         r.scale = box.width / natural.width
@@ -23,19 +23,19 @@ enum WidgetRaster {
     }
 
     /// Sleep length that doubles when the phone is hot, same backoff as the browser snapshot loop.
-    static func pause(_ ms: Int) -> Duration {
+    public static func pause(_ ms: Int) -> Duration {
         let hot = ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
         return .milliseconds(hot ? ms * 2 : ms)
     }
 }
 
 /// Chat burst: many messages arriving at once. The widget then skips the entry slide (rows just appear).
-enum ChatBurst {
+public enum ChatBurst {
     // ponytail: 3 messages within 1 s counts as a burst. Rows no longer coalesce: each costs one raster either way.
-    static let messages = 3
-    static let window: TimeInterval = 1
+    public static let messages = 3
+    public static let window: TimeInterval = 1
 
-    static func isBurst(_ times: [Date], now: Date) -> Bool {
+    public static func isBurst(_ times: [Date], now: Date) -> Bool {
         times.lazy.filter { now.timeIntervalSince($0) <= window }.count >= messages
     }
 }
@@ -60,7 +60,7 @@ private struct ChatRenderStats {
 }
 
 extension OverlayCompositor {
-    func chatWidget(_ l: OverlayLayer, box: CGRect, canvas: CGSize) async -> WidgetBuild? {
+    public func chatWidget(_ l: OverlayLayer, box: CGRect, canvas: CGSize) async -> WidgetBuild? {
         guard let rect = OverlayRaster.visible(box, in: canvas) else { return nil }
         let style = ChatWidgetStyle(l.data)
         // The box inside the widget's (visible) rect, in the rect's top-left coordinates.
@@ -78,7 +78,7 @@ extension OverlayCompositor {
 /// The loop's state between passes. A pass picks the rows to show, rasterises the new ones and re-shows the scene only when
 /// its row set (or whether it moves) changed.
 @MainActor
-final class ChatPlayer {
+public final class ChatPlayer {
     private let style: ChatWidgetStyle
     private let base: ChatStackSpec
     private let screen: GPUWidgetScreenObject
@@ -86,13 +86,13 @@ final class ChatPlayer {
     private var shown = "start"   // the row keys on the object and whether its scene moves; "" = blank
     private var stats = ChatRenderStats()
 
-    init(_ style: ChatWidgetStyle, spec: ChatStackSpec, screen: GPUWidgetScreenObject) {
+    public init(_ style: ChatWidgetStyle, spec: ChatStackSpec, screen: GPUWidgetScreenObject) {
         self.style = style
         base = spec
         self.screen = screen
     }
 
-    static func run(_ style: ChatWidgetStyle, spec: ChatStackSpec, ctx: WidgetContext, screen: GPUWidgetScreenObject) async {
+    public static func run(_ style: ChatWidgetStyle, spec: ChatStackSpec, ctx: WidgetContext, screen: GPUWidgetScreenObject) async {
         let player = ChatPlayer(style, spec: spec, screen: screen)
         while !Task.isCancelled {
             if let chat = ctx.chat, let emotes = ctx.emotes { await player.pass(chat.visible, emotes) }

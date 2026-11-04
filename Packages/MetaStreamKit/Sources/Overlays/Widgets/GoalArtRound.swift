@@ -11,7 +11,7 @@ extension GoalDraw {
     // MARK: Island pill
 
     /// GoalIslandView: a pill with a ring and "total / target" that bursts open on a donation to show the title and "+delta".
-    func island() -> GoalPiece {
+    public func island() -> GoalPiece {
         let amountW = max(width(input.beforeText, 15, .heavy), width(input.afterText, 15, .heavy))
         let rest = 10 + 26 + 10 + amountW + width(" / " + input.targetText, 15, .semibold) + 16 + 8
         let titleW = width(input.title.uppercased(), 11, .semibold, 0.88)
@@ -61,7 +61,7 @@ extension GoalDraw {
     // MARK: Mini ring
 
     /// GoalMiniRingView: a 72 pt ring (comet and pulse on a donation) with the title, amount and "+delta just now" beside it.
-    func miniRing() -> GoalPiece {
+    public func miniRing() -> GoalPiece {
         let shown = level(GoalMotion.lp(prog, 42, 60))
         let swap = GoalMotion.lp(prog, 56, 62)
         let title = run(input.title.uppercased(), 11, .semibold).tracked(1.54).fading(0.65)
@@ -106,7 +106,7 @@ extension GoalDraw {
     // MARK: Dot wave
 
     /// GoalDotsView: title and amounts over a row of 24 dots that ripple and pop on a donation.
-    func dots() -> GoalPiece {
+    public func dots() -> GoalPiece {
         let count = 24
         let nb = min(count, max(0, Int((input.from * Double(count)).rounded())))
         let na = min(count, max(nb, Int((input.to * Double(count)).rounded())))

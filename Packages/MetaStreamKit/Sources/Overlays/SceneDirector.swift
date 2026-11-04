@@ -9,20 +9,20 @@ import Engine
 import Foundation
 
 @MainActor
-final class SceneDirector: SceneCompositor {
-    static let shared = SceneDirector()
+public final class SceneDirector: SceneCompositor {
+    public static let shared = SceneDirector()
 
-    weak var streamer: Streamer?
+    public weak var streamer: Streamer?
     /// Role changes, for the app bot's chat notice (App.swift; Android: SceneRoles.onRole).
-    var onRole: (_ role: String, _ on: Bool) -> Void = { _, _ in }
+    public var onRole: (_ role: String, _ on: Bool) -> Void = { _, _ in }
 
-    let overlays = OverlayCompositor()           // scene layers on the mixer's Screen
+    public let overlays = OverlayCompositor()           // scene layers on the mixer's Screen
     private var sceneRotationTask: Task<Void, Never>?    // auto-rotate loop, see updateSceneRotation()
     private var pendingSceneFade = false                 // set by a scene change, consumed by the next sync
-    private(set) var roleActive: String?                 // the role whose scene is up, nil = none
+    public private(set) var roleActive: String?                 // the role whose scene is up, nil = none
     private var roleBack: String?                        // scene to return to when the role ends
     private var roleTask: Task<Void, Never>?             // Starting countdown / Ending hold
-    private(set) var countdownEnd: Date?                 // Starting countdown, for {countdown}
+    public private(set) var countdownEnd: Date?                 // Starting countdown, for {countdown}
     private var weakTicks = 0, goodTicks = 0             // consecutive seconds of weak / healthy throughput
     private var weakNoticed = false                      // weak link announced in chat without a BRB scene
     private var stingerTarget: String?                   // scene the running stinger will cut to
@@ -34,14 +34,14 @@ final class SceneDirector: SceneCompositor {
 
     // MARK: SceneCompositor
 
-    var wanted: Bool { (streamer?.overlaysUsable ?? false) && hasScene }
+    public var wanted: Bool { (streamer?.overlaysUsable ?? false) && hasScene }
 
-    var hasScene: Bool { OverlayStore.shared.activeScene != nil }
+    public var hasScene: Bool { OverlayStore.shared.activeScene != nil }
 
     /// Builds, swaps or clears the scene on the mixer's Screen. Idempotent (the compositor compares scene, canvas,
     /// mixer and imported files). Call it with the render loop off or the canvas size unchanged: syncBlurEffect runs it
     /// before turning offscreen mode on.
-    func sync() async {
+    public func sync() async {
         guard let s = streamer else { return }
         let store = OverlayStore.shared
         let fade = pendingSceneFade
@@ -49,9 +49,9 @@ final class SceneDirector: SceneCompositor {
         await overlays.apply(scene: s.overlaysUsable ? store.activeScene : nil, pack: store.pack, canvas: s.blurCanvasSize, mixer: s.mixer, fade: fade)
     }
 
-    func sessionStarted() { startRole() }
+    public func sessionStarted() { startRole() }
 
-    func sessionEnded() { roleEnd() }
+    public func sessionEnded() { roleEnd() }
 
     // MARK: Scenes
 
@@ -59,7 +59,7 @@ final class SceneDirector: SceneCompositor {
     /// one that is available, and fades overlays when the store's transition is "fade". "" (or an unknown name) clears.
     /// A manual pick of a scene outside the rotation list stops auto-rotate. A manual pick also ends any scene role
     /// (Starting / BRB / Ending) with no return to the old scene: the streamer's choice always wins.
-    func selectScene(_ name: String) {
+    public func selectScene(_ name: String) {
         let store = OverlayStore.shared
         applyScene(name)
         clearRole()
@@ -70,7 +70,7 @@ final class SceneDirector: SceneCompositor {
     }
 
     /// Scene change with the store's transition: a stinger covers it when overlays are usable, otherwise it is a cut.
-    func applyScene(_ name: String) {
+    public func applyScene(_ name: String) {
         guard let s = streamer else { return }
         let store = OverlayStore.shared
         if stingerTarget != nil { stingerTarget = name; return }   // a stinger is mid-flight: it cuts to the latest pick
@@ -147,7 +147,7 @@ final class SceneDirector: SceneCompositor {
     }
 
     /// Starts/stops the rotation loop to match the store's rotateOn / rotateScenes / rotateSeconds. Call after changing them.
-    func updateSceneRotation() {
+    public func updateSceneRotation() {
         sceneRotationTask?.cancel()
         sceneRotationTask = nil
         guard roleActive == nil, OverlayStore.shared.rotateOn, rotationScenes().count >= 2 else { return }
@@ -187,7 +187,7 @@ final class SceneDirector: SceneCompositor {
     }
 
     /// {countdown}: remaining Starting time as m:ss, empty when no countdown runs.
-    var countdownText: String {
+    public var countdownText: String {
         guard let end = countdownEnd else { return "" }
         return Streamer.fmtClock(max(0, end.timeIntervalSinceNow.rounded(.up)))
     }
@@ -210,7 +210,7 @@ final class SceneDirector: SceneCompositor {
     }
 
     /// Role over: back to the scene from before it, rotation resumes.
-    func roleEnd() {
+    public func roleEnd() {
         guard let role = roleActive else { return }
         let back = roleBack ?? ""
         clearRole(log: false)
@@ -219,7 +219,7 @@ final class SceneDirector: SceneCompositor {
     }
 
     /// Role over without a return (manual pick, or a cancelled Ending hold). No-op when no role is up.
-    func clearRole(log: Bool = true) {
+    public func clearRole(log: Bool = true) {
         guard let role = roleActive else { return }
         roleActive = nil; roleBack = nil; countdownEnd = nil; streamer?.endingIn = nil
         roleTask?.cancel(); roleTask = nil
@@ -242,7 +242,7 @@ final class SceneDirector: SceneCompositor {
     /// Called from the 1 s tick. A dropped link or over 2 s of video stuck in the uplink queue for 5 s puts the BRB
     /// scene up; connected with under 0.5 s queued for 10 s takes it down. With no BRB scene the stream stays as it is
     /// and only the app bot's chat notice goes out (weakNoticed pairs its "back" line).
-    func checkBRB() {
+    public func checkBRB() {
         guard let s = streamer, s.live, roleActive == nil || roleActive == "brb" else {
             weakTicks = 0; goodTicks = 0; weakNoticed = false; return
         }
@@ -263,7 +263,7 @@ final class SceneDirector: SceneCompositor {
     }
 
     /// The Stop button: with an Ending scene, hold it for the Ending hold before stopping; a second tap stops now.
-    func requestStop() {
+    public func requestStop() {
         guard let s = streamer else { return }
         let hold = endingHoldSeconds
         if roleActive == "ending" { s.stopLive(); return }

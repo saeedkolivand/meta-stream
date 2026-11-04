@@ -6,9 +6,9 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import UIKit
 
-enum QRArt {
+public enum QRArt {
     /// A still scene for `box` (top-left coordinates inside the widget); nil when there is nothing to encode.
-    static func scene(_ style: QRWidgetStyle, box: CGRect) -> GPUScene? {
+    public static func scene(_ style: QRWidgetStyle, box: CGRect) -> GPUScene? {
         let size = CGSize(width: box.width.rounded(), height: box.height.rounded())
         guard !style.text.isEmpty, size.width >= 8, size.height >= 8 else { return nil }
         let area = CGRect(origin: box.origin, size: size)

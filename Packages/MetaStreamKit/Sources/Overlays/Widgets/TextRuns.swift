@@ -4,31 +4,31 @@
 import CoreLogging
 import UIKit
 
-enum TextRun: Equatable, Sendable {
+public enum TextRun: Equatable, Sendable {
     case text(String)
     case icon(String)
 }
 
 /// Where each run of a text widget sits, in px, top-left origin, padding included.
-struct TextPlan: Sendable {
-    struct Item: Sendable {
-        let run: TextRun
-        let x: CGFloat       // left edge
-        let width: CGFloat
-        let midY: CGFloat    // vertical centre: of the line box for text, of the cap height for an icon
+public struct TextPlan: Sendable {
+    public struct Item: Sendable {
+        public let run: TextRun
+        public let x: CGFloat       // left edge
+        public let width: CGFloat
+        public let midY: CGFloat    // vertical centre: of the line box for text, of the cap height for an icon
     }
 
-    var items: [Item] = []
-    var size = CGSize.zero   // natural size of the widget box, padding included
-    var pad: CGFloat = 0
-    var px: CGFloat = 0
+    public var items: [Item] = []
+    public var size = CGSize.zero   // natural size of the widget box, padding included
+    public var pad: CGFloat = 0
+    public var px: CGFloat = 0
 }
 
-enum TextRuns {
+public enum TextRuns {
     private static func isNameChar(_ ch: Character) -> Bool { ch.isLetter || ch.isNumber || ch == "." || ch == "-" || ch == "_" }
 
     /// Splits `s` at its `{i:name}` tokens. A "{i:" that isn't a well-formed token stays plain text.
-    static func parse(_ text: String) -> [TextRun] {
+    public static func parse(_ text: String) -> [TextRun] {
         var out: [TextRun] = []
         func add(_ part: Substring) {
             guard !part.isEmpty else { return }
@@ -51,11 +51,11 @@ enum TextRuns {
     }
 
     /// One run list per line.
-    static func lines(_ text: String) -> [[TextRun]] { text.components(separatedBy: "\n").map(parse) }
+    public static func lines(_ text: String) -> [[TextRun]] { text.components(separatedBy: "\n").map(parse) }
 
     /// Runs the widget draws: text at `px` (bold or regular, `face`), icons at the same point size, lines left-aligned.
     /// `pad` is the backdrop's margin. Measured exactly as StingerCanvas draws (same font, same NSAttributedString size).
-    static func plan(_ text: String, face: String, bold: Bool, px: CGFloat, pad: CGFloat) -> TextPlan {
+    public static func plan(_ text: String, face: String, bold: Bool, px: CGFloat, pad: CGFloat) -> TextPlan {
         let font = WidgetFonts.uiFont(face: face, size: px, weight: bold ? .bold : .regular)
         let rowH = ceil(font.lineHeight)
         let iconMid = font.ascender - font.capHeight / 2
@@ -92,14 +92,14 @@ enum TextRuns {
     ]
 
     /// `s` with those emoji swapped for icon tokens (a variation selector after one is dropped with it).
-    static func iconized(_ text: String) -> String {
+    public static func iconized(_ text: String) -> String {
         var out = text.replacingOccurrences(of: "\u{FE0F}", with: "")
         for (emoji, symbol) in emojiIcons { out = out.replacingOccurrences(of: emoji, with: "{i:\(symbol)}") }
         return out
     }
 
     /// `pack` with the emoji in its in-app text layers swapped for icon tokens; nil when nothing changed.
-    static func iconized(_ pack: OverlayPack) -> OverlayPack? {
+    public static func iconized(_ pack: OverlayPack) -> OverlayPack? {
         var moved = pack, changed = false
         for sc in moved.scenes.indices {
             for li in moved.scenes[sc].layers.indices {
@@ -116,7 +116,7 @@ enum TextRuns {
     }
 
     /// Icons the editor offers, as SF Symbol names.
-    static let palette = [
+    public static let palette = [
         "clock", "record.circle", "eye", "car.fill", "road.lanes", "camera", "music.note", "paperplane", "flame", "stopwatch", "mappin",
         "heart.fill", "banknote", "target", "star.fill", "bolt.fill", "bell.fill", "gift.fill", "trophy.fill", "mic.fill",
         "gamecontroller.fill", "location.fill", "cloud.sun.fill", "link"
@@ -125,7 +125,7 @@ enum TextRuns {
 
 #if DEBUG
 extension TextRuns {
-    static func demo() {
+    public static func demo() {
         assert(parse("") == [], "empty")
         assert(parse("plain") == [.text("plain")], "no token")
         assert(parse("{i:clock} {time}") == [.icon("clock"), .text(" {time}")], "leading icon")

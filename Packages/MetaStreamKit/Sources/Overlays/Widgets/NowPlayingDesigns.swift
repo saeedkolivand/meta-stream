@@ -2,10 +2,10 @@
 import SwiftUI
 
 /// Dark card: cover, NOW PLAYING in the accent, title, artist, progress bar with times. Title and artist slide up.
-struct NPSlab: View {
-    let x: NPContext
+public struct NPSlab: View {
+    public let x: NPContext
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 24) {
             HStack(spacing: 28) {
                 x.cover(144, radius: 20).npLane(x.pose.cover)
@@ -38,12 +38,12 @@ struct NPSlab: View {
 
 /// Capsule that collapses to the round cover, the cover pops, and the capsule springs open again. Three level bars
 /// play all the time. The capsule is laid out at its open width and only clipped narrower, so text never reflows.
-struct NPIsland: View {
-    let x: NPContext
+public struct NPIsland: View {
+    public let x: NPContext
     private let openW: CGFloat = 840   // the spring overshoots past this by ~5% of the travel; the 880 natural width leaves room
     private let height: CGFloat = 152
 
-    var body: some View {
+    public var body: some View {
         let width = min(880, max(height, height + (openW - height) * x.pose.reveal))
         HStack(spacing: 28) {
             x.cover(112, radius: 56).npLane(x.pose.cover)
@@ -73,8 +73,8 @@ struct NPIsland: View {
 
 /// Round cover that spins all the time inside a progress ring; the disc drops out, a new one drops in with a bounce,
 /// and the text slides sideways.
-struct NPDisc: View {
-    let x: NPContext
+public struct NPDisc: View {
+    public let x: NPContext
 
     private var discLane: NowPlayingLane {
         var lane = x.pose.cover
@@ -82,7 +82,7 @@ struct NPDisc: View {
         return lane
     }
 
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 32) {
             ZStack {
                 Circle().stroke(Color.npTrack, lineWidth: 8).frame(width: 172, height: 172)
@@ -112,10 +112,10 @@ struct NPDisc: View {
 }
 
 /// Slim strip: small cover (flips), equaliser bars, "Artist - Title". The text clip-wipes out and in; the strip hugs it.
-struct NPTicker: View {
-    let x: NPContext
+public struct NPTicker: View {
+    public let x: NPContext
 
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 24) {
             x.cover(72, radius: 12).npLane(x.pose.cover)
             HStack(alignment: .bottom, spacing: 4) {

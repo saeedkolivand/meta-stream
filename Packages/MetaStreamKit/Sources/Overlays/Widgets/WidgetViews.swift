@@ -11,7 +11,7 @@ import UIKit
 private func argbColor(_ argb: UInt32) -> Color { Color(uiColor: OverlayRaster.color(argb: argb)) }
 
 /// SF Symbol + tint per event kind, shared by chat event rows and the event list.
-func eventSymbol(_ k: ChatEvent.Kind) -> (name: String, color: Color) {
+public func eventSymbol(_ k: ChatEvent.Kind) -> (name: String, color: Color) {
     switch k {
     case .message: return ("bubble.left.fill", .white)
     case .follow: return ("heart.fill", .pink)
@@ -32,17 +32,17 @@ private extension View {
 
 // MARK: chat
 
-struct StreamChatView: View {
-    let events: [ChatEvent]
-    let style: ChatWidgetStyle
-    var emotes: Emotes
-    var channel: String = ""
-    var now: Date = Date()
+public struct StreamChatView: View {
+    public let events: [ChatEvent]
+    public let style: ChatWidgetStyle
+    public var emotes: Emotes
+    public var channel: String = ""
+    public var now: Date = Date()
     /// Chat burst (see ChatBurst): rows appear without the entry slide.
-    var burst = false
+    public var burst = false
 
     /// Events that survive the filters and the fade, oldest first, at most maxMessages.
-    static func rows(_ events: [ChatEvent], _ style: ChatWidgetStyle, now: Date) -> [ChatEvent] {
+    public static func rows(_ events: [ChatEvent], _ style: ChatWidgetStyle, now: Date) -> [ChatEvent] {
         let fade = Double(style.fadeSeconds)
         let kept = events.filter { e in
             if fade > 0, now.timeIntervalSince(e.at) > fade { return false }
@@ -55,7 +55,7 @@ struct StreamChatView: View {
     }
 
     /// 1 until the last 2 s before the fade deadline, then ramps to 0.
-    static func opacity(_ e: ChatEvent, _ style: ChatWidgetStyle, now: Date) -> Double {
+    public static func opacity(_ e: ChatEvent, _ style: ChatWidgetStyle, now: Date) -> Double {
         let fade = Double(style.fadeSeconds)
         guard fade > 0 else { return 1 }
         return max(0, min(1, (fade - now.timeIntervalSince(e.at)) / 2))
@@ -73,12 +73,12 @@ struct StreamChatView: View {
     }
 
     /// Entry motion: 0 -> 1 over the first 0.32 s of a message's life (ease-out), so new rows rise and fade in.
-    static func appear(_ e: ChatEvent, now: Date) -> Double {
+    public static func appear(_ e: ChatEvent, now: Date) -> Double {
         let t = min(1, max(0, now.timeIntervalSince(e.at) / 0.32))
         return 1 - pow(1 - t, 3)
     }
 
-    var body: some View {
+    public var body: some View {
         let rows = Self.rows(events, style, now: now)
         VStack(alignment: .leading, spacing: size * 0.32) {
             ForEach(Array(rows.enumerated()), id: \.offset) { i, e in
@@ -97,7 +97,7 @@ struct StreamChatView: View {
     }
 
     /// Brand accents, not DisplayNames' UI tints: on video the real brand colours read instantly.
-    static func brand(_ origin: String) -> Color {
+    public static func brand(_ origin: String) -> Color {
         switch origin {
         case "twitch": return Color(red: 0.57, green: 0.27, blue: 1)        // #9146FF
         case "youtube": return Color(red: 1, green: 0, blue: 0.2)          // #FF0033
@@ -107,7 +107,7 @@ struct StreamChatView: View {
 
     /// One row on its own: the GPU chat widget rasterises each row once with this (ChatRows.swift).
     @ViewBuilder
-    func row(_ e: ChatEvent, animate: Bool) -> some View {
+    public func row(_ e: ChatEvent, animate: Bool) -> some View {
         Group {
             if e.kind == .message { messageCard(e, animate: animate) } else { eventPill(e) }
         }
@@ -118,7 +118,7 @@ struct StreamChatView: View {
     /// gradients or borders; with the background off the text sits flush left on the video.
     /// Only the newest rows play animated emotes; older ones hold their first frame. ponytail: 3 rows keeps an idle
     /// chat with one old catJAM from redrawing the whole widget at 10 fps.
-    static let animatedRows = 3
+    public static let animatedRows = 3
 
     private func messageCard(_ e: ChatEvent, animate: Bool) -> some View {
         let text = argbColor(style.textColor)
@@ -193,7 +193,7 @@ struct StreamChatView: View {
         }
     }
 
-    static var samples: [ChatEvent] {   // computed so previews get fresh timestamps and never age out under "fade"
+    public static var samples: [ChatEvent] {   // computed so previews get fresh timestamps and never age out under "fade"
         [
             ChatEvent(kind: .message, user: "ninja_fox", text: "that clutch was insane", origin: "twitch", badges: ["subscriber"], color: "#FF7F50"),
             ChatEvent(kind: .message, user: "سارا", text: "سلام! استریم خیلی خوبه 🔥", origin: "kick", badges: ["vip"], color: "#4FC3F7"),
@@ -203,16 +203,26 @@ struct StreamChatView: View {
             ChatEvent(kind: .tip, user: "Lena", text: "keep it up!", amountCents: 500, origin: "youtube"),
         ].map { e in var e = e; e.at = Date().addingTimeInterval(-3); return e }   // past the entry motion, so previews show them settled
     }
+
+    public init(events: [ChatEvent], style: ChatWidgetStyle, emotes: Emotes, channel: String = "", now: Date = Date(),
+                burst: Bool = false) {
+        self.events = events
+        self.style = style
+        self.emotes = emotes
+        self.channel = channel
+        self.now = now
+        self.burst = burst
+    }
 }
 
 // MARK: alerts
 
 /// "Island" alert: a near-black capsule that drops in as a dot, opens, shows the event and closes again. All motion
 /// comes from `pose` (see AlertIsland), so a frame is a pure function of its inputs; the default pose is the settled card.
-struct AlertBannerView: View {
-    let event: ChatEvent
-    let style: AlertWidgetStyle
-    var pose = AlertPose.settled
+public struct AlertBannerView: View {
+    public let event: ChatEvent
+    public let style: AlertWidgetStyle
+    public var pose = AlertPose.settled
 
     private var size: CGFloat { CGFloat(style.fontSize) }
     private var big: Bool { AlertIsland.isBig(event) }
@@ -220,7 +230,7 @@ struct AlertBannerView: View {
     private var fullWidth: CGFloat { big ? 800 : 740 }
     private func font(_ k: CGFloat, _ w: UIFont.Weight) -> Font { WidgetFonts.font(face: style.face, size: size * k, weight: w) }
 
-    var body: some View {
+    public var body: some View {
         let tint = argbColor(AlertIsland.color(event.kind, accent: style.accentColor))
         let open = max(0, pose.open)
         ZStack {
@@ -269,22 +279,28 @@ struct AlertBannerView: View {
         .padding(.leading, (height - d) / 2).padding(.trailing, 44)
     }
 
-    static var sample: ChatEvent { ChatEvent(kind: .raid, user: "ninja_fox", text: "", count: 120, origin: "twitch") }
+    public static var sample: ChatEvent { ChatEvent(kind: .raid, user: "ninja_fox", text: "", count: 120, origin: "twitch") }
+
+    public init(event: ChatEvent, style: AlertWidgetStyle, pose: AlertPose = .settled) {
+        self.event = event
+        self.style = style
+        self.pose = pose
+    }
 }
 
 // MARK: event list
 
-struct EventListView: View {
-    let events: [ChatEvent]
-    let style: EventListStyle
+public struct EventListView: View {
+    public let events: [ChatEvent]
+    public let style: EventListStyle
 
     /// Newest first, only the kinds the style shows.
-    static func rows(_ events: [ChatEvent], _ style: EventListStyle) -> [ChatEvent] {
+    public static func rows(_ events: [ChatEvent], _ style: EventListStyle) -> [ChatEvent] {
         Array(events.filter { $0.kind != .message && style.shows($0.kind) && !$0.offensive }.suffix(Int(style.maxEvents)).reversed())
     }
 
     /// One event on its own (the GPU event list rasterises each once, see EventRows.swift).
-    func row(_ e: ChatEvent) -> some View {
+    public func row(_ e: ChatEvent) -> some View {
         HStack(spacing: 8) {
             Image(systemName: eventSymbol(e.kind).name).foregroundColor(eventSymbol(e.kind).color)
             Text(DisplayNames.eventSummary(e)).foregroundColor(argbColor(style.textColor)).lineLimit(2).multilineTextAlignment(.leading)
@@ -297,7 +313,7 @@ struct EventListView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             ForEach(Array(Self.rows(events, style).enumerated()), id: \.offset) { _, e in row(e) }
         }
@@ -306,7 +322,7 @@ struct EventListView: View {
         .clipped()
     }
 
-    static var samples: [ChatEvent] {
+    public static var samples: [ChatEvent] {
         [
             ChatEvent(kind: .follow, user: "ninja_fox", origin: "twitch"),
             ChatEvent(kind: .subscribe, user: "سارا", origin: "kick"),
@@ -315,14 +331,19 @@ struct EventListView: View {
             ChatEvent(kind: .cheer, user: "Reza", count: 100, origin: "twitch"),
         ]
     }
+
+    public init(events: [ChatEvent], style: EventListStyle) {
+        self.events = events
+        self.style = style
+    }
 }
 
 // MARK: QR
 
-enum QRCode {
+public enum QRCode {
     /// `size` is in output px; the code is a square of `size.width` with the caption in the rest. Nearest-neighbour
     /// scaling keeps module edges crisp for scanners (CoreImage's own output is 1 px per module).
-    @MainActor static func image(_ text: String, style: QRWidgetStyle, size: CGSize) -> UIImage? {
+    @MainActor public static func image(_ text: String, style: QRWidgetStyle, size: CGSize) -> UIImage? {
         guard !text.isEmpty, size.width >= 8, size.height >= 8 else { return nil }
         let f = CIFilter.qrCodeGenerator()
         f.message = Data(text.utf8)

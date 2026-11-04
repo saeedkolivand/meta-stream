@@ -5,7 +5,7 @@ import Signals
 import UIKit
 
 extension OverlayCompositor {
-    func liveTextWidget(_ l: OverlayLayer, canvas: CGSize) async -> WidgetBuild? {
+    public func liveTextWidget(_ l: OverlayLayer, canvas: CGSize) async -> WidgetBuild? {
         let template = l.data["text"] ?? ""
         guard !template.allSatisfy(\.isWhitespace) else { return nil }
         let ctx = context
@@ -42,7 +42,7 @@ extension OverlayCompositor {
     }
 
     /// The non-blank line of `template` shown at `now`, advancing every `seconds`; the whole template if it has no lines.
-    nonisolated static func rotatingLine(_ template: String, seconds: Int, now: Date) -> String {
+    public nonisolated static func rotatingLine(_ template: String, seconds: Int, now: Date) -> String {
         let lines = template.split(separator: "\n").map(String.init).filter { !$0.allSatisfy(\.isWhitespace) }
         if lines.isEmpty { return template }
         return lines[(Int(now.timeIntervalSince1970) / max(1, seconds)) % lines.count]

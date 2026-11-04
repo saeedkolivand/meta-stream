@@ -62,7 +62,7 @@ extension DonationArt {
     // MARK: coin burst
 
     /// A dark card pops in with a ring pulse and 18 coins flying out; the amount's digits roll up like an odometer.
-    static func coinBurst(p: Double, info: DonationAlertInfo, style: DonationAlertStyle, c: StingerCanvas, b: DonationBoard) -> CIImage {
+    public static func coinBurst(p: Double, info: DonationAlertInfo, style: DonationAlertStyle, c: StingerCanvas, b: DonationBoard) -> CIImage {
         guard p < 0.93 else { return .empty() }
         let acc: UInt32 = style.accent == 0 ? 0xFFF5_C542 : style.accent | 0xFF00_0000
         let ink: UInt32 = 0xFF0B_0C0F
@@ -189,7 +189,7 @@ extension DonationArt {
     // MARK: neon
 
     /// A neon sign: name and amount in glass tubes that flicker on, a frame, a coloured light spill, sparks, a message line.
-    static func neon(p: Double, info: DonationAlertInfo, style: DonationAlertStyle, c: StingerCanvas, b: DonationBoard) -> CIImage {
+    public static func neon(p: Double, info: DonationAlertInfo, style: DonationAlertStyle, c: StingerCanvas, b: DonationBoard) -> CIImage {
         guard p < 0.9 else { return .empty() }
         let a: UInt32 = style.accent == 0 ? 0xFFFF_3DA6 : style.accent | 0xFF00_0000
         let sec: UInt32 = style.second == 0 ? 0xFF3D_E8FF : style.second | 0xFF00_0000
@@ -273,7 +273,7 @@ extension DonationArt {
     // MARK: receipt
 
     /// A tip printer feeds a paper receipt out in 16 steps; a THANK YOU stamp slams on it; then it tears off and falls.
-    static func receipt(p: Double, info: DonationAlertInfo, style: DonationAlertStyle, c: StingerCanvas, b: DonationBoard) -> CIImage {
+    public static func receipt(p: Double, info: DonationAlertInfo, style: DonationAlertStyle, c: StingerCanvas, b: DonationBoard) -> CIImage {
         guard p < 0.97 else { return .empty() }
         let acc: UInt32 = style.accent == 0 ? 0xFFE5_352B : style.accent | 0xFF00_0000
         let paperC: UInt32 = 0xFFF3_F0E6, ink: UInt32 = 0xFF18_181B

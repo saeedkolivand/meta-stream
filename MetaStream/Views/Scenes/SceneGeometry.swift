@@ -1,3 +1,4 @@
+import Overlays
 import SwiftUI
 
 /// Where a layer sits on a canvas of `canvas` output px, as the compositor places it (no {token} resolving, so a

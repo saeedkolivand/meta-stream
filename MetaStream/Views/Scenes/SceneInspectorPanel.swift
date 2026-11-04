@@ -1,3 +1,4 @@
+import Overlays
 import SwiftUI
 
 /// The inspector chrome: the layer's name, a Content | Style | Position switch, and that tab's form. The iPhone sheet

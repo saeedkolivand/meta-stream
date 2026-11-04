@@ -4,19 +4,19 @@ import SwiftUI
 
 /// The text widgets' box, hugging its content and clip-wiped from the left: at reveal 0 only `shut` points of it show
 /// (the note, or the cover), 0 hides it entirely.
-struct NPBox<Content: View>: View {
-    let x: NPContext
-    let shut: CGFloat
-    let maxWidth: CGFloat
-    let pad: EdgeInsets
-    let content: Content
+public struct NPBox<Content: View>: View {
+    public let x: NPContext
+    public let shut: CGFloat
+    public let maxWidth: CGFloat
+    public let pad: EdgeInsets
+    public let content: Content
 
-    init(x: NPContext, shut: CGFloat, maxWidth: CGFloat, pad: EdgeInsets = EdgeInsets(top: 9.6, leading: 9.6, bottom: 9.6, trailing: 9.6),
+    public init(x: NPContext, shut: CGFloat, maxWidth: CGFloat, pad: EdgeInsets = EdgeInsets(top: 9.6, leading: 9.6, bottom: 9.6, trailing: 9.6),
          @ViewBuilder content: () -> Content) {
         self.x = x; self.shut = shut; self.maxWidth = maxWidth; self.pad = pad; self.content = content()
     }
 
-    var body: some View {
+    public var body: some View {
         content
             .padding(pad)
             .background(Color.npBox)
@@ -26,10 +26,10 @@ struct NPBox<Content: View>: View {
 }
 
 /// "Note + Artist - Title"; a song change wipes the box back to just the note, then open again.
-struct NPText: View {
-    let x: NPContext
+public struct NPText: View {
+    public let x: NPContext
 
-    var body: some View {
+    public var body: some View {
         NPBox(x: x, shut: 62, maxWidth: 920) {
             HStack(spacing: 12) {
                 Image(systemName: "music.note").font(x.font(30)).npShadow()
@@ -40,10 +40,10 @@ struct NPText: View {
 }
 
 /// "Note + Title" over the artist, a thin progress line along the bottom; the lines slide up one after the other.
-struct NPTwoLine: View {
-    let x: NPContext
+public struct NPTwoLine: View {
+    public let x: NPContext
 
-    var body: some View {
+    public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 12) {
@@ -72,10 +72,10 @@ struct NPTwoLine: View {
 }
 
 /// A small square cover instead of the note; the box wipes and the cover flips on a song change.
-struct NPCornerCover: View {
-    let x: NPContext
+public struct NPCornerCover: View {
+    public let x: NPContext
 
-    var body: some View {
+    public var body: some View {
         NPBox(x: x, shut: 60, maxWidth: 920, pad: EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 12)) {
             HStack(spacing: 14) {
                 x.cover(44, radius: 0).npLane(x.pose.cover)
@@ -89,10 +89,10 @@ struct NPCornerCover: View {
 }
 
 /// "Note + Now playing: Artist - Title" wipes open on each song change; the widget task closes it after the hold time.
-struct NPPopup: View {
-    let x: NPContext
+public struct NPPopup: View {
+    public let x: NPContext
 
-    var body: some View {
+    public var body: some View {
         NPBox(x: x, shut: 0, maxWidth: 1040) {
             HStack(spacing: 12) {
                 Image(systemName: "music.note").font(x.font(30)).npShadow()

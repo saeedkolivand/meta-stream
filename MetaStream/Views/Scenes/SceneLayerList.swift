@@ -1,3 +1,4 @@
+import Overlays
 import SwiftUI
 
 /// The scene's layers, top of the stack first: tap to select, eye to hide, swipe to delete, Edit to drag-reorder.

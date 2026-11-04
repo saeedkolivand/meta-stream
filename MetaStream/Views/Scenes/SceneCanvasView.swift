@@ -1,6 +1,7 @@
 import Chat
 import CoreUI
 import Engine
+import Overlays
 import SwiftUI
 
 /// The scene editor's canvas: the output frame at its real aspect, every visible layer drawn where the compositor will

@@ -5,8 +5,8 @@ import Foundation
 
 // ponytail: OBS doesn't store the canvas size in the scene collection (it lives in the profile), so assume 1920x1080.
 // Upgrade path: a canvas size field in the import UI.
-let obsCanvasW = 1920
-let obsCanvasH = 1080
+public let obsCanvasW = 1920
+public let obsCanvasH = 1080
 
 private let maxDepth = 8
 private typealias JSON = [String: Any]
@@ -35,7 +35,7 @@ private extension Dictionary where Key == String, Value == Any {
 }
 
 /// OBS colors are 0xAABBGGRR; the screen wants ARGB. A zero alpha means "unset" in OBS text sources, so it becomes opaque.
-func obsColor(_ v: UInt32) -> UInt32 {
+public func obsColor(_ v: UInt32) -> UInt32 {
     let alpha = (v >> 24) & 255
     let a: UInt32 = alpha == 0 ? 255 : alpha
     let r: UInt32 = v & 255
@@ -44,7 +44,7 @@ func obsColor(_ v: UInt32) -> UInt32 {
     return (a << 24) | (r << 16) | (g << 8) | b
 }
 
-enum ObsParseError: Error { case notObject }
+public enum ObsParseError: Error { case notObject }
 
 /// Parser state: the source lookups plus the layers and skipped tally of the scene being walked.
 private struct Ctx {
@@ -61,7 +61,7 @@ private struct Xf {
 }
 
 /// Throws on text that isn't a JSON object; a valid object without sources yields zero scenes.
-func parseObs(_ json: String) throws -> OverlayPack {
+public func parseObs(_ json: String) throws -> OverlayPack {
     guard let root = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? JSON else { throw ObsParseError.notObject }
     let sources = root.list("sources")
     var ctx = Ctx(byUuid: [:], byName: [:])

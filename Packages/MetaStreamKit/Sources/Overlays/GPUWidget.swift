@@ -8,21 +8,21 @@ import QuartzCore
 import UIKit
 
 /// One look of a widget. `draw` must be pure: the same scene and time give the same picture.
-struct GPUScene: Sendable {
+public struct GPUScene: Sendable {
     /// Draws the widget into its box (top-left origin, canvas = the widget's bounds). `t` = seconds since `epoch`.
-    var draw: @Sendable (StingerCanvas, _ t: Double) -> CIImage
+    public var draw: @Sendable (StingerCanvas, _ t: Double) -> CIImage
     /// While true the object redraws every frame (a transition, a spinning disc); false = only when the scene changes.
-    var moving = false
-    var epoch: Double = CACurrentMediaTime()
+    public var moving = false
+    public var epoch: Double = CACurrentMediaTime()
 }
 
-final class GPUWidgetScreenObject: ScreenObject {
+public final class GPUWidgetScreenObject: ScreenObject {
     private var scene: GPUScene?
     private var canvas: StingerCanvas?
     private var ticker: Task<Void, Never>?
 
     /// nil blanks the widget. A moving scene keeps the object redrawing at 60 Hz until a still one (or nil) replaces it.
-    func show(_ next: GPUScene?) {
+    public func show(_ next: GPUScene?) {
         scene = next
         invalidateLayout()
         if next?.moving == true {
@@ -41,7 +41,7 @@ final class GPUWidgetScreenObject: ScreenObject {
         }
     }
 
-    override func makeImage(_ renderer: some ScreenRenderer) -> CIImage? {
+    public override func makeImage(_ renderer: some ScreenRenderer) -> CIImage? {
         // An empty image (not nil) when blank: nil would leave the renderer's last frame on screen.
         guard let scene, bounds.width >= 1, bounds.height >= 1 else { return CIImage.empty() }
         let paper: StingerCanvas
@@ -56,7 +56,7 @@ final class GPUWidgetScreenObject: ScreenObject {
 
 extension OverlayScreen {
     /// A GPU-drawn widget over `rect`, blank until its first `show`.
-    @ScreenActor static func makeGPU(_ rect: CGRect) -> GPUWidgetScreenObject {
+    @ScreenActor public static func makeGPU(_ rect: CGRect) -> GPUWidgetScreenObject {
         let widget = GPUWidgetScreenObject()
         widget.size = rect.size
         widget.horizontalAlignment = .left
@@ -66,10 +66,10 @@ extension OverlayScreen {
         return widget
     }
 
-    @ScreenActor static func show(_ widget: GPUWidgetScreenObject, _ scene: GPUScene?) { widget.show(scene) }
+    @ScreenActor public static func show(_ widget: GPUWidgetScreenObject, _ scene: GPUScene?) { widget.show(scene) }
 
     /// Re-lays a GPU widget out at a new rect (a text widget whose width follows its content).
-    @ScreenActor static func move(_ widget: GPUWidgetScreenObject, to rect: CGRect) {
+    @ScreenActor public static func move(_ widget: GPUWidgetScreenObject, to rect: CGRect) {
         widget.size = rect.size
         widget.layoutMargin = UIEdgeInsets(top: rect.minY, left: rect.minX, bottom: 0, right: 0)
         widget.invalidateLayout()

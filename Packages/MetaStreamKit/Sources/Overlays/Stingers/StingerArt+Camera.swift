@@ -19,7 +19,7 @@ extension StingerArt {
     // MARK: lens
 
     /// Graphite plate with a hole that shrinks onto the splash's lens (rim, glass, tally, wordmark), then opens again.
-    static func lens(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
+    public static func lens(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
         guard q > 0.24, q < 0.66 else { return .empty() }
         let u = k.unit, ctr = k.center, hd = k.halfDiagonal
         // 1250 board px = "off screen": beyond the corners whatever the canvas shape; 215 scales by unit.
@@ -97,7 +97,7 @@ extension StingerArt {
     // MARK: aperture
 
     /// Six ink blades slide in from outside, close like an iris (spinning 50 degrees), then leave the other way.
-    static func aperture(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
+    public static func aperture(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
         guard q >= 0.25, q <= 0.67 else { return .empty() }
         let u = k.unit, ctr = k.center, kk = k.halfDiagonal / 1101
         let blade = Curve(0.76, 0, 0.24, 1)
@@ -130,7 +130,7 @@ extension StingerArt {
     // MARK: route
 
     /// An accent route draws itself toward the centre, a pin pops there, ink floods out from it, the name rises.
-    static func route(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
+    public static func route(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
         guard q >= 0.24, q <= 0.64 else { return .empty() }
         let u = k.unit, ctr = k.center, hd = k.halfDiagonal
         var layers: [CIImage] = []
@@ -179,7 +179,7 @@ extension StingerArt {
     // MARK: viewfinder
 
     /// Ink opens from the centre like a framed shot, accent corner brackets trace it, the name fades in at full frame.
-    static func viewfinder(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
+    public static func viewfinder(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
         guard q >= 0.25, q <= 0.66 else { return .empty() }
         let u = k.unit, ctr = k.center
         let w = k.size.width, h = k.size.height

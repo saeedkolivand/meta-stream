@@ -27,29 +27,29 @@ private func eventShown(_ k: ChatEvent.Kind, follow: Bool, subscribe: Bool, raid
     }
 }
 
-struct ChatWidgetStyle: Equatable, Sendable {
-    var width: CGFloat = 600
-    var height: CGFloat = 500
-    var fontSize: CGFloat = 22
-    var maxMessages = 8
-    var fadeSeconds = 0   // 0 = never
-    var background = false
-    var backgroundColor: UInt32 = 0xD910_1014   // flat near-black, 85%: reads on any video without looking like a box
-    var textColor: UInt32 = 0xFFFF_FFFF
-    var senderColors = true
-    var shadow = true
-    var bold = true
-    var badges = true
-    var platform = true
-    var hideCommands = true
-    var hideBots = true
-    var highlight = ""
-    var highlightColor: UInt32 = 0xFFFF_C83D
-    var showEvents = true
-    var face = ""
+public struct ChatWidgetStyle: Equatable, Sendable {
+    public var width: CGFloat = 600
+    public var height: CGFloat = 500
+    public var fontSize: CGFloat = 22
+    public var maxMessages = 8
+    public var fadeSeconds = 0   // 0 = never
+    public var background = false
+    public var backgroundColor: UInt32 = 0xD910_1014   // flat near-black, 85%: reads on any video without looking like a box
+    public var textColor: UInt32 = 0xFFFF_FFFF
+    public var senderColors = true
+    public var shadow = true
+    public var bold = true
+    public var badges = true
+    public var platform = true
+    public var hideCommands = true
+    public var hideBots = true
+    public var highlight = ""
+    public var highlightColor: UInt32 = 0xFFFF_C83D
+    public var showEvents = true
+    public var face = ""
 
-    init() {}
-    init(_ d: [String: String]) {
+    public init() {}
+    public init(_ d: [String: String]) {
         let o = ChatWidgetStyle()
         width = d.num("width", o.width); height = d.num("height", o.height); fontSize = d.num("fontSize", o.fontSize)
         maxMessages = d.int("maxMessages", o.maxMessages); fadeSeconds = d.int("fadeSeconds", o.fadeSeconds)
@@ -62,9 +62,9 @@ struct ChatWidgetStyle: Equatable, Sendable {
         showEvents = d.flag("showEvents", o.showEvents); face = d.str("face", o.face)
     }
 
-    var natural: CGSize { CGSize(width: width, height: height) }
+    public var natural: CGSize { CGSize(width: width, height: height) }
 
-    var data: [String: String] {
+    public var data: [String: String] {
         ["width": "\(Double(width))", "height": "\(Double(height))", "fontSize": "\(Double(fontSize))",
          "maxMessages": "\(maxMessages)", "fadeSeconds": "\(fadeSeconds)", "background": flagText(background),
          "backgroundColor": "\(backgroundColor)", "textColor": "\(textColor)", "senderColors": flagText(senderColors),
@@ -74,24 +74,24 @@ struct ChatWidgetStyle: Equatable, Sendable {
     }
 }
 
-struct AlertWidgetStyle: Equatable, Sendable {
-    var follow = true
-    var subscribe = true
-    var raid = true
-    var tip = true
-    var cheer = true
-    var holdSeconds = 5
-    var fontSize: CGFloat = 40
-    var accentColor: UInt32 = 0xFF91_46FF
-    var textColor: UInt32 = 0xFFFF_FFFF
-    var face = ""
-    var design = "island"          // DonationAlertKind raw value; donations (tips, Bits, KICKs) only
-    var designAccent: UInt32 = 0   // 0 = the design's own colour
-    var designSecond: UInt32 = 0   // neon's second tube; 0 = the design's own
-    var designSpeed = "normal"     // "slow" | "normal" | "quick"
+public struct AlertWidgetStyle: Equatable, Sendable {
+    public var follow = true
+    public var subscribe = true
+    public var raid = true
+    public var tip = true
+    public var cheer = true
+    public var holdSeconds = 5
+    public var fontSize: CGFloat = 40
+    public var accentColor: UInt32 = 0xFF91_46FF
+    public var textColor: UInt32 = 0xFFFF_FFFF
+    public var face = ""
+    public var design = "island"          // DonationAlertKind raw value; donations (tips, Bits, KICKs) only
+    public var designAccent: UInt32 = 0   // 0 = the design's own colour
+    public var designSecond: UInt32 = 0   // neon's second tube; 0 = the design's own
+    public var designSpeed = "normal"     // "slow" | "normal" | "quick"
 
-    init() {}
-    init(_ d: [String: String]) {
+    public init() {}
+    public init(_ d: [String: String]) {
         let o = AlertWidgetStyle()
         design = d.str("design", o.design); designAccent = d.argb("designAccent", o.designAccent)
         designSecond = d.argb("designSecond", o.designSecond); designSpeed = d.str("designSpeed", o.designSpeed)
@@ -101,20 +101,20 @@ struct AlertWidgetStyle: Equatable, Sendable {
         textColor = d.argb("textColor", o.textColor); face = d.str("face", o.face)
     }
 
-    var natural: CGSize { CGSize(width: 900, height: 240) }
+    public var natural: CGSize { CGSize(width: 900, height: 240) }
 
-    var donationKind: DonationAlertKind { DonationAlertKind(rawValue: design) ?? .island }
+    public var donationKind: DonationAlertKind { DonationAlertKind(rawValue: design) ?? .island }
 
-    var donationStyle: DonationAlertStyle {
+    public var donationStyle: DonationAlertStyle {
         DonationAlertStyle(accent: designAccent, second: designSecond,
                            speed: designSpeed == "slow" ? 0.75 : designSpeed == "quick" ? 1.33 : 1)
     }
 
-    func shows(_ kind: ChatEvent.Kind) -> Bool {
+    public func shows(_ kind: ChatEvent.Kind) -> Bool {
         eventShown(kind, follow: follow, subscribe: subscribe, raid: raid, tip: tip, cheer: cheer)
     }
 
-    var data: [String: String] {
+    public var data: [String: String] {
         ["design": design, "designAccent": "\(designAccent)", "designSecond": "\(designSecond)", "designSpeed": designSpeed,
          "follow": flagText(follow), "subscribe": flagText(subscribe), "raid": flagText(raid), "tip": flagText(tip),
          "cheer": flagText(cheer), "holdSeconds": "\(holdSeconds)", "fontSize": "\(Double(fontSize))",
@@ -122,23 +122,23 @@ struct AlertWidgetStyle: Equatable, Sendable {
     }
 }
 
-struct EventListStyle: Equatable, Sendable {
-    var width: CGFloat = 520
-    var height: CGFloat = 420
-    var maxEvents = 5
-    var fontSize: CGFloat = 26
-    var follow = true
-    var subscribe = true
-    var raid = true
-    var tip = true
-    var cheer = true
-    var background = true
-    var backgroundColor: UInt32 = 0x7300_0000
-    var textColor: UInt32 = 0xFFFF_FFFF
-    var face = ""
+public struct EventListStyle: Equatable, Sendable {
+    public var width: CGFloat = 520
+    public var height: CGFloat = 420
+    public var maxEvents = 5
+    public var fontSize: CGFloat = 26
+    public var follow = true
+    public var subscribe = true
+    public var raid = true
+    public var tip = true
+    public var cheer = true
+    public var background = true
+    public var backgroundColor: UInt32 = 0x7300_0000
+    public var textColor: UInt32 = 0xFFFF_FFFF
+    public var face = ""
 
-    init() {}
-    init(_ d: [String: String]) {
+    public init() {}
+    public init(_ d: [String: String]) {
         let o = EventListStyle()
         width = d.num("width", o.width); height = d.num("height", o.height); maxEvents = d.int("maxEvents", o.maxEvents)
         fontSize = d.num("fontSize", o.fontSize); follow = d.flag("follow", o.follow)
@@ -148,13 +148,13 @@ struct EventListStyle: Equatable, Sendable {
         face = d.str("face", o.face)
     }
 
-    var natural: CGSize { CGSize(width: width, height: height) }
+    public var natural: CGSize { CGSize(width: width, height: height) }
 
-    func shows(_ kind: ChatEvent.Kind) -> Bool {
+    public func shows(_ kind: ChatEvent.Kind) -> Bool {
         eventShown(kind, follow: follow, subscribe: subscribe, raid: raid, tip: tip, cheer: cheer)
     }
 
-    var data: [String: String] {
+    public var data: [String: String] {
         ["width": "\(Double(width))", "height": "\(Double(height))", "maxEvents": "\(maxEvents)",
          "fontSize": "\(Double(fontSize))", "follow": flagText(follow), "subscribe": flagText(subscribe),
          "raid": flagText(raid), "tip": flagText(tip), "cheer": flagText(cheer), "background": flagText(background),
@@ -162,22 +162,22 @@ struct EventListStyle: Equatable, Sendable {
     }
 }
 
-struct GoalWidgetStyle: Equatable, Sendable {
-    var width: CGFloat = 720
-    var height: CGFloat = 120
-    var fontSize: CGFloat = 28
-    var barColor: UInt32 = 0xFF53_FC18
-    var trackColor: UInt32 = 0xFF26_262B
-    var textColor: UInt32 = 0xFFFF_FFFF
-    var backgroundColor: UInt32 = 0xD910_1014
-    var background = true
-    var showPercent = true
-    var showOther = false
-    var face = ""
-    var design = "bar"   // "bar" | "liquid" | "road" | "segments" | "hairline" | "island" | "miniring" | "dots" | "spark"
+public struct GoalWidgetStyle: Equatable, Sendable {
+    public var width: CGFloat = 720
+    public var height: CGFloat = 120
+    public var fontSize: CGFloat = 28
+    public var barColor: UInt32 = 0xFF53_FC18
+    public var trackColor: UInt32 = 0xFF26_262B
+    public var textColor: UInt32 = 0xFFFF_FFFF
+    public var backgroundColor: UInt32 = 0xD910_1014
+    public var background = true
+    public var showPercent = true
+    public var showOther = false
+    public var face = ""
+    public var design = "bar"   // "bar" | "liquid" | "road" | "segments" | "hairline" | "island" | "miniring" | "dots" | "spark"
 
-    init() {}
-    init(_ d: [String: String]) {
+    public init() {}
+    public init(_ d: [String: String]) {
         let o = GoalWidgetStyle()
         design = d.str("design", o.design)
         width = d.num("width", o.width); height = d.num("height", o.height); fontSize = d.num("fontSize", o.fontSize)
@@ -188,7 +188,7 @@ struct GoalWidgetStyle: Equatable, Sendable {
     }
 
     /// The bar follows the box sliders; the other designs are drawn at a fixed size.
-    var natural: CGSize {
+    public var natural: CGSize {
         switch design {
         case "liquid": CGSize(width: 630, height: 114)   // board size x GoalDesignView.scale
         case "road": CGSize(width: 750, height: 111)
@@ -203,7 +203,7 @@ struct GoalWidgetStyle: Equatable, Sendable {
         }
     }
 
-    var data: [String: String] {
+    public var data: [String: String] {
         ["design": design, "width": "\(Double(width))", "height": "\(Double(height))", "fontSize": "\(Double(fontSize))",
          "barColor": "\(barColor)", "trackColor": "\(trackColor)", "textColor": "\(textColor)",
          "backgroundColor": "\(backgroundColor)", "background": flagText(background), "showPercent": flagText(showPercent),
@@ -211,42 +211,42 @@ struct GoalWidgetStyle: Equatable, Sendable {
     }
 }
 
-struct QRWidgetStyle: Equatable, Sendable {
-    var text = ""
-    var caption = ""
-    var foreground: UInt32 = 0xFF00_0000
-    var background: UInt32 = 0xFFFF_FFFF
-    var face = ""
+public struct QRWidgetStyle: Equatable, Sendable {
+    public var text = ""
+    public var caption = ""
+    public var foreground: UInt32 = 0xFF00_0000
+    public var background: UInt32 = 0xFFFF_FFFF
+    public var face = ""
 
-    init() {}
-    init(_ d: [String: String]) {
+    public init() {}
+    public init(_ d: [String: String]) {
         let o = QRWidgetStyle()
         text = d.str("text", o.text); caption = d.str("caption", o.caption); foreground = d.argb("foreground", o.foreground)
         background = d.argb("background", o.background); face = d.str("face", o.face)
     }
 
-    var natural: CGSize { CGSize(width: 400, height: caption.isEmpty ? 400 : 470) }
+    public var natural: CGSize { CGSize(width: 400, height: caption.isEmpty ? 400 : 470) }
 
-    var data: [String: String] {
+    public var data: [String: String] {
         ["text": text, "caption": caption, "foreground": "\(foreground)", "background": "\(background)", "face": face]
     }
 }
 
 /// In-app text. OBS text layers use the same keys (text/size/bold/color/face), so the two share a decoder.
-struct TextWidgetStyle: Equatable, Sendable {
-    var text = ""
-    var size: CGFloat = 64   // font px at a 1080 px short side
-    var bold = true
-    var color: UInt32 = 0xFFFF_FFFF
-    var face = ""
-    var shadow = true
-    var background = false
-    var backgroundColor: UInt32 = 0x3310_1014   // 20% near-black
-    var rotate = false        // show one line of `text` at a time (socials)
-    var rotateSeconds = 5
+public struct TextWidgetStyle: Equatable, Sendable {
+    public var text = ""
+    public var size: CGFloat = 64   // font px at a 1080 px short side
+    public var bold = true
+    public var color: UInt32 = 0xFFFF_FFFF
+    public var face = ""
+    public var shadow = true
+    public var background = false
+    public var backgroundColor: UInt32 = 0x3310_1014   // 20% near-black
+    public var rotate = false        // show one line of `text` at a time (socials)
+    public var rotateSeconds = 5
 
-    init() {}
-    init(_ d: [String: String]) {
+    public init() {}
+    public init(_ d: [String: String]) {
         let o = TextWidgetStyle()
         text = d.str("text", o.text); size = d.num("size", o.size); bold = d.flag("bold", o.bold)
         color = d.argb("color", o.color); face = d.str("face", o.face); shadow = d.flag("shadow", o.shadow)
@@ -255,7 +255,7 @@ struct TextWidgetStyle: Equatable, Sendable {
         rotateSeconds = Int(d.num("rotateSeconds", CGFloat(o.rotateSeconds)))   // the slider may store "5.0"
     }
 
-    var data: [String: String] {
+    public var data: [String: String] {
         ["rotate": flagText(rotate), "rotateSeconds": "\(rotateSeconds)",
          "text": text, "size": "\(Double(size))", "bold": flagText(bold), "color": "\(color)", "face": face,
          "shadow": flagText(shadow), "background": flagText(background), "backgroundColor": "\(backgroundColor)"]

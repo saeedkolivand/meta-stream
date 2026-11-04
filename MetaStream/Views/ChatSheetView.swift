@@ -1,6 +1,7 @@
 import Chat
 import CoreModel
 import CoreUI
+import Overlays
 import Platforms
 import Speech
 import SwiftUI

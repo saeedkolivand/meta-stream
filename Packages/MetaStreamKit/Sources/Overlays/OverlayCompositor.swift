@@ -8,18 +8,18 @@ import HaishinKit
 import UIKit
 
 /// What an in-app widget builder hands back: its screen object (already sized/placed) and the task keeping it fresh.
-struct WidgetBuild { let object: ScreenObject; let task: Task<Void, Never>? }
+public struct WidgetBuild { let object: ScreenObject; let task: Task<Void, Never>? }
 
 @MainActor
-final class OverlayCompositor {
+public final class OverlayCompositor {
     /// Live data for widgets (chat, emotes, streamer, platforms); filled by ContentView.
-    let context = WidgetContext()
+    public let context = WidgetContext()
 
     private static let maxSlides = 30
 
     private var key = ""
     private var generation = 0       // bumped per apply(); a build that finds it changed abandons itself
-    private(set) var mixer: MediaMixer?   // the mixer `objects` are on, kept so teardown removes them from the right Screen
+    public private(set) var mixer: MediaMixer?   // the mixer `objects` are on, kept so teardown removes them from the right Screen
     private var objects: [ScreenObject] = []
     private var feeds: [BrowserFeed] = []
     private var tasks: [Task<Void, Never>] = []
@@ -57,7 +57,7 @@ final class OverlayCompositor {
     /// With `fade`, stills on screen step down to nothing before the new scene's stills step up; dynamic widgets just pop.
     /// A scene prepare()d for this exact key goes up in one swap instead of being built now.
     /// ponytail: a camera switch is a cut (mixer attach); only overlays fade, in 3 steps 60 ms apart.
-    func apply(scene: OverlayScene?, pack: OverlayPack?, canvas: CGSize, mixer: MediaMixer, fade: Bool = false) async {
+    public func apply(scene: OverlayScene?, pack: OverlayPack?, canvas: CGSize, mixer: MediaMixer, fade: Bool = false) async {
         let want = sceneKey(scene, canvas, mixer)
         guard want != key else { return }
         key = want
@@ -102,7 +102,7 @@ final class OverlayCompositor {
 
     /// Builds `scene` off-screen (bitmaps, widgets, feeds) so the apply() that follows only swaps layers: the Screen
     /// re-lays out once, under the stinger, instead of while the scene is built piece by piece.
-    func prepare(scene: OverlayScene?, pack: OverlayPack?, canvas: CGSize, mixer: MediaMixer) async {
+    public func prepare(scene: OverlayScene?, pack: OverlayPack?, canvas: CGSize, mixer: MediaMixer) async {
         prepared?.discard()
         prepared = nil
         let want = sceneKey(scene, canvas, mixer)
@@ -194,7 +194,7 @@ final class OverlayCompositor {
     /// Plays the stinger clip once over the whole canvas, above every layer (apply() keeps it on top while a scene is
     /// rebuilt underneath). Its audio is the caller's job. ponytail: a stinger with alpha (HEVC with alpha) only
     /// composites if AssetScreenObject already handles it; nothing here special-cases it.
-    func playStinger(_ url: URL, canvas: CGSize, mixer: MediaMixer) async {
+    public func playStinger(_ url: URL, canvas: CGSize, mixer: MediaMixer) async {
         await removeStinger()
         let o = await OverlayScreen.makeMedia(CGRect(origin: .zero, size: canvas), url)
         stinger = o
@@ -204,7 +204,7 @@ final class OverlayCompositor {
 
     /// Puts a built-in stinger over the whole canvas. It draws itself per video frame; layout only re-runs when
     /// invalidated, so this pokes it at 60 Hz (cheap: no drawing here) until removeStinger().
-    func playStinger(_ kind: StingerKind, style: StingerStyle, canvas: CGSize, mixer: MediaMixer) async {
+    public func playStinger(_ kind: StingerKind, style: StingerStyle, canvas: CGSize, mixer: MediaMixer) async {
         await removeStinger()
         let o = await OverlayScreen.makeStinger(CGRect(origin: .zero, size: canvas), kind, style)
         stinger = o
@@ -218,7 +218,7 @@ final class OverlayCompositor {
         }
     }
 
-    func removeStinger() async {
+    public func removeStinger() async {
         stingerTask?.cancel()
         stingerTask = nil
         guard let o = stinger, let m = stingerMixer else { return }

@@ -10,7 +10,7 @@ extension OverlayCompositor {
     private static let maxGifFrames = 120
     private static let gifBudget = 96_000_000
 
-    func gifWidget(_ l: OverlayLayer, box: CGRect, canvas: CGSize) async -> WidgetBuild? {
+    public func gifWidget(_ l: OverlayLayer, box: CGRect, canvas: CGSize) async -> WidgetBuild? {
         guard l.type == .image, let url = OverlayStore.shared.local(l.data["file"] ?? ""),
               let src = CGImageSourceCreateWithURL(url as CFURL, nil), CGImageSourceGetCount(src) > 1,
               let rect = OverlayRaster.visible(box, in: canvas) else { return nil }

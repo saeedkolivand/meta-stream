@@ -15,16 +15,16 @@ private func textWidth(_ s: String, _ size: CGFloat, _ weight: UIFont.Weight, _ 
 
 // MARK: Island pill
 
-struct GoalIslandView: View {
-    let style: GoalWidgetStyle
-    let title: String
-    let beforeText: String
-    let afterText: String
-    let targetText: String
-    let from: Double
-    let to: Double
-    let deltaText: String
-    let t: Double
+public struct GoalIslandView: View {
+    public let style: GoalWidgetStyle
+    public let title: String
+    public let beforeText: String
+    public let afterText: String
+    public let targetText: String
+    public let from: Double
+    public let to: Double
+    public let deltaText: String
+    public let t: Double
 
     private var amountW: CGFloat { max(textWidth(beforeText, 15, .heavy), textWidth(afterText, 15, .heavy)) }
     private var restW: CGFloat { 10 + 26 + 10 + amountW + textWidth(" / " + targetText, 15, .semibold) + 16 + 8 }
@@ -36,7 +36,7 @@ struct GoalIslandView: View {
         return max(sum, restW + 60)
     }
 
-    var body: some View {
+    public var body: some View {
         let rw = restW
         let bw = burstW
         let up = GoalMotion.seg(t, 0, 0.2)
@@ -119,18 +119,18 @@ struct GoalIslandView: View {
 
 // MARK: Mini ring
 
-struct GoalMiniRingView: View {
-    let style: GoalWidgetStyle
-    let title: String
-    let beforeText: String
-    let afterText: String
-    let targetText: String
-    let from: Double
-    let to: Double
-    let deltaText: String
-    let t: Double
+public struct GoalMiniRingView: View {
+    public let style: GoalWidgetStyle
+    public let title: String
+    public let beforeText: String
+    public let afterText: String
+    public let targetText: String
+    public let from: Double
+    public let to: Double
+    public let deltaText: String
+    public let t: Double
 
-    var body: some View {
+    public var body: some View {
         let p: Double = from + (to - from) * GoalMotion.lp(t, 42, 60)
         let swap: Double = GoalMotion.lp(t, 56, 62)
         let plusO: Double = GoalMotion.kf(t, [(42, 0), (48, 1), (70, 1), (75, 0)])
@@ -183,20 +183,20 @@ struct GoalMiniRingView: View {
 
 // MARK: Dot wave
 
-struct GoalDotsView: View {
-    let style: GoalWidgetStyle
-    let title: String
-    let beforeText: String
-    let afterText: String
-    let targetText: String
-    let from: Double
-    let to: Double
-    let deltaText: String
-    let t: Double
+public struct GoalDotsView: View {
+    public let style: GoalWidgetStyle
+    public let title: String
+    public let beforeText: String
+    public let afterText: String
+    public let targetText: String
+    public let from: Double
+    public let to: Double
+    public let deltaText: String
+    public let t: Double
 
     private static let count = 24
 
-    var body: some View {
+    public var body: some View {
         let n = Self.count
         let nb = min(n, max(0, Int((from * Double(n)).rounded())))
         let na = min(n, max(nb, Int((to * Double(n)).rounded())))

@@ -4,6 +4,7 @@ import CoreLogging
 import CoreUI
 import Engine
 import Goal
+import Overlays
 import Platforms
 import Privacy
 import Signals

@@ -8,46 +8,46 @@ import Goal
 import HaishinKit
 
 /// Everything AlertBannerView needs to draw one frame. The default value is the fully open, settled card.
-struct AlertPose: Equatable {
-    var lift: CGFloat = 0            // vertical offset in capsule heights (negative = above rest)
+public struct AlertPose: Equatable {
+    public var lift: CGFloat = 0            // vertical offset in capsule heights (negative = above rest)
     var open: CGFloat = 1            // 0 = dot, 1 = full width (may overshoot a little)
-    var alpha: CGFloat = 1           // whole-capsule opacity (the exit fade)
-    var contentAlpha: CGFloat = 1
-    var contentRise: CGFloat = 0     // px the content still has to rise
-    var progress: Double = 1         // amount count-up, 0...1
-    var flash: Double = 0            // big-tier colour flash opacity
+    public var alpha: CGFloat = 1           // whole-capsule opacity (the exit fade)
+    public var contentAlpha: CGFloat = 1
+    public var contentRise: CGFloat = 0     // px the content still has to rise
+    public var progress: Double = 1         // amount count-up, 0...1
+    public var flash: Double = 0            // big-tier colour flash opacity
 
-    static let settled = AlertPose()
+    public static let settled = AlertPose()
 }
 
-enum AlertIsland {
-    static let enter = 1.75          // dot drop, open, fade-in, count-up and flash all finished
-    static let exit = 0.5
-    static let gap = 0.3
+public enum AlertIsland {
+    public static let enter = 1.75          // dot drop, open, fade-in, count-up and flash all finished
+    public static let exit = 0.5
+    public static let gap = 0.3
 
-    static func total(hold: Int) -> Double { enter + Double(hold) + exit }
+    public static func total(hold: Int) -> Double { enter + Double(hold) + exit }
 
-    @MainActor static func isBig(_ e: ChatEvent) -> Bool {
+    @MainActor public static func isBig(_ e: ChatEvent) -> Bool {
         (e.kind == .tip && (Rates.shared.convert(e.tipMoney, to: "USD") ?? 0) >= 10) || (e.kind == .raid && e.count >= 50)
     }
 
-    @MainActor static func height(_ e: ChatEvent) -> CGFloat { height(big: isBig(e)) }
-    static func height(big: Bool) -> CGFloat { big ? 154 : 124 }
+    @MainActor public static func height(_ e: ChatEvent) -> CGFloat { height(big: isBig(e)) }
+    public static func height(big: Bool) -> CGFloat { big ? 154 : 124 }
 
     // Content geometry in points of the 900x240 natural area, shared by the SwiftUI banner and the GPU recipe.
-    static let gapX: CGFloat = 24
-    static let padTrailing: CGFloat = 44
-    static func fullWidth(big: Bool) -> CGFloat { big ? 800 : 740 }
-    static func iconSize(big: Bool) -> CGFloat { big ? 120 : 84 }
+    public static let gapX: CGFloat = 24
+    public static let padTrailing: CGFloat = 44
+    public static func fullWidth(big: Bool) -> CGFloat { big ? 800 : 740 }
+    public static func iconSize(big: Bool) -> CGFloat { big ? 120 : 84 }
     /// What the name column and the amount share (icon and the three gaps/padding taken out).
-    static func share(big: Bool) -> CGFloat {
+    public static func share(big: Bool) -> CGFloat {
         fullWidth(big: big) - (height(big: big) - iconSize(big: big)) / 2 - iconSize(big: big) - 2 * gapX - padTrailing
     }
     /// The amount may take 40% of the shared width and shrinks past that, so the name always shows.
-    static func amountMax(big: Bool) -> CGFloat { 0.4 * share(big: big) }
+    public static func amountMax(big: Bool) -> CGFloat { 0.4 * share(big: big) }
 
     /// 12_300 -> "12.3K", 1_200_000 -> "1.2M"; plain below 10,000.
-    static func compact(_ n: Int) -> String {
+    public static func compact(_ n: Int) -> String {
         guard n >= 10_000 else { return "\(n)" }
         let (v, unit) = n >= 999_950 ? (Double(n) / 1e6, "M") : (Double(n) / 1e3, "K")
         let s = String(format: "%.1f", v)
@@ -55,7 +55,7 @@ enum AlertIsland {
     }
 
     /// ARGB per kind; subscribe takes the widget's accent so the colour setting still means something.
-    static func color(_ k: ChatEvent.Kind, accent: UInt32) -> UInt32 {
+    public static func color(_ k: ChatEvent.Kind, accent: UInt32) -> UInt32 {
         switch k {
         case .follow: return 0xFFD9_D9E3
         case .subscribe: return accent
@@ -66,7 +66,7 @@ enum AlertIsland {
         }
     }
 
-    static func label(_ k: ChatEvent.Kind) -> String {
+    public static func label(_ k: ChatEvent.Kind) -> String {
         switch k {
         case .follow: return "NEW FOLLOWER"
         case .subscribe: return "NEW SUBSCRIBER"
@@ -77,15 +77,15 @@ enum AlertIsland {
         }
     }
 
-    static func label(_ e: ChatEvent) -> String { e.kind == .cheer && e.origin == "kick" ? "KICKS" : label(e.kind) }
+    public static func label(_ e: ChatEvent) -> String { e.kind == .cheer && e.origin == "kick" ? "KICKS" : label(e.kind) }
 
     /// The amount at `progress` (0...1) of its count-up; nil for follows and subs.
-    static func amountText(_ e: ChatEvent, progress p: Double) -> String? {
+    public static func amountText(_ e: ChatEvent, progress p: Double) -> String? {
         amountParts(e, progress: p).map { $0.unit.isEmpty ? $0.number : "\($0.number) \($0.unit)" }
     }
 
     /// The amount as number + unit (drawn smaller), counts compact from 10,000; nil for follows and subs.
-    static func amountParts(_ e: ChatEvent, progress p: Double) -> (number: String, unit: String)? {
+    public static func amountParts(_ e: ChatEvent, progress p: Double) -> (number: String, unit: String)? {
         switch e.kind {
         case .tip:
             let m = e.tipMoney
@@ -102,7 +102,7 @@ enum AlertIsland {
     private static func easeOutBack(_ x: Double) -> Double { let c1 = 1.2, y = x - 1; return 1 + (c1 + 1) * y * y * y + c1 * y * y }
 
     /// Pose `t` seconds after the alert started; `hold` seconds sit between the enter and exit motion.
-    static func pose(at t: Double, hold: Int, big: Bool) -> AlertPose {
+    public static func pose(at t: Double, hold: Int, big: Bool) -> AlertPose {
         let te = t - enter - Double(hold)   // seconds into the exit, negative before it
         var p = AlertPose()
         p.lift = CGFloat(-1.5 * (1 - easeOut(clamp(t / 0.28))))
@@ -125,8 +125,8 @@ enum AlertIsland {
 /// Plays one alert: on the GPU (IslandArt) when the mixer is up; otherwise the CPU fallback, whose motion phases
 /// draw ~24 fps and whose hold draws a single static frame.
 @MainActor
-enum AlertPlayer {
-    static func play(_ e: ChatEvent, style: AlertWidgetStyle, on o: ImageScreenObject, natural: CGSize, box: CGRect, canvas: CGSize,
+public enum AlertPlayer {
+    public static func play(_ e: ChatEvent, style: AlertWidgetStyle, on o: ImageScreenObject, natural: CGSize, box: CGRect, canvas: CGSize,
                      mixer: MediaMixer?) async {
         let hold = style.holdSeconds, big = AlertIsland.isBig(e)
         if let mixer {

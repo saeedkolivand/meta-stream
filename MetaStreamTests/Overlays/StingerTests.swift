@@ -1,4 +1,5 @@
 import CoreImage
+import Overlays
 import XCTest
 @testable import MetaStream
 

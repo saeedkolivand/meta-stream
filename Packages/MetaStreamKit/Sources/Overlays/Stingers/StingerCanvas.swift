@@ -6,20 +6,20 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import UIKit
 
-final class StingerCanvas {
-    let size: CGSize
+public final class StingerCanvas {
+    public let size: CGSize
     private var texts: [String: CGImage] = [:]
     private var strokes: [String: CIImage] = [:]
-    var symbols: [String: CGImage] = [:]   // SF Symbols rendered once (see AlertIslandGPU.swift)
+    public var symbols: [String: CGImage] = [:]   // SF Symbols rendered once (see AlertIslandGPU.swift)
 
-    init(size: CGSize) { self.size = size }
+    public init(size: CGSize) { self.size = size }
 
-    var bounds: CGRect { CGRect(origin: .zero, size: size) }
-    var unit: CGFloat { min(size.width, size.height) / 1080 }
-    var center: CGPoint { CGPoint(x: size.width / 2, y: size.height / 2) }
-    var halfDiagonal: CGFloat { (size.width * size.width + size.height * size.height).squareRoot() / 2 }
+    public var bounds: CGRect { CGRect(origin: .zero, size: size) }
+    public var unit: CGFloat { min(size.width, size.height) / 1080 }
+    public var center: CGPoint { CGPoint(x: size.width / 2, y: size.height / 2) }
+    public var halfDiagonal: CGFloat { (size.width * size.width + size.height * size.height).squareRoot() / 2 }
 
-    static func ciColor(_ argb: UInt32, alpha: CGFloat = 1) -> CIColor {
+    public static func ciColor(_ argb: UInt32, alpha: CGFloat = 1) -> CIColor {
         CIColor(red: CGFloat((argb >> 16) & 0xFF) / 255, green: CGFloat((argb >> 8) & 0xFF) / 255,
                 blue: CGFloat(argb & 0xFF) / 255, alpha: CGFloat((argb >> 24) & 0xFF) / 255 * alpha,
                 colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!) ?? .clear
@@ -27,13 +27,13 @@ final class StingerCanvas {
 
     // MARK: shapes (top-left coordinates)
 
-    func fill(_ r: CGRect, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
+    public func fill(_ r: CGRect, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
         guard alpha > 0.001, r.width > 0, r.height > 0 else { return .empty() }
         return CIImage(color: Self.ciColor(argb, alpha: alpha)).cropped(to: r)
     }
 
     /// A filled circle with a 1.5 px soft edge (anti-aliasing).
-    func disc(_ c: CGPoint, _ r: CGFloat, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
+    public func disc(_ c: CGPoint, _ r: CGFloat, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
         guard r > 0.25, alpha > 0.001 else { return .empty() }
         let f = CIFilter.radialGradient()
         f.center = c
@@ -45,13 +45,13 @@ final class StingerCanvas {
     }
 
     /// A ring between two radii (`inner` 0 = a disc).
-    func ring(_ c: CGPoint, inner: CGFloat, outer: CGFloat, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
+    public func ring(_ c: CGPoint, inner: CGFloat, outer: CGFloat, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
         guard outer > inner else { return .empty() }
         let d = disc(c, outer, argb, alpha: alpha)
         return inner > 0.25 ? minus(d, disc(c, inner, 0xFFFF_FFFF)) : d
     }
 
-    func roundedRect(_ r: CGRect, radius: CGFloat, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
+    public func roundedRect(_ r: CGRect, radius: CGFloat, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
         guard alpha > 0.001, r.width > 0, r.height > 0 else { return .empty() }
         let f = CIFilter.roundedRectangleGenerator()
         f.extent = r
@@ -61,7 +61,7 @@ final class StingerCanvas {
     }
 
     /// Unbounded linear gradient; `clip` it to a shape.
-    func linear(_ from: CGPoint, _ to: CGPoint, _ a: UInt32, _ b: UInt32, alphaA: CGFloat = 1, alphaB: CGFloat = 1) -> CIImage {
+    public func linear(_ from: CGPoint, _ to: CGPoint, _ a: UInt32, _ b: UInt32, alphaA: CGFloat = 1, alphaB: CGFloat = 1) -> CIImage {
         let f = CIFilter.linearGradient()
         f.point0 = from
         f.point1 = to
@@ -71,7 +71,7 @@ final class StingerCanvas {
     }
 
     /// Unbounded radial gradient from `a` at r0 to `b` at r1 (and beyond: `b` keeps going).
-    func radial(_ c: CGPoint, _ r0: CGFloat, _ r1: CGFloat, _ a: UInt32, _ b: UInt32, alphaA: CGFloat = 1, alphaB: CGFloat = 1) -> CIImage {
+    public func radial(_ c: CGPoint, _ r0: CGFloat, _ r1: CGFloat, _ a: UInt32, _ b: UInt32, alphaA: CGFloat = 1, alphaB: CGFloat = 1) -> CIImage {
         let f = CIFilter.radialGradient()
         f.center = c
         f.radius0 = Float(max(0, r0))
@@ -84,26 +84,26 @@ final class StingerCanvas {
     // MARK: combining
 
     /// `img` with `hole` cut out (where hole is opaque, img disappears).
-    func minus(_ img: CIImage, _ hole: CIImage) -> CIImage {
+    public func minus(_ img: CIImage, _ hole: CIImage) -> CIImage {
         img.applyingFilter("CISourceOutCompositing", parameters: [kCIInputBackgroundImageKey: hole])
     }
 
     /// `img` only where `shape` is opaque.
-    func clip(_ img: CIImage, to shape: CIImage) -> CIImage {
+    public func clip(_ img: CIImage, to shape: CIImage) -> CIImage {
         img.applyingFilter("CISourceInCompositing", parameters: [kCIInputBackgroundImageKey: shape])
     }
 
     /// CSS opacity on a whole group.
-    func opacity(_ img: CIImage, _ a: Double) -> CIImage {
+    public func opacity(_ img: CIImage, _ a: Double) -> CIImage {
         if a >= 0.999 { return img }
         if a <= 0.001 { return .empty() }
         return img.applyingFilter("CIColorMatrix", parameters: ["inputAVector": CIVector(x: 0, y: 0, z: 0, w: CGFloat(a))])
     }
 
-    func blur(_ img: CIImage, _ sigma: CGFloat) -> CIImage { sigma < 0.3 ? img : img.applyingGaussianBlur(sigma: Double(sigma)) }
+    public func blur(_ img: CIImage, _ sigma: CGFloat) -> CIImage { sigma < 0.3 ? img : img.applyingGaussianBlur(sigma: Double(sigma)) }
 
     /// Scale and rotate (degrees, clockwise on screen) about `point`.
-    func transform(_ img: CIImage, about point: CGPoint, scale: CGFloat = 1, rotate degrees: CGFloat = 0) -> CIImage {
+    public func transform(_ img: CIImage, about point: CGPoint, scale: CGFloat = 1, rotate degrees: CGFloat = 0) -> CIImage {
         let t = CGAffineTransform(translationX: point.x, y: point.y)
             .rotated(by: degrees * .pi / 180)
             .scaledBy(x: scale, y: scale)
@@ -111,16 +111,16 @@ final class StingerCanvas {
         return img.transformed(by: t)
     }
 
-    func screen(_ img: CIImage, over base: CIImage) -> CIImage {
+    public func screen(_ img: CIImage, over base: CIImage) -> CIImage {
         img.applyingFilter("CIScreenBlendMode", parameters: [kCIInputBackgroundImageKey: base])
     }
 
     /// Layers bottom to top.
-    func stack(_ layers: [CIImage]) -> CIImage { layers.reduce(CIImage.empty()) { $1.composited(over: $0) } }
+    public func stack(_ layers: [CIImage]) -> CIImage { layers.reduce(CIImage.empty()) { $1.composited(over: $0) } }
 
     /// The SVG "goo" filter: blur the shapes, then a steep alpha threshold (alpha x 36 - 14), filled with `argb`.
     /// Done at a quarter size, which also keeps the big blur cheap.
-    func goo(_ shapes: CIImage, sigma: CGFloat, _ argb: UInt32) -> CIImage {
+    public func goo(_ shapes: CIImage, sigma: CGFloat, _ argb: UInt32) -> CIImage {
         let k: CGFloat = 0.25
         let small = blur(shapes.transformed(by: CGAffineTransform(scaleX: k, y: k)), sigma * k)
         let mask = small.applyingFilter("CIColorMatrix", parameters: [
@@ -135,7 +135,7 @@ final class StingerCanvas {
 
     /// `text` centred on `at`. `tracking` is in em (it changes the layout, so each distinct value is its own render).
     /// `face` is a WidgetFonts face id ("" = system).
-    func text(_ text: String, at: CGPoint, size: CGFloat, weight: UIFont.Weight = .semibold, color argb: UInt32,
+    public func text(_ text: String, at: CGPoint, size: CGFloat, weight: UIFont.Weight = .semibold, color argb: UInt32,
               alpha: CGFloat = 1, tracking: CGFloat = -0.02, scale: CGFloat = 1, face: String = "") -> CIImage {
         guard !text.isEmpty, alpha > 0.001, size > 0 else { return .empty() }
         let key = "\(text)|\(Int(size * 2))|\(weight.rawValue)|\(argb)|\(Int((tracking * 200).rounded()))|\(face)"
@@ -169,7 +169,7 @@ final class StingerCanvas {
 
     /// A polyline stroked once on the CPU with its progress (0...1 along its length) coded in the red channel, so
     /// `reveal` can draw any prefix of it on the GPU. Cached per shape.
-    func progressStroke(_ points: [CGPoint], width: CGFloat) -> CIImage {
+    public func progressStroke(_ points: [CGPoint], width: CGFloat) -> CIImage {
         let key = "\(points.count)|\(points.first.map { "\($0)" } ?? "")|\(points.last.map { "\($0)" } ?? "")|\(width)"
         if let s = strokes[key] { return s }
         guard points.count > 1 else { return .empty() }
@@ -196,7 +196,7 @@ final class StingerCanvas {
     }
 
     /// The first `fraction` of a progressStroke, in `argb`.
-    func reveal(_ stroke: CIImage, upTo fraction: Double, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
+    public func reveal(_ stroke: CIImage, upTo fraction: Double, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
         guard fraction > 0.0005, alpha > 0.001 else { return .empty() }
         let k: CGFloat = 400   // edge sharpness along the path
         let col = Self.ciColor(argb)

@@ -14,7 +14,7 @@ extension StingerArt {
     ]
 
     /// Two layers of drops (accent, then ink) that swell to cover the frame and shrink away; the board's goo filter merges them.
-    static func liquid(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
+    public static func liquid(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
         let curve = Curve(0.65, 0, 0.35, 1)
         var layers = [
             gooLayer(k, q, curve, [(0.23, 0), (0.38, 1), (0.57, 1), (0.72, 0)], s.accent),
@@ -49,7 +49,7 @@ extension StingerArt {
     // MARK: Ripple
 
     /// Four rings grow in from the centre (circular clip) and open out again through a growing central hole.
-    static func ripple(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
+    public static func ripple(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
         let curve = Curve(0.65, 0, 0.35, 1)
         let hd = Double(k.halfDiagonal)
         let cen = k.center
@@ -74,7 +74,7 @@ extension StingerArt {
     // MARK: Tunnel
 
     /// Five rounded frames fly out of the centre one after another, spinning, then fold back in reverse.
-    static func tunnel(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
+    public static func tunnel(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
         let curve = Curve(0.76, 0, 0.24, 1)
         let u = k.unit
         let cen = k.center
@@ -110,7 +110,7 @@ extension StingerArt {
     }
 
     /// Three glowing blobs sweep across, then a white-hot flash peaks at the centre and fades.
-    static func burn(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
+    public static func burn(_ k: StingerCanvas, _ q: Double, _ s: StingerStyle) -> CIImage {
         let tone = burnTone(s)
         let curve = Curve(0.45, 0, 0.55, 1)
         let kk = k.halfDiagonal / 1101

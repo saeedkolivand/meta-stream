@@ -5,7 +5,7 @@ import UIKit
 
 extension NPDraw {
     /// Dark card: cover, NOW PLAYING in the accent, title, artist, progress bar with times. Title and artist slide up.
-    func slab() -> CIImage {
+    public func slab() -> CIImage {
         let label = NPRun(text: "NOW PLAYING", size: 22, color: accent, tracking: 2.6 / 22)
         let title = NPRun(text: track.title, size: 40)
         let artist = NPRun(text: track.artist, size: 30, weight: .regular, color: Self.grey)
@@ -40,7 +40,7 @@ extension NPDraw {
 
     /// Capsule that collapses to the round cover, the cover pops, and the capsule springs open again. Three level bars
     /// play all the time. The content is laid out at the open width and only clipped narrower, so text never reflows.
-    func island() -> CIImage {
+    public func island() -> CIImage {
         let width = min(880, max(152, 152 + 688 * pose.reveal))
         let capsule = pill(CGRect(x: 0, y: 0, width: width, height: 152), 76, Self.island)
         let title = fit(NPRun(text: track.title, size: 38), width: 568)
@@ -61,7 +61,7 @@ extension NPDraw {
     /// Round cover that spins all the time inside a progress ring; the disc drops out, a new one drops in with a bounce,
     /// and the text slides sideways. ring: the track is a plain ring; the progress is a drawn-on stroke (progressStroke +
     /// reveal) round the same circle, starting at 12 o'clock and running clockwise.
-    func disc() -> CIImage {
+    public func disc() -> CIImage {
         let middle = CGPoint(x: 116, y: 112)
         let card = pill(CGRect(x: 0, y: 0, width: 860, height: 224), 36, Self.card)
         let around = (0...96).map { step -> CGPoint in
@@ -93,7 +93,7 @@ extension NPDraw {
     }
 
     /// Slim strip: small cover (flips), equaliser bars, "Artist - Title". The text clip-wipes out and in; the strip hugs it.
-    func ticker() -> CIImage {
+    public func ticker() -> CIImage {
         let artist = track.artist.isEmpty ? [] : [NPRun(text: track.artist, size: 32, weight: .regular, color: Self.grey),
                                                   NPRun(text: " - ", size: 32, weight: .regular, color: Self.dim)]
         let parts = artist + [NPRun(text: track.title, size: 32)]

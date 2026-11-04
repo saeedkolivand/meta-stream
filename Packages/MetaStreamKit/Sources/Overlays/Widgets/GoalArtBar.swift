@@ -4,7 +4,7 @@ import UIKit
 
 extension GoalDraw {
     /// GoalView: title and "total / target" over a flat capsule bar, other currencies and the percentage under it.
-    func bar() -> GoalPiece {
+    public func bar() -> GoalPiece {
         let wide = style.width, high = style.height, size = style.fontSize
         let progress = input.to
         let celebrating = input.celebrating
@@ -30,14 +30,14 @@ extension GoalDraw {
     }
 
     /// A run in the text colour.
-    func run(_ text: String, _ size: CGFloat, _ weight: UIFont.Weight, face: String = "Manrope") -> GoalRun {
+    public func run(_ text: String, _ size: CGFloat, _ weight: UIFont.Weight, face: String = "Manrope") -> GoalRun {
         GoalRun(text: text, size: size, weight: weight, face: face, color: style.textColor)
     }
 
     // MARK: Liquid
 
     /// GoalLiquidView: title and amounts over a capsule tank whose fill has waves, bubbles and a splash ring.
-    func liquid() -> GoalPiece {
+    public func liquid() -> GoalPiece {
         let swap = GoalMotion.seg(prog, 0.2, 0.5)
         let filled = level(GoalMotion.move(prog))
         let title = run(input.title, 17, .bold, face: "Unbounded")

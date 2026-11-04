@@ -7,7 +7,7 @@ extension GoalDraw {
     // MARK: Road trip
 
     /// GoalRoadView: "Road to: title" and amounts over a road with 25/50/75 % pins, a finish flag and the car at the fill.
-    func road() -> GoalPiece {
+    public func road() -> GoalPiece {
         let title = run(input.celebrating ? input.title : "Road to: \(input.title)", 14, .bold, face: "Unbounded")
         let amount = run("", 14, .heavy)
         let tail = amount.with("/ " + input.targetText).colored(Self.dim)
@@ -115,7 +115,7 @@ extension GoalDraw {
     // MARK: Segments
 
     /// GoalSegmentsView: TITLE, 20 blocks that flash white and settle to the accent, "total / target" and a floating "+delta".
-    func segments() -> GoalPiece {
+    public func segments() -> GoalPiece {
         let nb = min(20, max(0, Int((input.from * 20).rounded())))
         let na = min(20, max(nb, Int((input.to * 20).rounded())))
         let title = run(input.title.uppercased(), 13, .heavy, face: "JetBrainsMono").tracked(0.78).centred()

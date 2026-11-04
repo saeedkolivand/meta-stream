@@ -4,17 +4,17 @@ import CoreGraphics
 private let left = 1, right = 2, top = 4, bottom = 8   // OBS alignment bit flags
 
 /// Where the OBS canvas sits in the output: uniform scale, centered (letterboxed).
-struct Fit: Sendable, Equatable {
-    var scale: CGFloat
-    var offX: CGFloat
-    var offY: CGFloat
+public struct Fit: Sendable, Equatable {
+    public var scale: CGFloat
+    public var offX: CGFloat
+    public var offY: CGFloat
 
-    func apply(_ b: CGRect) -> CGRect {
+    public func apply(_ b: CGRect) -> CGRect {
         CGRect(x: offX + b.minX * scale, y: offY + b.minY * scale, width: b.width * scale, height: b.height * scale)
     }
 }
 
-func overlayFit(canvasW: Int, canvasH: Int, outW: CGFloat, outH: CGFloat) -> Fit {
+public func overlayFit(canvasW: Int, canvasH: Int, outW: CGFloat, outH: CGFloat) -> Fit {
     let s = min(outW / CGFloat(canvasW), outH / CGFloat(canvasH))
     return Fit(scale: s, offX: (outW - CGFloat(canvasW) * s) / 2, offY: (outH - CGFloat(canvasH) * s) / 2)
 }
@@ -32,7 +32,7 @@ private func inside(_ start: CGFloat, _ outer: CGFloat, _ inner: CGFloat, _ alig
 }
 
 /// The item's rectangle in OBS canvas px for a source of natural size nw x nh (already cropped), per OBS transform rules.
-func overlayPlace(_ l: OverlayLayer, _ nw: CGFloat, _ nh: CGFloat) -> CGRect {
+public func overlayPlace(_ l: OverlayLayer, _ nw: CGFloat, _ nh: CGFloat) -> CGRect {
     let w0 = nw * l.sx
     let h0 = nh * l.sy
     guard l.boundsType != 0, l.bw > 0, l.bh > 0, nw > 0, nh > 0 else {
@@ -61,7 +61,7 @@ func overlayPlace(_ l: OverlayLayer, _ nw: CGFloat, _ nh: CGFloat) -> CGRect {
 
 /// Output rect of a widget: s = layout.scale * min(canvas.w, canvas.h) / 1080; size = natural * s;
 /// anchor point = (col * W/2, row * H/2); origin = anchorPoint - (col * w/2, row * h/2) + (dx * W, dy * H).
-func widgetRect(_ layout: WidgetLayout, natural: CGSize, canvas: CGSize) -> CGRect {
+public func widgetRect(_ layout: WidgetLayout, natural: CGSize, canvas: CGSize) -> CGRect {
     let s = layout.scale * min(canvas.width, canvas.height) / 1080
     let w = natural.width * s, h = natural.height * s
     let a = min(max(layout.anchor, 0), 8)
@@ -71,7 +71,7 @@ func widgetRect(_ layout: WidgetLayout, natural: CGSize, canvas: CGSize) -> CGRe
 }
 
 /// Inverse: the layout (nearest anchor by the rect's centre: thirds of the canvas) that reproduces `rect` at `scale`.
-func widgetLayout(for rect: CGRect, natural: CGSize, canvas: CGSize, scale: CGFloat) -> WidgetLayout {
+public func widgetLayout(for rect: CGRect, natural: CGSize, canvas: CGSize, scale: CGFloat) -> WidgetLayout {
     guard canvas.width > 0, canvas.height > 0 else { return WidgetLayout(scale: scale) }
     func third(_ v: CGFloat, _ total: CGFloat) -> Int { v < total / 3 ? 0 : v < total * 2 / 3 ? 1 : 2 }
     let col = third(rect.midX, canvas.width), row = third(rect.midY, canvas.height)

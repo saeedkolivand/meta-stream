@@ -30,15 +30,15 @@ extension NPDraw {
     }
 
     /// Note, then "Artist - Title"; a song change wipes the box back to just the note, then open again.
-    func text() -> CIImage { noted([NPRun(text: line, size: 32)], maxWidth: 920, shut: 62) }
+    public func text() -> CIImage { noted([NPRun(text: line, size: 32)], maxWidth: 920, shut: 62) }
 
     /// Note, then "Now playing: Artist - Title"; the widget task closes it after the hold time.
-    func popup() -> CIImage {
+    public func popup() -> CIImage {
         noted([NPRun(text: "Now playing: ", size: 32, weight: .semibold), NPRun(text: line, size: 32)], maxWidth: 1040, shut: 0)
     }
 
     /// Note + title over the artist, a thin progress line along the bottom; the lines slide up one after the other.
-    func twoLine() -> CIImage {
+    public func twoLine() -> CIImage {
         let title = fit(NPRun(text: track.title, size: 32), width: 520 - 24 - Self.noteSlot - 12)
         let artist = fit(NPRun(text: track.artist, size: 26, weight: .semibold), width: 520 - 68 - 12)
         let titleH = measure(title).height, artistH = measure(artist).height
@@ -57,7 +57,7 @@ extension NPDraw {
     }
 
     /// A small square cover instead of the note; the box wipes and the cover flips on a song change.
-    func cornerCover() -> CIImage {
+    public func cornerCover() -> CIImage {
         let artist = track.artist.isEmpty ? [] : [NPRun(text: track.artist, size: 32, weight: .semibold), NPRun(text: " - ", size: 32)]
         let parts = artist + [NPRun(text: track.title, size: 32)]
         let left: CGFloat = 8 + 44 + 14

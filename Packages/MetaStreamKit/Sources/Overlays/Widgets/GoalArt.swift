@@ -9,62 +9,62 @@ import Synchronization
 import UIKit
 
 /// What one frame shows. For the bar design `to` is the progress and `afterText` the total.
-struct GoalInput: Sendable {
-    var style: GoalWidgetStyle
-    var title = ""
-    var beforeText = ""
-    var afterText = ""
-    var targetText = ""
-    var deltaText = ""
-    var otherText = ""
-    var from = 0.0
-    var to = 0.0
-    var prog = 1.0        // the donation reaction, 0...1 (1 = settled)
-    var pins: [String] = []
-    var celebrating = false
+public struct GoalInput: Sendable {
+    public var style: GoalWidgetStyle
+    public var title = ""
+    public var beforeText = ""
+    public var afterText = ""
+    public var targetText = ""
+    public var deltaText = ""
+    public var otherText = ""
+    public var from = 0.0
+    public var to = 0.0
+    public var prog = 1.0        // the donation reaction, 0...1 (1 = settled)
+    public var pins: [String] = []
+    public var celebrating = false
 }
 
 /// One styled piece of text; sizes and tracking in design points.
-struct GoalRun {
-    var text: String
-    var size: CGFloat
-    var weight: UIFont.Weight = .bold
-    var face = "Manrope"
-    var color: UInt32 = 0xFFFF_FFFF
-    var alpha: CGFloat = 1
-    var tracking: CGFloat = 0
-    var mid = false           // y is the line's centre, not its baseline
+public struct GoalRun {
+    public var text: String
+    public var size: CGFloat
+    public var weight: UIFont.Weight = .bold
+    public var face = "Manrope"
+    public var color: UInt32 = 0xFFFF_FFFF
+    public var alpha: CGFloat = 1
+    public var tracking: CGFloat = 0
+    public var mid = false           // y is the line's centre, not its baseline
 
-    func with(_ other: String) -> GoalRun { var copy = self; copy.text = other; return copy }
-    func fading(_ value: CGFloat) -> GoalRun { var copy = self; copy.alpha = value; return copy }
-    func colored(_ argb: UInt32) -> GoalRun { var copy = self; copy.color = argb; return copy }
-    func tracked(_ points: CGFloat) -> GoalRun { var copy = self; copy.tracking = points; return copy }
-    func centred() -> GoalRun { var copy = self; copy.mid = true; return copy }
+    public func with(_ other: String) -> GoalRun { var copy = self; copy.text = other; return copy }
+    public func fading(_ value: CGFloat) -> GoalRun { var copy = self; copy.alpha = value; return copy }
+    public func colored(_ argb: UInt32) -> GoalRun { var copy = self; copy.color = argb; return copy }
+    public func tracked(_ points: CGFloat) -> GoalRun { var copy = self; copy.tracking = points; return copy }
+    public func centred() -> GoalRun { var copy = self; copy.mid = true; return copy }
 }
 
-struct GoalSize: Sendable { var width: CGFloat, height: CGFloat, asc: CGFloat }
+public struct GoalSize: Sendable { var width: CGFloat, height: CGFloat, asc: CGFloat }
 
 /// A drawn design with its size in design points.
-struct GoalPiece {
-    var image: CIImage
-    var size: CGSize
+public struct GoalPiece {
+    public var image: CIImage
+    public var size: CGSize
 }
 
-enum GoalSide { case lead, trail, center }
+public enum GoalSide { case lead, trail, center }
 
 /// Old text leaving (up by `drop`, fading) while the new one comes in (from `rise` below), like GoalSwap / GoalRoll.
-struct GoalFlip {
-    var before: String
-    var after: String
-    var progress: Double
-    var rise: CGFloat = 8
-    var drop: CGFloat = 0
-    var minWidth: CGFloat = 0
+public struct GoalFlip {
+    public var before: String
+    public var after: String
+    public var progress: Double
+    public var rise: CGFloat = 8
+    public var drop: CGFloat = 0
+    public var minWidth: CGFloat = 0
 }
 
-enum GoalArt {
+public enum GoalArt {
     /// One frame. `box` = the widget's natural area inside the canvas (top-left coordinates, px).
-    static func frame(_ input: GoalInput, pen: StingerCanvas, box: CGRect) -> CIImage {
+    public static func frame(_ input: GoalInput, pen: StingerCanvas, box: CGRect) -> CIImage {
         let style = input.style
         let natural = style.natural
         let ratio = box.width / max(1, natural.width)
@@ -85,7 +85,7 @@ enum GoalArt {
     }
 
     /// A still or moving scene for `input`; a moving one plays the reaction over `seconds` (then holds its last frame).
-    static func scene(_ input: GoalInput, box: CGRect, seconds: Double? = nil) -> GoalScene {
+    public static func scene(_ input: GoalInput, box: CGRect, seconds: Double? = nil) -> GoalScene {
         GoalScene(still: seconds == nil, draw: { pen, time in
             var now = input
             if let seconds { now.prog = min(1, max(0, time / seconds)) }
@@ -95,28 +95,28 @@ enum GoalArt {
 }
 
 /// A scene for GoalPlayer; `still` = no per-frame redraw needed.
-struct GoalScene {
-    var still: Bool
-    var draw: @Sendable (StingerCanvas, Double) -> CIImage
-    var gpu: GPUScene { GPUScene(draw: draw, moving: !still) }
+public struct GoalScene {
+    public var still: Bool
+    public var draw: @Sendable (StingerCanvas, Double) -> CIImage
+    public var gpu: GPUScene { GPUScene(draw: draw, moving: !still) }
 }
 
 /// The drawing helpers (design points in, canvas pixels out) and the dispatch over `style.design`.
-struct GoalDraw {
-    let pen: StingerCanvas
-    let unit: CGFloat
-    let input: GoalInput
+public struct GoalDraw {
+    public let pen: StingerCanvas
+    public let unit: CGFloat
+    public let input: GoalInput
 
-    static let white: UInt32 = 0xFFFF_FFFF
-    static let ink: UInt32 = 0xFF12_1318
-    static let steel: UInt32 = 0xFFD7_D8DE
-    static let dim: UInt32 = 0xFFA9_ABB5
+    public static let white: UInt32 = 0xFFFF_FFFF
+    public static let ink: UInt32 = 0xFF12_1318
+    public static let steel: UInt32 = 0xFFD7_D8DE
+    public static let dim: UInt32 = 0xFFA9_ABB5
 
-    var style: GoalWidgetStyle { input.style }
-    var prog: Double { input.prog }
-    var accent: UInt32 { style.barColor }
+    public var style: GoalWidgetStyle { input.style }
+    public var prog: Double { input.prog }
+    public var accent: UInt32 { style.barColor }
 
-    func design() -> GoalPiece {
+    public func design() -> GoalPiece {
         switch style.design {
         case "liquid": liquid()
         case "road": road()
@@ -131,46 +131,46 @@ struct GoalDraw {
     }
 
     /// The reaction's fill level for designs that ease it with `ease`.
-    func level(_ ease: Double) -> Double { min(1, max(0, input.from + (input.to - input.from) * ease)) }
+    public func level(_ ease: Double) -> Double { min(1, max(0, input.from + (input.to - input.from) * ease)) }
 
     // MARK: geometry
 
-    func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x * unit, y: y * unit) }
-    func scaled(_ rect: CGRect) -> CGRect { CGRect(x: rect.minX * unit, y: rect.minY * unit, width: rect.width * unit, height: rect.height * unit) }
-    func area(_ x: CGFloat, _ y: CGFloat, _ wide: CGFloat, _ high: CGFloat) -> CGRect { CGRect(x: x, y: y, width: wide, height: high) }
+    public func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x * unit, y: y * unit) }
+    public func scaled(_ rect: CGRect) -> CGRect { CGRect(x: rect.minX * unit, y: rect.minY * unit, width: rect.width * unit, height: rect.height * unit) }
+    public func area(_ x: CGFloat, _ y: CGFloat, _ wide: CGFloat, _ high: CGFloat) -> CGRect { CGRect(x: x, y: y, width: wide, height: high) }
 
-    func moved(_ img: CIImage, x: CGFloat, y: CGFloat) -> CIImage {
+    public func moved(_ img: CIImage, x: CGFloat, y: CGFloat) -> CIImage {
         img.transformed(by: CGAffineTransform(translationX: x * unit, y: y * unit))
     }
 
     // MARK: shapes (rects, centres and radii in points)
 
-    func fill(_ rect: CGRect, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage { pen.fill(scaled(rect), argb, alpha: alpha) }
+    public func fill(_ rect: CGRect, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage { pen.fill(scaled(rect), argb, alpha: alpha) }
 
-    func pill(_ rect: CGRect, _ radius: CGFloat, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
+    public func pill(_ rect: CGRect, _ radius: CGFloat, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
         pen.roundedRect(scaled(rect), radius: radius * unit, argb, alpha: alpha)
     }
 
-    func capsule(_ rect: CGRect, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage { pill(rect, min(rect.width, rect.height) / 2, argb, alpha: alpha) }
+    public func capsule(_ rect: CGRect, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage { pill(rect, min(rect.width, rect.height) / 2, argb, alpha: alpha) }
 
-    func disc(_ centre: CGPoint, _ radius: CGFloat, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
+    public func disc(_ centre: CGPoint, _ radius: CGFloat, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
         pen.disc(pt(centre.x, centre.y), radius * unit, argb, alpha: alpha)
     }
 
     /// A circle outline `width` thick, its outer edge at `radius`.
-    func outline(_ centre: CGPoint, _ radius: CGFloat, width: CGFloat, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
+    public func outline(_ centre: CGPoint, _ radius: CGFloat, width: CGFloat, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
         pen.ring(pt(centre.x, centre.y), inner: (radius - width) * unit, outer: radius * unit, argb, alpha: alpha)
     }
 
     /// A capsule outline drawn inside `rect` (SwiftUI strokeBorder).
-    func capsuleBorder(_ rect: CGRect, width: CGFloat, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
+    public func capsuleBorder(_ rect: CGRect, width: CGFloat, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
         pen.minus(capsule(rect, argb, alpha: alpha), capsule(rect.insetBy(dx: width, dy: width), Self.white))
     }
 
-    func clipped(_ img: CIImage, to rect: CGRect) -> CIImage { pen.clip(img, to: fill(rect, Self.white)) }
+    public func clipped(_ img: CIImage, to rect: CGRect) -> CIImage { pen.clip(img, to: fill(rect, Self.white)) }
 
     /// `shape` (any colour) repainted in `argb`.
-    func tinted(_ shape: CIImage, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
+    public func tinted(_ shape: CIImage, _ argb: UInt32, alpha: CGFloat = 1) -> CIImage {
         let col = StingerCanvas.ciColor(argb)
         return shape.applyingFilter("CIColorMatrix", parameters: [
             "inputRVector": CIVector(x: 0, y: 0, z: 0, w: 0), "inputGVector": CIVector(x: 0, y: 0, z: 0, w: 0),
@@ -180,13 +180,13 @@ struct GoalDraw {
     }
 
     /// SwiftUI .shadow(color:radius:): the silhouette in `argb`, blurred by radius / 2.
-    func glow(_ shape: CIImage, _ argb: UInt32, radius: CGFloat, alpha: Double = 1) -> CIImage {
+    public func glow(_ shape: CIImage, _ argb: UInt32, radius: CGFloat, alpha: Double = 1) -> CIImage {
         guard radius > 0.1, alpha > 0.001, !shape.extent.isEmpty else { return .empty() }
         return pen.opacity(pen.blur(tinted(shape, argb), radius * unit / 2), alpha)
     }
 
     /// The text widgets' drop shadow (black, `alpha`, down by `dy`, blur radius 3) under `layer`.
-    func shadowed(_ layer: CIImage, alpha: Double, dy: CGFloat) -> CIImage {
+    public func shadowed(_ layer: CIImage, alpha: Double, dy: CGFloat) -> CIImage {
         guard !layer.extent.isEmpty else { return layer }
         return pen.stack([moved(glow(layer, 0xFF00_0000, radius: 3, alpha: alpha), x: 0, y: dy), layer])
     }
@@ -196,7 +196,7 @@ struct GoalDraw {
     private static let measured = Mutex<[String: GoalSize]>([:])
 
     /// Width, line height and ascender of a run, in points (cached: moving designs don't re-lay text out every frame).
-    func metrics(_ run: GoalRun) -> GoalSize {
+    public func metrics(_ run: GoalRun) -> GoalSize {
         let px = run.size * unit
         let key = "\(run.text)|\(run.face)|\(px)|\(run.weight.rawValue)|\(run.tracking)"
         let cached = Self.measured.withLock { $0[key] }
@@ -214,7 +214,7 @@ struct GoalDraw {
     }
 
     /// `run` cut with an ellipsis to fit `width` points (SwiftUI's lineLimit(1)).
-    func fit(_ run: GoalRun, width: CGFloat) -> GoalRun {
+    public func fit(_ run: GoalRun, width: CGFloat) -> GoalRun {
         let full = metrics(run).width
         guard full > width, width > 0 else { return run }
         var count = max(1, Int(Double(run.text.count) * Double(width / full)) - 1)
@@ -228,7 +228,7 @@ struct GoalDraw {
 
     /// `run` anchored at `x` (its left, right or centre edge) on baseline `y` (or centred on `y` when run.mid).
     /// The run itself is laid out by NSAttributedString, so Persian reads right-to-left while the box stays left-anchored.
-    func text(_ run: GoalRun, x: CGFloat, y: CGFloat, side: GoalSide = .lead) -> CIImage {
+    public func text(_ run: GoalRun, x: CGFloat, y: CGFloat, side: GoalSide = .lead) -> CIImage {
         guard !run.text.isEmpty, run.alpha > 0.001 else { return .empty() }
         let size = metrics(run)
         let left: CGFloat
@@ -244,12 +244,12 @@ struct GoalDraw {
                         color: run.color, alpha: run.alpha, tracking: run.tracking / run.size, face: run.face)
     }
 
-    func flipWidth(_ spec: GoalFlip, _ run: GoalRun) -> CGFloat {
+    public func flipWidth(_ spec: GoalFlip, _ run: GoalRun) -> CGFloat {
         max(spec.minWidth, metrics(run.with(spec.before)).width, metrics(run.with(spec.after)).width)
     }
 
     /// The two texts of `spec` on the same anchor: the old one fades out upwards, the new one fades in.
-    func flip(_ spec: GoalFlip, _ run: GoalRun, x: CGFloat, y: CGFloat, side: GoalSide) -> CIImage {
+    public func flip(_ spec: GoalFlip, _ run: GoalRun, x: CGFloat, y: CGFloat, side: GoalSide) -> CIImage {
         let past = text(run.with(spec.before).fading(run.alpha * CGFloat(1 - spec.progress)), x: x,
                         y: y + spec.drop * CGFloat(spec.progress), side: side)
         let next = text(run.with(spec.after).fading(run.alpha * CGFloat(spec.progress)), x: x,
@@ -260,12 +260,12 @@ struct GoalDraw {
     // MARK: cached rasters and arcs
 
     /// A progress arc on a circle of `radius` points, `fraction` of the way round clockwise from 12 o'clock, centred on `centre`.
-    func arc(_ radius: CGFloat, width: CGFloat, fraction: Double, at centre: CGPoint, _ argb: UInt32) -> CIImage {
+    public func arc(_ radius: CGFloat, width: CGFloat, fraction: Double, at centre: CGPoint, _ argb: UInt32) -> CIImage {
         moved(pen.glArc(radius: radius * unit, width: width * unit, fraction: fraction, color: argb), x: centre.x, y: centre.y)
     }
 
     /// Track + progress arc of the boards' ring (a `diameter` frame, 3.5 stroke at 26) centred on `centre`.
-    func ring(_ diameter: CGFloat, _ progress: Double, at centre: CGPoint) -> CIImage {
+    public func ring(_ diameter: CGFloat, _ progress: Double, at centre: CGPoint) -> CIImage {
         let scale = diameter / 26
         let radius = 10 * scale, width = 3.5 * scale
         let track = outline(centre, radius + width / 2, width: width, style.trackColor)
@@ -275,7 +275,7 @@ struct GoalDraw {
 
 extension StingerCanvas {
     /// A raster drawn once per look (kept in the symbols cache) and returned upright in top-left space at (0, 0).
-    func glShape(_ key: String, size: CGSize, draw: (CGContext) -> Void) -> CIImage {
+    public func glShape(_ key: String, size: CGSize, draw: (CGContext) -> Void) -> CIImage {
         let image: CGImage
         if let hit = symbols[key] {
             image = hit
@@ -294,7 +294,7 @@ extension StingerCanvas {
 
     /// An arc of a circle (px radius and width) from 12 o'clock clockwise, centred on the origin. The stroke is rasterised
     /// once (progressStroke) at a fixed spot; showing more or less of it is a GPU mask, so a growing ring costs no CPU.
-    func glArc(radius: CGFloat, width: CGFloat, fraction: Double, color argb: UInt32) -> CIImage {
+    public func glArc(radius: CGFloat, width: CGFloat, fraction: Double, color argb: UInt32) -> CIImage {
         let mid = radius + width
         let points = (0...96).map { step -> CGPoint in
             let ang = Double(step) / 96 * 2 * .pi

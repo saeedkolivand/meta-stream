@@ -8,8 +8,8 @@ import Goal
 import HaishinKit
 
 @MainActor
-enum DonationAlertPlayer {
-    static func play(_ e: ChatEvent, style: AlertWidgetStyle, canvas: CGSize, box: CGRect, goalBox: CGRect?, mixer: MediaMixer) async {
+public enum DonationAlertPlayer {
+    public static func play(_ e: ChatEvent, style: AlertWidgetStyle, canvas: CGSize, box: CGRect, goalBox: CGRect?, mixer: MediaMixer) async {
         let kind = style.donationKind, ds = style.donationStyle
         let alert = Self.info(e, goalBox: goalBox)
         let o = await OverlayScreen.makeDonation(CGRect(origin: .zero, size: canvas), kind, alert, ds, box: box)
@@ -35,7 +35,7 @@ enum DonationAlertPlayer {
         }
     }
 
-    static func info(_ e: ChatEvent, goalBox: CGRect?) -> DonationAlertInfo {
+    public static func info(_ e: ChatEvent, goalBox: CGRect?) -> DonationAlertInfo {
         let goalStore = GoalStore.shared, cfg = goalStore.config
         let name = ChatFilter.safeName(e.user)
         let money: Money? = e.kind == .tip ? e.tipMoney : DonationPrices.money(e)

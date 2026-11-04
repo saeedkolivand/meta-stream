@@ -1,3 +1,4 @@
+import Overlays
 import SwiftUI
 
 /// One scene in the Scenes grid: a 16:9 thumbnail of where its widgets sit, the name, role and a one-line summary.

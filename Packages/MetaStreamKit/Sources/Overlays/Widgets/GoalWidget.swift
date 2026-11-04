@@ -2,18 +2,18 @@
 import HaishinKit
 import SwiftUI
 
-struct GoalView: View {
-    let style: GoalWidgetStyle
-    let title: String
-    let totalText: String
-    let targetText: String
-    let progress: Double
-    let otherText: String
-    let celebrating: Bool
+public struct GoalView: View {
+    public let style: GoalWidgetStyle
+    public let title: String
+    public let totalText: String
+    public let targetText: String
+    public let progress: Double
+    public let otherText: String
+    public let celebrating: Bool
 
     private func c(_ argb: UInt32) -> Color { Color(uiColor: OverlayRaster.color(argb: argb)) }
 
-    var body: some View {
+    public var body: some View {
         let size = CGFloat(style.fontSize)
         let shown = celebrating ? "Goal reached!" : title
         let p = min(1, max(0, progress))
@@ -45,7 +45,7 @@ struct GoalView: View {
         .background { if style.background { RoundedRectangle(cornerRadius: 14).fill(c(style.backgroundColor)) } }
     }
 
-    static func sample(_ style: GoalWidgetStyle) -> GoalView {
+    public static func sample(_ style: GoalWidgetStyle) -> GoalView {
         GoalView(style: style, title: "New camera", totalText: "€312", targetText: "€800", progress: 0.39,
                  otherText: "≈ ₮33,700,000 · $337", celebrating: false)
     }
@@ -53,7 +53,7 @@ struct GoalView: View {
 
 extension OverlayCompositor {
     /// The goal on the GPU (GoalArt.swift): the task in GoalPlayer.swift hands the GPU object a scene when the goal changes.
-    func goalWidget(_ l: OverlayLayer, box: CGRect, canvas: CGSize) async -> WidgetBuild? {
+    public func goalWidget(_ l: OverlayLayer, box: CGRect, canvas: CGSize) async -> WidgetBuild? {
         guard let rect = OverlayRaster.visible(box, in: canvas) else { return nil }
         let style = GoalWidgetStyle(l.data)
         let screen = await OverlayScreen.makeGPU(rect)

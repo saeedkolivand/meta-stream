@@ -6,9 +6,9 @@ import Platforms
 
 /// Set once by ContentView; nil until then (widgets render nothing / blank values).
 @MainActor
-final class WidgetContext {
-    weak var chat: ChatFeed?
-    weak var emotes: Emotes?
-    weak var streamer: Streamer?
-    weak var platforms: Platforms?
+public final class WidgetContext {
+    public weak var chat: ChatFeed?
+    public weak var emotes: Emotes?
+    public weak var streamer: Streamer?
+    public weak var platforms: Platforms?
 }

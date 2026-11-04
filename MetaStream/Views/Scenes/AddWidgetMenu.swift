@@ -1,3 +1,4 @@
+import Overlays
 import SwiftUI
 
 /// What the "+" menu can add. Each kind has one place that knows its defaults, so a new widget looks right immediately.

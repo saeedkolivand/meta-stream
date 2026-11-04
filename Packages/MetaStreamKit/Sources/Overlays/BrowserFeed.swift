@@ -43,17 +43,17 @@ private enum BrowserHost {
 }
 
 @MainActor
-final class BrowserFeed: NSObject, WKNavigationDelegate {
+public final class BrowserFeed: NSObject, WKNavigationDelegate {
     private let web: WKWebView
     private let box: CGRect         // output px; may hang off the canvas
     private let canvas: CGSize
     private let target: ImageScreenObject
 
     /// False until the app has a key window to host web views in.
-    static var hostAvailable: Bool { BrowserHost.window != nil }
+    public static var hostAvailable: Bool { BrowserHost.window != nil }
 
     /// Nil when the page can't load (not http(s), or no window to host the view yet).
-    init?(layer: OverlayLayer, box: CGRect, canvas: CGSize, target: ImageScreenObject) {
+    public init?(layer: OverlayLayer, box: CGRect, canvas: CGSize, target: ImageScreenObject) {
         guard let url = URL(string: layer.data["url"] ?? ""), ["http", "https"].contains(url.scheme?.lowercased() ?? "") else { return nil }
         let w = Int(layer.data["width"] ?? "") ?? 800
         let h = Int(layer.data["height"] ?? "") ?? 600
@@ -89,12 +89,12 @@ final class BrowserFeed: NSObject, WKNavigationDelegate {
     }
 
     /// Only http(s) (and about:blank frames) may load; a page link to file:, tel:, javascript: etc. is dropped.
-    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+    public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
         ["http", "https", "about"].contains(navigationAction.request.url?.scheme?.lowercased() ?? "") ? .allow : .cancel
     }
 
     /// One frame: snapshot the page and hand it to the screen object (redrawn into the box only when it doesn't fit as is).
-    func pump() async {
+    public func pump() async {
         let cfg = WKSnapshotConfiguration()
         cfg.snapshotWidth = NSNumber(value: Double(box.width / max(web.traitCollection.displayScale, 1)))   // points -> ~box.width px
         guard let img = try? await web.takeSnapshot(configuration: cfg),
@@ -103,7 +103,7 @@ final class BrowserFeed: NSObject, WKNavigationDelegate {
         await OverlayScreen.setImage(target, piece.bitmap)
     }
 
-    func close() {
+    public func close() {
         web.stopLoading()
         web.navigationDelegate = nil
         web.configuration.userContentController.removeAllUserScripts()

@@ -7,7 +7,7 @@ extension GoalDraw {
     // MARK: Hairline
 
     /// GoalHairlineView: TITLE and percentage, a big rolling amount, "of target" and a 2 pt line with sweep, tip and "+delta" ghost.
-    func hairline() -> GoalPiece {
+    public func hairline() -> GoalPiece {
         let roll = GoalMotion.lp(prog, 44, 52)
         let head = run(input.title.uppercased(), 11, .bold).tracked(2.2).fading(0.72)
         let big = run("", 32, .heavy).centred()
@@ -58,7 +58,7 @@ extension GoalDraw {
     // MARK: Spark
 
     /// GoalSparkView: title and "total / target" over a 4 pt line whose tip flares and throws nine sparks.
-    func spark() -> GoalPiece {
+    public func spark() -> GoalPiece {
         let title = run(input.title, 13, .heavy)
         let amount = run("", 15, .heavy)
         let tail = run("/ " + input.targetText, 13, .semibold).fading(0.6)

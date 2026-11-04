@@ -4,23 +4,23 @@ import Signals
 import UIKit
 
 @MainActor
-enum WidgetVariables {
+public enum WidgetVariables {
     /// For the editor's insert menu, in menu order.
-    static let tokens: [(token: String, label: String)] = [
+    public static let tokens: [(token: String, label: String)] = [
         ("{time}", "Time"), ("{date}", "Date"), ("{uptime}", "Live time"), ("{viewers}", "Viewers"), ("{bitrate}", "Bitrate"),
         ("{battery}", "Battery"), ("{speed}", "Speed"), ("{distance}", "Distance"), ("{city}", "City"), ("{weather}", "Weather"),
         ("{follower}", "Latest follower"), ("{sub}", "Latest sub"), ("{countdown}", "Starting countdown"),
         ("{song}", "Spotify song"), ("{artist}", "Spotify artist")
     ]
 
-    static func needsLocation(_ template: String) -> Bool {
+    public static func needsLocation(_ template: String) -> Bool {
         ["{speed}", "{distance}", "{city}", "{weather}"].contains { template.contains($0) }
     }
 
-    static func needsSpotify(_ template: String) -> Bool { template.contains("{song}") || template.contains("{artist}") }
+    public static func needsSpotify(_ template: String) -> Bool { template.contains("{song}") || template.contains("{artist}") }
 
     /// Only tokens present in the template are evaluated, so e.g. battery monitoring stays off unless {battery} is used.
-    static func resolve(_ template: String, _ ctx: WidgetContext) -> String {
+    public static func resolve(_ template: String, _ ctx: WidgetContext) -> String {
         guard template.contains("{") else { return template }
         var out = template
         for (token, _) in tokens where out.contains(token) {

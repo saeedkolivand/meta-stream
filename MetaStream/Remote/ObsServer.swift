@@ -9,6 +9,7 @@ import CryptoKit
 import Engine
 import Foundation
 import Network
+import Overlays
 
 @MainActor
 final class ObsServer {

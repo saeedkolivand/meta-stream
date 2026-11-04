@@ -3,12 +3,12 @@
 import CoreGraphics
 import CoreUI
 
-enum SceneTemplate: String, CaseIterable {
+public enum SceneTemplate: String, CaseIterable {
     case mono = "Mono", ticker = "Ticker"
 
     /// `channel` is the Kick name (empty = no channel line or QR code). The colours come from `theme`; they are baked into
     /// the layers, so changing the theme later doesn't touch scenes already made.
-    @MainActor func scenes(channel: String, theme: ColorTheme = .current) -> [OverlayScene] {
+    @MainActor public func scenes(channel: String, theme: ColorTheme = .current) -> [OverlayScene] {
         let url = channel.isEmpty ? "" : "kick.com/\(channel.lowercased())"
         switch self {
         case .mono: return Self.mono(url, theme)

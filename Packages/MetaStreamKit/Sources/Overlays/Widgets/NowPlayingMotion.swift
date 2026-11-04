@@ -7,35 +7,35 @@ import CoreLogging
 import Foundation
 
 /// One animated element: where it sits relative to its resting place, and how visible it is.
-struct NowPlayingLane: Equatable {
-    var dx: CGFloat = 0
-    var dy: CGFloat = 0
-    var alpha: CGFloat = 1
-    var scale: CGFloat = 1
-    var scaleX: CGFloat = 1   // extra horizontal scale: the cover "flip"
-    var rot: Double = 0       // degrees
+public struct NowPlayingLane: Equatable {
+    public var dx: CGFloat = 0
+    public var dy: CGFloat = 0
+    public var alpha: CGFloat = 1
+    public var scale: CGFloat = 1
+    public var scaleX: CGFloat = 1   // extra horizontal scale: the cover "flip"
+    public var rot: Double = 0       // degrees
 }
 
 /// Everything NowPlayingView needs for one frame. The default value is the settled card.
-struct NowPlayingPose: Equatable {
-    var useNew = true          // false: still drawing the outgoing song
-    var alpha: CGFloat = 1     // whole widget (the fade at the end of an exit)
-    var reveal: CGFloat = 1    // 0 shut ... 1 open; the island's spring may overshoot past 1
-    var trail: CGFloat = 0     // ticker only: how far the left edge of the text wipe has moved right (0...1)
-    var cover = NowPlayingLane()
-    var line1 = NowPlayingLane()   // title (island/disc/ticker: the whole text block)
-    var line2 = NowPlayingLane()   // artist
+public struct NowPlayingPose: Equatable {
+    public var useNew = true          // false: still drawing the outgoing song
+    public var alpha: CGFloat = 1     // whole widget (the fade at the end of an exit)
+    public var reveal: CGFloat = 1    // 0 shut ... 1 open; the island's spring may overshoot past 1
+    public var trail: CGFloat = 0     // ticker only: how far the left edge of the text wipe has moved right (0...1)
+    public var cover = NowPlayingLane()
+    public var line1 = NowPlayingLane()   // title (island/disc/ticker: the whole text block)
+    public var line2 = NowPlayingLane()   // artist
 
-    static let settled = NowPlayingPose()
+    public static let settled = NowPlayingPose()
 }
 
 /// CSS cubic-bezier(x1, y1, x2, y2) timing function (y may leave 0...1: that is the overshoot).
-struct Cubic: Sendable {
-    let x1, y1, x2, y2: Double
-    init(_ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double) { self.x1 = x1; self.y1 = y1; self.x2 = x2; self.y2 = y2 }
+public struct Cubic: Sendable {
+    public let x1, y1, x2, y2: Double
+    public init(_ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double) { self.x1 = x1; self.y1 = y1; self.x2 = x2; self.y2 = y2 }
 
     /// Eased value at progress `x` (clamped to 0...1). x(t) is monotonic for x1, x2 in 0...1, so bisect for t.
-    func at(_ x: Double) -> Double {
+    public func at(_ x: Double) -> Double {
         guard x > 0 else { return 0 }
         guard x < 1 else { return 1 }
         var lo = 0.0, hi = 1.0, param = x
@@ -48,25 +48,25 @@ struct Cubic: Sendable {
         return 3 * inv * inv * param * y1 + 3 * inv * param * param * y2 + param * param * param
     }
 
-    static let standard = Cubic(0.2, 0.8, 0.2, 1)     // slide / wipe in
-    static let easeIn = Cubic(0.42, 0, 1, 1)
-    static let easeOut = Cubic(0, 0, 0.58, 1)
-    static let easeInOut = Cubic(0.42, 0, 0.58, 1)
-    static let slideOut = Cubic(0.4, 0, 1, 1)
-    static let wipeOut = Cubic(0.6, 0, 0.8, 0.4)      // text / cover / pop-up box closing
-    static let tickerOut = Cubic(0.5, 0, 0.9, 0.5)
-    static let collapse = Cubic(0.5, 0, 0.75, 0)      // island capsule closing
-    static let spring = Cubic(0.34, 1.4, 0.64, 1)     // island capsule opening (peaks at 1.05)
-    static let pop = Cubic(0.34, 1.8, 0.64, 1)        // island cover popping back
-    static let dropOut = Cubic(0.5, 0, 0.9, 0.4)
-    static let dropIn = Cubic(0.2, 1.25, 0.4, 1)
-    static let flip = Cubic(0.2, 1.4, 0.4, 1)
+    public static let standard = Cubic(0.2, 0.8, 0.2, 1)     // slide / wipe in
+    public static let easeIn = Cubic(0.42, 0, 1, 1)
+    public static let easeOut = Cubic(0, 0, 0.58, 1)
+    public static let easeInOut = Cubic(0.42, 0, 0.58, 1)
+    public static let slideOut = Cubic(0.4, 0, 1, 1)
+    public static let wipeOut = Cubic(0.6, 0, 0.8, 0.4)      // text / cover / pop-up box closing
+    public static let tickerOut = Cubic(0.5, 0, 0.9, 0.5)
+    public static let collapse = Cubic(0.5, 0, 0.75, 0)      // island capsule closing
+    public static let spring = Cubic(0.34, 1.4, 0.64, 1)     // island capsule opening (peaks at 1.05)
+    public static let pop = Cubic(0.34, 1.8, 0.64, 1)        // island cover popping back
+    public static let dropOut = Cubic(0.5, 0, 0.9, 0.4)
+    public static let dropIn = Cubic(0.2, 1.25, 0.4, 1)
+    public static let flip = Cubic(0.2, 1.4, 0.4, 1)
 }
 
-enum NowPlayingMotion {
+public enum NowPlayingMotion {
     /// `switchAt`: seconds into a change when the new song replaces the old (= the out half's length).
     /// `inLen`: seconds from the switch until the in half has settled.
-    static func timing(_ design: NowPlayingDesign) -> (switchAt: Double, inLen: Double) {
+    public static func timing(_ design: NowPlayingDesign) -> (switchAt: Double, inLen: Double) {
         switch design {
         case .slab: (0.32, 0.67)
         case .island: (0.42, 0.78)
@@ -80,20 +80,20 @@ enum NowPlayingMotion {
     }
 
     /// A song change from start to settled; an enter (first appearance) and an exit (song gone) are one half each.
-    static func total(_ design: NowPlayingDesign) -> Double { timing(design).switchAt + timing(design).inLen }
-    static func enterTotal(_ design: NowPlayingDesign) -> Double { timing(design).inLen }
-    static func exitTotal(_ design: NowPlayingDesign) -> Double { timing(design).switchAt }
+    public static func total(_ design: NowPlayingDesign) -> Double { timing(design).switchAt + timing(design).inLen }
+    public static func enterTotal(_ design: NowPlayingDesign) -> Double { timing(design).inLen }
+    public static func exitTotal(_ design: NowPlayingDesign) -> Double { timing(design).switchAt }
 
-    static func change(_ design: NowPlayingDesign, t time: Double) -> NowPlayingPose {
+    public static func change(_ design: NowPlayingDesign, t time: Double) -> NowPlayingPose {
         let sw = timing(design).switchAt
         return time < sw ? out(design, time) : inHalf(design, time - sw)
     }
 
-    static func enter(_ design: NowPlayingDesign, t time: Double) -> NowPlayingPose { inHalf(design, time) }
+    public static func enter(_ design: NowPlayingDesign, t time: Double) -> NowPlayingPose { inHalf(design, time) }
 
     /// The out half on the song that is leaving, then a fade of the whole widget over its second half (the card or the
     /// note left behind by the wipes would otherwise pop off).
-    static func exit(_ design: NowPlayingDesign, t time: Double) -> NowPlayingPose {
+    public static func exit(_ design: NowPlayingDesign, t time: Double) -> NowPlayingPose {
         var pose = out(design, time)
         pose.useNew = true
         let sw = timing(design).switchAt
@@ -102,15 +102,15 @@ enum NowPlayingMotion {
     }
 
     /// Pop-up: true once it has been open for its hold time and should start closing.
-    static func popupExitDue(openFor: Double, hold: Int) -> Bool { openFor >= Double(hold) }
+    public static func popupExitDue(openFor: Double, hold: Int) -> Bool { openFor >= Double(hold) }
 
     // MARK: continuous decorations (functions of absolute time, so a redraw never jumps them)
 
     /// Disc: one turn every 5 s, in degrees.
-    static func spin(_ clock: Double) -> Double { 360 * (clock.truncatingRemainder(dividingBy: 5) / 5) }
+    public static func spin(_ clock: Double) -> Double { 360 * (clock.truncatingRemainder(dividingBy: 5) / 5) }
 
     /// One equaliser bar's scaleY: `low` -> 1 -> `low` every `period`, ease-in-out each way. `offset` is the CSS negative delay.
-    static func eq(_ clock: Double, period: Double, offset: Double, low: CGFloat) -> CGFloat {
+    public static func eq(_ clock: Double, period: Double, offset: Double, low: CGFloat) -> CGFloat {
         let ph = ((clock + offset) / period).truncatingRemainder(dividingBy: 1)
         let tri = ph < 0.5 ? ph * 2 : (1 - ph) * 2
         return low + (1 - low) * CGFloat(Cubic.easeInOut.at(tri))
@@ -201,7 +201,7 @@ enum NowPlayingMotion {
     }
 
     #if DEBUG
-    static func demo() {
+    public static func demo() {
         for design in NowPlayingDesign.allCases {
             let sw = timing(design).switchAt
             // A change starts on the old song, settled as it was, switches to the new one at switchAt and ends settled.
