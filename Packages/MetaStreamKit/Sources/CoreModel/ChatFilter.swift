@@ -53,6 +53,13 @@ public enum ChatFilter {
         text = text.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
         return text.count > maxLength ? String(text.prefix(maxLength)) : text
     }
+
+    /// A donor name is whatever someone typed on a donation site, and the bot posts it as a trusted (mod) account: no
+    /// links, no leading "!" or "/" (another bot would run "!giveaway end donated €1" as a command), at most 25 characters.
+    public static func safeName(_ raw: String) -> String {
+        let cleaned = sanitize(raw, maxLength: 25).drop { "!/\\.@#".contains($0) || $0.isWhitespace }
+        return cleaned.isEmpty ? "Someone" : String(cleaned)
+    }
 }
 
 extension ChatEvent {

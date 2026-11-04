@@ -37,7 +37,7 @@ enum DonationAlertPlayer {
 
     static func info(_ e: ChatEvent, goalBox: CGRect?) -> DonationAlertInfo {
         let goalStore = GoalStore.shared, cfg = goalStore.config
-        let name = AppBot.safeName(e.user)
+        let name = ChatFilter.safeName(e.user)
         let money: Money? = e.kind == .tip ? e.tipMoney : DonationPrices.money(e)
         let amount = e.kind == .tip ? e.tipMoney.display : "\(e.count) \(e.cheerUnit)"
 
