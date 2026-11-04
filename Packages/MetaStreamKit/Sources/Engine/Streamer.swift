@@ -18,7 +18,10 @@ import HaishinKit
 import RTMPHaishinKit
 import SRTHaishinKit
 
-public struct Mic: Identifiable, Hashable { let id: String; let name: String }   // id = AVAudioSessionPortDescription.uid
+public struct Mic: Identifiable, Hashable {   // id = AVAudioSessionPortDescription.uid
+    public let id: String, name: String
+    public init(id: String, name: String) { (self.id, self.name) = (id, name) }
+}
 
 @MainActor
 public final class Streamer: ObservableObject {

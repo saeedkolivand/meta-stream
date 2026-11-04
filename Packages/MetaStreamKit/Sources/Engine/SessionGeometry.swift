@@ -24,6 +24,10 @@ extension Streamer {
         /// hardware and hand over already-encoded video the app never touches uncompressed.
         public var stabilization = "off"
 
+        public init(height: Int = 720, landscape: Bool = false, fps: Int = 30, stabilization: String = "off") {
+            (self.height, self.landscape, self.fps, self.stabilization) = (height, landscape, fps, stabilization)
+        }
+
         /// Encoder frame size. Portrait is the glasses-native orientation; landscape is 16:9 for everything
         /// else. long is derived (height * 16/9), not a 720/1080-only lookup, so 4K (2160 -> 3840) falls
         /// out of the same formula rather than needing its own case.
