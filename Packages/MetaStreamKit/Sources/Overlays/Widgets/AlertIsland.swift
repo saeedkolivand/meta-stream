@@ -8,7 +8,7 @@ import Goal
 import HaishinKit
 
 /// Everything AlertBannerView needs to draw one frame. The default value is the fully open, settled card.
-public struct AlertPose: Equatable {
+public struct AlertPose: Equatable, Sendable {
     public var lift: CGFloat = 0            // vertical offset in capsule heights (negative = above rest)
     var open: CGFloat = 1            // 0 = dot, 1 = full width (may overshoot a little)
     public var alpha: CGFloat = 1           // whole-capsule opacity (the exit fade)

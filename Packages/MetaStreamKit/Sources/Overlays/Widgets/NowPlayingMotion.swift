@@ -7,7 +7,7 @@ import CoreLogging
 import Foundation
 
 /// One animated element: where it sits relative to its resting place, and how visible it is.
-public struct NowPlayingLane: Equatable {
+public struct NowPlayingLane: Equatable, Sendable {
     public var dx: CGFloat = 0
     public var dy: CGFloat = 0
     public var alpha: CGFloat = 1
@@ -17,7 +17,7 @@ public struct NowPlayingLane: Equatable {
 }
 
 /// Everything NowPlayingView needs for one frame. The default value is the settled card.
-public struct NowPlayingPose: Equatable {
+public struct NowPlayingPose: Equatable, Sendable {
     public var useNew = true          // false: still drawing the outgoing song
     public var alpha: CGFloat = 1     // whole widget (the fade at the end of an exit)
     public var reveal: CGFloat = 1    // 0 shut ... 1 open; the island's spring may overshoot past 1
