@@ -1,5 +1,7 @@
 package com.saeedkolivand.metastream.overlay
 
+import com.saeedkolivand.metastream.overlay.widgets.text.InlineIcons
+import com.saeedkolivand.metastream.overlay.widgets.text.rotatingLine
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

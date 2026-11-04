@@ -1,4 +1,5 @@
 import Foundation
+import Goal
 
 /// Searchable individual settings, by screen. A `key:` item is a plain switch the search results flip inline: its key and
 /// default are the exact ones the screen's own @AppStorage uses. Switches with side effects in their screen (dual camera,

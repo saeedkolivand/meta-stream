@@ -38,6 +38,9 @@ import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.camera.LiveControl
+import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.Scrim
+import com.saeedkolivand.metastream.core.ui.rememberHaptic
 import kotlin.math.abs
 
 private val Blue = Color(0xFF0A84FF)

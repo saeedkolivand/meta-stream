@@ -1,8 +1,9 @@
 # MetaStream
 
-An iOS app that broadcasts video from Ray-Ban Meta glasses to live streaming services, with
-chat, a stream manager and a phone-camera fallback. Everything runs on the phone; there is no
-server.
+A pocket OBS for IRL streamers: two native apps, iOS/iPadOS (Swift) and Android (Kotlin), that stream the
+phone camera, a USB camera or Ray-Ban Meta glasses to live streaming services, with scenes, an audio mix,
+recording, chat and bots. Everything runs on the phone; there is no server. Both apps use the terms below
+with the same meaning, in code and in the UI.
 
 ## Language
 

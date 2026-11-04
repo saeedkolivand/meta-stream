@@ -1,7 +1,14 @@
 package com.saeedkolivand.metastream.overlay
 
-import com.saeedkolivand.metastream.chat.ChatEvent
-import com.saeedkolivand.metastream.chat.Kind
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import com.saeedkolivand.metastream.core.model.Kind
+import com.saeedkolivand.metastream.overlay.widgets.alert.ALERT_OPENED
+import com.saeedkolivand.metastream.overlay.widgets.alert.AmountParts
+import com.saeedkolivand.metastream.overlay.widgets.alert.alertAmount
+import com.saeedkolivand.metastream.overlay.widgets.alert.alertAmountParts
+import com.saeedkolivand.metastream.overlay.widgets.alert.alertExitAt
+import com.saeedkolivand.metastream.overlay.widgets.alert.alertFrame
+import com.saeedkolivand.metastream.overlay.widgets.alert.alertIsBig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

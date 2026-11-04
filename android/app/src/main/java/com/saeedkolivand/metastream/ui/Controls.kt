@@ -40,17 +40,24 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
-import com.saeedkolivand.metastream.camera.FaceCam
-import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.core.ui.Green
+import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.R as CoreR
+import com.saeedkolivand.metastream.core.ui.Red
+import com.saeedkolivand.metastream.core.ui.RoundButton
+import com.saeedkolivand.metastream.core.ui.SystemBlue
+import com.saeedkolivand.metastream.core.ui.rememberHaptic
 import com.saeedkolivand.metastream.overlay.SceneRoles
 import com.saeedkolivand.metastream.privacy.BlurState
 import com.saeedkolivand.metastream.privacy.Privacy
-import com.saeedkolivand.metastream.streaming.AudioMix
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Recording
-import com.saeedkolivand.metastream.streaming.ScreenShare
-import com.saeedkolivand.metastream.streaming.Soundboard
 import com.saeedkolivand.metastream.streaming.Source
+import com.saeedkolivand.metastream.streaming.audio.AudioMix
+import com.saeedkolivand.metastream.streaming.audio.Soundboard
+import com.saeedkolivand.metastream.streaming.video.FaceCam
+import com.saeedkolivand.metastream.streaming.video.ScreenShare
 import kotlinx.coroutines.delay
 
 private fun sourceIcon(s: Source) = when (s) {
@@ -89,7 +96,7 @@ private fun QuickControls(granted: Boolean, size: Dp) {
     if (Engine.source == Source.Glasses) return
     SoundboardButton(size)
     RoundButton(
-        if (Engine.muted) R.drawable.ic_car_mic_off else R.drawable.ic_car_mic,
+        if (Engine.muted) CoreR.drawable.ic_car_mic_off else CoreR.drawable.ic_car_mic,
         false,
         size,
         if (Engine.muted) Red else Green,
@@ -98,7 +105,7 @@ private fun QuickControls(granted: Boolean, size: Dp) {
         Engine::toggleMute
     )
     RoundButton(
-        if (Engine.cameraOff) R.drawable.ic_videocam_off else R.drawable.ic_videocam,
+        if (Engine.cameraOff) R.drawable.ic_videocam_off else CoreR.drawable.ic_videocam,
         false,
         size,
         if (Engine.cameraOff) Red else Green,
@@ -109,7 +116,7 @@ private fun QuickControls(granted: Boolean, size: Dp) {
     // iOS: grey off, blue protecting, amber when asked for but not in effect yet.
     val blur = Privacy.state
     RoundButton(
-        if (blur == BlurState.Off) R.drawable.ic_eye else R.drawable.ic_eye_off,
+        if (blur == BlurState.Off) CoreR.drawable.ic_eye else CoreR.drawable.ic_eye_off,
         false,
         size,
         when (blur) {
@@ -230,11 +237,11 @@ internal fun Controls(granted: Boolean, chatOpen: Boolean, onChat: () -> Unit, o
         // granted is required even for glasses: the camera|microphone foreground service throws without it.
         GoLive(granted, if (compact) 72.dp else 84.dp)
         if (FaceCam.active) {
-            RoundButton(if (FaceCam.hidden) R.drawable.ic_eye_off else R.drawable.ic_eye, FaceCam.hidden, round) {
+            RoundButton(if (FaceCam.hidden) CoreR.drawable.ic_eye_off else CoreR.drawable.ic_eye, FaceCam.hidden, round) {
                 FaceCam.hide(!FaceCam.hidden)
             }
         }
-        RoundButton(R.drawable.ic_chat, chatOpen, round, onClick = onChat)
+        RoundButton(CoreR.drawable.ic_chat, chatOpen, round, onClick = onChat)
         RoundButton(R.drawable.ic_settings, false, round, onClick = onSettings)
     }
 }

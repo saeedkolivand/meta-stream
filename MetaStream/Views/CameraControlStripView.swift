@@ -1,10 +1,14 @@
+import Camera
+import CoreLogging
+import CoreUI
+import Engine
 import SwiftUI
 
 /// Live camera control strip: "set before you walk" controls live in SettingsView's Camera screen
 /// (ISO, shutter, HDR, distortion correction: deliberate, set-once). These are the ones worth changing
 /// mid-stream, applied straight to the live device -- see Streamer.applyCameraSettings.
 struct CameraControlStripView: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @AppStorage("camLens") var camLens = "wide"
     @AppStorage("camZoom") var camZoom = 1.0
     @AppStorage("camExposureManual") var camExposureManual = false
@@ -27,7 +31,7 @@ struct CameraControlStripView: View {
         }
         .padding(12)
         .frame(width: 156)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18))
     }
 
     private var controlRows: some View {

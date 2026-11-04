@@ -1,3 +1,4 @@
+import Platforms
 import XCTest
 import Foundation
 @testable import MetaStream

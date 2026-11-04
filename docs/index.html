@@ -3,15 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Scenes and widgets, a full audio mix, bonded SRTLA uplinks, recording, chat moderation with a bot, and Stream Deck control, on an iPhone or iPad. Open source.">
+<meta name="description" content="MetaStream is a free, open-source IRL streaming app for iPhone, iPad and Android: scenes, alerts and donation goals, a full audio mix, SRTLA bonding, recording, chat moderation with a bot, and Stream Deck control. No subscription, no account, no server.">
 <meta property="og:title" content="MetaStream: a pocket OBS for IRL streamers">
-<meta property="og:description" content="Scenes, audio mix, SRTLA bonding, recording, chat moderation and Stream Deck control on an iPhone or iPad. Open source.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta property="og:description" content="Everything the laptop in your backpack did, on your phone. Scenes, alerts, audio mix, bonded uplinks and chat moderation for iPhone, iPad and Android. Free and open source.">
 <meta property="og:image" content="https://metastream.iamsaeed.dev/icon.png">
 <meta property="og:url" content="https://metastream.iamsaeed.dev/">
 <meta name="theme-color" content="#0B0B0D">
 <link rel="icon" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
 <title>MetaStream: a pocket OBS for IRL streamers</title>
+<link rel="canonical" href="https://metastream.iamsaeed.dev/">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"MetaStream","applicationCategory":"MultimediaApplication",
+"operatingSystem":"iOS 26, iPadOS 26, Android 17","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},
+"url":"https://metastream.iamsaeed.dev/","sameAs":"https://github.com/saeedkolivand/meta-stream",
+"description":"Free, open-source IRL streaming app: scenes, alerts, audio mix, SRTLA bonding, recording, chat moderation and Stream Deck control."}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -200,6 +209,56 @@ section.dock{padding-block:56px}
 .key{aspect-ratio:1;max-width:100%;border-radius:12px;background:linear-gradient(160deg,#26262b,#151518);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),0 6px 14px rgba(0,0,0,.4);display:flex;align-items:flex-end;padding:9px;color:var(--ti);font:600 clamp(9px,1.2vw,12px)/1.15 var(--body)}
 .key.live{background:linear-gradient(160deg,#ff5a46,#c3150c);color:#fff}
 
+/* hero promises */
+.promise{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;padding:0;list-style:none}
+.promise li{font:600 13px/1 var(--body);color:var(--ti);border:1px solid var(--line);background:var(--panel);padding:9px 12px;border-radius:999px}
+.promise li::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);margin-right:8px;vertical-align:2px}
+
+/* why */
+.why{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:960px){.why{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.why{grid-template-columns:minmax(0,1fr)}}
+.why .panel h3{font:700 19px/1.15 var(--display);font-stretch:110%;margin:14px 0 8px}
+.why .panel p{color:var(--muted);font-size:15px}
+.why .num{font:500 12px/1 var(--mono);color:var(--tally);letter-spacing:.1em}
+.vs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px}
+@media (max-width:760px){.vs{grid-template-columns:minmax(0,1fr)}}
+.vs ul{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:8px;font-size:15px}
+.vs .old li{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(255,59,47,.6)}
+.vs .new li{color:var(--fg)}
+.vs .new li::before{content:"+";color:var(--ok);font-family:var(--mono);margin-right:10px}
+
+/* alerts and goal */
+.alert{border-radius:12px;padding:18px;background:radial-gradient(120% 140% at 0% 0%,#3a1d2a,#141417 60%);border:1px solid var(--line);display:grid;gap:6px}
+.alert small{font:500 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#ff9db0}
+.alert b{font:800 26px/1 var(--display);font-stretch:118%;color:#fff;text-transform:uppercase}
+.alert span{color:var(--fg);font-size:15px}
+.goal{margin-top:16px}
+.goal .row{display:flex;justify-content:space-between;font:500 13px/1 var(--mono);color:var(--muted);margin-bottom:8px}
+.goal .row b{color:var(--ti);font-weight:500}
+.goal .track{height:12px;border-radius:6px;background:#0c0c0e;overflow:hidden}
+.goal .track i{display:block;height:100%;width:62%;background:linear-gradient(90deg,var(--tally),#ff8a3c);transition:width .8s ease}
+
+/* telegram post */
+.tg{border-radius:14px;background:#17212b;border:1px solid var(--line);padding:16px;display:grid;gap:8px;font-size:15px;color:#e8eef4}
+.tg .ch{display:flex;align-items:center;gap:10px;font-weight:600}
+.tg .ch i{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle,#16181E,#020203 70%);box-shadow:inset 0 0 0 2px #9a9aa2}
+.tg .live{color:var(--tally);font:600 12px/1 var(--mono);letter-spacing:.08em}
+.tg .meta{color:#7f91a4;font:500 12.5px/1.5 var(--mono)}
+
+/* platforms */
+.plat h3{font:700 22px/1.1 var(--display);font-stretch:112%;margin:10px 0 4px}
+.plat .req{color:var(--muted);font:500 12.5px/1.4 var(--mono)}
+
+/* faq */
+.faq{display:grid;gap:10px}
+.faq details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:0 18px}
+.faq summary{cursor:pointer;list-style:none;padding:16px 0;font:600 16.5px/1.35 var(--body);color:var(--ti);display:flex;justify-content:space-between;gap:16px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font-family:var(--mono);color:var(--muted)}
+.faq details[open] summary::after{content:"−"}
+.faq details p{padding:0 0 16px;color:var(--fg);max-width:60em}
+
 /* build */
 .build{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:20px}
 @media (max-width:860px){.build{grid-template-columns:minmax(0,1fr)}}
@@ -223,11 +282,12 @@ footer a{color:var(--muted)}
   <div class="wrap">
     <a class="brand" href="#top"><span class="lens" aria-hidden="true"></span>MetaStream</a>
     <nav aria-label="Sections">
+      <a class="opt" href="#why">Why</a>
       <a class="opt" href="#scenes">Scenes</a>
-      <a class="opt" href="#audio">Audio</a>
-      <a class="opt" href="#uplink">Uplink</a>
+      <a class="opt" href="#alerts">Alerts</a>
       <a class="opt" href="#chat">Chat</a>
-      <a href="#build">Build</a>
+      <a class="opt" href="#faq">FAQ</a>
+      <a href="#build">Get it</a>
       <a href="https://github.com/saeedkolivand/meta-stream">GitHub</a>
     </nav>
   </div>
@@ -237,12 +297,15 @@ footer a{color:var(--muted)}
   <section class="hero">
     <div class="wrap">
       <div>
-        <div class="label">Open source · iPhone &amp; iPad · iOS 26</div>
+        <div class="label">Free &amp; open source · iPhone, iPad &amp; Android</div>
         <h1 style="margin-top:18px">A pocket OBS for <em>IRL</em> streamers.</h1>
-        <p class="lede">Scenes and widgets, a full audio mix, bonded uplinks, recording, chat with moderator commands and a bot, and Stream Deck control. Everything a laptop in a backpack used to do, on the phone you are already holding.</p>
+        <p class="lede">Leave the laptop at home. MetaStream puts scenes, alerts, donation goals, a real audio mix, bonded uplinks and a chat bot on the phone you're already holding, so you can walk, talk and stay live while the app runs the show.</p>
+        <ul class="promise" aria-label="What it costs">
+          <li>Free forever</li><li>No subscription</li><li>No watermark</li><li>No account or server</li>
+        </ul>
         <div class="cta">
-          <a class="btn primary" href="https://github.com/saeedkolivand/meta-stream/blob/main/guide/build.md">Build your own copy</a>
-          <a class="btn" href="https://github.com/saeedkolivand/meta-stream">View on GitHub</a>
+          <a class="btn primary" href="#build">Get MetaStream</a>
+          <a class="btn" href="https://github.com/saeedkolivand/meta-stream">Star on GitHub</a>
         </div>
         <div class="specs mono" aria-label="Specifications">
           <span><b>1080p</b> · 60 fps</span><span><b>HEVC</b> / H.264</span><span><b>RTMP</b> · SRT · SRTLA</span><span><b>obs-websocket</b> v5</span>
@@ -271,11 +334,54 @@ footer a{color:var(--muted)}
     </div>
   </section>
 
+  <section class="dock" id="why">
+    <div class="wrap">
+      <div class="dock-head">
+        <div><div class="label">Why MetaStream</div><h2>Your whole rig, one phone</h2></div>
+        <p>Most streaming apps push one camera and stop there. Everything else, from overlays and alerts to bonding and chat, used to need a laptop running OBS in your backpack. MetaStream does that part on the phone.</p>
+      </div>
+      <div class="why">
+        <div class="panel"><div class="num">01</div><h3>Stays live when the signal doesn't</h3><p>Wi-Fi, cellular and Ethernet bonded into one stream. Bitrate adapts, and BRB covers the gaps on its own.</p></div>
+        <div class="panel"><div class="num">02</div><h3>Looks produced, not pointed</h3><p>Scenes, stingers, alerts, goal bars and colour looks, drawn on the GPU at 1080p60.</p></div>
+        <div class="panel"><div class="num">03</div><h3>Runs chat while you walk</h3><p>Chat read into your ear, a bot that answers viewers, AI moderation and real slash commands.</p></div>
+        <div class="panel"><div class="num">04</div><h3>Yours, all of it</h3><p>Free and open source. No account, no cloud: your keys and tokens never leave the phone.</p></div>
+      </div>
+      <div class="vs">
+        <div class="panel old"><div class="label">The backpack</div><ul>
+          <li>Laptop running OBS</li><li>Capture card and a camera cable</li><li>Bonding box and a SIM per modem</li><li>A second phone just for chat</li><li>Power bank for all of it</li>
+        </ul></div>
+        <div class="panel new"><div class="label">MetaStream</div><ul>
+          <li>Scenes, widgets and stingers</li><li>Phone, USB-C or Meta glasses camera</li><li>SRTLA bonding built in</li><li>Chat in your ear, bot and moderation</li><li>One phone in your hand</li>
+        </ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dock" id="cameras">
+    <div class="wrap">
+      <div class="dock-head">
+        <div><div class="label">Dock · Sources</div><h2>Any camera you carry</h2></div>
+        <p>Start with the phone you have. Add a USB-C action camera, a second camera as picture-in-picture, your screen, or Ray-Ban Meta glasses for true point-of-view, and switch between them live.</p>
+      </div>
+      <div class="panel">
+        <ul class="list">
+          <li><b>Phone cameras</b><span>Back or front, 720p or 1080p, 24 to 60 fps, portrait or landscape, with lens, zoom, focus, exposure, HDR and stabilisation.</span></li>
+          <li><b>USB-C cameras</b><span>A DJI Osmo Action or any UVC camera, on iPad and Android.</span></li>
+          <li><b>Meta glasses</b><span>Ray-Ban and Oakley Meta video, with automatic phone fallback when they drop. Optional.</span></li>
+          <li><b>Dual camera</b><span>One camera full frame and a second in a corner window. Tap to swap.</span></li>
+          <li><b>Screen share</b><span>Stream a game or an app, with your face cam over it on iPad and Android.</span></li>
+          <li><b>Looks</b><span>Brightness, contrast, saturation, warmth and your own <span class="mono">.cube</span> LUTs per camera.</span></li>
+          <li><b>Privacy blur</b><span>Faces, text and barcodes blurred on demand before the frame is encoded.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
   <section class="dock" id="scenes">
     <div class="wrap">
       <div class="dock-head">
         <div><div class="label">Dock · Scenes</div><h2>Scenes that switch themselves</h2></div>
-        <p>Build scenes from chat, alerts, live text, QR codes, images, video and web widgets. Give one the Starting, BRB or Ending role and the app switches to it on its own: a countdown after you go live, BRB while the uplink is weak, Ending when you stop.</p>
+        <p>Build scenes from chat, alerts, goal bars, Spotify now playing, live text, QR codes, images, video and web widgets. Give one the Starting, BRB or Ending role and the app switches to it on its own: a countdown after you go live, BRB while the uplink is weak, Ending when you stop.</p>
       </div>
       <div class="panel">
         <div class="scenes">
@@ -287,7 +393,36 @@ footer a{color:var(--muted)}
         <div class="chips" aria-label="Built-in stingers">
           <span class="chip">Lens</span><span class="chip">Aperture</span><span class="chip">Route &amp; pin</span><span class="chip">Viewfinder</span><span class="chip">Liquid</span><span class="chip">Ripple</span><span class="chip">Tunnel</span><span class="chip">Film burn</span>
         </div>
-        <p style="margin-top:14px;color:var(--muted);font-size:14.5px">Eight stingers drawn live on the GPU, in your colours and channel name, with the next scene built while the stinger covers the frame. Your own video stinger works too.</p>
+        <p style="margin-top:14px;color:var(--muted);font-size:14.5px">Eight stingers drawn live on the GPU, in your colours and channel name, with the next scene built while the stinger covers the frame. Your own video stinger works too on iOS.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="dock" id="alerts">
+    <div class="wrap">
+      <div class="dock-head">
+        <div><div class="label">Dock · Alerts</div><h2>Every tip gets its moment</h2></div>
+        <p>Donations, Bits, KICKs, follows, subs and raids land on stream with an alert drawn over the whole frame, and a goal bar fills as the money comes in. Donations from different currencies count toward one goal, converted once at the market rate.</p>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <div class="alert" aria-label="Example donation alert"><small>New donation · Neon sign</small><b id="alertName">sara · €10</b><span id="alertMsg">for the bridge walk tonight</span></div>
+          <div class="goal" aria-label="Example goal">
+            <div class="row"><span>Goal · New camera</span><b id="goalVal">€310 / €500</b></div>
+            <div class="track"><i id="goalBar"></i></div>
+          </div>
+          <div class="chips" aria-label="Alert designs">
+            <span class="chip">Coin burst</span><span class="chip">Neon sign</span><span class="chip">Receipt</span><span class="chip">Holo card</span><span class="chip">Shockwave</span><span class="chip">Goal surge</span>
+          </div>
+        </div>
+        <div class="panel">
+          <ul class="list">
+            <li><b>Donation sites</b><span>Donofa, Reymit, Donito and StreamElements, plus Twitch Bits and Kick KICKs. A tip reported twice is announced once.</span></li>
+            <li><b>One goal</b><span>Toman, euro, dollar or crypto, all counted in your goal currency.</span></li>
+            <li><b>Donate page</b><span>Your own page with every way to tip you and the live goal. <span class="mono">!donate</span> posts the link in chat.</span></li>
+            <li><b>Read aloud</b><span>Every tip spoken in your ear, so you can thank people without looking down.</span></li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
@@ -313,7 +448,7 @@ footer a{color:var(--muted)}
             <li><b>Soundboard</b><span>Your own files, one tap each, straight into the stream.</span></li>
             <li><b>Read aloud</b><span>Chat and alerts in your ear, with stream warnings jumping the queue.</span></li>
             <li><b>Dead air</b><span>A spoken warning when the mic falls silent on stream.</span></li>
-            <li><b>Recording</b><span>To Photos, with or without going live, saved in fragments so a crash keeps what was recorded.</span></li>
+            <li><b>Recording</b><span>To Photos or the gallery, with or without going live.</span></li>
           </ul>
         </div>
       </div>
@@ -349,7 +484,7 @@ footer a{color:var(--muted)}
     <div class="wrap">
       <div class="dock-head">
         <div><div class="label">Dock · Chat</div><h2>Moderate like you're at the desk</h2></div>
-        <p>Kick, Twitch, YouTube and Restream chat in one sheet, with 7TV, BTTV and FFZ emotes. Type <span class="mono">/clear</span>, <span class="mono">/timeout</span>, <span class="mono">/slow</span>, <span class="mono">/raid</span> or <span class="mono">/poll</span> as you would in the platform's own chat. The app's own bot answers viewers and runs your timers.</p>
+        <p>Kick, Twitch, YouTube and Restream chat in one sheet, with 7TV, BTTV and FFZ emotes, and Persian and other right-to-left chat shown properly. Type <span class="mono">/clear</span>, <span class="mono">/timeout</span>, <span class="mono">/slow</span>, <span class="mono">/raid</span> or <span class="mono">/poll</span> as you would in the platform's own chat. The app's own bot answers viewers and runs your timers.</p>
       </div>
       <div class="grid2">
         <div class="panel chatbox" aria-label="Example chat">
@@ -365,6 +500,7 @@ footer a{color:var(--muted)}
             <li><b>Bot replies</b><span class="mono" style="font-size:14px">!location !speed !distance !weather !battery !uptime !commands</span></li>
             <li><b>Timers</b><span>Repeating messages while you're live, paused during BRB.</span></li>
             <li><b>Thank-yous</b><span>Follows, subs, gifts and raids answered by the bot, never as you.</span></li>
+            <li><b>AI moderation</b><span>An on-device model holds back abusive messages before they reach the stream.</span></li>
             <li><b>Stream manager</b><span>Title, category, viewers and stream key for Kick, Twitch, YouTube and Restream.</span></li>
           </ul>
         </div>
@@ -384,11 +520,76 @@ footer a{color:var(--muted)}
           <div class="key">BRB</div><div class="key">Ending</div><div class="key">Clear chat</div><div class="key">Blur</div><div class="key">Soundboard</div>
         </div>
         <ul class="list">
-          <li><b>Cameras</b><span>Back, front, USB-C cameras like a DJI Osmo, dual camera, and optional Ray-Ban Meta glasses.</span></li>
-          <li><b>Looks</b><span>Brightness, contrast, saturation, warmth and your own <span class="mono">.cube</span> LUTs per camera.</span></li>
-          <li><b>Privacy blur</b><span>Faces, text and barcodes blurred on demand before the frame is encoded.</span></li>
-          <li><b>Live Activity</b><span>Stream state on the Lock Screen and Dynamic Island, with your bot commands one tap away.</span></li>
+          <li><b>Keyboard</b><span>On iPad, ⌘1 to ⌘9 switch scenes, ⌘M mutes and ⌘R records.</span></li>
+          <li><b>Lock Screen</b><span>Stream state in a Live Activity on iOS or an ongoing notification on Android, with your bot commands one tap away.</span></li>
         </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="dock" id="reach">
+    <div class="wrap">
+      <div class="dock-head">
+        <div><div class="label">Dock · Audience</div><h2>Grow past the stream</h2></div>
+        <p>When you go live, your Telegram channel gets a post that stays current while you stream and turns into a recap when you stop. Afterwards, a private report shows how the stream went, and once a month a Wrapped page sums it up for your viewers.</p>
+      </div>
+      <div class="grid2">
+        <div class="tg" aria-label="Example Telegram live post">
+          <div class="ch"><i></i>yourchannel <span class="live">● LIVE</span></div>
+          <div>Night walk, old town. Come say hi 👋</div>
+          <div class="meta">kick.com/yourchannel · 1 h 12 min · 214 watching · Lisbon</div>
+        </div>
+        <div class="panel">
+          <ul class="list">
+            <li><b>Live post</b><span>Posted when you go live, kept current, and turned into the recap when you end.</span></li>
+            <li><b>Session report</b><span>Viewers, connection health and a minute-by-minute timeline, for your eyes only.</span></li>
+            <li><b>Wrapped</b><span>Your month: hours, distance, cities, top chatters and donors. Published only when you approve it.</span></li>
+            <li><b>Instagram story</b><span>Share a going-live card to your Instagram story.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dock" id="platforms">
+    <div class="wrap">
+      <div class="dock-head">
+        <div><div class="label">Platforms</div><h2>Same app on iPhone, iPad and Android</h2></div>
+        <p>Two native apps with the same features, the same settings and the same names, so switching phones changes nothing. Each one also uses what its platform does best.</p>
+      </div>
+      <div class="grid2">
+        <div class="panel plat">
+          <div class="label">iOS · iPadOS</div><h3>iPhone and iPad</h3><div class="req">iOS 26 or later</div>
+          <ul class="list" style="margin-top:14px">
+            <li><b>Lock Screen</b><span>A Live Activity and the Dynamic Island show the stream, with bot commands one tap away.</span></li>
+            <li><b>iPad</b><span>USB-C cameras, a clean feed on an external monitor, and keyboard shortcuts.</span></li>
+          </ul>
+        </div>
+        <div class="panel plat">
+          <div class="label">Android</div><h3>Android phones</h3><div class="req">Android 17 or later</div>
+          <ul class="list" style="margin-top:14px">
+            <li><b>Notification</b><span>The timer, mute and a bot command in an ongoing notification.</span></li>
+            <li><b>Android Auto</b><span>Chat, stream state and the camera source on your car's screen.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dock" id="faq">
+    <div class="wrap">
+      <div class="dock-head">
+        <div><div class="label">FAQ</div><h2>Questions streamers ask</h2></div>
+        <p>Can't find yours? Open an issue on <a href="https://github.com/saeedkolivand/meta-stream/issues">GitHub</a>.</p>
+      </div>
+      <div class="faq">
+        <details><summary>Is it really free?</summary><p>Yes. No subscription, no in-app purchases, no watermark and no ads. The code is open source on GitHub.</p></details>
+        <details><summary>Where do I download it?</summary><p>It isn't in the App Store or on Google Play yet. You build your own copy for free on GitHub Actions and install it over USB. The <a href="https://github.com/saeedkolivand/meta-stream/blob/main/guide/build.md">build guide</a> walks you through it. On iPhone and iPad this needs a paid Apple Developer team; Android needs no account.</p></details>
+        <details><summary>Which platforms can I stream to?</summary><p>Kick, Twitch, YouTube and Restream have presets and sign-in for title, category and chat. Any RTMP, RTMPS, SRT or SRTLA server works too, including Instagram and TikTok ingests.</p></details>
+        <details><summary>Do I need Meta glasses?</summary><p>No. The phone camera is the default, and USB-C cameras work too. Ray-Ban and Oakley Meta glasses are an optional point-of-view camera.</p></details>
+        <details><summary>What happens when my connection drops?</summary><p>With an SRTLA ingest, the stream is spread over Wi-Fi, cellular and Ethernet at once, so losing one link doesn't end it. The bitrate adapts, the BRB scene comes up on its own while the uplink is weak, and the app tells you when the stream drops and comes back.</p></details>
+        <details><summary>Is my account safe?</summary><p>There is no MetaStream server and no MetaStream account. Platform sign-ins and stream keys stay on your phone, in the iOS Keychain or Android's encrypted storage.</p></details>
+        <details><summary>Can I control it from a Stream Deck?</summary><p>Yes. The app speaks the obs-websocket v5 protocol on your local network, so Stream Deck, Touch Portal and Streamer.bot control it as if it were OBS.</p></details>
       </div>
     </div>
   </section>
@@ -396,16 +597,16 @@ footer a{color:var(--muted)}
   <section class="dock" id="build">
     <div class="wrap">
       <div class="dock-head">
-        <div><div class="label">Open source</div><h2>Build your own copy, from Windows</h2></div>
-        <p>MetaStream isn't on the App Store. You build it from the source with your own Apple Developer team: GitHub's macOS runners compile it, and you install it over USB from Windows, Linux or a Mac. No Mac needed at any point.</p>
+        <div><div class="label">Get it</div><h2>Free, and yours to build</h2></div>
+        <p>MetaStream isn't on the App Store or Google Play. You build it from the source on GitHub Actions and install it over USB from Windows, Linux or a Mac: iOS needs your own Apple Developer team (no Mac), Android needs no account at all.</p>
       </div>
       <div class="build">
         <div class="panel">
           <ol class="steps">
-            <li><span>Fork the repo and pick your bundle ID.</span></li>
-            <li><span>Add your Apple signing and the platform apps you want as GitHub secrets.</span></li>
-            <li><span>Push to <span class="mono">main</span>. The build-ipa workflow signs an encrypted IPA.</span></li>
-            <li><span>Download it, decrypt it and install it over USB with <span class="mono">pymobiledevice3</span>.</span></li>
+            <li><span>Fork the repo and pick your app ID.</span></li>
+            <li><span>Add the platform apps you want (and, for iOS, your Apple signing) as GitHub secrets.</span></li>
+            <li><span>Push to <span class="mono">main</span>. The build-ipa and build-apk workflows produce an encrypted IPA and APK.</span></li>
+            <li><span>Download, decrypt and install over USB: <span class="mono">pymobiledevice3</span> for iOS, <span class="mono">adb</span> for Android.</span></li>
           </ol>
           <div class="cta" style="margin-top:22px"><a class="btn primary" href="https://github.com/saeedkolivand/meta-stream/blob/main/guide/build.md">Read the build guide</a><a class="btn" href="https://github.com/saeedkolivand/meta-stream/blob/main/guide/features.md">All features</a></div>
         </div>
@@ -414,7 +615,9 @@ gh run download -n MetaStream-ipa -D build
 openssl enc -d -aes-256-cbc -pbkdf2 \
   -in build/MetaStream.ipa.enc -out build/MetaStream.ipa \
   -pass file:signing/ipa-password.txt
-pymobiledevice3 apps install build/MetaStream.ipa</pre>
+pymobiledevice3 apps install build/MetaStream.ipa
+<span style="color:var(--muted)"># Android: same steps with MetaStream-apk, then</span>
+adb install -r build/MetaStream.apk</pre>
       </div>
     </div>
   </section>
@@ -423,7 +626,7 @@ pymobiledevice3 apps install build/MetaStream.ipa</pre>
 <footer>
   <div class="wrap">
     <span>MetaStream · built by <a href="https://iamsaeed.dev">Saeed Kolivand</a> with Claude Code</span>
-    <span><a href="https://github.com/saeedkolivand/meta-stream">GitHub</a> · <a href="https://github.com/saeedkolivand/meta-stream/blob/main/guide/troubleshooting.md">Troubleshooting</a> · Powered by HaishinKit</span>
+    <span><a href="https://github.com/saeedkolivand/meta-stream">GitHub</a> · <a href="https://github.com/saeedkolivand/meta-stream/blob/main/guide/troubleshooting.md">Troubleshooting</a> · Powered by HaishinKit and RootEncoder</span>
   </div>
 </footer>
 
@@ -466,6 +669,18 @@ pymobiledevice3 apps install build/MetaStream.ipa</pre>
 
   setInterval(addMsg, 2600);
 
+
+  // alert and goal: a new tip every few seconds fills the bar, then it starts over
+  const tips = [['sara', 10, 'for the bridge walk tonight'], ['mapsguy', 25, 'new camera fund!'], ['nightowl', 5, 'keep walking'], ['k_rider', 50, 'best stream this week']];
+  let raised = 310, ti = 0;
+  setInterval(() => {
+    const [who, amt, msg] = tips[ti++ % tips.length];
+    raised = raised + amt > 500 ? 120 : raised + amt;
+    document.getElementById('alertName').textContent = `${who} · €${amt}`;
+    document.getElementById('alertMsg').textContent = msg;
+    document.getElementById('goalVal').textContent = `€${raised} / €500`;
+    document.getElementById('goalBar').style.width = (raised / 5) + '%';
+  }, 3200);
 
   // meters and uplink bars: gentle example motion
   const meters = [...document.querySelectorAll('.meter i')], levels = [0.62, 0.35, 0.22, 0.3];

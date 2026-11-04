@@ -16,6 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.saeedkolivand.metastream.core.network.PlatformException
+import com.saeedkolivand.metastream.core.ui.ActionButton
+import com.saeedkolivand.metastream.core.ui.Note
+import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.SectionTitle
 import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.platforms.TwitchScopes
@@ -30,7 +35,7 @@ import kotlinx.coroutines.launch
 
 /** Hands-free Twitch actions: one decisive tap each, each greyed out until its write scope was granted (iOS twitchActionsSection). */
 @Composable
-internal fun TwitchActions() {
+fun TwitchActions() {
     val scope = rememberCoroutineScope()
     var announce by remember { mutableStateOf("") }
     var raid by remember { mutableStateOf("") }
@@ -39,7 +44,7 @@ internal fun TwitchActions() {
         scope.launch {
             try {
                 block()
-            } catch (e: com.saeedkolivand.metastream.platforms.PlatformException) {
+            } catch (e: PlatformException) {
                 Accounts.say(e.message.orEmpty())
             }
         }

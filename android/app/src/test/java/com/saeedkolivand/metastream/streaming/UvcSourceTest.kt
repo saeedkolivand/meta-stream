@@ -1,5 +1,6 @@
 package com.saeedkolivand.metastream.streaming
 
+import com.saeedkolivand.metastream.streaming.video.pickSize
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

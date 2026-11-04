@@ -1,3 +1,4 @@
+import Chat
 import XCTest
 import Foundation
 @testable import MetaStream

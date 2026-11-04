@@ -18,6 +18,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.camera.Cam
+import com.saeedkolivand.metastream.core.ui.Green
+import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.Pill
+import com.saeedkolivand.metastream.core.ui.R as CoreR
+import com.saeedkolivand.metastream.core.ui.Red
+import com.saeedkolivand.metastream.overlay.ui.ScenePill
 import com.saeedkolivand.metastream.platforms.Kick
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.platforms.YouTube
@@ -27,11 +33,13 @@ import com.saeedkolivand.metastream.reach.LivePost
 import com.saeedkolivand.metastream.speech.Speaker
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Health
-import com.saeedkolivand.metastream.streaming.Level
-import com.saeedkolivand.metastream.streaming.NetStats
 import com.saeedkolivand.metastream.streaming.Source
-import com.saeedkolivand.metastream.streaming.level
 import com.saeedkolivand.metastream.streaming.thermalLabel
+import com.saeedkolivand.metastream.streaming.ui.NetworkState
+import com.saeedkolivand.metastream.streaming.uplink.Level
+import com.saeedkolivand.metastream.streaming.uplink.NetStats
+import com.saeedkolivand.metastream.streaming.uplink.level
+import com.saeedkolivand.metastream.ui.ManagerState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -70,7 +78,7 @@ internal fun Hud() {
             TimerPill()
             LevelBar()
             // Same sum as the {viewers} widget token: Kick + Twitch + YouTube.
-            Pill(R.drawable.ic_eye, "${Kick.viewers + Twitch.viewers + YouTube.viewers}", Color.White)
+            Pill(CoreR.drawable.ic_eye, "${Kick.viewers + Twitch.viewers + YouTube.viewers}", Color.White)
             val rate = if (Health.fps > 0) "${Health.fps} fps · ${Health.kbps} kbps" else "${Health.kbps} kbps"
             val tint = when (level(NetStats.samples)) {
                 Level.Ok -> Color.White
@@ -98,7 +106,7 @@ internal fun Hud() {
         if (Privacy.wanted) {
             val bad = Privacy.stalled
             Pill(
-                if (bad) R.drawable.ic_warning else R.drawable.ic_eye_off,
+                if (bad) R.drawable.ic_warning else CoreR.drawable.ic_eye_off,
                 if (bad) "blur failed" else "blur",
                 if (bad) Orange else Color.White
             )

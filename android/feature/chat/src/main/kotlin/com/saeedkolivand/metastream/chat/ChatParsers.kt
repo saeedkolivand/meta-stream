@@ -1,0 +1,87 @@
+package com.saeedkolivand.metastream.chat
+
+import com.saeedkolivand.metastream.core.model.ChatEvent
+import org.json.JSONObject
+
+private val ROLES = listOf("broadcaster", "staff", "moderator", "vip", "founder", "subscriber", "verified", "og")
+
+// Twitch calls verified channels "partner"; unknown types (sub_gifter, premium, bits, ...) are dropped.
+private val ROLE_ALIASES = mapOf("partner" to "verified", "admin" to "staff", "global_mod" to "staff")
+
+fun normalizeRoles(raw: Sequence<String>): List<String> {
+    val found = raw.map { ROLE_ALIASES[it] ?: it }.toSet()
+    return ROLES.filter { it in found }
+}
+
+const val KICK_MESSAGE = """App\Events\ChatMessageEvent"""
+
+fun kickEventName(frame: String): String? = runCatching { JSONObject(frame).optString("event") }.getOrNull()
+
+fun isKickPing(frame: String) = kickEventName(frame) == "pusher:ping"
+
+/** Pusher frame from a Kick chatroom -> message, or null for anything else (pings, subscriptions, malformed JSON). */
+fun parseKickFrame(frame: String): ChatEvent? {
+    if (kickEventName(frame) != KICK_MESSAGE) return null
+    return runCatching {
+        val d = JSONObject(JSONObject(frame).getString("data"))
+        val sender = d.getJSONObject("sender")
+        val identity = sender.optJSONObject("identity")
+        val badges = identity?.optJSONArray("badges")
+        val types = (0 until (badges?.length() ?: 0)).asSequence().map { badges!!.getJSONObject(it).optString("type") }
+        ChatEvent(
+            "kick",
+            sender.getString("username"),
+            d.getString("content"),
+            color = identity?.optString("color")?.ifEmpty { null },
+            badges = normalizeRoles(types),
+            msgId = d.optString("id"),
+            userId = sender.opt("id")?.toString().orEmpty()
+        )
+    }.getOrNull()
+}
+
+private val privmsg = Regex("""^@(\S+) :(\w+)!\S+ PRIVMSG #\S+ :(.*)$""")
+
+fun isTwitchPing(line: String) = line.startsWith("PING")
+
+/** One Twitch IRC line (with the tags capability) -> message; the display-name tag wins over the login. Null for non-PRIVMSG lines. */
+fun parseTwitchLine(line: String): ChatEvent? {
+    val m = privmsg.find(line)?.groupValues ?: return null
+    val tags = m[1].split(';').associate { it.substringBefore('=') to it.substringAfter('=', "") }
+    val roles = tags["badges"].orEmpty().split(',').map { it.substringBefore('/') }
+    return ChatEvent(
+        "twitch",
+        tags["display-name"].orEmpty().ifEmpty { m[2] },
+        m[3],
+        color = tags["color"]?.ifEmpty { null },
+        badges = normalizeRoles(roles.asSequence()),
+        msgId = tags["id"].orEmpty(),
+        userId = tags["user-id"].orEmpty()
+    )
+}
+
+private val kickEmote = Regex("""\[emote:\d+:([^\]]*)]""")
+
+// ponytail: Kick emotes shown by name; iOS draws the images (Emotes.swift). Upgrade path: Coil inline images.
+/** Chat text for display: Kick's `[emote:id:name]` tokens become `name`. Read-aloud strips them instead (sanitize). */
+fun displayText(text: String) = kickEmote.replace(text, "$1")
+
+/** A moderator's action seen in chat (iOS ChatFeed.remove/clear): the feed drops the same lines the platform did. */
+sealed interface Moderation {
+    data object Clear : Moderation
+
+    /** One message by [msgId], or every message of a banned / timed-out user by [userId] or [login]. */
+    data class Remove(val msgId: String = "", val userId: String = "", val login: String = "") : Moderation
+}
+
+/** Kick's Pusher moderation events (captured 2026-10-19); null for anything else. */
+fun parseKickModeration(event: String, data: String): Moderation? = runCatching {
+    when (event) {
+        """App\Events\ChatroomClearEvent""" -> Moderation.Clear
+        """App\Events\MessageDeletedEvent""" -> Moderation.Remove(msgId = JSONObject(data).getJSONObject("message").getString("id"))
+        """App\Events\UserBannedEvent""" -> JSONObject(data).getJSONObject("user").let {
+            Moderation.Remove(userId = it.opt("id")?.toString().orEmpty(), login = it.optString("username"))
+        }
+        else -> null
+    }
+}.getOrNull()

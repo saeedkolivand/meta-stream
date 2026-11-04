@@ -1,7 +1,7 @@
 package com.saeedkolivand.metastream.streaming
 
 import android.os.PowerManager
-import com.saeedkolivand.metastream.core.LogRing
+import com.saeedkolivand.metastream.core.logging.LogRing
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

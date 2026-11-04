@@ -1,10 +1,24 @@
+import ActivityShared
+import Bot
+import Chat
+import CoreLogging
+import CoreUI
+import Engine
+import Goal
+import Overlays
+import Platforms
+import Privacy
+import Reach
+import Remote
+import Signals
+import Speech
 import SwiftUI
 import MWDATCore
 
 @main
 struct MetaStreamApp: App {
-    @StateObject private var streamer = Streamer()
-    @StateObject private var platforms = Platforms()
+    @State private var streamer = Streamer()
+    @State private var platforms = Platforms()
     @StateObject private var speaker = Speaker()
     // @State, not @StateObject: the App must not re-evaluate per chat message. Views that show chat read it from the environment.
     @State private var chat = ChatFeed()
@@ -28,10 +42,10 @@ struct MetaStreamApp: App {
                     GPSOnlyView()
                 } else {
                     ContentView(chat: chat)
-                        .environmentObject(streamer)
-                        .environmentObject(platforms)
+                        .environment(streamer)
+                        .environment(platforms)
                         .environmentObject(speaker)
-                        .environmentObject(chat)
+                        .environment(chat)
                         .environmentObject(privacy)
                 }
                 if showSplash { SplashView { showSplash = false } }
@@ -39,6 +53,15 @@ struct MetaStreamApp: App {
             // Streamer speaks connection changes on Speaker's System lane (never muted).
             .onAppear {
                 streamer.speaker = speaker; streamer.privacy = privacy
+                streamer.compositor = SceneDirector.shared; SceneDirector.shared.streamer = streamer
+                SceneDirector.shared.onRole = { AppBot.shared.role($0, on: $1) }
+                streamer.onSessionStarted = { SessionLog.shared.begin(title: LivePost.shared.title); LivePost.shared.sessionStarted($0) }
+                streamer.onSecond = { AppBot.shared.tick(); LivePost.shared.second($0) }
+                streamer.onSessionEnded = { LivePost.shared.sessionEnded(SessionLog.shared.end()) }
+                streamer.liveActivity.commands = {
+                    BotCommand.stored().filter(\.lockScreen).prefix(3).map { LockCommand(id: $0.id.uuidString, text: $0.text) }
+                }
+                speaker.skipMessage = { !BotList.reads($0.user, $0.text) || AppBot.shared.isOwn($0) }
                 AppBot.shared.streamer = streamer; AppBot.shared.platforms = platforms
                 LivePost.shared.platforms = platforms; LivePost.shared.resume()
                 if gpsShare { GPSShare.shared.setEnabled(true) }
@@ -47,8 +70,10 @@ struct MetaStreamApp: App {
                 Rates.shared.start()
                 AudioRouteLog.start()
                 DonationHub.shared.start(chat: chat)
-                DonatePagePublisher.shared.start(streamer: streamer)
+                DonatePagePublisher.shared.start { streamer.live }
                 GoalStore.shared.onReached = { speaker.speakSystem("Goal reached"); AppBot.shared.goalReached(GoalStore.shared.config.title) }
+                StreamActivityActions.stop = { streamer.stopLive() }   // the App and its Streamer live as long as the process
+                StreamActivityActions.toggleMute = { streamer.setMuted(!streamer.muted) }
                 StreamActivityActions.sendCommand = { id in
                     guard UserDefaults.standard.bool(forKey: "lockScreenCommands"),
                           let c = BotCommand.stored().first(where: { $0.id.uuidString == id }) else { return }

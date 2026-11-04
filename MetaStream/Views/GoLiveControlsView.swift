@@ -1,11 +1,14 @@
+import CoreUI
+import Engine
+import Platforms
 import SwiftUI
 
 /// Fixed bottom controls: GO LIVE, source picker, chat/settings shortcuts plus the always-on-screen
 /// mic/camera/blur buttons. These are the controls you need in the second something goes wrong, so they
 /// must never live in the scrolling status strip where a long run of pills can push them off the edge.
 struct GoLiveControlsView: View {
-    @EnvironmentObject var streamer: Streamer
-    @EnvironmentObject var platforms: Platforms
+    @Environment(Streamer.self) var streamer
+    @Environment(Platforms.self) var platforms
     @AppStorage("askStreamInfo") private var askStreamInfo = true
     @State private var showInfo = false
     @AppStorage("blurOn") var blurOn = false
@@ -24,7 +27,7 @@ struct GoLiveControlsView: View {
 
     var body: some View {
         controls.padding(.bottom, 12)
-            .sheet(isPresented: $showInfo) { StreamInfoSheet { streamer.goLiveFromSettings() }.environmentObject(platforms) }
+            .sheet(isPresented: $showInfo) { StreamInfoSheet { streamer.goLiveFromSettings() }.environment(platforms) }
     }
 
     private var controls: some View {
@@ -61,7 +64,8 @@ struct GoLiveControlsView: View {
                     .font(.system(size: smallSize * 0.38, weight: .semibold))
                     .foregroundStyle(streamer.manualSource == "auto" ? .white : .black)
                     .frame(width: smallSize, height: smallSize)
-                    .background(streamer.manualSource == "auto" ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.white), in: Circle())
+                    .background(streamer.manualSource == "auto" ? Color.clear : Color.white, in: Circle())
+                    .glassEffect(streamer.manualSource == "auto" ? .regular.interactive() : .identity, in: Circle())
             }
             .buttonStyle(.plain)
             if streamer.manualSource == "screen", ScreenSource.available { ScreenButton(screen: streamer.screenSource, size: smallSize) }
@@ -118,7 +122,7 @@ struct GoLiveControlsView: View {
 
 /// Mic / camera / blur round buttons; flattens into whichever stack hosts it (bottom row or left rail).
 struct QuickControls: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @AppStorage("blurOn") var blurOn = false
     @AppStorage("sounds") var soundsRaw = "[]"
     var size: CGFloat
@@ -135,18 +139,18 @@ struct QuickControls: View {
                         .font(.system(size: size * 0.38, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: size, height: size)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .glassEffect(.regular, in: Circle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Soundboard")
             }
             // Independent of Go Live: a recording starts and stops on its own, live or not.
-            StripStyles.roundButton("record.circle", filled: false, tint: streamer.recordingSince != nil ? .red : nil, size: size) {
+            StripStyles.roundButton("record.circle", filled: false, tint: streamer.recording.since != nil ? .red : nil, size: size) {
                 hapticTap(strong: true)
-                streamer.toggleRecording()
+                streamer.recording.toggle()
             }
-            .disabled(!streamer.phoneEncodes && streamer.recordingSince == nil)
-            .accessibilityLabel(streamer.recordingSince != nil ? "Stop recording" : "Record")
+            .disabled(!streamer.phoneEncodes && streamer.recording.since == nil)
+            .accessibilityLabel(streamer.recording.since != nil ? "Stop recording" : "Record")
             button(streamer.muted ? "mic.slash.fill" : "mic.fill",
                    streamer.muted ? "Muted" : "Mic",
                    style: streamer.muted ? .stopped : .live) {

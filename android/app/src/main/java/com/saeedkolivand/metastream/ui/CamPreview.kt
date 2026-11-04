@@ -43,6 +43,9 @@ import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.camera.Cam
 import com.saeedkolivand.metastream.camera.isLevel
 import com.saeedkolivand.metastream.camera.rollDegrees
+import com.saeedkolivand.metastream.core.ui.Green
+import com.saeedkolivand.metastream.core.ui.Scrim
+import com.saeedkolivand.metastream.core.ui.rememberHaptic
 import kotlinx.coroutines.delay
 
 private val Yellow = Color(0xFFFFD60A)

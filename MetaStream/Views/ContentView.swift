@@ -1,15 +1,23 @@
+import Chat
+import CoreUI
+import Engine
 import MWDATCore
+import Overlays
+import Platforms
+import Privacy
+import Reach
+import Speech
 import SwiftUI
 
 // MARK: - Live screen
 
 struct ContentView: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @EnvironmentObject var speaker: Speaker
     /// Plain reference, not observed: a chat message must not rebuild this screen. Child views that show chat observe
     /// it through the environment.
     let chat: ChatFeed
-    @EnvironmentObject var platforms: Platforms
+    @Environment(Platforms.self) var platforms
     @EnvironmentObject var privacy: Privacy
     @AppStorage("keepAwake") var keepAwake = true
     @AppStorage("camLevelOn") var camLevelOn = false
@@ -17,7 +25,7 @@ struct ContentView: View {
 
     @ObservedObject var sessionLog = SessionLog.shared   // not private: it would make ContentView's memberwise init private
     @StateObject private var vm = StreamViewModel()
-    @StateObject private var emotes = Emotes()
+    @State private var emotes = Emotes()
     @StateObject private var levelMonitor = LevelMonitor()
     @State private var showSettings = false
     @State private var showChat = false
@@ -195,9 +203,9 @@ struct ContentView: View {
         .onChange(of: camLevelOn) { _, on in on ? levelMonitor.start() : levelMonitor.stop() }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = keepAwake }
         .onAppear {
-            let c = streamer.overlays.context
+            let c = SceneDirector.shared.overlays.context
             c.chat = chat; c.emotes = emotes; c.streamer = streamer; c.platforms = platforms
-            streamer.updateSceneRotation()
+            SceneDirector.shared.updateSceneRotation()
         }
         .onChange(of: keepAwake) { _, v in UIApplication.shared.isIdleTimerDisabled = v }
         .onChange(of: streamer.lastPhotoAt) { _, _ in

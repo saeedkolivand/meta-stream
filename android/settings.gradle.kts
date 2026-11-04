@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         google {
             content {
@@ -24,3 +25,21 @@ dependencyResolutionManagement {
 rootProject.name = "MetaStream"
 
 include(":app")
+include(":core:model")
+include(":core:logging")
+include(":core:storage")
+include(":core:network")
+include(":core:ui")
+include(":feature:camera")
+include(":feature:glasses")
+include(":feature:platforms")
+include(":feature:chat")
+include(":feature:goal")
+include(":feature:speech")
+include(":feature:privacy")
+include(":feature:engine")
+include(":feature:overlay")
+include(":feature:bot")
+include(":feature:remote")
+include(":feature:reach")
+include(":feature:car")

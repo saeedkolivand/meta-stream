@@ -22,7 +22,7 @@ import androidx.compose.ui.graphics.Color
 import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
-import com.saeedkolivand.metastream.core.AppSettings
+import com.saeedkolivand.metastream.core.storage.AppSettings
 import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.platforms.OAuth
 import com.saeedkolivand.metastream.streaming.Engine

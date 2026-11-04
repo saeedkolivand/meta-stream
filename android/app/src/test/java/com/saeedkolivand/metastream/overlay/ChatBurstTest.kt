@@ -1,5 +1,6 @@
 package com.saeedkolivand.metastream.overlay
 
+import com.saeedkolivand.metastream.overlay.widgets.chat.isBurst
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

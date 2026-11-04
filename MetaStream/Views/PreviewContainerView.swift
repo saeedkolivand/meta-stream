@@ -1,14 +1,12 @@
 import AVFoundation
+import Camera
 import CoreMotion
+import CoreUI
+import Engine
 import SwiftUI
 
-final class PreviewUIView: UIView {
-    override class var layerClass: AnyClass { AVSampleBufferDisplayLayer.self }
-    var displayLayer: AVSampleBufferDisplayLayer { layer as! AVSampleBufferDisplayLayer }
-}
-
 struct PreviewView: UIViewRepresentable {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     func makeUIView(context: Context) -> PreviewUIView {
         let view = PreviewUIView()
         view.displayLayer.videoGravity = .resizeAspect
@@ -40,7 +38,7 @@ final class LevelMonitor: ObservableObject {
 /// Live preview + viewfinder gestures and overlays. Tap-to-focus/expose and long-press AE/AF lock are
 /// gestures directly on the preview (not strip controls), so they work whether or not the strip is open.
 struct PreviewContainerView: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @ObservedObject var levelMonitor: LevelMonitor
     @Binding var focusTap: CGPoint?
     @Binding var aeafLocked: Bool

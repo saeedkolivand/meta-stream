@@ -1,9 +1,10 @@
+import Signals
 import SwiftUI
 
 /// iPhone screen while it only shares GPS with the iPad (GPSShare): no camera, chat or preview, so backgrounded it is
 /// just location + a UDP responder. Stopping sharing brings the camera screen back.
 struct GPSOnlyView: View {
-    @ObservedObject private var share = GPSShare.shared
+    private let share = GPSShare.shared
     @AppStorage("gpsShare") private var gpsShare = false
 
     var body: some View {

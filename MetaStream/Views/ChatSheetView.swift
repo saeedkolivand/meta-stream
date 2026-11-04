@@ -1,11 +1,18 @@
+import Bot
+import Chat
+import CoreModel
+import CoreUI
+import Overlays
+import Platforms
+import Speech
 import SwiftUI
 
 /// Native, aggregated chat sheet: every origin ChatFeed is running lands in one list, newest at the bottom.
 struct ChatSheetView: View {
-    @EnvironmentObject var chat: ChatFeed
-    @EnvironmentObject var platforms: Platforms
+    @Environment(ChatFeed.self) var chat
+    @Environment(Platforms.self) var platforms
     @ObservedObject var vm: StreamViewModel
-    @ObservedObject var emotes: Emotes
+    var emotes: Emotes
     @Binding var showChat: Bool
     @Binding var showSettings: Bool
     @Binding var showManager: Bool

@@ -1,3 +1,4 @@
+import Privacy
 import XCTest
 import CoreGraphics
 import Foundation

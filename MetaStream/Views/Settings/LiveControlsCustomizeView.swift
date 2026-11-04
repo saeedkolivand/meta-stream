@@ -1,3 +1,4 @@
+import Camera
 import SwiftUI
 
 /// Which controls the strip in ContentView shows, and in what order -- writes the one

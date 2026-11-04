@@ -31,12 +31,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.core.ui.Field
+import com.saeedkolivand.metastream.core.ui.Green
+import com.saeedkolivand.metastream.core.ui.Note
+import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.platforms.Category
 import com.saeedkolivand.metastream.platforms.Kick
 import com.saeedkolivand.metastream.platforms.Twitch
 import com.saeedkolivand.metastream.streaming.Engine
+import com.saeedkolivand.metastream.ui.CategoryPicker
+import com.saeedkolivand.metastream.ui.cleanTags
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 

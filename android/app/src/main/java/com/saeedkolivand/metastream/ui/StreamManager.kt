@@ -34,7 +34,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.saeedkolivand.metastream.chat.ChatFeed
-import com.saeedkolivand.metastream.core.Prefs
+import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.core.ui.Note
+import com.saeedkolivand.metastream.core.ui.Red
+import com.saeedkolivand.metastream.core.ui.SectionTitle
 import com.saeedkolivand.metastream.platforms.Account
 import com.saeedkolivand.metastream.platforms.Accounts
 import com.saeedkolivand.metastream.platforms.Kick
@@ -119,7 +122,7 @@ private val TABS = listOf<Account>(Kick, Twitch, Restream, YouTube)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun StreamManager() {
+fun StreamManager() {
     if (!ManagerState.open) return
     var tab by remember { mutableStateOf(Prefs.string("managerTab", "kick")) }
     val a = TABS.firstOrNull { it.prefix == tab } ?: Kick

@@ -1,13 +1,20 @@
+import CoreUI
+import Engine
 import MWDATCore
+import Overlays
+import Platforms
+import Privacy
+import Reach
+import Speech
 import SwiftUI
 
 /// Top status strip: connection, bitrate, battery, heat, source, mute, photo, manage, camera buttons.
 /// Fixed pills never scroll the quick controls off screen -- see GoLiveControlsView's doc.
 struct HUDView: View {
-    @EnvironmentObject var streamer: Streamer
+    @Environment(Streamer.self) var streamer
     @EnvironmentObject var speaker: Speaker
     @EnvironmentObject var privacy: Privacy
-    @EnvironmentObject var platforms: Platforms
+    @Environment(Platforms.self) var platforms
     @AppStorage("blurOn") var blurOn = false
     @AppStorage("bitrateKbps") var bitrateKbps = 4000
     @AppStorage("glassesEnabled") private var glassesEnabled = false
@@ -36,7 +43,7 @@ struct HUDView: View {
     private func sceneButton(_ name: String, _ label: String) -> some View {
         Button {
             hapticTap()
-            streamer.selectScene(name)
+            SceneDirector.shared.selectScene(name)
         } label: {
             if overlays.scene == name { Label(label, systemImage: "checkmark") } else { Text(label) }
         }
@@ -53,7 +60,7 @@ struct HUDView: View {
                     }, action: { showStatus = true })
                 }
 
-                if let since = streamer.recordingSince {
+                if let since = streamer.recording.since {
                     TimelineView(.periodic(from: .now, by: 1)) { ctx in
                         let s = Int(ctx.date.timeIntervalSince(since))
                         StripStyles.pill("circle.fill", String(format: "REC %02d:%02d", s / 60, s % 60), .red)
@@ -131,7 +138,7 @@ struct HUDView: View {
             }
         }
         .padding(.top, 4)
-        .sheet(isPresented: $showNetwork) { NetworkPanelView().environmentObject(streamer) }
+        .sheet(isPresented: $showNetwork) { NetworkPanelView().environment(streamer) }
     }
 
     /// Posts the Live post's announcement; while one is up, withdraws it.
@@ -188,7 +195,7 @@ struct HUDView: View {
 
 /// Thin flat level bar for the mix (-60...0 dBFS); orange when near silent, red near clipping. Own view so the 8 Hz updates stay local.
 struct LevelBar: View {
-    @ObservedObject var meter: AudioLevel
+    let meter: AudioLevel
 
     var body: some View {
         let fill = CGFloat(min(1, max(0, (meter.db + 60) / 60)))
@@ -196,7 +203,7 @@ struct LevelBar: View {
         Capsule().fill(.white.opacity(0.2)).frame(width: 40, height: 4)
             .overlay(alignment: .leading) { Capsule().fill(color).frame(width: 40 * fill, height: 4) }
             .padding(.horizontal, 12).padding(.vertical, 14)
-            .background(.ultraThinMaterial, in: Capsule())
+            .glassEffect(.regular, in: Capsule())
             .accessibilityLabel("Audio level")
     }
 }

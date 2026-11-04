@@ -1,5 +1,6 @@
 package com.saeedkolivand.metastream.ui
 
+import com.saeedkolivand.metastream.ui.settings.searchHit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

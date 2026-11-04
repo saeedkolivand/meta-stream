@@ -1,0 +1,406 @@
+import Chat
+import CoreLogging
+import CoreModel
+import CoreNetwork
+import CoreStorage
+import CoreUI
+import Engine
+import Foundation
+import Goal
+import Overlays
+import Platforms
+import Signals
+import UIKit
+
+/// A message the app bot repeats on a schedule while live (Settings › App bot). The list lives in AppStorage("botTimers") as JSON.
+public struct AppTimer: Codable, Identifiable, Hashable {
+    public var id = UUID()
+    public var text: String
+    public var minutes = 15   // at least 5, see AppBot.timerDue
+
+    public static func decode(_ raw: String) -> [AppTimer] { (try? JSONDecoder().decode([AppTimer].self, from: Data(raw.utf8))) ?? [] }
+    public static func encode(_ t: [AppTimer]) -> String { (try? JSONEncoder().encode(t)).flatMap { String(data: $0, encoding: .utf8) } ?? "[]" }
+
+    public init(text: String) {
+        self.text = text
+    }
+}
+
+/// The app's own chat account on Kick and Twitch (see CONTEXT.md): scene notices, viewer commands, timers and thank-yous.
+/// Never posts as the streamer. One paced queue per platform, and everything only while live.
+/// ponytail: settings are plain UserDefaults keys (bool switches default on, templates fall back to `defaults`).
+@MainActor
+public final class AppBot: ObservableObject {
+    public static let shared = AppBot()
+
+    /// Set once from the App; nothing runs before that.
+    public var streamer: Streamer?
+    public var platforms: Platforms?
+
+    /// Last connect / send problem, shown in Settings › App bot.
+    @Published public var status = ""
+    @Published public var twitchBotName = UserDefaults.standard.string(forKey: "botTwitchName") ?? ""
+
+    private let store: TokenStore = UserDefaults.standard
+    private var queue: [String: [(text: String, replyTo: String)]] = [:]   // origin -> messages waiting for their turn
+    private var draining: Set<String> = []
+    private var sent: [String] = []                   // our last texts: chat echoes them back, they are not viewers
+    private var ownNames: Set<String> = []            // "origin|name" of the bot accounts, learned from those echoes
+    private var answered: [String: Date] = [:]        // "origin|!cmd" -> last answer
+    private var msgs: [String: Int] = [:]             // origin -> viewer messages so far this stream
+    private var marks: [String: (at: Date, msgs: Int)] = [:]   // "timer|origin" -> state at its last post
+    private var lastTimer: [String: Date] = [:]       // origin -> last timer post
+    private var holdingGPS = false
+    private var holdingSpotify = false
+    private var twitchLogin: Task<Void, Never>?       // the running device-code login, see connectTwitch
+    private var brbAt: Date?                          // last weak-link notice
+    private var brbOpen = false                       // that notice still waits for its "back" line
+
+    public static let defaults = [
+        "botTplBrbOn": "Connection's weak, back in a moment", "botTplBrbOff": "We're back!",
+        "botTplStartingOn": "Starting soon!", "botTplStartingOff": "We're live, welcome in!", "botTplEndingOn": "Thanks for watching!",
+        "botTplFollow": "{user}, thanks for the follow!", "botTplSub": "{user}, thanks for subscribing!",
+        "botTplGift": "{user}, thanks for the {count} gifted subs!", "botTplRaid": "{user}, thanks for the raid with {count} viewers!",
+        "botTplTip": "{user} donated {amount}, thank you!",
+        "botTplDonate": "{title}: {total} / {target} ({percent}%) · {url}",
+    ]
+    private static let donateAliases = ["!tip", "!support", "!donation"]   // share the "Donate" switch
+    private static let commands = ["!location", "!speed", "!distance", "!weather", "!battery", "!uptime", "!goal", "!donate", "!song",
+                                    "!commands"] + donateAliases
+
+    private func flag(_ key: String, _ fallback: Bool = true) -> Bool { UserDefaults.standard.object(forKey: key) as? Bool ?? fallback }
+
+    /// Live, or test mode (Settings › App bot): answers, notices and thank-yous work offline too. Timers stay live-only.
+    private var active: Bool { streamer?.live == true || flag("botTestMode", false) }
+    private func tpl(_ key: String) -> String { UserDefaults.standard.string(forKey: key) ?? Self.defaults[key] ?? "" }
+
+    // MARK: pure decisions -- see demo()
+
+    /// Same command on the same platform: once per 30 s, unless a mod or the broadcaster typed it.
+    public static func cooldownOK(last: Date?, now: Date, privileged: Bool) -> Bool {
+        privileged || last.map { now.timeIntervalSince($0) >= 30 } ?? true
+    }
+
+    /// Interval passed (never under 5 min), 5 viewer messages since its last post, and 5 min since any timer posted there.
+    public static func timerDue(since: Date, minutes: Int, msgs: Int, lastAny: Date?, now: Date) -> Bool {
+        now.timeIntervalSince(since) >= Double(max(minutes, 5) * 60) && msgs >= 5
+            && lastAny.map { now.timeIntervalSince($0) >= 300 } ?? true
+    }
+
+    /// A flapping link (BRB on/off every 20-40 s on cellular) posts its weak notice at most once per 2 min; the "back"
+    /// line only follows a notice that went out.
+    public static func brbNoticeDue(last: Date?, now: Date) -> Bool { last.map { now.timeIntervalSince($0) >= 120 } ?? true }
+
+    public static func switchKey(_ cmd: String) -> String { "botCmd" + (donateAliases.contains(cmd) ? "Donate" : cmd.dropFirst().capitalized) }
+
+    public static func fill(_ template: String, user: String, count: Int) -> String {
+        template.replacingOccurrences(of: "{user}", with: user).replacingOccurrences(of: "{count}", with: String(count))
+    }
+
+    // MARK: sending
+
+    private func platformOn(_ origin: String) -> Bool {
+        guard let p = platforms else { return false }
+        if origin == "kick" { return flag("botKick", false) && p.kickConnected }
+        return origin == "twitch" && flag("botTwitch", false) && !p.twitchUserID.isEmpty
+            && store.string(forKey: "twitchBotAccess") != nil && UserDefaults.standard.string(forKey: "botTwitchID") != nil
+    }
+
+    /// Queues `text` for `origin`: one message per 1.5 s per platform (Twitch allows 20 per 30 s to a non-mod), delayed, never dropped.
+    /// `replyTo`: the chat message id this answers, so it shows as a reply to the viewer who asked.
+    private func say(_ origin: String, _ text: String, replyTo: String = "") {
+        guard active, platformOn(origin), !text.isEmpty else { return }
+        queue[origin, default: []].append((String(text.prefix(500)), replyTo))   // Kick's limit
+        guard draining.insert(origin).inserted else { return }
+        Task {
+            while let next = queue[origin]?.first {
+                queue[origin]?.removeFirst()
+                await post(origin, next.text, replyTo: next.replyTo)
+                try? await Task.sleep(for: .seconds(1.5))
+            }
+            draining.remove(origin)
+        }
+    }
+
+    private func post(_ origin: String, _ text: String, replyTo: String) async {
+        guard let p = platforms else { return }
+        sent.append(text); if sent.count > 20 { sent.removeFirst() }
+        do {
+            if origin == "kick" {
+                // type "bot" posts as the app's bot account of the token owner's channel; never fall back to "user".
+                var body: [String: Any] = ["content": text, "type": "bot"]
+                if !replyTo.isEmpty { body["reply_to_message_id"] = replyTo }
+                _ = try await p.kick.api().call("POST", "/public/v1/chat", body: body)
+            } else {
+                var body: [String: Any] = ["broadcaster_id": p.twitchUserID, "message": text,
+                                           "sender_id": UserDefaults.standard.string(forKey: "botTwitchID") ?? ""]
+                if !replyTo.isEmpty { body["reply_parent_message_id"] = replyTo }
+                _ = try await twitchAPI().call("POST", "/chat/messages", body: body)
+            }
+        } catch {
+            applog("chat", "app bot \(origin) send failed: \(error.localizedDescription)", error: true)
+            status = "\(origin == "kick" ? "Kick" : "Twitch"): \(error.localizedDescription)"
+            // The question was deleted (or the id is unknown): answer without the reply rather than not at all.
+            if !replyTo.isEmpty { await post(origin, text, replyTo: "") }
+        }
+    }
+
+    // MARK: Twitch app bot account (second account, tokens under the "twitchBot" prefix)
+
+    private func twitchAPI() -> PlatformEndpoint {
+        PlatformEndpoint(base: "https://api.twitch.tv/helix", tokenKey: "twitchBotAccess",
+            headers: ["Client-Id": PlatformConfig.twitchID], store: store) {
+            let json = try await PlatformNet.form("https://id.twitch.tv/oauth2/token", [
+                "grant_type": "refresh_token", "client_id": PlatformConfig.twitchID, "refresh_token": self.store.string(forKey: "twitchBotRefresh") ?? ""])
+            try self.store.saveTokens(json, prefix: "twitchBot")
+        }
+    }
+
+    /// Device-code login like TwitchService.connect. The device flow has no account picker, so the account is whichever
+    /// one is signed in on the activate page (use a private tab or log out first).
+    public func connectTwitch() {
+        // A second tap restarts the login instead of running two: the older poll could otherwise still finish and
+        // overwrite the bot's tokens with whatever account was signed in on its activate page.
+        twitchLogin?.cancel()
+        twitchLogin = Task {
+            do {
+                let scopes = "user:read:chat user:write:chat user:bot"
+                let dev = try await PlatformNet.form("https://id.twitch.tv/oauth2/device", ["client_id": PlatformConfig.twitchID, "scopes": scopes])
+                guard let deviceCode = dev["device_code"] as? String else { throw PlatformNet.err("no device_code: \(dev)") }
+                let url = dev["verification_uri"] as? String ?? "https://www.twitch.tv/activate"
+                status = "Enter code \(dev["user_code"] as? String ?? "") on Twitch as the bot account"
+                if let u = URL(string: url) { await UIApplication.shared.open(u) }
+                let interval = max(dev["interval"] as? Int ?? 5, 5)
+                for _ in 0..<(900 / interval) {                        // ponytail: 15 min ceiling
+                    try await Task.sleep(for: .seconds(interval))
+                    let reply: [String: Any]
+                    do {
+                        reply = try await PlatformNet.form("https://id.twitch.tv/oauth2/token", [
+                            "client_id": PlatformConfig.twitchID, "scopes": scopes, "device_code": deviceCode,
+                            "grant_type": "urn:ietf:params:oauth:grant-type:device_code"], allowError: true)
+                    } catch let failure where PlatformNet.isTransient(failure) && !Task.isCancelled {
+                        continue   // paused while the user was in Safari entering the code: just ask again
+                    }
+                    if reply["access_token"] != nil {
+                        try store.saveTokens(reply, prefix: "twitchBot")
+                        let u = ((try await twitchAPI().call("GET", "/users"))["data"] as? [[String: Any]])?.first
+                        UserDefaults.standard.set(u?["id"] as? String, forKey: "botTwitchID")
+                        twitchBotName = u?["display_name"] as? String ?? ""
+                        UserDefaults.standard.set(twitchBotName, forKey: "botTwitchName")
+                        status = "Twitch bot connected as \(twitchBotName)"
+                        return
+                    }
+                    if (reply["message"] as? String) != "authorization_pending" {
+                        throw PlatformNet.err("Twitch: \(reply["message"] ?? reply)")
+                    }
+                }
+                status = "Twitch login timed out"
+            } catch is CancellationError {   // replaced by a newer tap: that login owns the status line now
+            } catch { status = error.localizedDescription }
+        }
+    }
+
+    public func disconnectTwitch() {
+        store.forget("twitchBot")
+        ["botTwitchID", "botTwitchName"].forEach { UserDefaults.standard.removeObject(forKey: $0) }
+        twitchBotName = ""
+    }
+
+    // MARK: hooks
+
+    /// From Streamer.sceneRole: BRB on/off, Starting on/off, Ending. An empty template posts nothing.
+    public func role(_ role: String, on: Bool) {
+        guard flag("botNotices") else { return }
+        if role == "brb" {
+            let now = Date()
+            if on {
+                guard Self.brbNoticeDue(last: brbAt, now: now) else { return }
+                brbAt = now; brbOpen = true
+            } else {
+                guard brbOpen else { return }
+                brbOpen = false
+            }
+        }
+        let text = tpl("botTpl" + role.capitalized + (on ? "On" : "Off"))
+        ["kick", "twitch"].forEach { say($0, text) }
+    }
+
+    /// From the chat.events loop: viewer commands, the timers' message count and thank-yous.
+    public func handle(_ e: ChatEvent) {
+        guard !e.flagged, active else {
+            if e.kind == .message, e.text.hasPrefix("!") {
+                applog("bot", "\(e.origin) command ignored: not live (Test mode answers offline)")
+            }
+            return
+        }
+        // A donation site's tip is thanked on every platform the bot is on; test donations never.
+        if e.kind == .tip, ["donofa", "reymit", "streamelements", "donito"].contains(e.origin) { thank(e, "botTplTip", to: ["kick", "twitch"]); return }
+        guard e.origin == "kick" || e.origin == "twitch" else { return }
+        switch e.kind {
+        case .message: message(e)
+        case .follow: thank(e, "botTplFollow")
+        case .subscribe: thank(e, e.count > 0 ? "botTplGift" : "botTplSub")
+        case .raid: thank(e, "botTplRaid")
+        default: break
+        }
+    }
+
+    private func thank(_ e: ChatEvent, _ key: String, to origins: [String]? = nil) {
+        guard flag("botThanks"), !ChatFilter.isBlocked(e.user, extra: UserDefaults.standard.string(forKey: "ttsBlocked") ?? "") else { return }
+        let text = Self.fill(tpl(key), user: ChatFilter.safeName(e.user), count: e.count).replacingOccurrences(of: "{amount}", with: e.tipMoney.display)
+        (origins ?? [e.origin]).forEach { say($0, text) }
+    }
+
+    /// From GoalStore.onReached.
+    public func goalReached(_ title: String) {
+        guard flag("botNotices") else { return }
+        ["kick", "twitch"].forEach { say($0, "Goal reached: \(title)!") }
+    }
+
+    /// One of the app bot's own lines (read aloud and the counters skip them). Kick doesn't say what the bot account is
+    /// called, so its name is learned from the first echo of something the app posted; the streamer's own name never is.
+    public func isOwn(_ e: ChatEvent) -> Bool {
+        let key = e.origin + "|" + e.user.lowercased()
+        if ownNames.contains(key) { return true }
+        if e.origin == "twitch", !twitchBotName.isEmpty, e.user.caseInsensitiveCompare(twitchBotName) == .orderedSame { return true }
+        guard sent.contains(e.text) else { return false }
+        let me = (e.origin == "kick" ? platforms?.kickUser : platforms?.twitchUser)?.lowercased() ?? ""
+        if e.user.lowercased() != me { ownNames.insert(key) }
+        return true
+    }
+
+    private func message(_ e: ChatEvent) {
+        if isOwn(e) { return }
+        if !BotList.isBot(e.user) { msgs[e.origin, default: 0] += 1 }
+        let cmd = e.text.split(whereSeparator: \.isWhitespace).first?.lowercased() ?? ""
+        let key = e.origin + "|" + cmd
+        guard Self.commands.contains(cmd) else { return }
+        guard platformOn(e.origin), flag(Self.switchKey(cmd)) else {
+            applog("bot", "\(cmd) on \(e.origin) ignored: \(platformOn(e.origin) ? "command switched off" : "app bot off or not connected there")")
+            return
+        }
+        let now = Date()
+        let privileged = !Set(e.badges).isDisjoint(with: ["broadcaster", "moderator"])
+        // Offline (test mode) only the streamer and mods get answers: !location to anyone off-stream would say where you are.
+        guard streamer?.live == true || privileged else { applog("bot", "\(cmd) from \(e.user) ignored: offline, not you or a mod"); return }
+        guard Self.cooldownOK(last: answered[key], now: now, privileged: privileged) else { applog("bot", "\(cmd) ignored: cooldown"); return }
+        answered[key] = now
+        let name = (e.origin == "kick" ? platforms?.kickUser : platforms?.twitchUser) ?? ""
+        guard let reply = answer(cmd, name.isEmpty ? "The streamer" : name) else {
+            applog("bot", "\(cmd): value not known yet, staying silent")
+            return
+        }
+        say(e.origin, reply, replyTo: e.id)
+    }
+
+    /// Offline (test mode) the health monitor isn't tracking the battery: read it directly. Monitoring stays on until the
+    /// health monitor next turns it off at the end of a live session.
+    private static func batteryNow() -> Int? {
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        let level = UIDevice.current.batteryLevel
+        return level < 0 ? nil : Int(level * 100)
+    }
+
+    /// nil (stay silent) when the value is not known yet.
+    private func answer(_ cmd: String, _ name: String) -> String? {
+        let loc = WidgetLocation.shared
+        func known(_ s: String) -> String? { s == "--" ? nil : s }
+        switch cmd {
+        case "!location":
+            if flag("botHideLocation", false) { return "Location is private right now" }
+            return loc.regionText.map { "\(name) is in \($0)" } ?? "\(name)'s location isn't known yet"
+        // An answer that says why beats silence, which looks like a broken bot (a Wi-Fi iPad has no GPS speed).
+        case "!speed": return known(loc.speedText).map { "\(name) is going \($0)" } ?? "Speed isn't available right now (no GPS)"
+        case "!distance": return "\(name) has travelled \(loc.distanceText(since: streamer?.liveSince)) today"
+        case "!weather": return known(WidgetWeather.shared.plainText).map { "It's \($0) where \(name) is" } ?? "The weather there isn't known yet"
+        case "!goal":
+            let g = GoalStore.shared, c = g.config.currency
+            return "\(Money(g.total, c).display) of \(Money(g.config.target, c).display) for \(g.config.title) (\(Int(g.progress * 100))%)"
+        case "!donate", "!tip", "!support", "!donation":
+            let g = GoalStore.shared, c = g.config, url = DonatePagePublisher.shared.chatURL
+            guard c.target > 0 else { return "Support the stream: \(url)" }
+            return tpl("botTplDonate").replacingOccurrences(of: "{title}", with: c.title)
+                .replacingOccurrences(of: "{total}", with: Money(g.total, c.currency).display)
+                .replacingOccurrences(of: "{target}", with: Money(c.target, c.currency).display)
+                .replacingOccurrences(of: "{percent}", with: String(Int(g.progress * 100)))
+                .replacingOccurrences(of: "{url}", with: url)
+        case "!commands":   // whichever commands are switched on right now (aliases are not listed)
+            let on = Self.commands.filter { $0 != "!commands" && !Self.donateAliases.contains($0) && flag(Self.switchKey($0)) }
+            return on.isEmpty ? nil : "Commands: " + on.joined(separator: " ")
+        case "!battery": return (streamer?.phoneBattery ?? Self.batteryNow()).map { "\(name)'s phone is at \($0)%" }
+        case "!uptime":
+            guard let since = streamer?.liveSince else { return "\(name) isn't live right now" }
+            let m = max(0, Int(Date().timeIntervalSince(since))) / 60
+            return "\(name) has been live for \(m >= 60 ? "\(m / 60) h " : "")\(m % 60) min"
+        default: return cmd == "!song" ? Self.songAnswer() : nil
+        }
+    }
+
+    /// From Streamer's 1 s tick: keeps the GPS on while location commands are possible, runs the timers.
+    public func tick() {
+        let live = streamer?.live == true
+        let wantGPS = active && (platformOn("kick") || platformOn("twitch"))
+            && ["botCmdLocation", "botCmdSpeed", "botCmdDistance", "botCmdWeather"].contains { flag($0) }
+        if wantGPS != holdingGPS {
+            holdingGPS = wantGPS
+            if wantGPS { WidgetLocation.shared.retain() } else { WidgetLocation.shared.release() }
+        }
+        if wantGPS, flag("botCmdWeather") { _ = WidgetWeather.shared.plainText }   // reading it is what turns the fetch on
+        holdSpotify()
+        guard live else { msgs = [:]; marks = [:]; lastTimer = [:]; brbAt = nil; brbOpen = false; return }
+        guard flag("botTimersOn", false), SceneDirector.shared.roleActive != "brb" else { return }
+        let now = Date()
+        for t in AppTimer.decode(UserDefaults.standard.string(forKey: "botTimers") ?? "[]") where !t.text.isEmpty {
+            for o in ["kick", "twitch"] where platformOn(o) {
+                let k = "\(t.id)|\(o)", m = msgs[o, default: 0]
+                guard let mark = marks[k] else { marks[k] = (now, m); continue }
+                if Self.timerDue(since: mark.at, minutes: t.minutes, msgs: m - mark.msgs, lastAny: lastTimer[o], now: now) {
+                    marks[k] = (now, m); lastTimer[o] = now
+                    say(o, t.text)
+                }
+            }
+        }
+    }
+
+    #if DEBUG
+    public static func demo() {
+        let t = Date(timeIntervalSince1970: 1_000_000)
+        assert(cooldownOK(last: nil, now: t, privileged: false))
+        assert(!cooldownOK(last: t, now: t.addingTimeInterval(29), privileged: false))
+        assert(cooldownOK(last: t, now: t.addingTimeInterval(30), privileged: false))
+        assert(cooldownOK(last: t, now: t.addingTimeInterval(1), privileged: true))
+        let later = t.addingTimeInterval(600)
+        assert(timerDue(since: t, minutes: 10, msgs: 5, lastAny: nil, now: later))
+        assert(!timerDue(since: t, minutes: 10, msgs: 4, lastAny: nil, now: later))          // too quiet
+        assert(!timerDue(since: t, minutes: 11, msgs: 9, lastAny: nil, now: later))          // too early
+        assert(!timerDue(since: t, minutes: 1, msgs: 9, lastAny: nil, now: t.addingTimeInterval(120)))   // minutes floor at 5
+        assert(!timerDue(since: t, minutes: 10, msgs: 9, lastAny: later.addingTimeInterval(-299), now: later))   // another timer just posted
+        assert(timerDue(since: t, minutes: 10, msgs: 9, lastAny: later.addingTimeInterval(-300), now: later))
+        assert(fill("{user}: {count} subs", user: "bob", count: 5) == "bob: 5 subs")
+        assert(brbNoticeDue(last: nil, now: t) && !brbNoticeDue(last: t, now: t.addingTimeInterval(119)))
+        assert(brbNoticeDue(last: t, now: t.addingTimeInterval(120)))
+        assert(switchKey("!tip") == "botCmdDonate" && switchKey("!donate") == "botCmdDonate" && switchKey("!goal") == "botCmdGoal")
+        applog("chat", "AppBot.demo() passed")
+    }
+    #endif
+}
+
+// Same file, so it keeps access to the class's private state; kept out of the class body for its 300-line budget.
+extension AppBot {
+    /// !song: "Artist - Song" and its open.spotify.com link (Kick and Twitch make it clickable).
+    private static func songAnswer() -> String {
+        let spotify = SpotifyNowPlaying.shared
+        guard spotify.connected else { return "Spotify isn't connected" }
+        guard let song = spotify.track else { return "Nothing's playing right now" }
+        let name = song.artist.isEmpty ? song.title : "\(song.artist) - \(song.title)"
+        return song.url.isEmpty ? name : "\(name) \(song.url)"
+    }
+
+    /// Polls Spotify while !song could be asked, so the answer is the song playing now, not one from minutes ago.
+    private func holdSpotify() {
+        let want = active && (platformOn("kick") || platformOn("twitch")) && flag("botCmdSong") && SpotifyNowPlaying.shared.connected
+        guard want != holdingSpotify else { return }
+        holdingSpotify = want
+        if want { SpotifyNowPlaying.shared.retain() } else { SpotifyNowPlaying.shared.release() }
+    }
+}

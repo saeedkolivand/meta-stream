@@ -1,3 +1,6 @@
+import CoreModel
+import Overlays
+import Signals
 import XCTest
 @testable import MetaStream
 

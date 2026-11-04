@@ -1,5 +1,6 @@
 package com.saeedkolivand.metastream.platforms
 
+import com.saeedkolivand.metastream.chat.Slash
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
