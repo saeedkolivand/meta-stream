@@ -65,4 +65,4 @@ public struct SessionRecord: Codable {
     public var duration: TimeInterval { (end ?? Date()).timeIntervalSince(start) }
 }
 
-extension SessionRecord: Identifiable { var id: Date { start } }
+extension SessionRecord: Identifiable { public var id: Date { start } }
