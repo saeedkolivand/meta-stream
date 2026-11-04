@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Scenes and widgets, a full audio mix, bonded SRTLA uplinks, recording, chat moderation with a bot, and Stream Deck control, on an iPhone or iPad. Open source.">
+<meta name="description" content="Scenes and widgets, a full audio mix, bonded SRTLA uplinks, recording, chat moderation with a bot, and Stream Deck control, on iPhone, iPad and Android. Open source.">
 <meta property="og:title" content="MetaStream: a pocket OBS for IRL streamers">
-<meta property="og:description" content="Scenes, audio mix, SRTLA bonding, recording, chat moderation and Stream Deck control on an iPhone or iPad. Open source.">
+<meta property="og:description" content="Scenes, audio mix, SRTLA bonding, recording, chat moderation and Stream Deck control on iPhone, iPad and Android. Open source.">
 <meta property="og:image" content="https://metastream.iamsaeed.dev/icon.png">
 <meta property="og:url" content="https://metastream.iamsaeed.dev/">
 <meta name="theme-color" content="#0B0B0D">
@@ -237,7 +237,7 @@ footer a{color:var(--muted)}
   <section class="hero">
     <div class="wrap">
       <div>
-        <div class="label">Open source · iPhone &amp; iPad · iOS 26</div>
+        <div class="label">Open source · iPhone, iPad &amp; Android</div>
         <h1 style="margin-top:18px">A pocket OBS for <em>IRL</em> streamers.</h1>
         <p class="lede">Scenes and widgets, a full audio mix, bonded uplinks, recording, chat with moderator commands and a bot, and Stream Deck control. Everything a laptop in a backpack used to do, on the phone you are already holding.</p>
         <div class="cta">
@@ -313,7 +313,7 @@ footer a{color:var(--muted)}
             <li><b>Soundboard</b><span>Your own files, one tap each, straight into the stream.</span></li>
             <li><b>Read aloud</b><span>Chat and alerts in your ear, with stream warnings jumping the queue.</span></li>
             <li><b>Dead air</b><span>A spoken warning when the mic falls silent on stream.</span></li>
-            <li><b>Recording</b><span>To Photos, with or without going live, saved in fragments so a crash keeps what was recorded.</span></li>
+            <li><b>Recording</b><span>To Photos or the gallery, with or without going live.</span></li>
           </ul>
         </div>
       </div>
@@ -387,7 +387,7 @@ footer a{color:var(--muted)}
           <li><b>Cameras</b><span>Back, front, USB-C cameras like a DJI Osmo, dual camera, and optional Ray-Ban Meta glasses.</span></li>
           <li><b>Looks</b><span>Brightness, contrast, saturation, warmth and your own <span class="mono">.cube</span> LUTs per camera.</span></li>
           <li><b>Privacy blur</b><span>Faces, text and barcodes blurred on demand before the frame is encoded.</span></li>
-          <li><b>Live Activity</b><span>Stream state on the Lock Screen and Dynamic Island, with your bot commands one tap away.</span></li>
+          <li><b>Lock Screen</b><span>Stream state in a Live Activity on iOS or an ongoing notification on Android, with your bot commands one tap away.</span></li>
         </ul>
       </div>
     </div>
@@ -397,15 +397,15 @@ footer a{color:var(--muted)}
     <div class="wrap">
       <div class="dock-head">
         <div><div class="label">Open source</div><h2>Build your own copy, from Windows</h2></div>
-        <p>MetaStream isn't on the App Store. You build it from the source with your own Apple Developer team: GitHub's macOS runners compile it, and you install it over USB from Windows, Linux or a Mac. No Mac needed at any point.</p>
+        <p>MetaStream isn't on the App Store or Google Play. You build it from the source on GitHub Actions and install it over USB from Windows, Linux or a Mac: iOS needs your own Apple Developer team (no Mac), Android needs no account at all.</p>
       </div>
       <div class="build">
         <div class="panel">
           <ol class="steps">
-            <li><span>Fork the repo and pick your bundle ID.</span></li>
-            <li><span>Add your Apple signing and the platform apps you want as GitHub secrets.</span></li>
-            <li><span>Push to <span class="mono">main</span>. The build-ipa workflow signs an encrypted IPA.</span></li>
-            <li><span>Download it, decrypt it and install it over USB with <span class="mono">pymobiledevice3</span>.</span></li>
+            <li><span>Fork the repo and pick your app ID.</span></li>
+            <li><span>Add the platform apps you want (and, for iOS, your Apple signing) as GitHub secrets.</span></li>
+            <li><span>Push to <span class="mono">main</span>. The build-ipa and build-apk workflows produce an encrypted IPA and APK.</span></li>
+            <li><span>Download, decrypt and install over USB: <span class="mono">pymobiledevice3</span> for iOS, <span class="mono">adb</span> for Android.</span></li>
           </ol>
           <div class="cta" style="margin-top:22px"><a class="btn primary" href="https://github.com/saeedkolivand/meta-stream/blob/main/guide/build.md">Read the build guide</a><a class="btn" href="https://github.com/saeedkolivand/meta-stream/blob/main/guide/features.md">All features</a></div>
         </div>
@@ -414,7 +414,9 @@ gh run download -n MetaStream-ipa -D build
 openssl enc -d -aes-256-cbc -pbkdf2 \
   -in build/MetaStream.ipa.enc -out build/MetaStream.ipa \
   -pass file:signing/ipa-password.txt
-pymobiledevice3 apps install build/MetaStream.ipa</pre>
+pymobiledevice3 apps install build/MetaStream.ipa
+<span style="color:var(--muted)"># Android: same steps with MetaStream-apk, then</span>
+adb install -r build/MetaStream.apk</pre>
       </div>
     </div>
   </section>
