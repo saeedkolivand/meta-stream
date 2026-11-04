@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.reach.ui
 
 import android.content.Intent
 import androidx.compose.foundation.Canvas
@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.core.model.Money
 import com.saeedkolivand.metastream.core.ui.Choice
+import com.saeedkolivand.metastream.core.ui.Note
 import com.saeedkolivand.metastream.core.ui.Section
 import com.saeedkolivand.metastream.reach.LivePostText
 import com.saeedkolivand.metastream.reach.Moment
@@ -44,7 +45,7 @@ import java.text.DateFormat
 import java.util.Date
 
 /** One-line facts for sharing (the streamer's own copy; never posted by the app). */
-internal fun reportSummary(r: SessionRecord) = listOf(
+fun reportSummary(r: SessionRecord) = listOf(
     r.title.ifEmpty { "Stream" } + " · " + DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(r.start)),
     "${LivePostText.duration(r.durationMs)} · peak ${r.peakViewers} · avg ${r.avgViewers}",
     "${r.donationCount} donations · ${Money(r.donationTotal, r.currency).display}",
@@ -58,7 +59,7 @@ internal fun reportSummary(r: SessionRecord) = listOf(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun SessionReportSheet() {
+fun SessionReportSheet() {
     val r = SessionLog.justEnded ?: return
     val ctx = LocalContext.current
     val insights = remember(r) { ReportInsights(r, SessionLog.all()) }
@@ -165,7 +166,7 @@ private fun momentText(m: Moment) = when (m.kind) {
 }
 
 @Composable
-internal fun Stat(label: String, value: String) = Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), Arrangement.SpaceBetween) {
+fun Stat(label: String, value: String) = Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), Arrangement.SpaceBetween) {
     Text(label, color = Color.White.copy(alpha = 0.7f))
     Text(value)
 }

@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.streaming.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -33,7 +33,9 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.core.ui.Green
+import com.saeedkolivand.metastream.core.ui.Note
 import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.SectionTitle
 import com.saeedkolivand.metastream.streaming.Bonding
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Health
@@ -131,7 +133,7 @@ private fun Changes() {
 /** In-app view of what the connection is doing; the stream itself never shows any of this. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun NetworkSheet() {
+fun NetworkSheet() {
     if (!NetworkState.open) return
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {

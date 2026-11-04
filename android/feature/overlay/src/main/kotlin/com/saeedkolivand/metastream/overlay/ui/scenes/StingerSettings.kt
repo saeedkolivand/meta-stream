@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui.scenes
+package com.saeedkolivand.metastream.overlay.ui.scenes
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,7 +22,7 @@ import com.saeedkolivand.metastream.overlay.StingerStyle
  * one over the camera preview. No "your video" stinger: Android's decoders drop a clip's alpha, so it would cover in black.
  */
 @Composable
-internal fun StingerSettings() {
+fun StingerSettings() {
     var kindId by remember { mutableStateOf(Prefs.string("stingerKind", StingerKind.Lens.id)) }
     var style by remember { mutableStateOf(StingerStyle.load()) }
     fun edit(next: StingerStyle) {

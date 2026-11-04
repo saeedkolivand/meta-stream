@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui.scenes
+package com.saeedkolivand.metastream.overlay.ui.scenes
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 
 /** Four arrows that move the selected widget 2 px a press, repeating while held. */
 @Composable
-internal fun NudgePad(modifier: Modifier, nudge: (Float, Float) -> Unit) {
+fun NudgePad(modifier: Modifier, nudge: (Float, Float) -> Unit) {
     val scope = rememberCoroutineScope()
     val now by rememberUpdatedState(nudge)
     val grid = listOf(

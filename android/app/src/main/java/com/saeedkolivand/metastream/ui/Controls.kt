@@ -105,7 +105,7 @@ private fun QuickControls(granted: Boolean, size: Dp) {
         Engine::toggleMute
     )
     RoundButton(
-        if (Engine.cameraOff) R.drawable.ic_videocam_off else R.drawable.ic_videocam,
+        if (Engine.cameraOff) R.drawable.ic_videocam_off else CoreR.drawable.ic_videocam,
         false,
         size,
         if (Engine.cameraOff) Red else Green,
@@ -116,7 +116,7 @@ private fun QuickControls(granted: Boolean, size: Dp) {
     // iOS: grey off, blue protecting, amber when asked for but not in effect yet.
     val blur = Privacy.state
     RoundButton(
-        if (blur == BlurState.Off) R.drawable.ic_eye else R.drawable.ic_eye_off,
+        if (blur == BlurState.Off) CoreR.drawable.ic_eye else CoreR.drawable.ic_eye_off,
         false,
         size,
         when (blur) {
@@ -237,11 +237,11 @@ internal fun Controls(granted: Boolean, chatOpen: Boolean, onChat: () -> Unit, o
         // granted is required even for glasses: the camera|microphone foreground service throws without it.
         GoLive(granted, if (compact) 72.dp else 84.dp)
         if (FaceCam.active) {
-            RoundButton(if (FaceCam.hidden) R.drawable.ic_eye_off else R.drawable.ic_eye, FaceCam.hidden, round) {
+            RoundButton(if (FaceCam.hidden) CoreR.drawable.ic_eye_off else CoreR.drawable.ic_eye, FaceCam.hidden, round) {
                 FaceCam.hide(!FaceCam.hidden)
             }
         }
-        RoundButton(R.drawable.ic_chat, chatOpen, round, onClick = onChat)
+        RoundButton(CoreR.drawable.ic_chat, chatOpen, round, onClick = onChat)
         RoundButton(R.drawable.ic_settings, false, round, onClick = onSettings)
     }
 }

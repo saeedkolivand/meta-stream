@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.bot.ui
 
 import android.annotation.SuppressLint
 import android.webkit.WebView
@@ -38,37 +38,18 @@ import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.ui.ActionRow
 import com.saeedkolivand.metastream.core.ui.Choice
 import com.saeedkolivand.metastream.core.ui.NavRow
+import com.saeedkolivand.metastream.core.ui.PrefField
+import com.saeedkolivand.metastream.core.ui.PrefSwitch
 import com.saeedkolivand.metastream.core.ui.Secondary
 import com.saeedkolivand.metastream.core.ui.Section
-import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.platforms.Kick
 import com.saeedkolivand.metastream.platforms.KickWeb
 import com.saeedkolivand.metastream.platforms.Twitch
 import kotlinx.coroutines.launch
 
-/** A Prefs-backed switch. */
-@Composable
-internal fun PrefSwitch(label: String, key: String, default: Boolean, enabled: Boolean = true) {
-    var on by remember(key) { mutableStateOf(Prefs.bool(key, default)) }
-    SwitchRow(label, on, enabled) {
-        on = it
-        Prefs.put(key, it)
-    }
-}
-
-/** A Prefs-backed text field; an emptied template saves "" and so posts nothing. */
-@Composable
-internal fun PrefField(label: String, key: String, default: String) {
-    var text by remember(key) { mutableStateOf(Prefs.string(key, default)) }
-    Field(label, text, {
-        text = it
-        Prefs.put(key, it)
-    })
-}
-
 /** iOS AppBotSettingsView: the app's own chat account, never posting as the streamer. Messages and Timers are their own pages. */
 @Composable
-internal fun AppBotPage(openMessages: () -> Unit, openTimers: () -> Unit) {
+fun AppBotPage(openMessages: () -> Unit, openTimers: () -> Unit) {
     Section(
         null,
         "Posts only while you are live, never as you. Test mode lets it answer you and your mods (no one else) and post " +
@@ -112,7 +93,7 @@ private fun Tpl(label: String, key: String) = PrefField(label, key, AppBot.defau
 
 /** iOS AppBotMessagesView: scene notices, the !donate answer and thank-yous. An emptied template posts nothing. */
 @Composable
-internal fun AppBotMessagesPage() {
+fun AppBotMessagesPage() {
     Section(
         null,
         "Empty = don't post. With no scene set to the BRB role, a weak connection only posts the BRB lines and the stream " +
@@ -142,7 +123,7 @@ internal fun AppBotMessagesPage() {
 
 /** iOS AppBotTimersView: repeating messages while live. */
 @Composable
-internal fun AppBotTimersPage() {
+fun AppBotTimersPage() {
     Section(
         null,
         "A timer posts when its interval has passed and at least 5 viewers chatted since its last post; timers wait 5 min " +
@@ -197,7 +178,7 @@ private fun KickSessionSection() {
 
 /** Settings › Commands (iOS CommandsSettingsView): saved commands, the notification button and the kick.com session. */
 @Composable
-internal fun CommandsPage() {
+fun CommandsPage() {
     Section(
         null,
         "Sent as your own account, so bots that obey only the broadcaster accept them. A command starting with / (like /clear) " +
@@ -216,7 +197,7 @@ internal fun CommandsPage() {
 
 /** Settings › Known bots (iOS BotsSettingsView): who counts as a bot and which bot lines are announcements. */
 @Composable
-internal fun KnownBotsPage() {
+fun KnownBotsPage() {
     Section(
         "Bots",
         "Comma-separated. Names ending in “bot” always count. Bots are hidden from stream chat widgets when Hide bots is on."

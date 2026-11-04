@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.streaming.ui
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -112,7 +112,7 @@ private fun FaceCamSection() {
 
 /** iOS CameraProControlsView: focus, exposure, white balance, image, look and viewfinder overlays. */
 @Composable
-internal fun CameraProPage() {
+fun CameraProPage() {
     val s = Cam.settings
     val c = Cam.caps
     Section(

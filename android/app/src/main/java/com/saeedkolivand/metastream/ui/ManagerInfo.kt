@@ -19,6 +19,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.saeedkolivand.metastream.core.ui.Choice
+import com.saeedkolivand.metastream.core.ui.Field
+import com.saeedkolivand.metastream.core.ui.Note
 import com.saeedkolivand.metastream.core.ui.Stepper
 import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.platforms.Account
@@ -30,10 +32,10 @@ import com.saeedkolivand.metastream.platforms.YouTube
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-internal fun cleanTags(raw: String) = raw.split(',').map(String::trim).filter(String::isNotEmpty)
+fun cleanTags(raw: String) = raw.split(',').map(String::trim).filter(String::isNotEmpty)
 
 @Composable
-internal fun CategoryPicker(selected: Category?, search: suspend (String) -> List<Category>, onPick: (Category) -> Unit) {
+fun CategoryPicker(selected: Category?, search: suspend (String) -> List<Category>, onPick: (Category) -> Unit) {
     var q by remember { mutableStateOf("") }
     var results by remember { mutableStateOf(emptyList<Category>()) }
     // Debounced so typing doesn't fire a request per keystroke.
@@ -77,7 +79,7 @@ private fun ApplyButton(label: String, enabled: Boolean, apply: suspend () -> Un
 
 /** The editable stream-info form for [account]; drafts reset whenever the loaded values change (refresh/apply). */
 @Composable
-internal fun InfoSection(account: Account) {
+fun InfoSection(account: Account) {
     when (account) {
         Kick -> KickInfo()
         Twitch -> TwitchInfo()

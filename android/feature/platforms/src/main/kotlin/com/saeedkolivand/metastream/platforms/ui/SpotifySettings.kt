@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.platforms.ui
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -11,7 +11,7 @@ import com.saeedkolivand.metastream.platforms.Spotify
 
 /** Settings › Spotify (iOS SpotifySettingsView): the account the Now playing widget, {song} / {artist} and !song read from. */
 @Composable
-internal fun SpotifyPage() {
+fun SpotifyPage() {
     // Shows the current song here, even with no widget on screen.
     DisposableEffect(Unit) {
         Spotify.retain()

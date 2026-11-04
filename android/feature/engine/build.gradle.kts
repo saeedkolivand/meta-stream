@@ -7,6 +7,7 @@ android { namespace = "com.saeedkolivand.metastream.streaming" }
 dependencies {
     implementation(project(":feature:camera"))
     implementation(project(":feature:glasses"))
+    implementation(libs.androidx.activity.compose)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.core.ktx)
     implementation(libs.mwdat.core)

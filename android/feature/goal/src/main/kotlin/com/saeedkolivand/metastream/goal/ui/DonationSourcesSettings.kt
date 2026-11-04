@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.goal.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +23,7 @@ import com.saeedkolivand.metastream.goal.Site
 
 /** iOS DonationSourcesSettingsView: one card row per site (status, secure key, help, Save). */
 @Composable
-internal fun DonationSourcesPage() {
+fun DonationSourcesPage() {
     Section(
         "Donation sources",
         "Donations are counted toward the goal once, from the site's own report, and announced once. Ones found later in a " +

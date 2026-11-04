@@ -14,13 +14,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.core.storage.AppSettings
 import com.saeedkolivand.metastream.core.storage.KBPS_STEP
 import com.saeedkolivand.metastream.core.storage.MIN_KBPS
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.storage.snapKbps
 import com.saeedkolivand.metastream.core.ui.Choice
+import com.saeedkolivand.metastream.core.ui.R as CoreR
 import com.saeedkolivand.metastream.core.ui.Secondary
 import com.saeedkolivand.metastream.core.ui.Section
 import com.saeedkolivand.metastream.core.ui.SliderRow
@@ -74,7 +74,7 @@ internal fun IngestPage() {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.weight(1f)) { TextRow("Stream key", Engine.key, Engine::updateKey, idle, secure = !showKey) }
             Icon(
-                painterResource(if (showKey) R.drawable.ic_eye_off else R.drawable.ic_eye),
+                painterResource(if (showKey) CoreR.drawable.ic_eye_off else CoreR.drawable.ic_eye),
                 if (showKey) "Hide key" else "Show key",
                 Modifier.padding(start = 8.dp).clickable { showKey = !showKey },
                 tint = Secondary

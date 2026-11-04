@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui.scenes
+package com.saeedkolivand.metastream.overlay.ui.scenes
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -60,12 +60,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
-import com.saeedkolivand.metastream.R
 import com.saeedkolivand.metastream.core.storage.AppSettings
 import com.saeedkolivand.metastream.core.storage.toVideoParams
 import com.saeedkolivand.metastream.core.ui.Choice
 import com.saeedkolivand.metastream.core.ui.Footnote
 import com.saeedkolivand.metastream.core.ui.Hairline
+import com.saeedkolivand.metastream.core.ui.R as CoreR
 import com.saeedkolivand.metastream.core.ui.Red
 import com.saeedkolivand.metastream.core.ui.Section
 import com.saeedkolivand.metastream.core.ui.SwitchRow
@@ -80,7 +80,7 @@ import com.saeedkolivand.metastream.overlay.WidgetVariables
 import kotlin.math.max
 import kotlin.math.min
 
-internal val CameraChoices = listOf(
+val CameraChoices = listOf(
     "" to "Keep current",
     "back" to "Back camera",
     "front" to "Front camera",
@@ -96,7 +96,7 @@ private val RoleChoices = listOf("" to "None", "starting" to "Starting", "brb" t
  * control change or finished gesture, because each write rebuilds the scene on stream.
  */
 @Composable
-internal fun SceneEditor(name: String, onClose: () -> Unit) {
+fun SceneEditor(name: String, onClose: () -> Unit) {
     var current by rememberSaveable { mutableStateOf(name) }
     val scene = OverlayStore.scenes.firstOrNull { it.name == current }
     if (scene == null) {
@@ -300,7 +300,7 @@ private fun LayerRow(l: Layer, selected: Boolean, onSelect: () -> Unit, onToggle
         Text(l.name, Modifier.weight(1f), color = Color.White.copy(alpha = if (l.visible) 1f else 0.5f), maxLines = 1)
         IconButton(onToggle) {
             val label = if (l.visible) "Hide ${l.name}" else "Show ${l.name}"
-            Icon(painterResource(if (l.visible) R.drawable.ic_eye else R.drawable.ic_eye_off), label, Modifier.size(20.dp))
+            Icon(painterResource(if (l.visible) CoreR.drawable.ic_eye else CoreR.drawable.ic_eye_off), label, Modifier.size(20.dp))
         }
         IconButton(onDelete, Modifier.semantics { contentDescription = "Delete ${l.name}" }) { Text("✕") }
     }

@@ -26,9 +26,9 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 import kotlinx.coroutines.launch
 
-internal enum class Detent { Hidden, Partial, Expanded }
+enum class Detent { Hidden, Partial, Expanded }
 
-internal data class SheetArgs(
+data class SheetArgs(
     val detent: Detent,
     val onDetent: (Detent) -> Unit,
     val totalPx: Float,
@@ -42,7 +42,7 @@ internal data class SheetArgs(
  * so the preview, HUD and controls stay usable. [restPx] is the room kept below it while partial (the controls).
  */
 @Composable
-internal fun ChatSheet(args: SheetArgs, header: @Composable () -> Unit, content: @Composable () -> Unit) {
+fun ChatSheet(args: SheetArgs, header: @Composable () -> Unit, content: @Composable () -> Unit) {
     val (detent, onDetent, totalPx, topInsetPx, restPx, modifier) = args
     val partialPx = totalPx * 0.5f
     val fullPx = totalPx - topInsetPx

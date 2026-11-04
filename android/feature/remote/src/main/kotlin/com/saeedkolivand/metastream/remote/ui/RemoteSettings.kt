@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.remote.ui
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,7 +19,7 @@ import com.saeedkolivand.metastream.remote.ObsServer
 
 /** Settings › Remote control (iOS RemoteSettingsView): the obs-websocket server for Stream Deck, Touch Portal, Streamer.bot. */
 @Composable
-internal fun RemotePage() {
+fun RemotePage() {
     val scope = rememberCoroutineScope()
     var on by remember { mutableStateOf(Prefs.bool("obsServerOn", false)) }
     var password by remember { mutableStateOf(Prefs.string("obsPassword", "")) }

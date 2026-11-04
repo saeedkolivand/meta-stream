@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.reach.ui
 
 import android.content.Intent
 import android.net.Uri
@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.saeedkolivand.metastream.core.storage.Prefs
+import com.saeedkolivand.metastream.core.ui.Note
 import com.saeedkolivand.metastream.core.ui.Section
 import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.goal.DonatePage
@@ -29,7 +30,7 @@ import kotlinx.coroutines.launch
  * nothing is published until Publish. ponytail: shares the page link, not iOS's rendered share card.
  */
 @Composable
-internal fun WrappedReview(month: String, records: List<SessionRecord>, close: () -> Unit) {
+fun WrappedReview(month: String, records: List<SessionRecord>, close: () -> Unit) {
     val base = remember(month) { WrappedBuilder.build(month, records, WrappedStore.lang) } ?: return Note("No streams this month")
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()

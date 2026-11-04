@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui.scenes
+package com.saeedkolivand.metastream.overlay.ui.scenes
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,13 +16,13 @@ import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.overlay.OverlayStore
 import com.saeedkolivand.metastream.overlay.Scenes
 import com.saeedkolivand.metastream.overlay.StingerKind
-import com.saeedkolivand.metastream.ui.ObsImportSection
+import com.saeedkolivand.metastream.overlay.ui.ObsImportSection
 
 private val Intervals = listOf(15 to "15 seconds", 30 to "30 seconds", 60 to "1 min", 120 to "2 min", 300 to "5 min")
 
 /** Settings › Transitions (iOS SceneOptionsView): the transition, scene roles, auto-rotate and the optional OBS import. */
 @Composable
-internal fun TransitionsPage(openStinger: () -> Unit) {
+fun TransitionsPage(openStinger: () -> Unit) {
     Section(
         "Transition",
         "Fade dims the old widgets out and the new ones in. A stinger plays over the change, which happens underneath it " +

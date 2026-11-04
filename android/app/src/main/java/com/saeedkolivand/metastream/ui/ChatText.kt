@@ -53,7 +53,7 @@ private fun EmoteImage(url: String, alt: String, size: Int, animate: Boolean) {
 
 /** A chat line with Kick and 7TV/BTTV/FFZ emotes drawn inline as images (EmoteBitmaps) through InlineTextContent. */
 @Composable
-internal fun MessageText(text: String, size: Int, modifier: Modifier = Modifier, animate: Boolean = true) {
+fun MessageText(text: String, size: Int, modifier: Modifier = Modifier, animate: Boolean = true) {
     val byName = Emotes.byName
     val runs = remember(text, byName) { tokenize(text, byName) }
     val (annotated, inline) = remember(runs, animate) {

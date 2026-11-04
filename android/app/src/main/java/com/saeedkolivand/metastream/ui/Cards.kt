@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saeedkolivand.metastream.R
+import com.saeedkolivand.metastream.core.ui.R as CoreR
 import com.saeedkolivand.metastream.core.ui.rememberHaptic
 
 private val CardSecondary = Color.White.copy(alpha = 0.6f)
@@ -59,7 +60,7 @@ internal fun RegisterCard(state: String, onRegister: () -> Unit) = Card(
 
 @Composable
 internal fun PermissionCard(onGrant: () -> Unit) = Card(
-    R.drawable.ic_videocam,
+    CoreR.drawable.ic_videocam,
     "Camera access needed",
     "MetaStream needs camera and microphone access to stream.",
     "Grant",

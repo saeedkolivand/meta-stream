@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.streaming.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -39,7 +39,7 @@ private val AUDIO_TYPES = arrayOf("audio/*")
 
 /** iOS AudioSettingsView: microphone, mute, the mix volumes, the alert sound and the soundboard (its own page). */
 @Composable
-internal fun AudioPage(openSoundboard: () -> Unit) {
+fun AudioPage(openSoundboard: () -> Unit) {
     val context = LocalContext.current
     // Re-read each time the page opens, so a freshly plugged USB or Bluetooth mic shows up (iOS refreshMics onAppear).
     val mics = remember { Mics.available(context).filter { it.isSource } }
@@ -104,7 +104,7 @@ private fun Volume(title: String, key: String) {
 
 /** iOS SoundboardView: up to 8 short sounds, renamed in place, played from the live controls. */
 @Composable
-internal fun SoundboardPage() {
+fun SoundboardPage() {
     val context = LocalContext.current
     val add = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { Soundboard.add(context, it) }

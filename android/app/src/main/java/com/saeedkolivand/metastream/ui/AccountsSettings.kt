@@ -47,7 +47,7 @@ private val TwitchPurple = Color(0xFF9146FF)
 
 /** iOS AccountsSettingsView: every login in one place -- streaming platforms, chat bots, services and donation sites. */
 @Composable
-internal fun AccountsPage(openAppBot: () -> Unit, openTelegram: () -> Unit, openSources: () -> Unit) {
+fun AccountsPage(openAppBot: () -> Unit, openTelegram: () -> Unit, openSources: () -> Unit) {
     Section("Streaming", "Title, category and stream key live in Stream Manager. " + Accounts.status) {
         Platform(Kick, "K", KickGreen)
         Platform(Twitch, "T", TwitchPurple)

@@ -35,6 +35,11 @@ import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.ui.rememberHaptic
 import com.saeedkolivand.metastream.overlay.ANIMATED_ROWS
+import com.saeedkolivand.metastream.ui.ChatRow
+import com.saeedkolivand.metastream.ui.ChatSheet
+import com.saeedkolivand.metastream.ui.Detent
+import com.saeedkolivand.metastream.ui.ManagerState
+import com.saeedkolivand.metastream.ui.SheetArgs
 
 private val SIZES = listOf(16, 20, 26, 32)
 

@@ -4,6 +4,7 @@ plugins { id("metastream.android.feature") }
 android { namespace = "com.saeedkolivand.metastream.overlay" }
 
 dependencies {
+    implementation(libs.androidx.activity.compose)
     implementation(project(":core:network"))
     implementation(project(":feature:camera"))
     implementation(project(":feature:platforms"))

@@ -2,3 +2,5 @@
 plugins { id("metastream.android.compose") }
 
 android { namespace = "com.saeedkolivand.metastream.core.ui" }
+
+dependencies { implementation(project(":core:storage")) }

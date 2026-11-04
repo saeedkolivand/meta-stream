@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.privacy.ui
 
 import androidx.compose.runtime.Composable
 import com.saeedkolivand.metastream.core.ui.Section
@@ -9,7 +9,7 @@ import com.saeedkolivand.metastream.streaming.Source
 
 /** iOS PrivacySettingsView: one master switch, then what to hide, then the honest limits in the footer. */
 @Composable
-internal fun PrivacySettings() {
+fun PrivacySettings() {
     val glasses = if (Engine.source == Source.Glasses) {
         "\n\nHEVC glasses passthrough never reaches the encoder here, so it can never be blurred. Blur applies to the phone and USB cameras."
     } else {

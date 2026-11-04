@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui.scenes
+package com.saeedkolivand.metastream.overlay.ui.scenes
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -50,7 +50,7 @@ private fun defaultsOf(type: LayerType): Map<String, String> = when (type) {
 
 /** Settings of the selected layer, the Android take on iOS WidgetInspectorView: same controls, same stored keys. */
 @Composable
-internal fun WidgetInspector(
+fun WidgetInspector(
     layer: Layer,
     canForward: Boolean,
     canBack: Boolean,

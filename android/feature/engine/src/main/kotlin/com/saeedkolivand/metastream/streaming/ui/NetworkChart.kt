@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.streaming.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +29,7 @@ import com.saeedkolivand.metastream.streaming.kbpsText
 
 /** Last two minutes: sent kbps line, dashed step line for the target, orange bands for congestion, red for down. */
 @Composable
-internal fun NetworkChart(samples: List<Sample>, ceilingKbps: Int) {
+fun NetworkChart(samples: List<Sample>, ceilingKbps: Int) {
     val top = chartMax(maxOf(ceilingKbps, samples.maxOfOrNull { maxOf(it.sentKbps, it.targetKbps) } ?: 0))
     Row(Modifier.fillMaxWidth().height(140.dp), Arrangement.spacedBy(6.dp)) {
         Column(Modifier.fillMaxHeight(), Arrangement.SpaceBetween) {

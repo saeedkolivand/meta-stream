@@ -51,19 +51,44 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.saeedkolivand.metastream.R
+import com.saeedkolivand.metastream.bot.ui.AppBotMessagesPage
+import com.saeedkolivand.metastream.bot.ui.AppBotPage
+import com.saeedkolivand.metastream.bot.ui.AppBotTimersPage
+import com.saeedkolivand.metastream.bot.ui.CommandsPage
+import com.saeedkolivand.metastream.bot.ui.KnownBotsPage
 import com.saeedkolivand.metastream.core.ui.CardColor
 import com.saeedkolivand.metastream.core.ui.Green
 import com.saeedkolivand.metastream.core.ui.NavRow
+import com.saeedkolivand.metastream.core.ui.Note
 import com.saeedkolivand.metastream.core.ui.Orange
 import com.saeedkolivand.metastream.core.ui.R as CoreR
 import com.saeedkolivand.metastream.core.ui.Red
 import com.saeedkolivand.metastream.core.ui.Secondary
 import com.saeedkolivand.metastream.core.ui.Section
 import com.saeedkolivand.metastream.core.ui.SystemBlue
-import com.saeedkolivand.metastream.ui.scenes.ScenesPage
-import com.saeedkolivand.metastream.ui.scenes.ScenesToolbar
-import com.saeedkolivand.metastream.ui.scenes.StingerSettings
-import com.saeedkolivand.metastream.ui.scenes.TransitionsPage
+import com.saeedkolivand.metastream.goal.ui.DonatePagePage
+import com.saeedkolivand.metastream.goal.ui.DonationSourcesPage
+import com.saeedkolivand.metastream.goal.ui.GoalPage
+import com.saeedkolivand.metastream.goal.ui.GoalRatesPage
+import com.saeedkolivand.metastream.goal.ui.GoalRecentPage
+import com.saeedkolivand.metastream.overlay.ui.scenes.ScenesPage
+import com.saeedkolivand.metastream.overlay.ui.scenes.ScenesToolbar
+import com.saeedkolivand.metastream.overlay.ui.scenes.StingerSettings
+import com.saeedkolivand.metastream.overlay.ui.scenes.TransitionsPage
+import com.saeedkolivand.metastream.platforms.ui.SpotifyPage
+import com.saeedkolivand.metastream.privacy.ui.PrivacySettings
+import com.saeedkolivand.metastream.reach.ui.StreamsPage
+import com.saeedkolivand.metastream.reach.ui.StreamsToolbar
+import com.saeedkolivand.metastream.reach.ui.TelegramPage
+import com.saeedkolivand.metastream.remote.ui.RemotePage
+import com.saeedkolivand.metastream.speech.ui.DontReadPage
+import com.saeedkolivand.metastream.speech.ui.ReadAloudSettings
+import com.saeedkolivand.metastream.speech.ui.VoicePage
+import com.saeedkolivand.metastream.streaming.ui.AudioPage
+import com.saeedkolivand.metastream.streaming.ui.CameraProPage
+import com.saeedkolivand.metastream.streaming.ui.CameraSettingsContent
+import com.saeedkolivand.metastream.streaming.ui.SoundboardPage
+import com.saeedkolivand.metastream.ui.AccountsPage
 
 private val Teal = Color(0xFF40C8E0)
 private val Cyan = Color(0xFF64D2FF)
@@ -83,11 +108,11 @@ private enum class Page(val title: String, val parent: Page?, val group: String 
     Camera("Camera", Root, "Stream", R.drawable.ic_camera, Grey),
     Glasses("Meta glasses", Root, "Stream", R.drawable.ic_glasses, Indigo),
     Audio("Audio", Root, "Stream", CoreR.drawable.ic_car_mic, Pink),
-    Privacy("Privacy blur", Root, "Stream", R.drawable.ic_eye_off, Teal),
+    Privacy("Privacy blur", Root, "Stream", CoreR.drawable.ic_eye_off, Teal),
     Scenes("Scenes & widgets", Root, "On screen", R.drawable.ic_layers, Orange),
     Transitions("Transitions", Root, "On screen", R.drawable.ic_swap, Purple),
     Theme("Theme & story", Root, "On screen", R.drawable.ic_palette, Pink),
-    ReadAloud("Chat & read aloud", Root, "Chat", R.drawable.ic_chat, Green),
+    ReadAloud("Chat & read aloud", Root, "Chat", CoreR.drawable.ic_chat, Green),
     Commands("Commands", Root, "Chat", R.drawable.ic_feedback, Orange),
     AppBot("App bot", Root, "Chat", R.drawable.ic_cpu, Indigo),
     Bots("Known bots", Root, "Chat", R.drawable.ic_shield, Grey),

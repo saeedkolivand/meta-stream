@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.streaming.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,14 +15,14 @@ import com.saeedkolivand.metastream.core.ui.Footnote
 import com.saeedkolivand.metastream.core.ui.Red
 import com.saeedkolivand.metastream.core.ui.Section
 import com.saeedkolivand.metastream.core.ui.SliderRow
-import com.saeedkolivand.metastream.overlay.Overlays
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.Look
 import com.saeedkolivand.metastream.streaming.Looks
+import com.saeedkolivand.metastream.streaming.compositor
 
 /** iOS CameraProControlsView+Look: the live source's grade, saved per source on every change, applied on the GPU. */
 @Composable
-internal fun LookSection() {
+fun LookSection() {
     val context = LocalContext.current
     val key = Looks.key()
     if (key == "glasses") {
@@ -35,7 +35,7 @@ internal fun LookSection() {
     fun edit(next: Look) {
         look = next
         Look.save(next, key)
-        Overlays.syncLook()
+        compositor?.syncLook()
     }
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@rememberLauncherForActivityResult

@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.reach.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -51,7 +51,7 @@ private var review by mutableStateOf<String?>(null)
 
 /** Settings › Streams (iOS StreamsView): the Wrapped card, the heatmap, then every recorded stream by month; a row opens its report. */
 @Composable
-internal fun StreamsPage() {
+fun StreamsPage() {
     // Re-read when the report sheet closes (a report may have been deleted there).
     val records = remember(SessionLog.justEnded) { SessionLog.all() }
     if (records.isEmpty()) {
@@ -105,7 +105,7 @@ internal fun StreamsPage() {
 
 /** iOS StreamsView toolbar: Wrapped… picks any month's recap. */
 @Composable
-internal fun StreamsToolbar() = Box {
+fun StreamsToolbar() = Box {
     var open by remember { mutableStateOf(false) }
     val months = remember { WrappedStore.allMonths(SessionLog.all()) }
     Text(

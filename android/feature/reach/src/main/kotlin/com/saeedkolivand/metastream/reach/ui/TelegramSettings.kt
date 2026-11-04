@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.reach.ui
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -12,6 +12,8 @@ import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.storage.TokenStore
 import com.saeedkolivand.metastream.core.ui.ActionRow
 import com.saeedkolivand.metastream.core.ui.Choice
+import com.saeedkolivand.metastream.core.ui.PrefField
+import com.saeedkolivand.metastream.core.ui.PrefSwitch
 import com.saeedkolivand.metastream.core.ui.Secondary
 import com.saeedkolivand.metastream.core.ui.Section
 import com.saeedkolivand.metastream.core.ui.Stepper
@@ -21,7 +23,7 @@ import kotlinx.coroutines.launch
 
 /** Settings › Telegram (iOS TelegramSettingsView): the bot and channel behind the Live post, and what it may show. */
 @Composable
-internal fun TelegramPage() {
+fun TelegramPage() {
     val scope = rememberCoroutineScope()
     var token by remember { mutableStateOf("") }
     var hasToken by remember { mutableStateOf(TokenStore.get("telegramToken") != null) }

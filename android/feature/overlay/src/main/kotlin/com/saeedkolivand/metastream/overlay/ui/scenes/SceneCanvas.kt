@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui.scenes
+package com.saeedkolivand.metastream.overlay.ui.scenes
 
 import android.net.Uri
 import androidx.compose.foundation.Canvas
@@ -64,7 +64,7 @@ private class Live(val rect: Rect, val gx: List<Float>, val gy: List<Float>)
 private fun natural(l: Layer): Pair<Float, Float> = OverlayStore.naturalSize(l) ?: (400f to 200f)
 
 /** The layer's rectangle in output px: widgets by their frame-relative layout, OBS layers through fit + place. */
-internal fun layerBox(l: Layer, outW: Int, outH: Int): Box? {
+fun layerBox(l: Layer, outW: Int, outH: Int): Box? {
     val (nw, nh) = natural(l)
     l.layout?.let { return widgetBox(it, nw, nh, outW.toFloat(), outH.toFloat()) }
     val pack = OverlayStore.pack ?: return null
@@ -131,14 +131,7 @@ private class PreviewCache {
 }
 
 @Composable
-internal fun SceneCanvas(
-    layers: List<Layer>,
-    outW: Int,
-    outH: Int,
-    selected: Int?,
-    onSelect: (Int?) -> Unit,
-    onCommit: (Int, Layer) -> Unit
-) {
+fun SceneCanvas(layers: List<Layer>, outW: Int, outH: Int, selected: Int?, onSelect: (Int?) -> Unit, onCommit: (Int, Layer) -> Unit) {
     val haptic = rememberHaptic()
     val measurer = rememberTextMeasurer()
     val cache = remember { PreviewCache() }
@@ -292,7 +285,7 @@ internal fun SceneCanvas(
 }
 
 /** [l] moved by (dx, dy) output px, through the same commit path as a drag. */
-internal fun nudged(l: Layer, dx: Float, dy: Float, outW: Int, outH: Int): Layer {
+fun nudged(l: Layer, dx: Float, dy: Float, outW: Int, outH: Int): Layer {
     val b = layerBox(l, outW, outH) ?: return l
     return committed(l, b, Box(b.x + dx, b.y + dy, b.w, b.h), 1f, outW, outH)
 }

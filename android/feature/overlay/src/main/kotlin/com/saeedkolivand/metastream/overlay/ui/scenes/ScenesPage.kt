@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui.scenes
+package com.saeedkolivand.metastream.overlay.ui.scenes
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -61,7 +61,7 @@ private var editing by mutableStateOf<String?>(null)
  * show / duplicate / rename / delete. Transitions and new scenes live in the bar ([ScenesToolbar]).
  */
 @Composable
-internal fun ScenesPage() {
+fun ScenesPage() {
     var renaming by rememberSaveable { mutableStateOf<String?>(null) }
     var deleting by rememberSaveable { mutableStateOf<String?>(null) }
     if (Engine.source == Source.Glasses) {
@@ -113,7 +113,7 @@ internal fun ScenesPage() {
 
 /** iOS toolbar: options (Transitions & scene options) and + (New scene, the Starting/BRB/Ending set). */
 @Composable
-internal fun ScenesToolbar(openOptions: () -> Unit) = Row(verticalAlignment = Alignment.CenterVertically) {
+fun ScenesToolbar(openOptions: () -> Unit) = Row(verticalAlignment = Alignment.CenterVertically) {
     var open by remember { mutableStateOf(false) }
     Text("☰", Modifier.clickable(onClick = openOptions).padding(8.dp), color = SystemBlue, fontSize = 20.sp)
     Box {

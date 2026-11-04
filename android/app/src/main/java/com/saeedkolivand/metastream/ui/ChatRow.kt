@@ -50,7 +50,7 @@ private val CHIPS = mapOf(
 )
 
 /** Names are read on black: lighten dark colors until they pass a minimum luminance. */
-internal fun readable(c: Color): Color {
+fun readable(c: Color): Color {
     var out = c
     var t = 0f
     while (out.luminance() < 0.25f && t < 1f) {
@@ -60,8 +60,7 @@ internal fun readable(c: Color): Color {
     return out
 }
 
-internal fun parseHex(hex: String?): Color? =
-    hex?.removePrefix("#")?.takeIf { it.length == 6 }?.toLongOrNull(16)?.let { Color(0xFF000000 or it) }
+fun parseHex(hex: String?): Color? = hex?.removePrefix("#")?.takeIf { it.length == 6 }?.toLongOrNull(16)?.let { Color(0xFF000000 or it) }
 
 @Composable
 private fun Chip(role: String) {
@@ -93,7 +92,7 @@ private fun OriginBadge(platform: String) {
 }
 
 @Composable
-internal fun ChatRow(e: ChatEvent, size: Int, animate: Boolean = true) {
+fun ChatRow(e: ChatEvent, size: Int, animate: Boolean = true) {
     // Alerts are already spoken, so they render as one compact secondary line with no name/badges.
     if (e.kind != Kind.Message) {
         Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), Arrangement.spacedBy(8.dp), Alignment.CenterVertically) {

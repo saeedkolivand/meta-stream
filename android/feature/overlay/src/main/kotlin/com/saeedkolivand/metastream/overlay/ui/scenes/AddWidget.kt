@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui.scenes
+package com.saeedkolivand.metastream.overlay.ui.scenes
 
 import android.net.Uri
 import androidx.compose.foundation.layout.Row
@@ -20,7 +20,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.saeedkolivand.metastream.R
+import com.saeedkolivand.metastream.core.ui.R as CoreR
 import com.saeedkolivand.metastream.overlay.AlertStyle
 import com.saeedkolivand.metastream.overlay.ChatStyle
 import com.saeedkolivand.metastream.overlay.EventListStyle
@@ -35,7 +35,7 @@ import com.saeedkolivand.metastream.overlay.WidgetLayout
 import com.saeedkolivand.metastream.overlay.widgetLayer
 
 /** What the "+" menu can add. Image and Web need input first (a picked file, a URL), so the editor builds those itself. */
-internal enum class NewWidget(val title: String) {
+enum class NewWidget(val title: String) {
     Chat("Chat"),
     Alerts("Alerts"),
     Events("Event list"),
@@ -77,7 +77,7 @@ internal enum class NewWidget(val title: String) {
 }
 
 /** Centred image, sized to span at most 35% of the short side so a 4000 px photo can't cover the frame. */
-internal fun pickedImage(file: String): Layer {
+fun pickedImage(file: String): Layer {
     val l = widgetLayer(LayerType.Image, "Image", WidgetLayout.inset(4), mapOf("file" to file))
     val n = OverlayStore.naturalSize(l) ?: return l
     val longest = maxOf(n.first, n.second)
@@ -85,7 +85,7 @@ internal fun pickedImage(file: String): Layer {
     return l.copy(layout = l.layout?.copy(scale = (0.35f * 1080f / longest).coerceIn(0.05f, 4f)))
 }
 
-internal fun webLayer(url: String): Layer = widgetLayer(
+fun webLayer(url: String): Layer = widgetLayer(
     LayerType.Browser,
     Uri.parse(url).host ?: "Web widget",
     WidgetLayout.inset(4),
@@ -93,14 +93,13 @@ internal fun webLayer(url: String): Layer = widgetLayer(
 )
 
 /** http/https with a host, the only links a browser source may load. */
-internal fun validWebUrl(s: String): Boolean =
-    Uri.parse(s).let { it.scheme?.lowercase() in setOf("http", "https") && !it.host.isNullOrEmpty() }
+fun validWebUrl(s: String): Boolean = Uri.parse(s).let { it.scheme?.lowercase() in setOf("http", "https") && !it.host.isNullOrEmpty() }
 
 /** Small type marker for layer rows; there's no icon pack, so most are glyphs. */
 @Composable
-internal fun LayerIcon(type: LayerType) {
+fun LayerIcon(type: LayerType) {
     if (type == LayerType.Chat) {
-        Icon(painterResource(R.drawable.ic_chat), null, Modifier.size(20.dp))
+        Icon(painterResource(CoreR.drawable.ic_chat), null, Modifier.size(20.dp))
         return
     }
     val glyph = when (type) {
@@ -118,7 +117,7 @@ internal fun LayerIcon(type: LayerType) {
 }
 
 @Composable
-internal fun AddWidgetMenu(onPick: (NewWidget) -> Unit) {
+fun AddWidgetMenu(onPick: (NewWidget) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton({ open = true }, Modifier.semantics { contentDescription = "Add widget" }) { Text("+", fontSize = 26.sp) }

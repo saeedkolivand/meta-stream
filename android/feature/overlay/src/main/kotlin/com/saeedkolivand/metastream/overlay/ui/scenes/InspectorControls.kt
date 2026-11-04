@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui.scenes
+package com.saeedkolivand.metastream.overlay.ui.scenes
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,11 +52,7 @@ private const val RGB = 0x00FFFFFF
  * A layer's string payload read and written by its keys, falling back to the style's defaults for missing keys. The keys are
  * the stored contract (shared with iOS), so this stays correct whatever type a style field uses.
  */
-internal class DataKeys(
-    private val layer: Layer,
-    private val defaults: Map<String, String>,
-    private val set: (Map<String, String>) -> Unit
-) {
+class DataKeys(private val layer: Layer, private val defaults: Map<String, String>, private val set: (Map<String, String>) -> Unit) {
     fun str(k: String) = layer.data[k] ?: defaults[k].orEmpty()
     fun num(k: String) = str(k).toFloatOrNull() ?: 0f
     fun flag(k: String) = str(k) == "true"
@@ -70,25 +66,25 @@ internal class DataKeys(
 
 /** The slider moves a local draft; the layer is written once, when the finger lifts, because each write rebuilds the scene on stream. */
 @Composable
-internal fun DataKeys.NumSlider(key: String, label: String, range: ClosedFloatingPointRange<Float>, unit: String = "") =
+fun DataKeys.NumSlider(key: String, label: String, range: ClosedFloatingPointRange<Float>, unit: String = "") =
     SliderRow(label, num(key).coerceIn(range), range, "%.0f$unit") { putNum(key, it) }
 
 @Composable
-internal fun DataKeys.Flag(key: String, label: String) = SwitchRow(label, flag(key)) { putFlag(key, it) }
+fun DataKeys.Flag(key: String, label: String) = SwitchRow(label, flag(key)) { putFlag(key, it) }
 
 @Composable
-internal fun DataKeys.Field(key: String, label: String, singleLine: Boolean = true, keyboard: KeyboardType = KeyboardType.Text) =
+fun DataKeys.Field(key: String, label: String, singleLine: Boolean = true, keyboard: KeyboardType = KeyboardType.Text) =
     DebouncedField(label, str(key), singleLine, keyboard) { put(key, it) }
 
 @Composable
-internal fun DataKeys.Swatches(key: String, label: String) = SwatchRow(label, color(key)) { putColor(key, it) }
+fun DataKeys.Swatches(key: String, label: String) = SwatchRow(label, color(key)) { putColor(key, it) }
 
 @Composable
-internal fun DataKeys.FontPicker() = Choice("Font", WidgetFonts.faces, str("face")) { put("face", it) }
+fun DataKeys.FontPicker() = Choice("Font", WidgetFonts.faces, str("face")) { put("face", it) }
 
 /** Typing rewrites the scene on stream, so a keystroke waits for a pause before it is committed. */
 @Composable
-internal fun DebouncedField(
+fun DebouncedField(
     label: String,
     value: String,
     singleLine: Boolean = true,
@@ -114,7 +110,7 @@ internal fun DebouncedField(
 
 /** Eight presets plus the current colour when it isn't one of them; picking keeps the current alpha so translucent fills stay so. */
 @Composable
-internal fun SwatchRow(label: String, argb: Int, onPick: (Int) -> Unit) {
+fun SwatchRow(label: String, argb: Int, onPick: (Int) -> Unit) {
     Text(label)
     val shown = if (Presets.any { it and RGB == argb and RGB }) Presets else Presets + argb
     Row(Modifier.horizontalScroll(rememberScrollState()), Arrangement.spacedBy(10.dp), Alignment.CenterVertically) {

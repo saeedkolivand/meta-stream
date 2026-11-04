@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.goal.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +30,7 @@ import com.saeedkolivand.metastream.core.ui.ActionRow
 import com.saeedkolivand.metastream.core.ui.Choice
 import com.saeedkolivand.metastream.core.ui.NavRow
 import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.PrefField
 import com.saeedkolivand.metastream.core.ui.Red
 import com.saeedkolivand.metastream.core.ui.Secondary
 import com.saeedkolivand.metastream.core.ui.Section
@@ -50,7 +51,7 @@ private val CURRENCIES = listOf("IRT" to "Toman", "EUR" to "Euro", "USD" to "US 
 
 /** iOS GoalSettingsView: the goal, status, manual and test donations; rates and the donation list are one level down. */
 @Composable
-internal fun GoalPage(openRates: () -> Unit, openRecent: () -> Unit) {
+fun GoalPage(openRates: () -> Unit, openRecent: () -> Unit) {
     val c = GoalStore.config
     var title by remember { mutableStateOf(c.title) }
     var target by remember { mutableStateOf(c.target.toPlainString()) }
@@ -127,7 +128,7 @@ private fun AddAndTest() {
 
 /** iOS GoalRatesView: the rates behind the goal and what subs and Bits are worth in it. */
 @Composable
-internal fun GoalRatesPage() {
+fun GoalRatesPage() {
     val scope = rememberCoroutineScope()
     Section("Rates", "Toman from Nobitex, euro from the ECB. Your rate replaces Nobitex; empty = Nobitex.") {
         ValueRow("Toman rate", Rates.tomanSource)
@@ -171,7 +172,7 @@ private fun Badge(text: String, color: Color) = Text(
 
 /** iOS GoalRecentView: the last 50, newest first; Remove takes one out of the total and keeps it listed as refunded. */
 @Composable
-internal fun GoalRecentPage() {
+fun GoalRecentPage() {
     Section(null) {
         if (GoalStore.entries.isEmpty()) Text("None yet", color = Secondary, fontSize = 17.sp)
         for (e in GoalStore.entries.take(50)) {
@@ -205,7 +206,7 @@ internal fun GoalRecentPage() {
 
 /** iOS DonatePageSettingsView. The key is never loaded back into the field, and only goes to the host it was saved for. */
 @Composable
-internal fun DonatePagePage() {
+fun DonatePagePage() {
     var url by remember { mutableStateOf(DonatePage.pageURL) }
     var key by remember { mutableStateOf("") }
     var hasKey by remember { mutableStateOf(DonatePage.hasToken) }

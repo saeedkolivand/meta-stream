@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.speech.ui
 
 import android.speech.tts.Voice
 import androidx.compose.material3.Text
@@ -17,6 +17,7 @@ import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.ui.Choice
 import com.saeedkolivand.metastream.core.ui.NavRow
 import com.saeedkolivand.metastream.core.ui.Orange
+import com.saeedkolivand.metastream.core.ui.PrefSwitch
 import com.saeedkolivand.metastream.core.ui.RadioRow
 import com.saeedkolivand.metastream.core.ui.Section
 import com.saeedkolivand.metastream.core.ui.SliderRow
@@ -41,7 +42,7 @@ private fun PrefSwitch(label: String, pref: BoolPref, after: () -> Unit = {}) = 
 
 /** iOS ReadAloudSettingsView: chat origin and channel, voice, don't read, then what is read and how. */
 @Composable
-internal fun ReadAloudSettings(openVoice: () -> Unit, openBlocked: () -> Unit) {
+fun ReadAloudSettings(openVoice: () -> Unit, openBlocked: () -> Unit) {
     // The engine is created on demand; opening this page is a demand, so the voice page has voices to show.
     LaunchedEffect(Unit) { Speaker.prepare() }
     Section("Chat") {
@@ -120,7 +121,7 @@ internal fun ReadAloudSettings(openVoice: () -> Unit, openBlocked: () -> Unit) {
 
 /** iOS .pickerStyle(.navigationLink) voice picker: its own page, voices grouped by language, best first. */
 @Composable
-internal fun VoicePage() {
+fun VoicePage() {
     LaunchedEffect(Unit) { Speaker.prepare() }
     fun pick(name: String) {
         SpeechSettings.pickVoice(name)
@@ -140,7 +141,7 @@ internal fun VoicePage() {
 
 /** iOS ReadAloudBlockedView: names and words that are never read or shown, and AI moderation (Gemini Nano here). */
 @Composable
-internal fun DontReadPage() {
+fun DontReadPage() {
     Section(
         "Don't read",
         "Bots (names ending in bot, StreamElements, BotRix, Kicklet...) and !commands are skipped automatically. Messages with " +

@@ -1,4 +1,4 @@
-package com.saeedkolivand.metastream.ui
+package com.saeedkolivand.metastream.bot.ui
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +32,7 @@ private val DESTINATIONS = listOf("kick" to "Kick", "twitch" to "Twitch", "all" 
 
 /** iOS AppBotTimersView rows: message, interval, delete; saved on every edit. */
 @Composable
-internal fun TimersEditor() {
+fun TimersEditor() {
     var list by remember { mutableStateOf(BotTimer.stored()) }
     fun edit(next: List<BotTimer>) {
         list = next
@@ -54,7 +54,7 @@ internal fun TimersEditor() {
 
 /** iOS CommandsSettingsView rows: the command, where it goes (segmented), delete. */
 @Composable
-internal fun CommandsEditor() {
+fun CommandsEditor() {
     var list by remember { mutableStateOf(BotCommand.stored()) }
     fun edit(next: List<BotCommand>) {
         list = next
@@ -76,7 +76,7 @@ internal fun CommandsEditor() {
 
 /** One tap sends a saved command (iOS ChatSheetView's command strip); [onNote] gets a slash command's outcome. */
 @Composable
-internal fun BotCommandsBar(onNote: (String) -> Unit) {
+fun BotCommandsBar(onNote: (String) -> Unit) {
     val scope = rememberCoroutineScope()
     val list = remember { BotCommand.stored().filter { it.text.isNotBlank() } }
     if (list.isEmpty()) return
