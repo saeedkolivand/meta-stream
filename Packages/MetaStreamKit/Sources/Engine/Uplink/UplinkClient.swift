@@ -190,11 +190,7 @@ extension Streamer {
         // requirement for background streaming — the streamer pockets the phone, the stream dies, and
         // nothing here tells them why.
         hot.transcoder?.invalidate()
-        currentBitrateKbps = bitrateKbps          // HUD baseline; moves once phoneEncodes goes true
-        bitrateCeilingKbps = bitrateKbps
-        thermalCeilingKbps = nil
-        cleanTicks = 0; failedAtKbps = 0; falling = false
-        lastBitrateAdjustAt = nil
+        bitrate = BitrateController(ceilingKbps: bitrateKbps)   // HUD baseline; moves once phoneEncodes goes true
         hot.congested = false; hot.queueBytesOut = 0; hot.bytesOutPerSecond = 0
         // Installed regardless of codec: harmless telemetry-only capture (see QueueWatcher) even on a
         // session where phoneEncodes never goes true, and source/cameraOff can flip phoneEncodes mid-session

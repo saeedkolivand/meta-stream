@@ -110,23 +110,12 @@ public final class Streamer {
     /// pretending the toggle worked.
     public var transcoding = false
 
-    public var currentBitrateKbps = 0     // live value for the HUD; == configured target while phoneEncodes is false
-
-    public var bitrateCeilingKbps = 0        // user's configured bitrateKbps; up-steps never exceed this
-
-    public var thermalCeilingKbps: Int?      // set while thermal >= .serious; caps the ceiling until it clears
-
-    public var cleanTicks = 0                // consecutive good 1s ticks; 15 (5 well below failedAtKbps) trigger an up-step
-
-    public var failedAtKbps = 0              // bitrate the latest run of down-steps started from
-
-    public var falling = false               // true from a down-step until the next up-step
-
-    public var lastBitrateAdjustAt: Date?    // rate limit: one adjustment per bitrateAdjustCooldown
-
-    public let bitrateAdjustCooldown: TimeInterval = 3
-
-    public let bitrateFloorKbps = 500
+    /// Adaptive bitrate state (Uplink/BitrateController.swift); reset on each go-live.
+    public internal(set) var bitrate = BitrateController(ceilingKbps: 0, currentKbps: 0)
+    /// Live value for the HUD; == the configured target while phoneEncodes is false.
+    public var currentBitrateKbps: Int { bitrate.currentKbps }
+    /// The user's configured bitrate; up-steps never exceed it.
+    public var bitrateCeilingKbps: Int { bitrate.ceilingKbps }
 
     /// True whenever HaishinKit's own encoder is doing the work: h264 transcode (any source), or hevc with
     /// the phone driving video — phone-camera fallback (source == "phone") or black frames (cameraOff).
@@ -391,10 +380,7 @@ public final class Streamer {
         hot.transcoder?.invalidate()
         hot.transcoder = nil
         syncHot()   // decode stopped: glasses preview (if that's what routed it) falls back to the raw HEVC feed
-        currentBitrateKbps = 0
-        thermalCeilingKbps = nil
-        cleanTicks = 0
-        lastBitrateAdjustAt = nil
+        bitrate = BitrateController(ceilingKbps: bitrate.ceilingKbps, currentKbps: 0)
         fallbackTask?.cancel()
         blackTask?.cancel(); blackTask = nil
         stopHealthMonitoring()

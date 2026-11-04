@@ -151,18 +151,10 @@ extension Streamer {
     public func checkThermal() {
         // ThermalState isn't Comparable; rawValue order is nominal < fair < serious < critical.
         let serious = thermal.rawValue >= ProcessInfo.ThermalState.serious.rawValue
-        // Heat and congestion both want less bitrate, and encoding is the expensive part — cap the ceiling
-        // at wherever the AIMD loop is *after* one forced step down, so up-steps can't climb back until
-        // thermal clears. Edge-triggered on thermalCeilingKbps == nil so this fires once per entry, not once
-        // per tick. Gated on phoneEncodes, same as adaptBitrate — no knob to turn during hevc passthrough.
-        if serious, thermalCeilingKbps == nil, phoneEncodes, live {
-            thermalCeilingKbps = currentBitrateKbps   // close the edge-trigger now; refined once the drop lands
-            Task {
-                await self.stepBitrate(up: false, reason: "thermal \(self.thermal)")
-                self.thermalCeilingKbps = self.currentBitrateKbps
-            }
-        } else if !serious {
-            thermalCeilingKbps = nil
+        // One forced step down caps the ceiling until thermal clears (BitrateController.thermal). Gated on
+        // phoneEncodes, same as adaptBitrate: no knob to turn during hevc passthrough.
+        if !serious || (phoneEncodes && live), let step = bitrate.thermal(now: .now, serious: serious, reason: "thermal \(thermal)") {
+            Task { await apply(step) }
         }
         guard serious, !warnedThermal else { return }
         warnedThermal = true
