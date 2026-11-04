@@ -5,6 +5,12 @@ import PackageDescription
 
 /// Every warning fails the build, deprecations stay warnings (same as the app target's OTHER_SWIFT_FLAGS).
 let strict: [SwiftSetting] = [.treatAllWarnings(as: .error), .treatWarning("DeprecatedDeclaration", as: .warning)]
+// Leaf UI/feature targets (nothing runs off the main thread): MainActor by default, as Xcode 26 sets up app targets.
+// ponytail: Bot and Reach only. Engine/Overlays/Camera/Signals work off main, and CoreUI helpers are called from there.
+let ui: [SwiftSetting] = strict + [
+    .defaultIsolation(MainActor.self),
+    .enableUpcomingFeature("NonisolatedNonsendingByDefault"), .enableUpcomingFeature("InferIsolatedConformances")
+]
 
 let package = Package(
     name: "MetaStreamKit",
@@ -83,11 +89,11 @@ let package = Package(
         // The streamer's own chat bot: saved commands, role messages, donation thanks.
         .target(name: "Bot", dependencies: [
             "CoreModel", "CoreLogging", "CoreNetwork", "CoreStorage", "CoreUI", "Platforms", "Chat", "Goal", "Signals", "Engine", "Overlays"
-        ], swiftSettings: strict),
+        ], swiftSettings: ui),
         // Beyond the stream: Telegram live post, session log, Wrapped, Instagram story, the Streams screens.
         .target(name: "Reach", dependencies: [
             "CoreModel", "CoreLogging", "CoreStorage", "CoreUI", "Platforms", "Chat", "Goal", "Signals", "Engine", "Overlays", "Bot"
-        ], swiftSettings: strict),
+        ], swiftSettings: ui),
         // OBS-websocket server: drive scenes and the stream from a desk.
         .target(name: "Remote", dependencies: ["CoreModel", "CoreLogging", "Engine", "Overlays"], swiftSettings: strict)
     ]
