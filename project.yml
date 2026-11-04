@@ -81,6 +81,8 @@ targets:
         product: Privacy
       - package: MetaStreamKit
         product: Signals
+      - package: MetaStreamKit
+        product: Engine
       - package: MetaWearablesDAT
         product: MWDATCore
       - package: MetaWearablesDAT
@@ -126,4 +128,6 @@ targets:
         product: Privacy
       - package: MetaStreamKit
         product: Signals
+      - package: MetaStreamKit
+        product: Engine
 

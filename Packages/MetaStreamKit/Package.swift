@@ -23,10 +23,14 @@ let package = Package(
         .library(name: "Goal", targets: ["Goal"]),
         .library(name: "Speech", targets: ["Speech"]),
         .library(name: "Privacy", targets: ["Privacy"]),
-        .library(name: "Signals", targets: ["Signals"])
+        .library(name: "Signals", targets: ["Signals"]),
+        .library(name: "Engine", targets: ["Engine"])
     ],
     // Same URL and floor as project.yml, so Xcode resolves one copy for the app and the package.
-    dependencies: [.package(url: "https://github.com/HaishinKit/HaishinKit.swift", from: "2.3.0")],
+    dependencies: [
+        .package(url: "https://github.com/HaishinKit/HaishinKit.swift", from: "2.3.0"),
+        .package(url: "https://github.com/facebook/meta-wearables-dat-ios", exact: "0.9.0")
+    ],
     targets: [
         // Plain data shared by every feature: chat events, money, text patterns. Foundation only.
         .target(name: "CoreModel", swiftSettings: strict),
@@ -55,6 +59,16 @@ let package = Package(
         .target(name: "Privacy", dependencies: ["CoreLogging", .product(name: "HaishinKit", package: "HaishinKit.swift")],
                 swiftSettings: strict),
         // Real-world signals: location (city, distance), weather, Spotify now playing, iPhone-to-iPad GPS share.
-        .target(name: "Signals", dependencies: ["CoreLogging", "CoreNetwork", "CoreStorage", "Platforms"], swiftSettings: strict)
+        .target(name: "Signals", dependencies: ["CoreLogging", "CoreNetwork", "CoreStorage", "Platforms"], swiftSettings: strict),
+        // The streaming engine: Streamer and its components (uplink, SRTLA bonding, bitrate, health, recording, PiP,
+        // sound mix, looks, phone/glasses/screen sources). Scene direction stays in the app (SceneCompositor).
+        .target(name: "Engine", dependencies: [
+            "CoreLogging", "Camera", "Privacy", "Speech", "ScreenIPC", "ActivityShared",
+            .product(name: "HaishinKit", package: "HaishinKit.swift"),
+            .product(name: "RTMPHaishinKit", package: "HaishinKit.swift"),
+            .product(name: "SRTHaishinKit", package: "HaishinKit.swift"),
+            .product(name: "MWDATCore", package: "meta-wearables-dat-ios"),
+            .product(name: "MWDATCamera", package: "meta-wearables-dat-ios")
+        ], swiftSettings: strict)
     ]
 )
