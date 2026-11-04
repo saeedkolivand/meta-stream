@@ -2,6 +2,7 @@ package com.saeedkolivand.metastream.ui
 
 import android.Manifest
 import android.content.Intent
+import android.os.Build
 import android.provider.Settings
 import android.view.SurfaceHolder
 import android.view.SurfaceView
@@ -70,8 +71,9 @@ private val bluetooth = arrayOf(Manifest.permission.BLUETOOTH, Manifest.permissi
 
 // POST_NOTIFICATIONS only decides whether the live notification shows, so it isn't required.
 // Android 17: LAN ingests (OBS/relay on the LAN) need ACCESS_LOCAL_NETWORK; it shares the NEARBY_DEVICES group
-// with BLUETOOTH_CONNECT, so users see no extra prompt. Not required: public ingests work without it.
-private val everything = required + bluetooth + Manifest.permission.ACCESS_LOCAL_NETWORK + Manifest.permission.POST_NOTIFICATIONS
+// with BLUETOOTH_CONNECT, so users see no extra prompt. Not required: public ingests work without it. Android 16 has no such gate.
+private val localNetwork = if (Build.VERSION.SDK_INT >= 37) arrayOf(Manifest.permission.ACCESS_LOCAL_NETWORK) else emptyArray()
+private val everything = required + bluetooth + localNetwork + Manifest.permission.POST_NOTIFICATIONS
 
 @Composable
 private fun GlassesPreview() = AndroidView(

@@ -8,7 +8,7 @@ plugins {
 android {
     compileSdk = 37
     defaultConfig {
-        minSdk = 37
+        minSdk = 36
         targetSdk = 37
     }
     testOptions { unitTests.isReturnDefaultValues = true }

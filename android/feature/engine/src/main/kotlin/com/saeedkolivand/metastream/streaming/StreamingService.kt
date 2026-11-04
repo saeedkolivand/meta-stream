@@ -7,6 +7,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
 import androidx.compose.runtime.snapshotFlow
@@ -135,9 +136,10 @@ class StreamingService : Service() {
             if (n == null) return b.setContentTitle(c.getString(R.string.ready_title)).build()
             b.setContentTitle(n.title).setContentText(n.text)
                 .setOnlyAlertOnce(true)
-                .setRequestPromotedOngoing(true) // Android 16 Live Update; needs POST_PROMOTED_NOTIFICATIONS
                 .addAction(android.R.drawable.ic_btn_speak_now, n.muteLabel, action(c, 1, ACTION_MUTE))
                 .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", action(c, 2, ACTION_STOP))
+            // Live Update (Android 16 QPR2+); needs POST_PROMOTED_NOTIFICATIONS
+            if (Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1) b.setRequestPromotedOngoing(true)
             notifyCommand()?.let { b.addAction(android.R.drawable.ic_menu_send, it.take(24), action(c, 3, ACTION_COMMAND)) }
             n.chronometerSince?.let { b.setWhen(it).setUsesChronometer(true) }
             n.chip?.let { b.setShortCriticalText(it) }

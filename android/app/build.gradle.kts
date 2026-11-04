@@ -7,12 +7,20 @@ android {
         applicationId = "com.saeedkolivand.metastream"
         versionCode = 1
         versionName = "1.0"
-        // Phones are arm64 and the emulator x86_64; the 32-bit copies of RootEncoder/ML Kit/UVC natives only add size.
-        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
 
         // Meta DAT credentials; empty is fine with Developer Mode on.
         manifestPlaceholders["mwdat_application_id"] = localProperty("mwdat_application_id")
         manifestPlaceholders["mwdat_client_token"] = localProperty("mwdat_client_token")
+    }
+
+    // One APK per ABI: phones are arm64 and the emulator x86_64 (32-bit copies of the natives would only add size).
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "x86_64")
+            isUniversalApk = false
+        }
     }
 
     buildTypes {
@@ -20,6 +28,8 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // ponytail: signed with the debug key so it installs like the debug build; a real upload key when it ships to Play.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }

@@ -8,7 +8,7 @@ install the result over USB from Windows, Linux or macOS.
 
 | | iOS / iPadOS | Android |
 |---|---|---|
-| Device | iPhone or iPad on iOS 26.0+ | Phone on Android 17 (API 37)+ |
+| Device | iPhone or iPad on iOS 26.0+ | Phone on Android 16 (API 36)+ |
 | Account | A **paid Apple Developer team** (yours, or a friend who exports a development certificate for you) | None |
 | Workflow | `build-ipa` (`.github/workflows/build.yml`) | `build-apk` (`.github/workflows/build-apk.yml`) |
 | Installs with | `pymobiledevice3` over USB | `adb` over USB |
@@ -144,7 +144,7 @@ secrets (`KICK_CLIENT_ID=...`), plus `mwdat_application_id` and `mwdat_client_to
 
 ```bash
 cd android
-./gradlew assembleDebug                          # app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleDebug                          # app/build/outputs/apk/debug/app-<abi>-debug.apk (arm64-v8a for phones, x86_64 for the emulator)
 ./gradlew installDebug                           # straight onto the connected phone
 ```
 
