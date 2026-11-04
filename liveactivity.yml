@@ -11,7 +11,7 @@ targets:
     platform: iOS
     sources:
       - MetaStreamLiveActivity
-      - MetaStream/Streaming/StreamActivity.swift   # the intents, shared with the app target
+      - MetaStream/App/StreamActivity.swift   # the intents, shared with the app target
     dependencies:
       - package: MetaStreamKit
         product: ActivityShared   # StreamActivityAttributes

@@ -32,11 +32,9 @@ final class LiveActivityController {
     private var lastPushAt: Date?
     private var gaveUp = false   // request failed or activities are off: don't retry (and re-log) every tick
 
-    /// Registers the button actions and clears activities left by a previous process (a crash or kill
-    /// leaves the card on the Lock Screen with a dead timer).
+    /// Clears activities left by a previous process (a crash or kill leaves the card on the Lock Screen with a dead
+    /// timer). The buttons' actions are registered in App.swift (StreamActivityActions is app-target code).
     func attach(_ streamer: Streamer) {
-        StreamActivityActions.stop = { [weak streamer] in streamer?.stopLive() }
-        StreamActivityActions.toggleMute = { [weak streamer] in if let streamer { streamer.setMuted(!streamer.muted) } }
         Task {
             for stale in Activity<StreamActivityAttributes>.activities { await stale.end(nil, dismissalPolicy: .immediate) }
         }

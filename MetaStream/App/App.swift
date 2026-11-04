@@ -67,6 +67,8 @@ struct MetaStreamApp: App {
                 DonationHub.shared.start(chat: chat)
                 DonatePagePublisher.shared.start(live: streamer.$live)
                 GoalStore.shared.onReached = { speaker.speakSystem("Goal reached"); AppBot.shared.goalReached(GoalStore.shared.config.title) }
+                StreamActivityActions.stop = { streamer.stopLive() }   // the App and its Streamer live as long as the process
+                StreamActivityActions.toggleMute = { streamer.setMuted(!streamer.muted) }
                 StreamActivityActions.sendCommand = { id in
                     guard UserDefaults.standard.bool(forKey: "lockScreenCommands"),
                           let c = BotCommand.stored().first(where: { $0.id.uuidString == id }) else { return }
