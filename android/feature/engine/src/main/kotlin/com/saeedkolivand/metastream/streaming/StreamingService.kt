@@ -1,11 +1,13 @@
 package com.saeedkolivand.metastream.streaming
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
@@ -148,6 +150,9 @@ class StreamingService : Service() {
 
         /** Registers [who] as needing the service; false when Android refuses to start it (background, or no camera/mic permission). */
         fun hold(c: Context, who: String): Boolean = synchronized(holders) {
+            // startForeground (in onStartCommand, past this try) throws without them: a fresh install crashed on first launch.
+            val perms = listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+            if (perms.any { c.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }) return false
             holders += who
             if (running) return true
             try {

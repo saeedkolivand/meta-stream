@@ -616,7 +616,7 @@ openssl enc -d -aes-256-cbc -pbkdf2 \
   -in build/MetaStream.ipa.enc -out build/MetaStream.ipa \
   -pass file:signing/ipa-password.txt
 pymobiledevice3 apps install build/MetaStream.ipa
-<span style="color:var(--muted)"># Android: same steps with MetaStream-apk, then</span>
+<span style="color:var(--muted)"># Android: same steps with MetaStream-apk (MetaStream-arm64-v8a.apk.enc), then</span>
 adb install -r build/MetaStream.apk</pre>
       </div>
     </div>
