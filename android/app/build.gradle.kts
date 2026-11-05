@@ -8,8 +8,9 @@ plugins {
 sentry {
     org.set("ai-job-hunter-app")
     projectName.set("meta-stream")
-    authToken.set(System.getenv("SENTRY_AUTH_TOKEN"))
-    autoUploadProguardMapping.set(System.getenv("SENTRY_AUTH_TOKEN") != null)
+    val token = System.getenv("SENTRY_AUTH_TOKEN").orEmpty() // CI passes a missing secret as ""
+    authToken.set(token)
+    autoUploadProguardMapping.set(token.isNotBlank())
     tracingInstrumentation { enabled.set(false) } // crashes only, no bytecode rewriting for performance tracing
 }
 
