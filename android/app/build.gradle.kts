@@ -23,13 +23,26 @@ android {
         }
     }
 
+    // One fixed key (signing/, gitignored; CI writes it from secrets) so every build updates the last one in place.
+    val key = rootDir.resolve("../signing/android-release.jks")
+    signingConfigs {
+        if (key.exists()) {
+            create("release") {
+                storeFile = key
+                storePassword = rootDir.resolve("../signing/android-keystore-password.txt").readText().trim()
+                keyAlias = "metastream"
+                keyPassword = storePassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // ponytail: signed with the debug key so it installs like the debug build; a real upload key when it ships to Play.
-            signingConfig = signingConfigs.getByName("debug")
+            // No keystore (a fresh clone): the debug key, which can't update a release-key install.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }

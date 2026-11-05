@@ -137,8 +137,11 @@ adb install -r build/MetaStream.apk
 The artifact has one APK per CPU: `arm64-v8a` (almost every phone), `armeabi-v7a` (old 32-bit phones), `x86_64`
 (emulator). Not sure which one a phone needs? `adb shell getprop ro.product.cpu.abi`.
 
-The APK is a debug build signed with the runner's debug key. If an update fails with a signature mismatch, uninstall
-the old copy first (`adb uninstall <your applicationId>`), which also clears its settings.
+The APK is a release build signed with one fixed key, so each build installs over the last and keeps its settings. The
+key lives in `signing/android-release.jks` (password in `signing/android-keystore-password.txt`). CI rebuilds it from
+the `ANDROID_KEYSTORE_BASE64` and `ANDROID_KEYSTORE_PASSWORD` secrets. Keep a backup: a new key means every phone has to
+uninstall once (`adb uninstall <your applicationId>`), which clears its settings. Without the keystore (a fresh clone),
+release builds fall back to the debug key.
 
 ### 2. Build locally (optional)
 

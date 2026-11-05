@@ -17,6 +17,16 @@ jobs:
           java-version: 17
       - name: Install Android 37 platform
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" > /dev/null
+      - name: Release keystore
+        # Fails rather than falling back to a throwaway debug key, which couldn't update earlier installs.
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          [ -n "$KEYSTORE" ] && [ -n "$KEYSTORE_PASSWORD" ] || { echo "::error::ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD secrets missing"; exit 1; }
+          mkdir -p signing
+          echo "$KEYSTORE" | base64 -d > signing/android-release.jks
+          printf %s "$KEYSTORE_PASSWORD" > signing/android-keystore-password.txt
       - name: Build, test, lint
         # Same repo secrets as the iOS build; android/app/build.gradle.kts turns them into BuildConfig fields.
         env:
