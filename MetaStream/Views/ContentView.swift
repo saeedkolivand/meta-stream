@@ -149,6 +149,9 @@ struct ContentView: View {
                     Spacer()
                     CameraControlStripView().padding(.trailing, 10)
                 }
+                // In landscape the strip scrolls and fills the height; without this it covered the HUD's "cam"
+                // pill (the only way to close it) and GO LIVE.
+                .padding(.vertical, 56)
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
 
@@ -181,6 +184,15 @@ struct ContentView: View {
                 .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.45)))
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.black)
+                // Landscape: the grabber sits at the screen's top edge, so a swipe down opens Notification Center
+                // and a swipe on the list just scrolls it. A button always works.
+                .overlay(alignment: .topTrailing) {
+                    Button { showChat = false } label: {
+                        Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(.white.opacity(0.6))
+                    }
+                    .accessibilityLabel("Close chat")
+                    .padding(8)
+                }
         }
         .alert("Status", isPresented: $showStatus) { Button("OK") {} } message: {
             Text("Meta: \(streamer.registration)\nGlasses: \(streamer.glassesState)\nDevices: \(streamer.devices)\nRTMP: \(streamer.rtmpState)\nDrops: \(streamer.drops)\nFrames: \(streamer.frames)\nTeam ID: \(streamer.teamID)" + (streamer.sessionSummary.map { "\nLast: \($0)" } ?? ""))

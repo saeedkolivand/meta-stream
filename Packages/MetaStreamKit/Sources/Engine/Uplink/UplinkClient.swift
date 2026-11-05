@@ -126,6 +126,13 @@ extension Streamer {
         return url + (url.contains("?") ? "&" : "?") + "latency=\(ms)"
     }
 
+    /// AVCaptureSession's default (automaticallyConfiguresApplicationAudioSession = true) rewrites the audio session
+    /// when the mic input lands, throwing away goLive's preferred input: DJI Mic 3 picked, iPhone mic streamed (2026-11-05).
+    private func attachMic() async throws {
+        await mixer.configuration { $0.automaticallyConfiguresApplicationAudioSession = false }
+        try await mixer.attachAudio(AVCaptureDevice.default(for: .audio))
+    }
+
     /// Phone-camera frames flow mixer → encoder → RTMP stream (and → preview view). sink/startRunning() are
     /// wired once, on first need (HaishinKit's own startRunning() no-ops on a repeat call regardless -- checked
     /// both tags); the uplink's own stream is re-registered every call whenever `uplink` itself has changed.
@@ -235,7 +242,7 @@ extension Streamer {
                 try audioSession.setActive(true)
                 AudioRouteLog.log("go live")
 
-                try await mixer.attachAudio(AVCaptureDevice.default(for: .audio))   // always: mute is a mixer flag, applied by wireMixer's applyAudioMix
+                try await attachMic()   // always: mute is a mixer flag, applied by wireMixer's applyAudioMix
                 await wireMixer()
 
                 // profileLevel containing "HEVC" flips HaishinKit's internal format to .hevc (onMetaData codec id);
