@@ -213,11 +213,13 @@ struct ChatSheetView: View {
                 .pickerStyle(.segmented)
             }
             HStack(spacing: 10) {
-                // One tap cycles the size, so it's usable without looking for a slider.
-                Button { hapticTap(); chatTextSize = (chatTextSize + 1) % Self.chatSizes.count } label: {
-                    Image(systemName: "textformat.size")
-                }
-                .accessibilityLabel("Chat text size")
+                // A− / A+, clamped (same as Android): the old single button cycled and wrapped from biggest to smallest.
+                Button { hapticTap(); chatTextSize = max(chatTextSize - 1, 0) } label: { Text("A−").font(.body) }
+                    .disabled(chatTextSize <= 0)
+                    .accessibilityLabel("Smaller chat text")
+                Button { hapticTap(); chatTextSize = min(chatTextSize + 1, Self.chatSizes.count - 1) } label: { Text("A+").font(.title3) }
+                    .disabled(chatTextSize >= Self.chatSizes.count - 1)
+                    .accessibilityLabel("Larger chat text")
                 TextField("Message", text: $chatText).textFieldStyle(.roundedBorder).onSubmit(sendChat)
                 Button(action: sendChat) { Image(systemName: "paperplane.fill") }
                     .disabled(chatText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
