@@ -346,8 +346,10 @@ extension Streamer {
     }
 
     /// Attaches `position`'s camera on track 1 as the face-cam overlay. Never throws -- a failed overlay must
-    /// not take the main camera down with it. Mirrored when it's the front camera (selfie convention),
-    /// stabilisation off (it only costs latency on a thumbnail). Returns whether it attached.
+    /// not take the main camera down with it. Mirrored when it's the front camera (selfie convention).
+    /// Same stabilisation as the main: HaishinKit renders the canvas late by the MAIN track's capture latency but keeps
+    /// only 3 overlay frames, so an unstabilised overlay under a cinematic main ran dry and stuttered (2026-11-05).
+    /// Returns whether it attached.
     public func attachOverlayCamera(position: AVCaptureDevice.Position) async -> Bool {
         guard let cam = CameraSettings.device(lens: "wide", position: position) else {   // plain wide -- see switchTo's wideMain
             applog("stream", "dual camera: no camera at that position", error: true)
@@ -356,12 +358,19 @@ extension Streamer {
         let multi = mixerIsMulti
         let mirror = position == .front
         let fps = min(phoneQuality.fps, Self.multiFpsCap)
+        // Glasses mode (single session): the main is the glasses feed, no capture latency to match.
+        let stab = multi ? phoneQuality.stabilization : "off"
+        let mode = CameraSettings.stabilizationMode(stab)
         if !multi { await mixer.setSessionPreset(.hd1280x720) }   // single-session overlay (glasses mode) has no format picker
         do {
             try await mixer.attachVideo(cam, track: 1) { unit in
-                unit.preferredVideoStabilizationMode = .off
                 unit.isVideoMirrored = mirror
                 if multi, let device = unit.device { Streamer.applyFormat(device, maxHeight: 720, fps: fps) }
+                unit.preferredVideoStabilizationMode = mode   // after the format: support depends on it
+                if mode != .off, let device = unit.device {
+                    let supported = device.activeFormat.isVideoStabilizationModeSupported(mode)
+                    applog("stream", "dual camera: overlay stabilization \(stab) supported=\(supported)")
+                }
             }
             applog("stream", "dual camera: overlay attached (\(mirror ? "front" : "back"))")
             if mirror { applyCenterStage() }
