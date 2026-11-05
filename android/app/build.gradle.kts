@@ -13,12 +13,12 @@ android {
         manifestPlaceholders["mwdat_client_token"] = localProperty("mwdat_client_token")
     }
 
-    // One APK per ABI: phones are arm64 and the emulator x86_64 (32-bit copies of the natives would only add size).
+    // One APK per ABI: arm64 for modern phones, armeabi-v7a for 32-bit ones, x86_64 for the emulator.
     splits {
         abi {
             isEnable = true
             reset()
-            include("arm64-v8a", "x86_64")
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
             isUniversalApk = false
         }
     }

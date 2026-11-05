@@ -128,11 +128,14 @@ USB debugging*, then from the repo root:
 
 ```bash
 gh run list -w build-apk -L 1                    # wait until the newest run says "completed success"
-rm -f build/MetaStream.apk.enc build/MetaStream.apk
+rm -f build/MetaStream-*.apk*
 gh run download -n MetaStream-apk -D build
-openssl enc -d -aes-256-cbc -pbkdf2 -in build/MetaStream.apk.enc -out build/MetaStream.apk -pass file:signing/ipa-password.txt
+openssl enc -d -aes-256-cbc -pbkdf2 -in build/MetaStream-arm64-v8a.apk.enc -out build/MetaStream.apk -pass file:signing/ipa-password.txt
 adb install -r build/MetaStream.apk
 ```
+
+The artifact has one APK per CPU: `arm64-v8a` (almost every phone), `armeabi-v7a` (old 32-bit phones), `x86_64`
+(emulator). Not sure which one a phone needs? `adb shell getprop ro.product.cpu.abi`.
 
 The APK is a debug build signed with the runner's debug key. If an update fails with a signature mismatch, uninstall
 the old copy first (`adb uninstall <your applicationId>`), which also clears its settings.
