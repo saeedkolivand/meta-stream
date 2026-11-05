@@ -39,6 +39,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MetaStream">
 
+        <!-- Sentry crash reports; a DSN is public by design (it can only submit events). -->
+        <meta-data
+            android:name="io.sentry.dsn"
+            android:value="https://4c9fb51d2f9841cc5e04ddb5a19e9873@o4511840328810496.ingest.de.sentry.io/4512380955394128" />
+
         <!-- Meta DAT credentials; empty with Developer Mode. -->
         <meta-data android:name="com.meta.wearable.mwdat.APPLICATION_ID" android:value="${mwdat_application_id}" />
         <meta-data android:name="com.meta.wearable.mwdat.CLIENT_TOKEN" android:value="${mwdat_client_token}" />
