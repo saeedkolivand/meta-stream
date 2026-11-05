@@ -37,6 +37,7 @@ jobs:
           RESTREAM_CLIENT_SECRET: ${{ secrets.RESTREAM_CLIENT_SECRET }}
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           META_APP_ID: ${{ secrets.META_APP_ID }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }} # uploads R8 mappings; empty = no upload
         run: cd android && ./gradlew assembleRelease test lint ktlintCheck && bash loc.sh && bash ../scripts/folders.sh
       # Public repo: artifacts are downloadable by anyone, and the APK carries the Kick/Restream client secrets.
       # Encrypted like the IPA (build.yml); decrypt with signing/ipa-password.txt.

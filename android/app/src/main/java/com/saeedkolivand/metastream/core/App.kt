@@ -9,6 +9,7 @@ import com.saeedkolivand.metastream.car.Notify
 import com.saeedkolivand.metastream.chat.ChatFeed
 import com.saeedkolivand.metastream.chat.ChatModerator
 import com.saeedkolivand.metastream.core.logging.LogFile
+import com.saeedkolivand.metastream.core.logging.applogListener
 import com.saeedkolivand.metastream.core.storage.AppSettings
 import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.goal.DonatePage
@@ -36,6 +37,7 @@ import com.saeedkolivand.metastream.streaming.audio.Mics
 import com.saeedkolivand.metastream.streaming.audio.Soundboard
 import com.saeedkolivand.metastream.streaming.compositor
 import com.saeedkolivand.metastream.streaming.video.Looks
+import io.sentry.Sentry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -48,6 +50,7 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        applogListener = { category, message -> Sentry.addBreadcrumb(message, category) } // Sentry itself starts before onCreate
         LogFile.start(this)
         Prefs.init(this)
         WidgetFonts.init(this)

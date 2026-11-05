@@ -1,12 +1,27 @@
-plugins { id("metastream.android.application") }
+plugins {
+    id("metastream.android.application")
+    id("io.sentry.android.gradle")
+}
+
+// Crash reports from testers' phones (Java, native, ANR). The DSN is in the manifest; the token only uploads R8 mappings
+// so stack traces come back readable. No token (local builds): no upload, the build still works.
+sentry {
+    org.set("ai-job-hunter-app")
+    projectName.set("meta-stream")
+    authToken.set(System.getenv("SENTRY_AUTH_TOKEN"))
+    autoUploadProguardMapping.set(System.getenv("SENTRY_AUTH_TOKEN") != null)
+    tracingInstrumentation { enabled.set(false) } // crashes only, no bytecode rewriting for performance tracing
+}
 
 android {
     namespace = "com.saeedkolivand.metastream"
 
     defaultConfig {
         applicationId = "com.saeedkolivand.metastream"
-        versionCode = 1
-        versionName = "1.0"
+        // CI run number, so a crash report (and a tester) can say which APK it was.
+        val run = System.getenv("GITHUB_RUN_NUMBER")?.toInt() ?: 1
+        versionCode = run
+        versionName = "1.0.$run"
 
         // Meta DAT credentials; empty is fine with Developer Mode on.
         manifestPlaceholders["mwdat_application_id"] = localProperty("mwdat_application_id")

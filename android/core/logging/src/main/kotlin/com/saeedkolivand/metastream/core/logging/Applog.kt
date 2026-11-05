@@ -90,9 +90,13 @@ object LogFile {
 
 fun scrub(message: String): String = synchronized(secrets) { secrets.fold(message) { m, s -> m.replace(s, "***") } }
 
+/** Also gets every (scrubbed) applog line; App points it at Sentry breadcrumbs, the trail sent with a crash. */
+var applogListener: ((category: String, message: String) -> Unit)? = null
+
 /** Same idea as iOS applog: one tag, a category, and secrets never reach the log (nor the shareable Logs screen). */
 fun applog(category: String, message: String) {
     val safe = scrub(message)
+    applogListener?.invoke(category, safe)
     Log.i("MetaStream", "[$category] $safe")
     val line = "${SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())} [$category] $safe"
     LogBuffer.add(line)
