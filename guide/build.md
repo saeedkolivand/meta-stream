@@ -8,7 +8,7 @@ install the result over USB from Windows, Linux or macOS.
 
 | | iOS / iPadOS | Android |
 |---|---|---|
-| Device | iPhone or iPad on iOS 26.0+ | Phone on Android 14 (API 34)+ |
+| Device | iPhone or iPad on iOS 26.0+ | Phone on Android 13 (API 33)+ |
 | Account | A **paid Apple Developer team** (yours, or a friend who exports a development certificate for you) | None |
 | Workflow | `build-ipa` (`.github/workflows/build.yml`) | `build-apk` (`.github/workflows/build-apk.yml`) |
 | Installs with | `pymobiledevice3` over USB | `adb` over USB |
