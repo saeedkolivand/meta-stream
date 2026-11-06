@@ -42,7 +42,7 @@ class StreamingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
-        if (!getSystemService(NotificationManager::class.java).canPostPromotedNotifications()) {
+        if (Build.VERSION.SDK_INT >= 36 && !getSystemService(NotificationManager::class.java).canPostPromotedNotifications()) {
             applog("service", "Live Updates are off for this app; the notification stays a normal ongoing one")
         }
         scope.launch {
@@ -141,10 +141,14 @@ class StreamingService : Service() {
                 .addAction(android.R.drawable.ic_btn_speak_now, n.muteLabel, action(c, 1, ACTION_MUTE))
                 .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", action(c, 2, ACTION_STOP))
             // Live Update (Android 16 QPR2+); needs POST_PROMOTED_NOTIFICATIONS
-            if (Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1) b.setRequestPromotedOngoing(true)
+            if (Build.VERSION.SDK_INT >= 36 &&
+                Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1
+            ) {
+                b.setRequestPromotedOngoing(true)
+            }
             notifyCommand()?.let { b.addAction(android.R.drawable.ic_menu_send, it.take(24), action(c, 3, ACTION_COMMAND)) }
             n.chronometerSince?.let { b.setWhen(it).setUsesChronometer(true) }
-            n.chip?.let { b.setShortCriticalText(it) }
+            if (Build.VERSION.SDK_INT >= 36) n.chip?.let { b.setShortCriticalText(it) }
             return b.build()
         }
 

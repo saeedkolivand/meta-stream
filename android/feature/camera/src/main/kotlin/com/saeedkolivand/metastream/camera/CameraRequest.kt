@@ -5,6 +5,7 @@ import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.params.ColorSpaceTransform
 import android.hardware.camera2.params.MeteringRectangle
 import android.hardware.camera2.params.RggbChannelVector
+import android.os.Build
 import kotlin.math.roundToInt
 
 /** Where the user last tapped (sensor-normalised) and whether AE/AF are frozen there. */
@@ -92,7 +93,7 @@ fun CaptureRequest.Builder.applyCamera(s: CameraSettings, c: CameraCaps, meter: 
 
     val torchOn = s.torch > 0f && c.torch
     set(CaptureRequest.FLASH_MODE, if (torchOn) M.FLASH_MODE_TORCH else M.FLASH_MODE_OFF)
-    if (torchOn && c.torchMaxLevel > 1) {
+    if (Build.VERSION.SDK_INT >= 35 && torchOn && c.torchMaxLevel > 1) {
         set(CaptureRequest.FLASH_STRENGTH_LEVEL, (s.torch * c.torchMaxLevel).roundToInt().coerceIn(1, c.torchMaxLevel))
     }
     // EIS and OIS are exclusive here: some HALs refuse the request when both are on.

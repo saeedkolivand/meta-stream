@@ -15,7 +15,7 @@
   <a href="https://github.com/saeedkolivand/meta-stream/actions/workflows/build.yml"><img src="https://github.com/saeedkolivand/meta-stream/actions/workflows/build.yml/badge.svg" alt="iOS build"></a>
   <a href="https://github.com/saeedkolivand/meta-stream/actions/workflows/build-apk.yml"><img src="https://github.com/saeedkolivand/meta-stream/actions/workflows/build-apk.yml/badge.svg" alt="Android build"></a>
   <img src="https://img.shields.io/badge/iOS-26.0%2B-black" alt="iOS 26.0+">
-  <img src="https://img.shields.io/badge/Android-16%2B-3DDC84" alt="Android 16+">
+  <img src="https://img.shields.io/badge/Android-14%2B-3DDC84" alt="Android 14+">
   <img src="https://img.shields.io/badge/Swift-6.2-orange" alt="Swift 6.2">
   <img src="https://img.shields.io/badge/Kotlin-Compose-7F52FF" alt="Kotlin and Jetpack Compose">
   <img src="https://img.shields.io/badge/protocols-RTMP%20%C2%B7%20SRT%20%C2%B7%20SRTLA-purple" alt="RTMP, SRT, SRTLA">
