@@ -215,8 +215,8 @@ fun receipt(i: DonationInfo, look: DonationLook, b: Board): (Float) -> List<Item
     }
     fun pair(k: String, v: String) {
         if (v.isEmpty()) return
-        val kx = ink(k, b.len(16f), 400, dim, mono = true)!!
-        val vx = ink(v, b.len(16f), 700, ink0, mono = true)!!
+        val kx = ink(k, b.len(16f), 400, dim, mono = true) ?: return
+        val vx = ink(v, b.len(16f), 700, ink0, mono = true) ?: return
         rows += b.len(26f) to { y -> listOf(kx.at(left, y, -1), vx.at(right, y, 1, maxW = right - left - kx.w - b.len(12f))) }
     }
     fun dashes() = center("- ".repeat(16), 14f, 400, dim)

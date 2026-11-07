@@ -55,7 +55,7 @@ class BrowserOverlay(private val ctx: Context, outW: Int, outH: Int) {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
                 if (httpOnly(request.url.toString())) null else WebResourceResponse("text/plain", "utf-8", null)
 
-            override fun onPageFinished(view: WebView, url: String) {
+            override fun onPageFinished(view: WebView, url: String?) {
                 view.evaluateJavascript(
                     "(function(){var s=document.createElement('style');s.textContent=$css;document.head.appendChild(s)})()",
                     null

@@ -175,7 +175,7 @@ object KickWeb {
             it.settings.javaScriptEnabled = true
             it.settings.domStorageEnabled = true
             it.webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView, url: String) {
+                override fun onPageFinished(view: WebView, url: String?) {
                     loaded = true
                 }
             }
