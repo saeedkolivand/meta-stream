@@ -77,6 +77,7 @@ import com.saeedkolivand.metastream.overlay.ui.scenes.StingerSettings
 import com.saeedkolivand.metastream.overlay.ui.scenes.TransitionsPage
 import com.saeedkolivand.metastream.platforms.ui.SpotifyPage
 import com.saeedkolivand.metastream.privacy.ui.PrivacySettings
+import com.saeedkolivand.metastream.reach.ui.PostTextsPage
 import com.saeedkolivand.metastream.reach.ui.StreamsPage
 import com.saeedkolivand.metastream.reach.ui.StreamsToolbar
 import com.saeedkolivand.metastream.reach.ui.TelegramPage
@@ -135,7 +136,8 @@ private enum class Page(val title: String, val parent: Page?, val group: String 
     BotMessages("Messages", AppBot),
     BotTimers("Timers", AppBot),
     GoalRates("Rates", Goal),
-    GoalRecent("Recent donations", Goal);
+    GoalRecent("Recent donations", Goal),
+    PostTexts("Post texts", Telegram);
 
     val depth: Int get() = generateSequence(this) { it.parent }.count()
 }
@@ -229,7 +231,8 @@ private fun PageContent(p: Page, go: (Page) -> Unit) = when (p) {
     Page.GoalRecent -> GoalRecentPage()
     Page.DonationSources -> DonationSourcesPage()
     Page.DonatePage -> DonatePagePage()
-    Page.Telegram -> TelegramPage()
+    Page.Telegram -> TelegramPage { go(Page.PostTexts) }
+    Page.PostTexts -> PostTextsPage()
     Page.Spotify -> SpotifyPage()
     Page.Streams -> StreamsPage()
     Page.Remote -> RemotePage()
@@ -260,7 +263,7 @@ private val Catalog = listOf(
     Page.Goal to "Goal: goal target; Add amount: cash manual; Test donation: test; Rates: rates usd bits kicks",
     Page.DonationSources to "Donation sites: donofa reymit streamelements donito tip key",
     Page.DonatePage to "Donate page: donate page key address",
-    Page.Telegram to "Telegram: bot channel; Post: live post recap",
+    Page.Telegram to "Telegram: bot channel; Post: live post recap; Post texts: template wording text",
     Page.Spotify to "Spotify: now playing song music",
     Page.Streams to "Streams: history session report; When your viewers show up: heatmap; Wrapped: wrapped year",
     Page.Remote to "Remote control: obs websocket stream deck touch portal streamer.bot; Password: password",

@@ -12,6 +12,7 @@ import com.saeedkolivand.metastream.core.storage.Prefs
 import com.saeedkolivand.metastream.core.storage.TokenStore
 import com.saeedkolivand.metastream.core.ui.ActionRow
 import com.saeedkolivand.metastream.core.ui.Choice
+import com.saeedkolivand.metastream.core.ui.NavRow
 import com.saeedkolivand.metastream.core.ui.PrefField
 import com.saeedkolivand.metastream.core.ui.PrefSwitch
 import com.saeedkolivand.metastream.core.ui.Secondary
@@ -23,7 +24,7 @@ import kotlinx.coroutines.launch
 
 /** Settings › Telegram (iOS TelegramSettingsView): the bot and channel behind the Live post, and what it may show. */
 @Composable
-fun TelegramPage() {
+fun TelegramPage(openTexts: () -> Unit) {
     val scope = rememberCoroutineScope()
     var token by remember { mutableStateOf("") }
     var hasToken by remember { mutableStateOf(TokenStore.get("telegramToken") != null) }
@@ -52,12 +53,13 @@ fun TelegramPage() {
         }
         if (status.isNotEmpty()) Text(status, color = Secondary, fontSize = 13.sp)
     }
-    Section("Post", "The language only changes the labels; titles and names stay as you typed them.") {
+    Section("Post", "The language changes the built-in labels; titles and names stay as you typed them. Post texts rewrites the posts.") {
         var lang by remember { mutableStateOf(Prefs.string("telegramLang", "fa")) }
         Choice("Language", listOf("fa" to "فارسی", "en" to "English"), lang) {
             lang = it
             Prefs.put("telegramLang", it)
         }
+        NavRow("Post texts", onClick = openTexts)
         PrefSwitch("Show donation total in recap", "telegramShowTotal", true)
         var big by remember { mutableStateOf(Prefs.string("momentDonationEUR", "20").toDoubleOrNull()?.toInt() ?: 20) }
         Stepper("Big donation moment (€$big)", big, 1..1000, 5) {

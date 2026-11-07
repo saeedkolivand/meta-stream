@@ -42,6 +42,20 @@ object InstagramStory {
 
     val template get() = Template.entries.firstOrNull { it.name == Prefs.string("igStoryTemplate", "") } ?: Template.Minimal
 
+    /** The streamer's wording (Settings › Theme & story, iOS StoryText); an empty one keeps the layout's own. */
+    class Texts(val live: String = "", val soon: String = "", val title: String = "", val caption: String = "") {
+        companion object {
+            const val BILINGUAL_CAPTION = "بیاید تو لایو، لینک پایینه"
+            val current
+                get() = Texts(
+                    Prefs.string("igStoryLive", ""),
+                    Prefs.string("igStorySoon", ""),
+                    Prefs.string("igStoryTitle", ""),
+                    Prefs.string("igStoryCaption", "")
+                )
+        }
+    }
+
     fun available(ctx: Context) = BuildConfig.META_APP_ID.isNotEmpty() && ctx.packageManager.resolveActivity(intent(), 0) != null
 
     private fun intent() = Intent(ACTION).setType("image/jpeg")
@@ -72,7 +86,10 @@ object InstagramStory {
     }
 
     /** Designed at 360x640 like iOS, drawn at x3 (1080x1920, Meta's minimum is 720x1280). */
-    fun card(frame: Bitmap?, title: String, link: String, t: Template, soon: Boolean): Bitmap {
+    fun card(frame: Bitmap?, streamTitle: String, link: String, t: Template, soon: Boolean, texts: Texts = Texts.current): Bitmap {
+        val title = texts.title.trim().ifEmpty { streamTitle }
+        fun label(default: String) = (if (soon) texts.soon else texts.live).trim().ifEmpty { default }
+        val caption = texts.caption.trim().ifEmpty { if (t == Template.Bilingual) Texts.BILINGUAL_CAPTION else "" }
         val bmp = Bitmap.createBitmap(1080, 1920, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
         c.scale(3f, 3f)
@@ -86,33 +103,21 @@ object InstagramStory {
         if (t == Template.FullBleed) {
             frame?.let { shot(c, it, RectF(0f, 0f, 360f, 640f), 0f) }
             val top = Paint().apply { color = BG }
-            c.drawRect(0f, 0f, 360f, 72f + 30f + 10f + if (title.isEmpty()) 20f else 80f, top)
+            c.drawRect(0f, 0f, 360f, 72f + 30f + 10f + (if (title.isEmpty()) 20f else 80f) + (if (caption.isEmpty()) 0f else 26f), top)
             c.drawRect(0f, 640f - 96f - 18f - 72f - 20f, 360f, 640f, top)
-            y = pill(c, if (soon) "LIVE SOON" else "LIVE", 14f, 20f, y) + 10f
-            if (title.isNotEmpty()) text(c, title, 22f, true, fg, 20f, y, 2)
+            y = pill(c, label(if (soon) "LIVE SOON" else "LIVE"), 14f, 20f, y) + 10f
+            if (title.isNotEmpty()) y = text(c, title, 22f, true, fg, 20f, y, 2) + 10f
+            if (caption.isNotEmpty()) text(c, caption, 16f, false, MUTED, 20f, y, 1)
             if (link.isNotEmpty()) text(c, link, 14f, false, MUTED, 20f, 640f - 96f - 18f, 1, Layout.Alignment.ALIGN_CENTER)
             return bmp
         }
         if (t == Template.Poster) {
-            y = text(c, if (soon) "LIVE\nSOON" else "LIVE\nNOW", 76f, true, fg, 24f, y, 2, spacing = 0.85f) + 14f
+            y = text(c, label(if (soon) "LIVE\nSOON" else "LIVE\nNOW"), 76f, true, fg, 24f, y, 2, spacing = 0.85f) + 14f
             if (title.isNotEmpty()) y = text(c, title, 17f, true, fg, 24f, y, 3) + 14f
+            if (caption.isNotEmpty()) y = text(c, caption, 16f, false, fg, 24f, y, 2) + 14f
         } else {
-            y =
-                pill(
-                    c,
-                    if (soon) {
-                        "LIVE SOON on Kick".takeIf { t == Template.Minimal } ?: "LIVE SOON"
-                    } else {
-                        "LIVE on Kick".takeIf {
-                            t ==
-                                Template.Minimal
-                        }
-                            ?: "LIVE"
-                    },
-                    15f,
-                    24f,
-                    y
-                )
+            val kick = if (t == Template.Minimal) " on Kick" else ""
+            y = pill(c, label(if (soon) "LIVE SOON$kick" else "LIVE$kick"), 15f, 24f, y)
             if (t ==
                 Template.Bilingual
             ) {
@@ -122,7 +127,7 @@ object InstagramStory {
         }
         frame?.let { y = shot(c, it, RectF(24f, y, 336f, y + 175.5f), if (t == Template.Poster) 10f else 14f) + 16f }
         if (t != Template.Poster && title.isNotEmpty()) y = text(c, title, 24f, true, fg, 24f, y, 3) + 16f
-        if (t == Template.Bilingual) y = text(c, "بیاید تو لایو، لینک پایینه", 16f, false, MUTED, 24f, y, 1) + 16f
+        if (t != Template.Poster && caption.isNotEmpty()) y = text(c, caption, 16f, false, MUTED, 24f, y, 2) + 16f
         if (link.isNotEmpty()) {
             text(
                 c,

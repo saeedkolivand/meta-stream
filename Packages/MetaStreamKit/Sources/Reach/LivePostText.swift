@@ -1,8 +1,9 @@
 import CoreLogging
 import Foundation
 
-/// The words of the Live post, as pure functions of plain values (so `demo()` can check them). Labels are the only
-/// thing that follows the language setting; titles, goal titles and names stay as typed. Latin digits throughout.
+/// The words of the Live post, as pure functions of plain values (so `demo()` can check them): templates (built-in, or the
+/// streamer's own; LivePostTemplates.swift) filled in. Built-in labels follow the language setting; titles, goal titles
+/// and names stay as typed. Latin digits throughout.
 /// ponytail: Persian digits and RTL marks if the mixed lines ever look wrong in Telegram.
 public enum LivePostText {
     public struct GoalLine { var pct: Int; var target: String; var title: String }
@@ -47,48 +48,59 @@ public enum LivePostText {
 
     public static func tr(_ key: String, _ lang: String) -> String { (lang == "en" ? en : fa)[key] ?? key }
 
-    // MARK: posts
-
-    public static func announce(title: String, slug: String, lang: String) -> String {
-        join(["📣 " + head(tr("soon", lang), title), link(slug)])
+    /// The streamer's template when it renders to something, else the built-in one (Telegram refuses an empty message).
+    private static func post(_ kind: Kind, _ lang: String, _ values: [String: String], _ custom: Custom) -> String {
+        if let mine = custom(kind).map({ render($0, values) }), !mine.isEmpty { return mine }
+        return render(defaultTemplate(kind, lang), values)
     }
 
-    public static func cancelled(lang: String) -> String { "❌ " + tr("cancelled", lang) }
+    // MARK: posts
+
+    public static func announce(title: String, slug: String, lang: String, custom: Custom = { _ in nil }) -> String {
+        post(.announce, lang, ["title": title, "link": link(slug)], custom)
+    }
+
+    public static func cancelled(lang: String, custom: Custom = { _ in nil }) -> String { post(.cancelled, lang, [:], custom) }
 
     /// A stream that ended without a record (the app was killed): no stats to show.
     public static func endedBare(lang: String) -> String { "⚪️ " + tr("ended", lang) }
 
-    public static func live(_ post: Live, lang: String) -> String {
-        let up: String? = "\(tr("updated", lang)) \(hhmm(post.updated))"
+    public static func live(_ post: Live, lang: String, custom: Custom = { _ in nil }) -> String {
+        var values = ["title": post.title, "link": link(post.slug), "updated": hhmm(post.updated)]
         if let countdown = post.countdown {
-            let top: String? = "🟡 " + head("\(tr("starting", lang)) \(countdown)", post.title)
-            return join([top, link(post.slug), up])
+            values["countdown"] = countdown
+            return Self.post(.starting, lang, values, custom)
         }
-        let top: String? = "🔴 " + head(tr("live", lang), post.title)
-        var watching: String? = "👁 \(post.viewers) \(tr("watching", lang)) · ⏱ \(duration(post.elapsed))"
-        if post.reconnecting { watching = "📡 " + tr("reconnecting", lang) }
-        let last = post.last.map { "💸 \(tr("last", lang)): \($0)" }
-        let city = post.city.map { "📍 \($0)" }
-        return join([top, watching, goalLine(post.goal, lang), last, city, link(post.slug), up])
+        let up = !post.reconnecting
+        values["viewers"] = up ? "\(post.viewers)" : ""
+        values["duration"] = up ? duration(post.elapsed) : ""
+        values["reconnecting"] = up ? "" : tr("reconnecting", lang)
+        values["goal"] = goalText(post.goal, lang)
+        values["last"] = post.last ?? ""
+        values["city"] = post.city ?? ""
+        return Self.post(.live, lang, values, custom)
     }
 
-    public static func recap(_ rec: Recap, lang: String) -> String {
-        let top: String? = "✅ " + head(tr("ended", lang), rec.title)
-        let stats: String? = "⏱ \(duration(rec.duration)) · 👁 \(tr("peak", lang)) \(rec.peak) · \(tr("avg", lang)) \(rec.avg)"
-        return join([top, stats, donationLine(rec, lang), goalLine(rec.goal, lang), momentsLine(rec.moments, lang),
-                     chattersLine(rec, lang), link(rec.slug)])
+    public static func recap(_ rec: Recap, lang: String, custom: Custom = { _ in nil }) -> String {
+        var donations: [String] = []
+        if rec.showTotal, rec.donationCount > 0 {
+            donations.append("\(rec.total) \(tr("from", lang)) \(rec.donationCount) \(tr("donations", lang))")
+        }
+        if let name = rec.topName, let amount = rec.topAmount { donations.append("\(tr("top", lang)): \(name) \(amount)") }
+        let moments = rec.moments.prefix(5).map { "\(hhmm($0.at)) \(label($0, lang))" }.joined(separator: " · ")
+        let values = ["title": rec.title, "duration": duration(rec.duration), "peak": "\(rec.peak)", "avg": "\(rec.avg)",
+                      "donations": donations.joined(separator: " · "), "goal": goalText(rec.goal, lang), "moments": moments,
+                      "chatters": chattersText(rec, lang), "link": link(rec.slug)]
+        return post(.recap, lang, values, custom)
     }
 
     /// A Moment ping: one short line about the moment, then the stream link (omitted without a slug).
-    public static func ping(_ moment: Moment, slug: String, lang: String) -> String {
-        let line: String
+    public static func ping(_ moment: Moment, slug: String, lang: String, custom: Custom = { _ in nil }) -> String {
         switch moment.kind {
-        case .chatSpike: line = "🔥 " + tr("pingWild", lang)
-        case .donation: line = "💸 \(tr("pingDonation", lang)) \(moment.user) (\(moment.detail)) \u{2014} \(tr("pingThanks", lang))"
-        case .raid:
-            line = "🚀 \(tr("pingRaid", lang)) \(moment.user) \(tr("pingWith", lang)) \(moment.detail) \(tr("pingViewers", lang))"
+        case .chatSpike: post(.pingWild, lang, ["link": link(slug)], custom)
+        case .donation: post(.pingDonation, lang, ["user": moment.user, "amount": moment.detail, "link": link(slug)], custom)
+        case .raid: post(.pingRaid, lang, ["user": moment.user, "viewers": moment.detail, "link": link(slug)], custom)
         }
-        return join([line, link(slug)])
     }
 
     /// Telegram limits: 1024 characters for a caption, 4096 for a text message.
@@ -96,30 +108,12 @@ public enum LivePostText {
 
     // MARK: parts
 
-    private static func head(_ label: String, _ title: String) -> String { title.isEmpty ? label : "\(label) · \(title)" }
+    private static func link(_ slug: String) -> String { slug.isEmpty ? "" : "kick.com/\(slug)" }
 
-    private static func link(_ slug: String) -> String? { slug.isEmpty ? nil : "▶️ kick.com/\(slug)" }
-
-    private static func join(_ lines: [String?]) -> String { lines.compactMap { $0 }.joined(separator: "\n") }
-
-    private static func goalLine(_ goal: GoalLine?, _ lang: String) -> String? {
-        guard let goal else { return nil }
+    private static func goalText(_ goal: GoalLine?, _ lang: String) -> String {
+        guard let goal else { return "" }
         let name = goal.title.isEmpty ? "" : " \(tr("for", lang)) \(goal.title)"
-        return "🎯 \(tr("goal", lang)): \(goal.pct)% \(tr("of", lang)) \(goal.target)\(name)"
-    }
-
-    private static func donationLine(_ rec: Recap, _ lang: String) -> String? {
-        var parts: [String] = []
-        if rec.showTotal, rec.donationCount > 0 {
-            parts.append("\(rec.total) \(tr("from", lang)) \(rec.donationCount) \(tr("donations", lang))")
-        }
-        if let name = rec.topName, let amount = rec.topAmount { parts.append("\(tr("top", lang)): \(name) \(amount)") }
-        return parts.isEmpty ? nil : "💸 " + parts.joined(separator: " · ")
-    }
-
-    private static func momentsLine(_ moments: [Moment], _ lang: String) -> String? {
-        guard !moments.isEmpty else { return nil }
-        return "✨ \(tr("moments", lang)): " + moments.prefix(5).map { "\(hhmm($0.at)) \(label($0, lang))" }.joined(separator: " · ")
+        return "\(goal.pct)% \(tr("of", lang)) \(goal.target)\(name)"
     }
 
     private static func label(_ moment: Moment, _ lang: String) -> String {
@@ -130,10 +124,10 @@ public enum LivePostText {
         }
     }
 
-    private static func chattersLine(_ rec: Recap, _ lang: String) -> String? {
-        guard rec.chatters > 0 else { return nil }
+    private static func chattersText(_ rec: Recap, _ lang: String) -> String {
+        guard rec.chatters > 0 else { return "" }
         // trackingStarted: everyone looks new because counting began today, so don't claim they are.
-        return "💬 \(rec.chatters) \(tr(rec.trackingStarted ? "chatters" : "newChatters", lang)) · \(tr("thanks", lang)) ❤️"
+        return "\(rec.chatters) \(tr(rec.trackingStarted ? "chatters" : "newChatters", lang))"
     }
 
     /// "2h 14m", or "14m" under an hour.
@@ -175,6 +169,12 @@ public enum LivePostText {
         let spike = Moment(at: Date(), kind: .chatSpike, user: "", detail: "30/min")
         assert(ping(spike, slug: "s", lang: "en") == "🔥 Chat's going wild right now\n▶️ kick.com/s")
         assert(ping(spike, slug: "", lang: "fa") == "🔥 چت الان ترکونده")
+        let values = ["title": "IRL", "city": "", "n": "3"]
+        assert(render("A[ · {title}]\n📍 {city}\nn={n}", values) == "A · IRL\nn=3")
+        assert(render("A[ · {city}]\n{typo}", values) == "A\n{typo}" && render("[{city}]", values).isEmpty)
+        assert(live(Live(title: "IRL", slug: "s", viewers: 42), lang: "en", custom: { _ in "Live now: {title} ({viewers})" })
+            == "Live now: IRL (42)")
+        assert(announce(title: "", slug: "s", lang: "en", custom: { _ in "[{title}]" }) == "📣 Going live soon\n▶️ kick.com/s")
         applog("reach", "LivePostText.demo() passed")
     }
     #endif

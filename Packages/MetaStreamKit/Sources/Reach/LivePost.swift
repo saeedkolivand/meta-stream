@@ -84,7 +84,7 @@ public final class LivePost: ObservableObject {
 
     public func announce() {
         guard enabled, state == nil, queued == 0 else { return }
-        let text = LivePostText.announce(title: title, slug: slug, lang: lang)
+        let text = LivePostText.announce(title: title, slug: slug, lang: lang, custom: LivePostText.stored)
         enqueue { [self] in
             let id = try await Telegram.sendMessage(text: LivePostText.fit(text, photo: false))
             state = State(messageId: id, phase: .announced, announcedAt: Date(), hasPhoto: false)
@@ -94,7 +94,7 @@ public final class LivePost: ObservableObject {
     public func cancelAnnouncement() {
         guard let st = state, st.phase == .announced else { return }
         state = nil
-        let text = LivePostText.cancelled(lang: lang)
+        let text = LivePostText.cancelled(lang: lang, custom: LivePostText.stored)
         enqueue { try await Telegram.editText(st.messageId, text: text) }
     }
 
@@ -112,7 +112,7 @@ public final class LivePost: ObservableObject {
         closing = false
         handledMoments = 0
         lastPing = .distantPast
-        let text = LivePostText.live(liveInput(stream), lang: lang)
+        let text = LivePostText.live(liveInput(stream), lang: lang, custom: LivePostText.stored)
         enqueue { [self] in
             if var st = state, st.phase == .announced {
                 st.phase = .live
@@ -148,7 +148,7 @@ public final class LivePost: ObservableObject {
         guard flag("telegramPings", true), (st.pings ?? []).count < Self.pingMax,
               now.timeIntervalSince(lastPing) >= Self.pingGap else { return }
         lastPing = now
-        let text = LivePostText.ping(moment, slug: slug, lang: lang)
+        let text = LivePostText.ping(moment, slug: slug, lang: lang, custom: LivePostText.stored)
         enqueue { [self] in
             let id = try await Telegram.sendMessage(text: text, replyTo: st.messageId)
             guard state?.messageId == st.messageId else { try? await Telegram.deleteMessage(id); return }   // the post is gone
@@ -166,7 +166,7 @@ public final class LivePost: ObservableObject {
         guard wantPhoto || textDue else { return }
         if textDue { lastEdit = now }
         if wantPhoto { lastPhoto = now }
-        let text = LivePostText.live(liveInput(stream), lang: lang)
+        let text = LivePostText.live(liveInput(stream), lang: lang, custom: LivePostText.stored)
         enqueue { [self] in
             var jpeg: Data?
             if wantPhoto { jpeg = safe(await FrameGrab.shared.next(), stream) }
@@ -182,7 +182,8 @@ public final class LivePost: ObservableObject {
     public func sessionEnded(_ record: SessionRecord?) {
         guard state != nil else { return }
         closing = true
-        let text = record.map { LivePostText.recap(recapInput($0), lang: lang) } ?? LivePostText.endedBare(lang: lang)
+        let text = record.map { LivePostText.recap(recapInput($0), lang: lang, custom: LivePostText.stored) }
+            ?? LivePostText.endedBare(lang: lang)
         enqueue { [self] in
             let pings = state?.pings ?? []   // read here: a ping queued before this job has finished by now
             defer { state = nil }

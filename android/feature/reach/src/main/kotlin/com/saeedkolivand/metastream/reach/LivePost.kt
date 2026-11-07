@@ -125,7 +125,7 @@ object LivePost {
 
     fun announce() {
         if (!enabled || state != null || queued > 0) return
-        val text = LivePostText.announce(Kick.title, slug, lang)
+        val text = LivePostText.announce(Kick.title, slug, lang, LivePostText::stored)
         enqueue {
             state =
                 State(Telegram.sendMessage(LivePostText.fit(text, false)), "announced", System.currentTimeMillis(), false, mutableListOf())
@@ -135,7 +135,7 @@ object LivePost {
     fun cancelAnnouncement() {
         val st = state?.takeIf { it.phase == "announced" } ?: return
         state = null
-        val text = LivePostText.cancelled(lang)
+        val text = LivePostText.cancelled(lang, LivePostText::stored)
         enqueue { Telegram.editText(st.messageId, text) }
     }
 
@@ -146,7 +146,7 @@ object LivePost {
         closing = false
         handledMoments = 0
         lastPing = 0
-        val text = LivePostText.live(liveInput(), lang)
+        val text = LivePostText.live(liveInput(), lang, LivePostText::stored)
         enqueue {
             val st = state
             if (st != null && st.phase == "announced") {
@@ -184,7 +184,7 @@ object LivePost {
         val now = System.currentTimeMillis()
         if (!Prefs.bool("telegramPings", true) || st.pings.size >= 4 || now - lastPing < 900_000) return
         lastPing = now
-        val text = LivePostText.ping(m, slug, lang)
+        val text = LivePostText.ping(m, slug, lang, LivePostText::stored)
         enqueue {
             val id = Telegram.sendMessage(text, st.messageId)
             if (state?.messageId != st.messageId) runCatching { Telegram.deleteMessage(id) } else state = state?.also { it.pings += id }
@@ -199,7 +199,7 @@ object LivePost {
         if (!wantPhoto && !textDue) return
         if (textDue) lastEdit = now
         if (wantPhoto) lastPhoto = now
-        val text = LivePostText.live(liveInput(), lang)
+        val text = LivePostText.live(liveInput(), lang, LivePostText::stored)
         enqueue {
             val jpeg = if (wantPhoto) grab() else null
             if (jpeg != null || textDue) push(text, jpeg)
@@ -210,7 +210,7 @@ object LivePost {
     private fun sessionEnded(rec: SessionRecord?) {
         if (state == null) return
         closing = true
-        val text = rec?.let { LivePostText.recap(recapInput(it), lang) } ?: LivePostText.endedBare(lang)
+        val text = rec?.let { LivePostText.recap(recapInput(it), lang, LivePostText::stored) } ?: LivePostText.endedBare(lang)
         enqueue {
             val pings = state?.pings.orEmpty().toList()
             try {

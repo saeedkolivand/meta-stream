@@ -31,6 +31,26 @@ class ReachTest {
     }
 
     @Test
+    fun postTemplates() {
+        val v = mapOf("title" to "IRL", "city" to "", "n" to "3")
+        assertEquals("A · IRL\nn=3", LivePostText.render("A[ · {title}]\n📍 {city}\nn={n}", v))
+        assertEquals("A\n{typo}", LivePostText.render("A[ · {city}]\n{typo}", v))
+        assertEquals("", LivePostText.render("[{city}]", v))
+        // the built-in templates still give the old posts
+        val p = LivePostText.Live(title = "IRL", slug = "saeed", viewers = 42, elapsedMs = 8_040_000)
+        assertTrue(LivePostText.live(p, "en").startsWith("🔴 LIVE · IRL\n👁 42 watching · ⏱ 2h 14m\n▶️ kick.com/saeed\nupdated "))
+        val down = LivePostText.live(LivePostText.Live(reconnecting = true), "en")
+        assertTrue(down.startsWith("🔴 LIVE\n📡 reconnecting…\nupdated ") && "watching" !in down)
+        val rec = LivePostText.Recap(title = "t", slug = "s", durationMs = 3_600_000, showTotal = false, topName = "Bob", topAmount = "€25")
+        assertEquals("✅ Stream ended · t\n⏱ 1h 0m · 👁 peak 0 · avg 0\n💸 top: Bob €25\n▶️ kick.com/s", LivePostText.recap(rec, "en"))
+        assertEquals("📣 به‌زودی لایو\n▶️ kick.com/s", LivePostText.announce("", "s", "fa"))
+        // a custom template wins; one that renders to nothing falls back to the built-in post
+        val mine: (LivePostText.Kind) -> String? = { "Live now: {title} ({viewers})" }
+        assertEquals("Live now: IRL (42)", LivePostText.live(p, "en", mine))
+        assertEquals("📣 Going live soon\n▶️ kick.com/s", LivePostText.announce("", "s", "en") { "[{title}]" })
+    }
+
+    @Test
     fun recordRoundTrip() {
         val r = SessionRecord(1000, "t", "EUR", trackingStarted = true)
         r.samples += SessionSample(1, 10, 3, 4000, 0, 0, 2.5, 1)
