@@ -5,3 +5,8 @@
 # but it ships no rules, so keep it whole rather than risk a release-only streaming failure (it is the app's core).
 -keep class com.pedro.** { *; }
 -dontwarn com.pedro.**
+
+# ML Kit builds its component registrars by reflection (Class.forName + no-arg constructor) from manifest meta-data.
+# firebase-components' own rule keeps the classes but not their constructors, which R8 full mode then strips, so
+# every ML Kit client (face/text/barcode) came back null in release builds (Sentry META-STREAM-1).
+-keep class * implements com.google.firebase.components.ComponentRegistrar { <init>(); }
