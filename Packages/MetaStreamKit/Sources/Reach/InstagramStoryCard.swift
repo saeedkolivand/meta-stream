@@ -21,6 +21,25 @@ public enum StoryTemplate: String, CaseIterable, Identifiable {
     }
 }
 
+/// The streamer's wording on the card (Settings › Theme & story); an empty one keeps the layout's own.
+public struct StoryText {
+    public static let bilingualCaption = "بیاید تو لایو، لینک پایینه"
+    public var live = "", soon = "", title = "", caption = ""
+
+    public init(live: String = "", soon: String = "", title: String = "", caption: String = "") {
+        self.live = live
+        self.soon = soon
+        self.title = title
+        self.caption = caption
+    }
+
+    public static var current: StoryText {
+        let read = { (key: String) in UserDefaults.standard.string(forKey: key) ?? "" }
+        return StoryText(live: read("igStoryLive"), soon: read("igStorySoon"), title: read("igStoryTitle"),
+                         caption: read("igStoryCaption"))
+    }
+}
+
 /// The story card, designed at 360x640 points (9:16), rendered at scale 3. All colours come from the theme; the lower
 /// area stays empty for the Link sticker (nothing is drawn there, not even a placeholder).
 public struct StoryCard: View {
@@ -30,6 +49,7 @@ public struct StoryCard: View {
     public let template: StoryTemplate
     public let theme: ColorTheme
     public var soon = false   // shared before GO LIVE: "live soon" wording, no stream frame
+    public var words = StoryText()
 
     public var body: some View {
         Group {
@@ -51,6 +71,25 @@ public struct StoryCard: View {
     private var text: Color { theme.color(theme.text) }
     private var muted: Color { theme.color(theme.muted) }
     private var shortLink: String { link.replacingOccurrences(of: "https://", with: "") }
+    private var shownTitle: String { trimmed(words.title).isEmpty ? title : trimmed(words.title) }
+    private var caption: String {
+        trimmed(words.caption).isEmpty ? (template == .bilingual ? StoryText.bilingualCaption : "") : trimmed(words.caption)
+    }
+
+    private func trimmed(_ text: String) -> String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    /// The streamer's live / live soon wording, else the layout's own.
+    private func label(_ fallback: String) -> String {
+        let mine = trimmed(soon ? words.soon : words.live)
+        return mine.isEmpty ? fallback : mine
+    }
+
+    @ViewBuilder private func captionLine(_ color: Color) -> some View {
+        if !caption.isEmpty {
+            Text(caption).font(persian("Regular", 16)).foregroundStyle(color).lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
 
     private func persian(_ weight: String, _ size: CGFloat) -> Font { .custom("Vazirmatn-\(weight)", size: size) }
 
@@ -76,9 +115,10 @@ public struct StoryCard: View {
 
     private var minimal: some View {
         VStack(alignment: .leading, spacing: 16) {
-            pill(soon ? "LIVE SOON on Kick" : "LIVE on Kick", 15)
+            pill(label(soon ? "LIVE SOON on Kick" : "LIVE on Kick"), 15)
             shot(312, 175.5, 14)
-            if !title.isEmpty { Text(title).font(.system(size: 24, weight: .bold)).lineLimit(3) }
+            if !shownTitle.isEmpty { Text(shownTitle).font(.system(size: 24, weight: .bold)).lineLimit(3) }
+            captionLine(muted)
             if !link.isEmpty { Text(shortLink).font(.system(size: 15)).foregroundStyle(muted) }
             Spacer(minLength: 0)
         }
@@ -94,8 +134,9 @@ public struct StoryCard: View {
             shot(360, 640, 0)
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 10) {
-                    pill(soon ? "LIVE SOON" : "LIVE", 14)
-                    if !title.isEmpty { Text(title).font(.system(size: 22, weight: .bold)).lineLimit(2) }
+                    pill(label(soon ? "LIVE SOON" : "LIVE"), 14)
+                    if !shownTitle.isEmpty { Text(shownTitle).font(.system(size: 22, weight: .bold)).lineLimit(2) }
+                    captionLine(muted)
                 }
                 .padding(.top, 72).padding(.horizontal, 20).padding(.bottom, 20)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -115,8 +156,9 @@ public struct StoryCard: View {
 
     private var poster: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(soon ? "LIVE\nSOON" : "LIVE\nNOW").font(.system(size: 76, weight: .black)).lineSpacing(-12)
-            if !title.isEmpty { Text(title).font(.system(size: 17, weight: .semibold)).lineLimit(3) }
+            Text(label(soon ? "LIVE\nSOON" : "LIVE\nNOW")).font(.system(size: 76, weight: .black)).lineSpacing(-12).lineLimit(2)
+            if !shownTitle.isEmpty { Text(shownTitle).font(.system(size: 17, weight: .semibold)).lineLimit(3) }
+            captionLine(theme.color(theme.onAccent))
             shot(312, 176, 10)
             if !link.isEmpty { Text(shortLink).font(.system(size: 14, weight: .semibold)) }
             Spacer(minLength: 0)
@@ -130,14 +172,13 @@ public struct StoryCard: View {
     private var bilingual: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                pill(soon ? "LIVE SOON" : "LIVE", 15)
+                pill(label(soon ? "LIVE SOON" : "LIVE"), 15)
                 Spacer()
                 Text(soon ? "به‌زودی لایوم" : "الان لایوم").font(persian("Bold", 18))
             }
             shot(312, 175.5, 14)
-            if !title.isEmpty { Text(title).font(.system(size: 24, weight: .bold)).lineLimit(3) }
-            Text("بیاید تو لایو، لینک پایینه").font(persian("Regular", 16)).foregroundStyle(muted)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            if !shownTitle.isEmpty { Text(shownTitle).font(.system(size: 24, weight: .bold)).lineLimit(3) }
+            captionLine(muted)
             if !link.isEmpty { Text(shortLink).font(.system(size: 15)).foregroundStyle(muted) }
             Spacer(minLength: 0)
         }
@@ -147,8 +188,10 @@ public struct StoryCard: View {
         .background(theme.color(theme.bg))
     }
 
-    public init(frame: UIImage? = nil, title: String, link: String, template: StoryTemplate, theme: ColorTheme, soon: Bool = false) {
+    public init(frame: UIImage? = nil, title: String, link: String, template: StoryTemplate, theme: ColorTheme, soon: Bool = false,
+                words: StoryText = .current) {
         self.soon = soon
+        self.words = words
         self.frame = frame
         self.title = title
         self.link = link

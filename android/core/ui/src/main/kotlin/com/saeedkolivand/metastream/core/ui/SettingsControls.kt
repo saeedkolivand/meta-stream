@@ -256,14 +256,15 @@ fun TextRow(
     secure: Boolean = false,
     singleLine: Boolean = true,
     keyboard: KeyboardType = KeyboardType.Text,
-    mono: Boolean = false
+    mono: Boolean = false,
+    maxLines: Int = 6
 ) = BasicTextField(
     value,
     onChange,
     Modifier.fillMaxWidth(),
     enabled = enabled,
     singleLine = singleLine,
-    maxLines = if (singleLine) 1 else 6,
+    maxLines = if (singleLine) 1 else maxLines,
     textStyle = TextStyle(
         color = if (enabled) Color.White else Secondary,
         fontSize = if (mono) 13.sp else 17.sp,

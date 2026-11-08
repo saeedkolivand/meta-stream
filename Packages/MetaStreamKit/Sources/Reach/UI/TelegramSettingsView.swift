@@ -47,10 +47,12 @@ public struct TelegramSettingsView: View {
                     Text("فارسی").tag("fa")
                     Text("English").tag("en")
                 }
+                NavigationLink("Post texts") { PostTextsView() }
                 Toggle("Show donation total in recap", isOn: $showTotal)
                 Stepper(value: $bigDonation, in: 1...1000, step: 5) { Text("Big donation moment (€\(Int(bigDonation)))") }
             } header: { Text("Post") } footer: {
-                Text("The language only changes the labels; titles and names stay as you typed them.")
+                Text("The language changes the built-in labels; titles and names stay as you typed them. Post texts "
+                     + "rewrites the posts.")
             }
             Section {
                 Toggle("Moment pings", isOn: $pings)

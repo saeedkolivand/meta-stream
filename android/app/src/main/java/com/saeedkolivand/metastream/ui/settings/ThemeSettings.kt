@@ -32,6 +32,7 @@ import com.saeedkolivand.metastream.core.ui.Choice
 import com.saeedkolivand.metastream.core.ui.Secondary
 import com.saeedkolivand.metastream.core.ui.Section
 import com.saeedkolivand.metastream.core.ui.SystemBlue
+import com.saeedkolivand.metastream.core.ui.TextRow
 import com.saeedkolivand.metastream.overlay.ColorTheme
 import com.saeedkolivand.metastream.reach.InstagramStory
 import kotlinx.coroutines.launch
@@ -58,9 +59,10 @@ fun ThemePage() {
     Section(
         "Instagram story",
         if (ready) {
-            "Opens Instagram with this card, without going live. Add the Link sticker there."
+            "Empty texts keep the layout's own wording. Test share opens Instagram with this card, without going live; add " +
+                "the Link sticker there."
         } else {
-            "Needs Instagram installed and a Meta app ID in the build."
+            "Empty texts keep the layout's own wording. Sharing needs Instagram installed and a Meta app ID in the build."
         }
     ) {
         var tpl by remember { mutableStateOf(InstagramStory.template) }
@@ -68,9 +70,24 @@ fun ThemePage() {
             tpl = it
             Prefs.put("igStoryTemplate", it.name)
         }
+        var texts by remember { mutableStateOf(InstagramStory.Texts.current) }
+
+        @Composable
+        fun field(label: String, key: String, value: String, set: (String) -> InstagramStory.Texts) = TextRow(label, value, {
+            Prefs.put(key, it)
+            texts = set(it)
+        })
+        field("Live label (default LIVE)", "igStoryLive", texts.live) { InstagramStory.Texts(it, texts.soon, texts.title, texts.caption) }
+        field("Live soon label (default LIVE SOON)", "igStorySoon", texts.soon) {
+            InstagramStory.Texts(texts.live, it, texts.title, texts.caption)
+        }
+        field("Title (default: the Kick title)", "igStoryTitle", texts.title) {
+            InstagramStory.Texts(texts.live, texts.soon, it, texts.caption)
+        }
+        field("Caption under the title", "igStoryCaption", texts.caption) { InstagramStory.Texts(texts.live, texts.soon, texts.title, it) }
         Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            val card = remember(tpl, theme) {
-                InstagramStory.card(null, "Walking through Cologne", "https://kick.com/yourname", tpl, false).asImageBitmap()
+            val card = remember(tpl, theme, texts) {
+                InstagramStory.card(null, "Walking through Cologne", "https://kick.com/yourname", tpl, false, texts).asImageBitmap()
             }
             Image(card, null, Modifier.size(180.dp, 320.dp))
             Text("Preview without a stream frame", Modifier.padding(top = 8.dp), color = Secondary, fontSize = 13.sp)

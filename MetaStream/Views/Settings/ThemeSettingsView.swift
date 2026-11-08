@@ -6,6 +6,10 @@ import SwiftUI
 struct ThemeSettingsView: View {
     @AppStorage("colorTheme") private var theme = ColorTheme.kick
     @AppStorage("igStoryTemplate") private var template = StoryTemplate.minimal
+    @AppStorage("igStoryLive") private var liveLabel = ""
+    @AppStorage("igStorySoon") private var soonLabel = ""
+    @AppStorage("igStoryTitle") private var storyTitle = ""
+    @AppStorage("igStoryCaption") private var caption = ""
 
     var body: some View {
         Form {
@@ -24,9 +28,14 @@ struct ThemeSettingsView: View {
                 Picker("Layout", selection: $template) {
                     ForEach(StoryTemplate.allCases) { Text($0.name).tag($0) }
                 }
+                TextField("Live label", text: $liveLabel, prompt: Text("Live label (default LIVE)"))
+                TextField("Live soon label", text: $soonLabel, prompt: Text("Live soon label (default LIVE SOON)"))
+                TextField("Title", text: $storyTitle, prompt: Text("Title (default: the Kick title)"))
+                TextField("Caption", text: $caption, prompt: Text("Caption under the title"))
                 VStack(spacing: 8) {
                     StoryCard(frame: nil, title: "Walking through Cologne", link: "https://kick.com/yourname",
-                              template: template, theme: theme)
+                              template: template, theme: theme,
+                              words: StoryText(live: liveLabel, soon: soonLabel, title: storyTitle, caption: caption))
                         .scaleEffect(0.5)
                         .frame(width: 180, height: 320)
                     Text("Preview without a stream frame").font(.footnote).foregroundStyle(.secondary)
@@ -35,8 +44,9 @@ struct ThemeSettingsView: View {
                 Button("Test share to Instagram") { Task { await InstagramStory.shareTest() } }
                     .disabled(!InstagramStory.available)
             } header: { Text("Instagram story") } footer: {
-                Text(InstagramStory.available ? "Opens Instagram with this card, without going live. Add the Link sticker there."
-                     : "Needs Instagram installed and a Meta app ID in the build.")
+                Text("Empty texts keep the layout's own wording. " + (InstagramStory.available
+                     ? "Test share opens Instagram with this card, without going live; add the Link sticker there."
+                     : "Sharing needs Instagram installed and a Meta app ID in the build."))
             }
         }
         .navigationTitle("Theme & story")
