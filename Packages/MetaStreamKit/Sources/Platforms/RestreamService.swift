@@ -10,8 +10,8 @@ public final class RestreamService {
 
     private func api() -> PlatformEndpoint {
         PlatformEndpoint(base: "https://api.restream.io/v2", tokenKey: "restreamAccess", headers: [:], store: p.store) {
-            let json = try await PlatformNet.form(PlatformConfig.authProxy + "/restream/token",
-                ["grant_type": "refresh_token", "refresh_token": self.p.store.string(forKey: "restreamRefresh") ?? ""])
+            let json = try await PlatformNet.form(PlatformConfig.authProxy + "/restream/token", [
+                "grant_type": "refresh_token", "refresh_token": self.p.store.string(forKey: "restreamRefresh") ?? ""])
             try self.p.store.saveTokens(json, prefix: "restream")
         }
     }
@@ -26,13 +26,17 @@ public final class RestreamService {
                 .init(name: "redirect_uri", value: PlatformConfig.webRedirect), .init(name: "state", value: PlatformNet.random(16)),
             ]
             await PlatformFlow.codeFlow(name: "Restream", authURL: c.url!, scheme: "metastream",
-                authorize: p.auth.authorize,
-                exchange: { code in try await PlatformNet.form(PlatformConfig.authProxy + "/restream/token",
-                    ["grant_type": "authorization_code", "redirect_uri": PlatformConfig.webRedirect, "code": code]) },
-                prefix: "restream", store: p.store,
-                status: { self.p.status = $0 },
-                after: { await self.refresh() })
+                                        authorize: p.auth.authorize,
+                                        exchange: { code in try await self.exchange(code) },
+                                        prefix: "restream", store: p.store,
+                                        status: { self.p.status = $0 },
+                                        after: { await self.refresh() })
         }
+    }
+
+    private func exchange(_ code: String) async throws -> [String: Any] {
+        try await PlatformNet.form(PlatformConfig.authProxy + "/restream/token", [
+            "grant_type": "authorization_code", "redirect_uri": PlatformConfig.webRedirect, "code": code])
     }
 
     public func refresh() async {
@@ -53,8 +57,8 @@ public final class RestreamService {
             p.restreamDestinations = channels
             // Some platforms have no titles (WebsiteTitlesNotSupportedError), so read the first destination that does.
             for ch in channels {
-                guard let m = (try? await api().callAny("GET", "/user/channel-meta/\(ch.id)")) as? [String: Any] else { continue }
-                p.restreamTitle = m["title"] as? String ?? ""
+                guard let meta = (try? await api().callAny("GET", "/user/channel-meta/\(ch.id)")) as? [String: Any] else { continue }
+                p.restreamTitle = meta["title"] as? String ?? ""
                 break
             }
             if let k = try await api().callAny("GET", "/user/streamKey") as? [String: Any] { p.restreamStreamKey = k["streamKey"] as? String ?? "" }

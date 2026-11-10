@@ -32,14 +32,17 @@ public final class KickService {
                 .init(name: "state", value: PlatformNet.random(16)),
             ]
             await PlatformFlow.codeFlow(name: "Kick", authURL: c.url!, scheme: "metastream",
-                authorize: p.auth.authorize,
-                exchange: { code in try await PlatformNet.form(PlatformConfig.authProxy + "/kick/token", [
-                    "grant_type": "authorization_code",
-                    "redirect_uri": PlatformConfig.webRedirect, "code_verifier": verifier, "code": code]) },
-                prefix: "kick", store: p.store,
-                status: { self.p.status = $0 },
-                after: { await self.refresh() })
+                                        authorize: p.auth.authorize,
+                                        exchange: { code in try await self.exchange(code, verifier) },
+                                        prefix: "kick", store: p.store,
+                                        status: { self.p.status = $0 },
+                                        after: { await self.refresh() })
         }
+    }
+
+    private func exchange(_ code: String, _ verifier: String) async throws -> [String: Any] {
+        try await PlatformNet.form(PlatformConfig.authProxy + "/kick/token", [
+            "grant_type": "authorization_code", "redirect_uri": PlatformConfig.webRedirect, "code_verifier": verifier, "code": code])
     }
 
     public func refresh() async {
