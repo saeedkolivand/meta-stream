@@ -51,8 +51,11 @@ public final class RestreamService {
                                                 url: c["channelUrl"] as? String ?? "", active: on))
             }
             p.restreamDestinations = channels
-            if let first = p.restreamDestinations.first, let m = try await api().callAny("GET", "/user/channel-meta/\(first.id)") as? [String: Any] {
+            // Some platforms have no titles (WebsiteTitlesNotSupportedError), so read the first destination that does.
+            for ch in channels {
+                guard let m = (try? await api().callAny("GET", "/user/channel-meta/\(ch.id)")) as? [String: Any] else { continue }
                 p.restreamTitle = m["title"] as? String ?? ""
+                break
             }
             if let k = try await api().callAny("GET", "/user/streamKey") as? [String: Any] { p.restreamStreamKey = k["streamKey"] as? String ?? "" }
             if let c = try await api().callAny("GET", "/user/webchat/url") as? [String: Any] { p.restreamChatURL = c["webchatUrl"] as? String ?? "" }
@@ -63,7 +66,16 @@ public final class RestreamService {
     /// One title for every destination Restream fans out to.
     public func apply(title: String) async {
         await PlatformFlow.mutate(status: { self.p.status = $0 }, done: "Restream titles updated", refresh: { await self.refresh() }) {
-            for ch in self.p.restreamDestinations { _ = try await self.api().callAny("PATCH", "/user/channel-meta/\(ch.id)", body: ["title": title]) }
+            // Skip destinations that reject titles; fail only when none took it.
+            var firstError: Error?
+            var took = false
+            for ch in self.p.restreamDestinations {
+                do {
+                    _ = try await self.api().callAny("PATCH", "/user/channel-meta/\(ch.id)", body: ["title": title])
+                    took = true
+                } catch { firstError = firstError ?? error }
+            }
+            if !took, let firstError { throw firstError }
         }
     }
 

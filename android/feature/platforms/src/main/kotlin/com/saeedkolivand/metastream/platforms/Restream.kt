@@ -62,9 +62,11 @@ object Restream : Account("Restream", "restream") {
                 val on = detail?.let { d -> if (d.has("active")) d.optBoolean("active") else d.optBoolean("enabled", true) } ?: true
                 Destination(id, c.optString("displayName").ifEmpty { "channel $id" }, c.optString("channelUrl"), on)
             }
-            destinations.firstOrNull()?.let { first ->
-                (api.callAny("GET", "/user/channel-meta/${first.id}") as? JSONObject)?.let { title = it.optString("title") }
+            // Some platforms have no titles (WebsiteTitlesNotSupportedError), so read the first destination that does.
+            val meta = destinations.firstNotNullOfOrNull { d ->
+                runCatching { api.callAny("GET", "/user/channel-meta/${d.id}") }.getOrNull() as? JSONObject
             }
+            meta?.let { title = it.optString("title") }
             (api.callAny("GET", "/user/streamKey") as? JSONObject)?.let { streamKey = it.optString("streamKey") }
             (api.callAny("GET", "/user/webchat/url") as? JSONObject)?.let { chatUrl = it.optString("webchatUrl") }
             Accounts.say("Restream updated")
@@ -75,7 +77,12 @@ object Restream : Account("Restream", "restream") {
 
     /** One title for every destination Restream fans out to. */
     suspend fun apply(title: String) = mutate("Restream titles updated") {
-        for (d in destinations) api.callAny("PATCH", "/user/channel-meta/${d.id}", body = JSONObject().put("title", title))
+        // Skip destinations that reject titles; fail only when none took it.
+        val body = JSONObject().put("title", title)
+        val results = destinations.map { d ->
+            runCatching { api.callAny("PATCH", "/user/channel-meta/${d.id}", body = body) }
+        }
+        if (results.none { it.isSuccess }) results.firstOrNull()?.exceptionOrNull()?.let { throw it }
     }
 
     /** Restream documents the update under the singular path; some deployments answer on the plural one, so try both. */
