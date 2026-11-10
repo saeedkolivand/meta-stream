@@ -1,7 +1,7 @@
 import CoreNetwork
 import Foundation
 
-/// Restream OAuth 2 code flow (Basic-auth token exchange, no PKCE offered), channel list,
+/// Restream OAuth 2 code flow (Basic-auth token exchange via auth-proxy, no PKCE offered), channel list,
 /// per-destination titles, and stream key. State lives on Platforms.
 @MainActor
 public final class RestreamService {
@@ -10,9 +10,8 @@ public final class RestreamService {
 
     private func api() -> PlatformEndpoint {
         PlatformEndpoint(base: "https://api.restream.io/v2", tokenKey: "restreamAccess", headers: [:], store: p.store) {
-            let json = try await PlatformNet.form("https://api.restream.io/oauth/token",
-                ["grant_type": "refresh_token", "refresh_token": self.p.store.string(forKey: "restreamRefresh") ?? ""],
-                basic: (PlatformConfig.restreamID, PlatformConfig.restreamSecret))
+            let json = try await PlatformNet.form(PlatformConfig.authProxy + "/restream/token",
+                ["grant_type": "refresh_token", "refresh_token": self.p.store.string(forKey: "restreamRefresh") ?? ""])
             try self.p.store.saveTokens(json, prefix: "restream")
         }
     }
@@ -28,9 +27,8 @@ public final class RestreamService {
             ]
             await PlatformFlow.codeFlow(name: "Restream", authURL: c.url!, scheme: "metastream",
                 authorize: p.auth.authorize,
-                exchange: { code in try await PlatformNet.form("https://api.restream.io/oauth/token",
-                    ["grant_type": "authorization_code", "redirect_uri": PlatformConfig.webRedirect, "code": code],
-                    basic: (PlatformConfig.restreamID, PlatformConfig.restreamSecret)) },
+                exchange: { code in try await PlatformNet.form(PlatformConfig.authProxy + "/restream/token",
+                    ["grant_type": "authorization_code", "redirect_uri": PlatformConfig.webRedirect, "code": code]) },
                 prefix: "restream", store: p.store,
                 status: { self.p.status = $0 },
                 after: { await self.refresh() })

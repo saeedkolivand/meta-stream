@@ -14,10 +14,10 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Kick OAuth 2.1 + PKCE (with client secret), channel info and chat send. Port of iOS KickService. */
+/** Kick OAuth 2.1 + PKCE (client secret added by auth-proxy), channel info and chat send. Port of iOS KickService. */
 object Kick : Account("Kick", "kick") {
     override val hasApp get() = BuildConfig.KICK_CLIENT_ID.isNotEmpty()
-    override val missingSecrets = "KICK_CLIENT_ID / KICK_CLIENT_SECRET"
+    override val missingSecrets = "KICK_CLIENT_ID"
     override val hasCategory = true
     override val canSendChat = true
     override val ingest get() = streamUrl.ifEmpty { PlatformConfig.KICK_INGEST }
@@ -40,8 +40,6 @@ object Kick : Account("Kick", "kick") {
                 TOKEN_URL,
                 mapOf(
                     "grant_type" to "refresh_token",
-                    "client_id" to BuildConfig.KICK_CLIENT_ID,
-                    "client_secret" to BuildConfig.KICK_CLIENT_SECRET,
                     "refresh_token" to refreshToken()
                 )
             )
@@ -68,8 +66,6 @@ object Kick : Account("Kick", "kick") {
                 TOKEN_URL,
                 mapOf(
                     "grant_type" to "authorization_code",
-                    "client_id" to BuildConfig.KICK_CLIENT_ID,
-                    "client_secret" to BuildConfig.KICK_CLIENT_SECRET,
                     "redirect_uri" to PlatformConfig.WEB_REDIRECT,
                     "code_verifier" to verifier,
                     "code" to code
@@ -145,5 +141,5 @@ object Kick : Account("Kick", "kick") {
         tags = emptyList()
     }
 
-    private const val TOKEN_URL = "https://id.kick.com/oauth/token"
+    private const val TOKEN_URL = "${PlatformConfig.AUTH_PROXY}/kick/token"
 }

@@ -1,0 +1,9 @@
+// Deploy: npx wrangler deploy (from this folder). Secrets, once each:
+//   npx wrangler secret put KICK_CLIENT_ID / KICK_CLIENT_SECRET / RESTREAM_CLIENT_ID / RESTREAM_CLIENT_SECRET
+{
+  "name": "metastream-auth",
+  "main": "index.js",
+  "compatibility_date": "2026-10-01",
+  // One level under iamsaeed.dev so Universal SSL covers it. Apps: PlatformConfig.authProxy / AUTH_PROXY.
+  "routes": [{ "pattern": "metastream-auth.iamsaeed.dev", "custom_domain": true }]
+}

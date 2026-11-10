@@ -131,8 +131,8 @@ jobs:
             DEVELOPMENT_TEAM="${{ secrets.TEAM_ID }}" \
             APP_PROFILE_NAME="$PROFILE_NAME" LIVE_ACTIVITY_PROFILE_NAME="$LIVE_ACTIVITY_PROFILE_NAME" SCREEN_PROFILE_NAME="$SCREEN_PROFILE_NAME" \
             META_APP_ID="${{ secrets.META_APP_ID }}" CLIENT_TOKEN="${{ secrets.CLIENT_TOKEN }}" TEAM_ID="${{ secrets.TEAM_ID }}" \
-            KICK_CLIENT_ID="${{ secrets.KICK_CLIENT_ID }}" KICK_CLIENT_SECRET="${{ secrets.KICK_CLIENT_SECRET }}" TWITCH_CLIENT_ID="${{ secrets.TWITCH_CLIENT_ID }}" \
-            RESTREAM_CLIENT_ID="${{ secrets.RESTREAM_CLIENT_ID }}" RESTREAM_CLIENT_SECRET="${{ secrets.RESTREAM_CLIENT_SECRET }}" YOUTUBE_CLIENT_ID="${{ secrets.YOUTUBE_CLIENT_ID }}"
+            KICK_CLIENT_ID="${{ secrets.KICK_CLIENT_ID }}" TWITCH_CLIENT_ID="${{ secrets.TWITCH_CLIENT_ID }}" \
+            RESTREAM_CLIENT_ID="${{ secrets.RESTREAM_CLIENT_ID }}" YOUTUBE_CLIENT_ID="${{ secrets.YOUTUBE_CLIENT_ID }}"
 
       - name: Package IPA
         run: |
