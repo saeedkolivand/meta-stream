@@ -14,10 +14,10 @@ import org.json.JSONObject
 
 data class Destination(val id: Int, val name: String, val url: String, val active: Boolean)
 
-/** Restream OAuth 2 code flow (Basic-auth token exchange, no PKCE offered), destinations and titles. Port of iOS RestreamService. */
+/** Restream OAuth 2 code flow (Basic-auth token exchange via auth-proxy, no PKCE offered), destinations and titles. Port of iOS RestreamService. */
 object Restream : Account("Restream", "restream") {
     override val hasApp get() = BuildConfig.RESTREAM_CLIENT_ID.isNotEmpty()
-    override val missingSecrets = "RESTREAM_CLIENT_ID / RESTREAM_CLIENT_SECRET"
+    override val missingSecrets = "RESTREAM_CLIENT_ID"
     override val ingest = PlatformConfig.RESTREAM_INGEST
 
     var title by mutableStateOf("")
@@ -27,11 +27,9 @@ object Restream : Account("Restream", "restream") {
     var chatUrl by mutableStateOf("")
         private set
 
-    private val basic get() = BuildConfig.RESTREAM_CLIENT_ID to BuildConfig.RESTREAM_CLIENT_SECRET
-
     private val api = Endpoint("https://api.restream.io/v2", "restreamAccess") {
         saveTokens(
-            Net.form(TOKEN_URL, mapOf("grant_type" to "refresh_token", "refresh_token" to refreshToken()), basic = basic)
+            Net.form(TOKEN_URL, mapOf("grant_type" to "refresh_token", "refresh_token" to refreshToken()))
         )
     }
 
@@ -46,8 +44,7 @@ object Restream : Account("Restream", "restream") {
         codeFlow(url, state) { code ->
             Net.form(
                 TOKEN_URL,
-                mapOf("grant_type" to "authorization_code", "redirect_uri" to PlatformConfig.WEB_REDIRECT, "code" to code),
-                basic = basic
+                mapOf("grant_type" to "authorization_code", "redirect_uri" to PlatformConfig.WEB_REDIRECT, "code" to code)
             )
         }
     }
@@ -65,9 +62,11 @@ object Restream : Account("Restream", "restream") {
                 val on = detail?.let { d -> if (d.has("active")) d.optBoolean("active") else d.optBoolean("enabled", true) } ?: true
                 Destination(id, c.optString("displayName").ifEmpty { "channel $id" }, c.optString("channelUrl"), on)
             }
-            destinations.firstOrNull()?.let { first ->
-                (api.callAny("GET", "/user/channel-meta/${first.id}") as? JSONObject)?.let { title = it.optString("title") }
+            // Some platforms have no titles (WebsiteTitlesNotSupportedError), so read the first destination that does.
+            val meta = destinations.firstNotNullOfOrNull { d ->
+                runCatching { api.callAny("GET", "/user/channel-meta/${d.id}") }.getOrNull() as? JSONObject
             }
+            meta?.let { title = it.optString("title") }
             (api.callAny("GET", "/user/streamKey") as? JSONObject)?.let { streamKey = it.optString("streamKey") }
             (api.callAny("GET", "/user/webchat/url") as? JSONObject)?.let { chatUrl = it.optString("webchatUrl") }
             Accounts.say("Restream updated")
@@ -78,7 +77,12 @@ object Restream : Account("Restream", "restream") {
 
     /** One title for every destination Restream fans out to. */
     suspend fun apply(title: String) = mutate("Restream titles updated") {
-        for (d in destinations) api.callAny("PATCH", "/user/channel-meta/${d.id}", body = JSONObject().put("title", title))
+        // Skip destinations that reject titles; fail only when none took it.
+        val body = JSONObject().put("title", title)
+        val results = destinations.map { d ->
+            runCatching { api.callAny("PATCH", "/user/channel-meta/${d.id}", body = body) }
+        }
+        if (results.none { it.isSuccess }) results.firstOrNull()?.exceptionOrNull()?.let { throw it }
     }
 
     /** Restream documents the update under the singular path; some deployments answer on the plural one, so try both. */
@@ -106,5 +110,5 @@ object Restream : Account("Restream", "restream") {
         chatUrl = ""
     }
 
-    private const val TOKEN_URL = "https://api.restream.io/oauth/token"
+    private const val TOKEN_URL = "${PlatformConfig.AUTH_PROXY}/restream/token"
 }

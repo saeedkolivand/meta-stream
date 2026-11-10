@@ -31,16 +31,16 @@ public struct RestreamDestination: Identifiable, Hashable, Sendable {
 
 // MARK: - PlatformConfig
 
-/// Client IDs/secrets (from Info.plist), OAuth redirects, and ingest URLs in one place.
+/// Client IDs (from Info.plist), OAuth redirects, and ingest URLs in one place.
 public enum PlatformConfig {
     private static var info: [String: Any] { Bundle.main.infoDictionary ?? [:] }
     public static let kickID = info["KickClientID"] as? String ?? ""
-    public static let kickSecret = info["KickClientSecret"] as? String ?? ""
     public static let twitchID = info["TwitchClientID"] as? String ?? ""
     public static let restreamID = info["RestreamClientID"] as? String ?? ""
-    public static let restreamSecret = info["RestreamClientSecret"] as? String ?? ""
     public static let youtubeID = info["YouTubeClientID"] as? String ?? ""
     public static let webRedirect = "https://metastream.iamsaeed.dev/oauth.html"
+    /// auth-proxy/ Worker: holds the Kick/Restream client secrets so they never ship in the IPA.
+    public static let authProxy = "https://metastream-auth.iamsaeed.dev"
     public static let googleRedirect = "com.saeedkolivand.metastream:/oauth2redirect"
     public static let kickIngest = "rtmps://fa723fc1b171.global-contribute.live-video.net:443/app/"
     public static let twitchIngest = "rtmps://live.twitch.tv:443/app/"

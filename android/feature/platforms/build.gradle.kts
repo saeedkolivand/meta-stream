@@ -5,13 +5,11 @@ android {
     namespace = "com.saeedkolivand.metastream.platforms"
     buildFeatures { buildConfig = true }
     defaultConfig {
-        // Same names as the iOS secrets. The two *_SECRET values ship in the APK like iOS Info.plist (Kick/Restream need them).
+        // Same names as the iOS build settings. Client secrets live in the auth-proxy Worker, never in the APK.
         listOf(
             "KICK_CLIENT_ID",
-            "KICK_CLIENT_SECRET",
             "TWITCH_CLIENT_ID",
             "RESTREAM_CLIENT_ID",
-            "RESTREAM_CLIENT_SECRET",
             "YOUTUBE_CLIENT_ID"
         )
             .forEach { buildConfigField("String", it, "\"${credential(it)}\"") }

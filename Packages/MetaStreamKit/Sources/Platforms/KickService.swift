@@ -11,8 +11,8 @@ public final class KickService {
 
     public func api() -> PlatformEndpoint {
         PlatformEndpoint(base: "https://api.kick.com", tokenKey: "kickAccess", headers: [:], store: p.store) {
-            let json = try await PlatformNet.form("https://id.kick.com/oauth/token", [
-                "grant_type": "refresh_token", "client_id": PlatformConfig.kickID, "client_secret": PlatformConfig.kickSecret,
+            let json = try await PlatformNet.form(PlatformConfig.authProxy + "/kick/token", [
+                "grant_type": "refresh_token",
                 "refresh_token": self.p.store.string(forKey: "kickRefresh") ?? ""])
             try self.p.store.saveTokens(json, prefix: "kick")
         }
@@ -32,14 +32,17 @@ public final class KickService {
                 .init(name: "state", value: PlatformNet.random(16)),
             ]
             await PlatformFlow.codeFlow(name: "Kick", authURL: c.url!, scheme: "metastream",
-                authorize: p.auth.authorize,
-                exchange: { code in try await PlatformNet.form("https://id.kick.com/oauth/token", [
-                    "grant_type": "authorization_code", "client_id": PlatformConfig.kickID, "client_secret": PlatformConfig.kickSecret,
-                    "redirect_uri": PlatformConfig.webRedirect, "code_verifier": verifier, "code": code]) },
-                prefix: "kick", store: p.store,
-                status: { self.p.status = $0 },
-                after: { await self.refresh() })
+                                        authorize: p.auth.authorize,
+                                        exchange: { code in try await self.exchange(code, verifier) },
+                                        prefix: "kick", store: p.store,
+                                        status: { self.p.status = $0 },
+                                        after: { await self.refresh() })
         }
+    }
+
+    private func exchange(_ code: String, _ verifier: String) async throws -> [String: Any] {
+        try await PlatformNet.form(PlatformConfig.authProxy + "/kick/token", [
+            "grant_type": "authorization_code", "redirect_uri": PlatformConfig.webRedirect, "code_verifier": verifier, "code": code])
     }
 
     public func refresh() async {

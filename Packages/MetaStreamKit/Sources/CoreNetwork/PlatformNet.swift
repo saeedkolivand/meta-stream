@@ -32,15 +32,12 @@ extension TokenStore {
 public enum PlatformNet {
     /// POST application/x-www-form-urlencoded → JSON object. Non-2xx throws unless allowError (device-flow polling).
     public static func form(
-        _ url: String, _ fields: [String: String], allowError: Bool = false, basic: (String, String)? = nil
+        _ url: String, _ fields: [String: String], allowError: Bool = false
     ) async throws -> [String: Any] {
         guard let target = URL(string: url) else { throw err("bad URL \(url)") }
         var req = URLRequest(url: target)
         req.httpMethod = "POST"
         req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        if let (user, pass) = basic {
-            req.setValue("Basic " + Data("\(user):\(pass)".utf8).base64EncodedString(), forHTTPHeaderField: "Authorization")
-        }
         var body = URLComponents()
         body.queryItems = fields.map { URLQueryItem(name: $0.key, value: $0.value) }
         req.httpBody = body.percentEncodedQuery?.data(using: .utf8)

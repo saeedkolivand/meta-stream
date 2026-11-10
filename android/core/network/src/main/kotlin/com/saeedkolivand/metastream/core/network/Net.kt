@@ -7,7 +7,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import okhttp3.Credentials
 import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -40,16 +39,9 @@ fun parseJson(text: String): Any = if (text.isBlank()) {
 
 object Net {
     /** POST application/x-www-form-urlencoded -> JSON object. Non-2xx throws unless [allowError] (device-flow polling). */
-    suspend fun form(
-        url: String,
-        fields: Map<String, String>,
-        allowError: Boolean = false,
-        basic: Pair<String, String>? = null
-    ): JSONObject {
+    suspend fun form(url: String, fields: Map<String, String>, allowError: Boolean = false): JSONObject {
         val body = FormBody.Builder().apply { fields.forEach { (k, v) -> add(k, v) } }.build()
-        val req = Request.Builder().url(url).post(body).apply {
-            basic?.let { header("Authorization", Credentials.basic(it.first, it.second)) }
-        }.build()
+        val req = Request.Builder().url(url).post(body).build()
         val (code, text) = exec(req)
         // Field names only, never values or the response body: token responses are secrets.
         applog("auth", "POST ${req.url.host}${req.url.encodedPath} [${fields.keys.sorted().joinToString(",")}] -> $code")

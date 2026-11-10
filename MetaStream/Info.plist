@@ -72,14 +72,10 @@
 	</dict>
 	<key>KickClientID</key>
 	<string>$(KICK_CLIENT_ID)</string>
-	<key>KickClientSecret</key>
-	<string>$(KICK_CLIENT_SECRET)</string>
 	<key>TwitchClientID</key>
 	<string>$(TWITCH_CLIENT_ID)</string>
 	<key>RestreamClientID</key>
 	<string>$(RESTREAM_CLIENT_ID)</string>
-	<key>RestreamClientSecret</key>
-	<string>$(RESTREAM_CLIENT_SECRET)</string>
 	<key>YouTubeClientID</key>
 	<string>$(YOUTUBE_CLIENT_ID)</string>
 	<key>CFBundleURLTypes</key>

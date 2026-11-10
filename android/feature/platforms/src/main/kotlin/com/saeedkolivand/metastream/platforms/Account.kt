@@ -18,9 +18,12 @@ import org.json.JSONObject
 
 data class Category(val id: String, val name: String)
 
-/** Client IDs/secrets (BuildConfig, from local.properties or CI env), the web redirect and the ingest URLs in one place. */
+/** Client IDs (BuildConfig, from local.properties or CI env), the web redirect and the ingest URLs in one place. */
 object PlatformConfig {
     const val WEB_REDIRECT = "https://metastream.iamsaeed.dev/oauth.html"
+
+    /** auth-proxy/ Worker: holds the Kick/Restream client secrets so they never ship in the APK. */
+    const val AUTH_PROXY = "https://metastream-auth.iamsaeed.dev"
     const val GOOGLE_REDIRECT = "com.saeedkolivand.metastream:/oauth2redirect"
     const val KICK_INGEST = "rtmps://fa723fc1b171.global-contribute.live-video.net:443/app/"
     const val TWITCH_INGEST = "rtmps://live.twitch.tv:443/app/"

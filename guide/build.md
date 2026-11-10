@@ -62,13 +62,15 @@ and on Android the glasses stay off until you turn them on in Settings.
 
 | Secret | Value | Used by |
 |---|---|---|
-| `KICK_CLIENT_ID`, `KICK_CLIENT_SECRET`, `TWITCH_CLIENT_ID`, `RESTREAM_CLIENT_ID`, `RESTREAM_CLIENT_SECRET`, `YOUTUBE_CLIENT_ID` | from step 2, only the ones you created | both |
+| `KICK_CLIENT_ID`, `TWITCH_CLIENT_ID`, `RESTREAM_CLIENT_ID`, `YOUTUBE_CLIENT_ID` | from step 2, only the ones you created | both |
 | `META_APP_ID` | from step 4; leave out for a build without glasses | both |
 | `CLIENT_TOKEN` | from step 4 | iOS |
 | `IPA_PASSWORD` | any long random string; encrypts both build artifacts (the repo is public) | both |
 | `TEAM_ID` | the paid team's 10-character Team ID | iOS |
 | `P12_BASE64`, `P12_PASSWORD` | `base64 -w0 cert.p12`, and its export password (iOS step 1) | iOS |
 | `PROVISIONING_PROFILE_BASE64` | `base64 -w0 profile.mobileprovision` (iOS step 1) | iOS |
+
+The Kick and Restream client secrets never go in the apps: deploy `auth-proxy/` as a Cloudflare Worker with those secrets (steps in `auth-proxy/wrangler.jsonc`) and point `PlatformConfig.authProxy` (iOS) / `AUTH_PROXY` (Android) at it.
 
 Put the `IPA_PASSWORD` value in `signing/ipa-password.txt` too (gitignored); the install commands below read it.
 Install the tools once (on Windows, run these in Git Bash, which ships `openssl`):
