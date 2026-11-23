@@ -1,10 +1,10 @@
 [versions]
 uvcandroid = "1.0.13" # must match what RootEncoder extra-sources ships (it only exposes it at runtime)
 zxing = "3.5.4"
-agp = "9.5.1"
+agp = "9.5.2"
 kotlin = "2.4.21"
 activityCompose = "1.13.0"
-composeBom = "2026.09.00"
+composeBom = "2026.11.01"
 lifecycle = "2.10.0"
 rootencoder = "2.8.1"
 mwdat = "1.0.1"
@@ -13,7 +13,7 @@ carApp = "1.7.0"
 ktlint = "14.2.0"
 junit = "4.13.2"
 orgJson = "20260814"
-sentry = "6.26.0" # Gradle plugin; it adds the matching sentry-android SDK
+sentry = "6.27.0" # Gradle plugin; it adds the matching sentry-android SDK
 
 [libraries]
 uvcandroid = { group = "com.herohan", name = "UVCAndroid", version.ref = "uvcandroid" }
