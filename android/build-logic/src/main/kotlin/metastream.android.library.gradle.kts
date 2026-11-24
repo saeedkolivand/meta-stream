@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    compileSdk = 37
+    compileSdk { version = release(37) { minorApiLevel = 1 } }
     defaultConfig { minSdk = 33 }
     // android.util.Log (applog) is a stub on the JVM; make it a no-op instead of throwing.
     testOptions { unitTests.isReturnDefaultValues = true }
