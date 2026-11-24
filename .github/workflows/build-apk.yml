@@ -16,7 +16,7 @@ jobs:
           distribution: temurin
           java-version: 17
       - name: Install Android 37 platform
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" > /dev/null
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.1" > /dev/null
       - name: Release keystore
         # Fails rather than falling back to a throwaway debug key, which couldn't update earlier installs.
         env:
