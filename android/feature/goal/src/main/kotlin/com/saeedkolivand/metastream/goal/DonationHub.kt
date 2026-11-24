@@ -253,7 +253,7 @@ object DonationHub {
                         applog("goal", "donation site HTTP ${r.code} for ${r.request.url.host}")
                         Outcome.Unreachable to null
                     }
-                    else -> Outcome.Ok to parseJson(r.body?.string().orEmpty())
+                    else -> Outcome.Ok to parseJson(r.body.string())
                 }
             }
         }.getOrDefault(Outcome.Unreachable to null)

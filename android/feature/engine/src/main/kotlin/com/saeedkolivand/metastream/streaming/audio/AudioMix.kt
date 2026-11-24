@@ -61,14 +61,14 @@ object AudioMix {
 
     /** Installed on the mic by Mics.apply. Runs on RootEncoder's audio thread: no allocation, no locks. */
     val effect = object : CustomAudioEffect() {
-        override fun process(pcm: ByteArray): ByteArray {
-            val n = pcm.size
+        override fun process(pcmBuffer: ByteArray): ByteArray {
+            val n = pcmBuffer.size
             if (Engine.live) {
-                mix(pcm, n, alert, alertGain)
-                mix(pcm, n, clip, clipGain)
-                mix(pcm, n, board, soundGain)
+                mix(pcmBuffer, n, alert, alertGain)
+                mix(pcmBuffer, n, clip, clipGain)
+                mix(pcmBuffer, n, board, soundGain)
             }
-            peak = max(peak, AudioMath.dBFS(pcm, n))
+            peak = max(peak, AudioMath.dBFS(pcmBuffer, n))
             val now = System.currentTimeMillis()
             if (now - lastReport >= REPORT_MS) {
                 lastReport = now
@@ -76,7 +76,7 @@ object AudioMix {
                 levelAt = now
                 peak = AudioMath.SILENCE_DB
             }
-            return pcm
+            return pcmBuffer
         }
     }
 

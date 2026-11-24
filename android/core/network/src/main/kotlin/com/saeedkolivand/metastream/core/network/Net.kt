@@ -50,7 +50,7 @@ object Net {
     }
 
     suspend fun exec(req: Request): Pair<Int, String> = withContext(Dispatchers.IO) {
-        http.newCall(req).execute().use { it.code to it.body?.string().orEmpty() }
+        http.newCall(req).execute().use { it.code to it.body.string() }
     }
 }
 

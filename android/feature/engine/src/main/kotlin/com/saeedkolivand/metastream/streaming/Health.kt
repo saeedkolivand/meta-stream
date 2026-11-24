@@ -128,7 +128,7 @@ object Health {
                     updateBattery()
                 }
                 val congested = client?.hasCongestion() == true
-                if (controller != null && client != null) {
+                if (controller != null) {
                     val change = controller.thermal(now, thermalSerious(thermal))
                         ?: if (downSince == null) controller.tick(now, congested, outKbps) else null
                     if (change != null) {

@@ -120,7 +120,7 @@ object Rates {
         }
 
     private fun get(req: Request): JSONObject? = runCatching {
-        http.newCall(req).execute().use { r -> if (r.isSuccessful) JSONObject(r.body?.string().orEmpty()) else null }
+        http.newCall(req).execute().use { r -> if (r.isSuccessful) JSONObject(r.body.string()) else null }
     }.getOrNull()
 
     /** {"stats":{"usdt-rls":{"latest":"<rials>"}}}. apiv2 answers from abroad; api is for networks inside Iran. */

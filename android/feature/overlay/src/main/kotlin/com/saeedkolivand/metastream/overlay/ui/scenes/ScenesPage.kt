@@ -171,7 +171,7 @@ private fun SceneCard(s: Scene, modifier: Modifier, onRename: () -> Unit, onDele
                 }
             }
             val widgets = if (s.layers.size == 1) "1 widget" else "${s.layers.size} widgets"
-            val cam = CameraChoices.firstOrNull { it.first == s.camera && s.camera != null }?.second
+            val cam = CameraChoices.firstOrNull { it.first == s.camera }?.second
             Text(listOfNotNull(widgets, cam).joinToString(" · "), color = Secondary, fontSize = 12.sp, maxLines = 1)
         }
         DropdownMenu(menu, { menu = false }) {

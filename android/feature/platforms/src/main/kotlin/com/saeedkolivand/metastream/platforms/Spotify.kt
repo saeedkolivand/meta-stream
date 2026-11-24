@@ -159,7 +159,7 @@ object Spotify {
         Accounts.scope.launch {
             val bmp = withContext(Dispatchers.IO) {
                 runCatching {
-                    http.newCall(Request.Builder().url(url).build()).execute().use { BitmapFactory.decodeStream(it.body?.byteStream()) }
+                    http.newCall(Request.Builder().url(url).build()).execute().use { BitmapFactory.decodeStream(it.body.byteStream()) }
                 }.getOrNull()
             }
             if (artFor == url) art = bmp
@@ -170,7 +170,7 @@ object Spotify {
     private suspend fun get(url: String, retried: Boolean = false): Triple<Int, String, Int?> {
         val req = Request.Builder().url(url).header("Authorization", "Bearer ${TokenStore.get("spotifyAccess").orEmpty()}").build()
         val r = withContext(Dispatchers.IO) {
-            http.newCall(req).execute().use { Triple(it.code, it.body?.string().orEmpty(), it.header("Retry-After")?.toIntOrNull()) }
+            http.newCall(req).execute().use { Triple(it.code, it.body.string(), it.header("Retry-After")?.toIntOrNull()) }
         }
         if (r.first == 401 && !retried) {
             save(
