@@ -229,7 +229,7 @@ suspend fun runReymitOverlay(link: String) {
                             url
                         ).header("User-Agent", BROWSER_UA).header("Referer", "https://reymit.ir/overlay/?key=$k").build()
                     )
-                    .execute().use { it.code to it.body?.string().orEmpty() }
+                    .execute().use { it.code to it.body.string() }
             }.getOrDefault(0 to "")
         }
         if (code in 400..499) return applog("goal", "reymit overlay: link rejected")

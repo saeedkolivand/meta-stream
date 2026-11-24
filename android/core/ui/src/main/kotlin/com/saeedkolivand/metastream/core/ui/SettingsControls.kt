@@ -11,13 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -33,14 +32,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -178,11 +172,9 @@ fun SliderRow(
             Text(valueText, color = Secondary, fontSize = 17.sp)
         }
         Slider(
-            value.coerceIn(range),
+            sliderState(value, range, steps),
             onChange,
             enabled = enabled && range.endInclusive > range.start,
-            valueRange = range,
-            steps = steps,
             onValueChangeFinished = onChangeFinished,
             colors = SliderDefaults.colors(
                 thumbColor = Color.White,
@@ -194,6 +186,11 @@ fun SliderRow(
         )
     }
 }
+
+/** A [SliderState] driven by [value] (the caller owns it, updated through onValueChange); coerced into [range]. */
+@Composable
+fun sliderState(value: Float, range: ClosedFloatingPointRange<Float>, steps: Int = 0): SliderState =
+    remember(steps, range) { SliderState(value, steps, range) }.also { it.value = value }
 
 /** A [SliderRow] that commits once the finger lifts: for values whose every change re-renders the stream. */
 @Composable
@@ -244,41 +241,6 @@ fun ActionRow(text: String, enabled: Boolean = true, destructive: Boolean = fals
         SystemBlue
     },
     fontSize = 17.sp
-)
-
-/** iOS Form TextField / SecureField: borderless, the label as its placeholder. */
-@Composable
-fun TextRow(
-    placeholder: String,
-    value: String,
-    onChange: (String) -> Unit,
-    enabled: Boolean = true,
-    secure: Boolean = false,
-    singleLine: Boolean = true,
-    keyboard: KeyboardType = KeyboardType.Text,
-    mono: Boolean = false,
-    maxLines: Int = 6
-) = BasicTextField(
-    value,
-    onChange,
-    Modifier.fillMaxWidth(),
-    enabled = enabled,
-    singleLine = singleLine,
-    maxLines = if (singleLine) 1 else maxLines,
-    textStyle = TextStyle(
-        color = if (enabled) Color.White else Secondary,
-        fontSize = if (mono) 13.sp else 17.sp,
-        fontFamily = if (mono) androidx.compose.ui.text.font.FontFamily.Monospace else null
-    ),
-    keyboardOptions = KeyboardOptions(keyboardType = if (secure) KeyboardType.Password else keyboard),
-    visualTransformation = if (secure) PasswordVisualTransformation() else VisualTransformation.None,
-    cursorBrush = SolidColor(SystemBlue),
-    decorationBox = { inner ->
-        Box {
-            if (value.isEmpty()) Text(placeholder, color = Color.White.copy(alpha = 0.3f), fontSize = if (mono) 13.sp else 17.sp)
-            inner()
-        }
-    }
 )
 
 /** iOS menu Picker: the label, the picked value in grey with ⌃⌄; a tap opens the list with a check on the current one. */

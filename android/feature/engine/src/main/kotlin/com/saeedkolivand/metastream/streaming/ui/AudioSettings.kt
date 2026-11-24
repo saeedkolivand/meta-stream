@@ -30,6 +30,7 @@ import com.saeedkolivand.metastream.core.ui.SwitchRow
 import com.saeedkolivand.metastream.core.ui.SystemBlue
 import com.saeedkolivand.metastream.core.ui.TextRow
 import com.saeedkolivand.metastream.core.ui.ValueRow
+import com.saeedkolivand.metastream.core.ui.sliderState
 import com.saeedkolivand.metastream.streaming.Engine
 import com.saeedkolivand.metastream.streaming.audio.AudioMix
 import com.saeedkolivand.metastream.streaming.audio.Mics
@@ -89,9 +90,8 @@ private fun Volume(title: String, key: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(title, Modifier.width(120.dp), fontSize = 17.sp)
         Slider(
-            value,
+            sliderState(value, 0f..100f),
             { value = it },
-            valueRange = 0f..100f,
             colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = SystemBlue, inactiveTrackColor = Color(0xFF3A3A3C)),
             onValueChangeFinished = {
                 Prefs.put(key, value.toInt())

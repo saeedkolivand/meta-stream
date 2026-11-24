@@ -92,7 +92,7 @@ object Telegram {
         if (token.isEmpty()) throw Failure("no bot token")
         val text = try {
             http.newCall(Request.Builder().url("https://api.telegram.org/bot$token/$method").post(body).build()).execute().use {
-                it.body?.string().orEmpty()
+                it.body.string()
             }
         } catch (e: Exception) {
             throw Failure("network error ${e.javaClass.simpleName}") // the class only: the message can hold the URL

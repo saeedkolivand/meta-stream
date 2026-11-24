@@ -127,7 +127,7 @@ private suspend fun fetchWidget(): String? {
         ident
     )}?salt=${Uri.encode(link.getQueryParameter("salt").orEmpty())}"
     val (code, body) = withContext(Dispatchers.IO) {
-        runCatching { http.newCall(widgetRequest(url, false)).execute().use { it.code to it.body?.string().orEmpty() } }.getOrDefault(
+        runCatching { http.newCall(widgetRequest(url, false)).execute().use { it.code to it.body.string() } }.getOrDefault(
             0 to ""
         )
     }

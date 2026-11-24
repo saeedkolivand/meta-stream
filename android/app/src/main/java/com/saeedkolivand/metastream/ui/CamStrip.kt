@@ -41,6 +41,7 @@ import com.saeedkolivand.metastream.camera.LiveControl
 import com.saeedkolivand.metastream.core.ui.Orange
 import com.saeedkolivand.metastream.core.ui.Scrim
 import com.saeedkolivand.metastream.core.ui.rememberHaptic
+import com.saeedkolivand.metastream.core.ui.sliderState
 import kotlin.math.abs
 
 private val Blue = Color(0xFF0A84FF)
@@ -62,11 +63,10 @@ internal fun StripSlider(
             Text(label, color = Color.White, fontSize = 11.sp, maxLines = 1)
         }
         Slider(
-            value.coerceIn(range),
+            sliderState(value, range),
             onChange,
             Modifier.height(28.dp),
             enabled = enabled,
-            valueRange = range,
             colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White, inactiveTrackColor = Chip)
         )
     }

@@ -122,7 +122,7 @@ object WidgetWeather {
             unit
         )
         http.newCall(Request.Builder().url(url).build()).execute().use { r ->
-            val cur = JSONObject(r.body?.string().orEmpty()).getJSONObject("current")
+            val cur = JSONObject(r.body.string()).getJSONObject("current")
             val code = cur.getInt("weather_code")
             val t = "${cur.getDouble("temperature_2m").roundToInt()}°"
             return "{i:${weatherSymbol(code)}} $t" to "$t, ${weatherWords(code)}"
